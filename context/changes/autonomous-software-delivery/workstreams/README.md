@@ -2,6 +2,8 @@
 
 Data rozpiski: 2026-09-19. Źródło: [zatwierdzony plan po review](../plan.md). Ten dokument rozdziela wykonanie; nie zmienia architektury, zakresu ani kryteriów odbioru. GitHub Issues i etykiety nie są używane — ustalenie użytkownika. Zadania identyfikujemy w Markdown i commitach. Data startu nie jest narzucona: H0 oznacza wspólny start zespołu.
 
+Drzewo kolejności i rozgałęzień: [task-tree.md](task-tree.md).
+
 ## Plany do podziału w zespole
 
 | Plan | Zakres | Bazowy nakład | Dostęp do WP |
