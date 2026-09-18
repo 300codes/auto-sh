@@ -37,6 +37,11 @@
     "core": {
       "description": "Daily-driver skills installed by default.",
       "skills": [
+        "10x-research",
+        "10x-plan",
+        "10x-plan-review",
+        "10x-implement",
+        "10x-impl-review",
         "om-ds-guardian",
         "om-backend-ui-design",
         "om-mockup-prototype",
