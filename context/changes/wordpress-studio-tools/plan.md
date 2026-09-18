@@ -204,26 +204,26 @@ Pakiet jest narzędziem zaufanego hosta, nie izolacją dowolnego obcego kodu ani
 
 #### Automated
 
-- [x] 1.1 Testy runnera odrzucają błędy/timeout bez ujawnienia raw output i wykonują argumenty bez shella.
-- [x] 1.2 Testy kontraktów i ścieżek odrzucają obcy scope, traversal, symlinki i nieznane pola.
-- [x] 1.3 Typecheck i build pakietu przechodzą na udokumentowanej wersji lokalnego toolchainu.
+- [x] 1.1 Testy runnera odrzucają błędy/timeout bez ujawnienia raw output i wykonują argumenty bez shella. — 37e326620
+- [x] 1.2 Testy kontraktów i ścieżek odrzucają obcy scope, traversal, symlinki i nieznane pola. — 37e326620
+- [x] 1.3 Typecheck i build pakietu przechodzą na udokumentowanej wersji lokalnego toolchainu. — 37e326620
 
 ### Phase 2: Nowa witryna i rzeczywisty snapshot
 
 #### Automated
 
-- [x] 2.1 Testy idempotencji, równoległego create, kolizji katalogu i restartu po niepewnym skutku przechodzą.
-- [x] 2.2 Testy scaffold/aktywacji i snapshotu wykrywają zmianę pliku/danych oraz odrzucają symlinki i sekrety.
-- [x] 2.3 Testy z fałszywym Studio tworzą własne fixture i sprzątają je bez dostępu do istniejących witryn.
+- [x] 2.1 Testy idempotencji, równoległego create, kolizji katalogu i restartu po niepewnym skutku przechodzą. — 37e326620
+- [x] 2.2 Testy scaffold/aktywacji i snapshotu wykrywają zmianę pliku/danych oraz odrzucają symlinki i sekrety. — 37e326620
+- [x] 2.3 Testy z fałszywym Studio tworzą własne fixture i sprzątają je bez dostępu do istniejących witryn. — 37e326620
 
 ### Phase 3: Lokalny caller, live próba i przekazanie
 
 #### Automated
 
-- [x] 3.1 Lokalny caller tworzy nową witrynę przez publiczne narzędzia pakietu i weryfikuje aktywny motyw oraz HTTP.
-- [x] 3.2 Powtórzenie tej samej operacji nie tworzy drugiej witryny; manifest zawiera rzeczywiste hashe i jawne pochodzenie.
-- [x] 3.3 Cały zestaw testów, typecheck i build pakietu przechodzi; zapisano dowód niezależności od starego orchestratora.
-- [x] 3.4 Readiness, spec i bezpieczne fixture opisują dostępy oraz brakujące podłączenie do delivery_os/delivery_agents.
+- [x] 3.1 Lokalny caller tworzy nową witrynę przez publiczne narzędzia pakietu i weryfikuje aktywny motyw oraz HTTP. — 37e326620
+- [x] 3.2 Powtórzenie tej samej operacji nie tworzy drugiej witryny; manifest zawiera rzeczywiste hashe i jawne pochodzenie. — 37e326620
+- [x] 3.3 Cały zestaw testów, typecheck i build pakietu przechodzi; zapisano dowód niezależności od starego orchestratora. — 37e326620
+- [x] 3.4 Readiness, spec i bezpieczne fixture opisują dostępy oraz brakujące podłączenie do delivery_os/delivery_agents. — 37e326620
 
 #### Manual
 

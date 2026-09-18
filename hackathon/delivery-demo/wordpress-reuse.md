@@ -67,7 +67,7 @@ tests require execution outside this sandbox, which otherwise suppresses child s
 No full monorepo build/lint/test claim: root dependencies are not fully installed.
 
 The code, docs and review are retained on local branch `feat/wp-m01-studio-tools`;
-no remote publication, PR or merge was performed. The generated theme has its own Git
+implementation commit: `37e326620`; no remote publication, PR or merge was performed. The generated theme has its own Git
 baseline shown in evidence. Ignored toolchain links/dist and private Studio/state files
 are excluded from repository changes.
 
