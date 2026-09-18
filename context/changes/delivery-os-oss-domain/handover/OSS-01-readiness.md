@@ -100,3 +100,50 @@ That file does not exist yet (`hackathon/delivery-demo/` is absent). Not written
 
 - **1.1 (environment part):** evidence above (branch/SHA, versions, runner, ports, queue settings, baseline build, partial gate). Not ticked — human acceptance.
 - **1.3:** partial evidence only (gate timing recorded; gate incomplete). Not ticked.
+
+---
+
+# OSS-01 (T002) — React Vite/TS demo repo (target app)
+
+Task: OSS-01 / T002 · Progress row **1.3 (baseline build + sample AC of the target repo) — evidence only, not ticked** · recorded 2026-09-19.
+This resolves open item 4 of the H3 list above (the demo repo now exists). The preview target (external hosting) is still a human item.
+
+| Item | Value |
+|------|-------|
+| Absolute path | `/Users/mateuszstopinski/Documents/om-hack/proj2/delivery-demo-react` (sibling of the open-mercato root; own git repo, branch `main`) |
+| Initial commit SHA | `687670c20c93d6a60c2ab494419ec38636cf0a8c` (`687670c`, "chore: bootstrap Vite React TS app with service catalogue and AC-001 test"), working tree clean |
+| Node / npm | Node `v24.15.0`, npm `11.12.1` (registry reachable — no H3 network blocker) |
+| Stack | Vite 8.3 + React 19 + TypeScript 6 (`create-vite` `react-ts` template), Vitest 5 + jsdom + `@testing-library/react` / `jest-dom` |
+| Placeholder page | `src/App.tsx` → `ServiceCatalogue` listing 3 seeded services (`src/services.ts`), empty state `No services available yet.` |
+| Scripts | `build` (`tsc -b && vite build`), `test` (`vitest run`, JSON reporter configured in `vite.config.ts`), `test:report` (explicit JSON reporter → `reports/vitest-report.json`), `lint` (oxlint, exit 0) |
+| Preview target | not created — `previewTargetRef` is only the env parameter `PREVIEW_TARGET_REF` in `.env.example`; nothing deployed, no hosting account |
+
+## Results
+
+| Command (in the demo repo) | Exit | Summary |
+|----------------------------|------|---------|
+| `npm run build` | **0** | `tsc -b` clean; Vite: 18 modules, `dist/index.html` + `dist/assets/index-*.{js,css}` (JS 220 kB / 69 kB gzip), built in ≈0.3 s |
+| `npm test` | **0** | 1 file, `1 passed (1)`; `AC-001: service list renders seeded services` passed; `reports/vitest-report.json` written (`success: true`, `numPassedTests: 1`) |
+| `npm run test:report` | **0** | same run, same report path |
+| failure path: AC-001 assertion deliberately broken (reverted) | **1** | Vitest exits non-zero and still writes the JSON report (`success: false`, `numFailedTests: 1`) — a failing AC is never reported as pass |
+| fresh `git clone` + `npm ci` + build + test | **0 / 0** | the committed state is reproducible, nothing depends on untracked files |
+
+`dist/`, `node_modules/`, `reports/` and `.env` are gitignored in the demo repo. Nothing from the demo app is inside the open-mercato git tree (it lives outside it).
+
+## AC-id naming convention (for ResultManifest `checks[].testId` / `acIds[]` and `rawReportHash`)
+
+Documented in the demo repo `README.md`; the ResultManifest and validation profile rely on it:
+
+- Test title prefix `AC-<NNN>: <behaviour>` — `AC-` + three digits, unique per repo, never reused for a different behaviour (sample: `AC-001: service list renders seeded services`).
+- One `it(...)` carries exactly one AC id; an AC covered by several tests repeats its id in every title.
+- `checks[].testId` = the Vitest `fullName` in `reports/vitest-report.json` (`<describe title> <it title>`, e.g. `service catalogue AC-001: service list renders seeded services`); `checks[].acIds[]` = the `AC-NNN` prefix(es) parsed from the `it` title. A test without an `AC-NNN:` prefix proves no AC.
+- `rawReportHash` = SHA-256 of the unmodified bytes of `reports/vitest-report.json` produced by `npm run test:report`; `testDefinitionHash` should be derived from the test file contents by the bridge (EXEC).
+- Skipped/failed/todo tests appear in the JSON report with status `skipped`/`failed`/`todo` and must be mapped to `skipped`/`fail`/`not_run`, never to PASS.
+
+## Limitations / notes
+
+- The demo repo was committed by this task with an explicit git call in **its own** repo (the task requires the initial commit there); no git write was made in open-mercato.
+- Vitest's JSON reporter has no per-test file hash or timing guarantees beyond what the report contains; bridge code computes the hashes.
+- `previewTargetRef` / hosting stays a human item (H3 list item 5 above).
+
+Progress rows with evidence: **1.3** (target-repo baseline build and sample AC test; the OM full-gate part remains incomplete — see above). Not ticked — human acceptance.
