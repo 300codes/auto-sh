@@ -9082,6 +9082,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@open-mercato/delivery-wordpress@workspace:packages/delivery-wordpress":
+  version: 0.0.0-use.local
+  resolution: "@open-mercato/delivery-wordpress@workspace:packages/delivery-wordpress"
+  dependencies:
+    "@types/node": "npm:^26.4.0"
+    typescript: "npm:7.0.2"
+    zod: "npm:^4.4.3"
+  languageName: unknown
+  linkType: soft
+
 "@open-mercato/documents@workspace:*, @open-mercato/documents@workspace:packages/documents":
   version: 0.0.0-use.local
   resolution: "@open-mercato/documents@workspace:packages/documents"

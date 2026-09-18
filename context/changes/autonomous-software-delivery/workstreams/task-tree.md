@@ -4,7 +4,7 @@
 
 Czytaj od góry do dołu. Gałęzie pod `RÓWNOLEGLE` można prowadzić jednocześnie przez różne osoby. `POŁĄCZENIE` wymaga wszystkich wymienionych rezultatów. Oznaczenia G0–G8 łączą drzewa: kolejne drzewo zaczyna się od wskazanego punktu poprzedniego. Godziny są planowanymi oknami; zadanie startuje po spełnieniu zależności, nie tylko po nadejściu godziny.
 
-Zadanie może wystąpić kilka razy z dopiskiem „przygotowanie”, „live” lub „odbiór” — to części tego samego zadania, a nie dodatkowy zakres. Osoby przypisujecie sami; `WP-ACCESS` zawsze oznacza **Michał — wymagany dostęp do ai-wordpress-orchestrator**.
+Zadanie może wystąpić kilka razy z dopiskiem „przygotowanie”, „live” lub „odbiór” — to części tego samego zadania, a nie dodatkowy zakres. Osoby przypisujecie sami; `WP-ACCESS` zawsze oznacza **Michał lub upoważniony agent — wymagany dostęp do Studio CLI i nowej witryny**.
 
 ## 1. Start i przygotowanie równoległej pracy
 
@@ -18,7 +18,7 @@ START H0 — cztery osoby, uzgodniona obsada i dostępy
     ├── UI-01 [H0–3] Agent tworzy frame w Figmie + read/render   │
     │   └── Potwierdzony zapis Figmy na stanowisku demo ────────┤
     └── WP-M01 [H0–2] MICHAŁ / WP-ACCESS                        │
-        ├── Readiness WordPressa i bezpieczny fixture raportu  │
+        ├── Readiness Studio i własny kontrakt narzędzi  │
         └── Wynik do G0; fixture do gałęzi WP w drzewie 4       │
                                                               ▼
 G0 [H3] POŁĄCZENIE: gotowość OM/CLI/Figmy + stan WP + nowa estymata
@@ -121,20 +121,20 @@ Gotowe export/import OSS + właściwy zatwierdzony pakiet targetu
     │       └── Dowód OM dla QA-05 i końcowego odbioru G8
     └── WP-M01 zakończone + dostępny czas Michała
         └── WP-M02 [H22–26]: MICHAŁ / WP-ACCESS
-            ├── Eksport pakietu → świeży run lokalnego orchestratora
-            │   └── Pobranie skorelowanego raportu i hashów
+            ├── Eksport pakietu → własne narzędzia Studio w OM
+            │   └── Odbiór świeżego manifestu i rzeczywistych hashów
             └── Mapowanie/testy/import w OM
                 ├── Tę część może wykonać inna osoba na fixture
                 └── Dowód obowiązkowego WP PoC dla QA-05 i G8
                     └── OPCJONALNIE: WP-M03 / MICHAŁ / WP-ACCESS
                         └── Tylko gdy został czas w łącznym limicie 6 h
-                            └── Apply → upload → verify desktop/mobile
+                            └── Zatwierdzona rewizja → upload → verify desktop/mobile
                                 └── Dowód bonusowego WP E2E
 ```
 
-PoC OM i WP nie muszą czekać na React preview ani na siebie. WP-M02 wymaga świeżego, skorelowanego wyniku; historyczny raport nie zalicza nowej próby. WP-M03 nie blokuje odbioru obowiązkowego PoC. Brak obowiązkowego dowodu OM/WP nie blokuje pracy nad Reactem, ale uniemożliwia zadeklarowanie pełnego spełnienia planu.
+PoC OM i WP nie muszą czekać na React preview ani na siebie. WP-M02 wymaga gotowego podłączenia OSS/enterprise i świeżego, skorelowanego wyniku własnych narzędzi; lokalny smoke ani historyczny raport nie zaliczają nowej próby. Niezależne narzędzia i nowa witryna mają [osobny plan wykonawczy](../../wordpress-studio-tools/plan.md), bez starego runtime/API/DB/kolejki. WP-M03 nie blokuje odbioru obowiązkowego PoC. Brak obowiązkowego dowodu OM/WP nie blokuje pracy nad Reactem, ale uniemożliwia zadeklarowanie pełnego spełnienia planu.
 
-**Obsada:** WP nie jest piątym strumieniem wykonywanym przez dodatkową osobę. Rezerwuje H0–2 i H22–26 dawnego przydziału QA. Jeśli Michał wybierze inny strumień, trzeba zamienić jego kolidujące zadania z wykonawcą QA według [harmonogramu](README.md). Łącznie WP-M01…03 oraz praca innych osób przy importerze mieszczą się w 6 osobogodzinach.
+**Obsada:** WP nie jest piątym strumieniem wykonywanym przez dodatkową osobę. Rezerwuje H0–2 i H22–26 dawnego przydziału QA. Jeśli Michał wybierze inny strumień, trzeba zamienić jego kolidujące zadania z wykonawcą QA według [harmonogramu](README.md). Łączny budżet wszystkich prac WP wynosi 6 osobogodzin. Nie gwarantuje ukończenia WP-M01…03; po jego wyczerpaniu przekazać braki, bez zaliczania zależnego PoC.
 
 ## 5. Połączenie gałęzi i końcowy odbiór
 

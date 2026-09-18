@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "provenance": "live",
+  "executionMode": "standalone_tools",
+  "omIntegration": "not_connected",
+  "baselineId": null,
+  "acceptanceCriteria": "not_evaluated",
+  "scope": {
+    "tenantId": "1aa2a401-7f49-4c69-ade8-8bc5d6619a59",
+    "organizationId": "e7d98d7e-becb-4dc4-9e33-50a14b3cd42c",
+    "projectId": "ee40ae87-a4e3-463b-8a4e-94af24a3bc11"
+  },
+  "attemptId": "37ee2492-894b-4da7-912e-6cc1191426de",
+  "siteId": "f2fc8042a970d4ff2f9ae85d5c38c345b810895644a96ab2e3a503ef5fd7391d",
+  "toolExecutionId": "3d58574d-c9f8-4c35-addc-49f9da54b2da",
+  "site": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "f2fc8042a970d4ff2f9ae85d5c38c345b810895644a96ab2e3a503ef5fd7391d",
+    "scope": {
+      "tenantId": "1aa2a401-7f49-4c69-ade8-8bc5d6619a59",
+      "organizationId": "e7d98d7e-becb-4dc4-9e33-50a14b3cd42c",
+      "projectId": "ee40ae87-a4e3-463b-8a4e-94af24a3bc11"
+    },
+    "attemptId": "37ee2492-894b-4da7-912e-6cc1191426de",
+    "toolExecutionId": "3d58574d-c9f8-4c35-addc-49f9da54b2da",
+    "studioSiteId": "3a2083c3-ef8e-41cd-9658-00ab86679558",
+    "localUrl": "http://localhost:8884",
+    "themeSlug": "om-studio",
+    "themeCommit": "b577f35a9275d1c1367b54aeabe4d259893f24e7",
+    "createdAt": "2026-09-18T22:49:09.515Z",
+    "checks": [
+      {
+        "checkId": "studio.create",
+        "status": "passed",
+        "checkedAt": "2026-09-18T22:49:09.515Z"
+      },
+      {
+        "checkId": "theme.scaffold",
+        "status": "passed",
+        "checkedAt": "2026-09-18T22:49:09.515Z"
+      },
+      {
+        "checkId": "theme.git",
+        "status": "passed",
+        "checkedAt": "2026-09-18T22:49:09.515Z"
+      },
+      {
+        "checkId": "theme.activate",
+        "status": "passed",
+        "checkedAt": "2026-09-18T22:49:09.515Z"
+      }
+    ]
+  },
+  "snapshot": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "f2fc8042a970d4ff2f9ae85d5c38c345b810895644a96ab2e3a503ef5fd7391d",
+    "toolExecutionId": "8b2e9a85-d111-4005-a6c6-5b045306fdf5",
+    "creationAttemptId": "37ee2492-894b-4da7-912e-6cc1191426de",
+    "sourceRevision": {
+      "kind": "snapshot",
+      "contentHash": "7978f23e7115c5823336c5895efcf35945aa626a6bad207547530e2447aa52c1",
+      "externalWorkspaceId": "f2fc8042a970d4ff2f9ae85d5c38c345b810895644a96ab2e3a503ef5fd7391d"
+    },
+    "themeFiles": {
+      "assets/css/base.css": "1694366ce9e16a1ffbdeafe3089a0fac2b141631b08b3856fe6b17c04cbad252",
+      "assets/css/layout.css": "69b2645603f0d4b5da7848d6032ba18f339fa6ead396e984652d01e682976990",
+      "functions.php": "eec7de66e121a90a3eb46565bed11eace0527c77c61701425ac5cda937b77014",
+      "inc/setup.php": "63d46d2be53b1a031d3897bf8124c90fd0fda19e4ab6c430d1f9f0349545459a",
+      "parts/footer.html": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1",
+      "parts/header.html": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e",
+      "style.css": "16396d7344a3aa3c4bd2818d512f44b47d88ccbd40ade50b9d66d85f1352dc66",
+      "templates/front-page.html": "deec8912e197f3dbe184b1d004ea2952b25d3a9fd67dafc4e2e42a22474cb5e9",
+      "templates/index.html": "8c1cd9a1f94330fe936acd5466ffabca73cf2838b8d5b2c09bfcc1953b38cc0b",
+      "theme.json": "ce90b7c9fefc81fbe2016373abca036b9b756cb8be592148b72ca17c8f68ef62"
+    },
+    "databaseHash": "46d1bd50f298304e03d763eafe97a8032dd9f8c5898bcae1a72a3ed8192af8e9",
+    "capturedAt": "2026-09-18T23:03:44.610Z"
+  },
+  "preview": {
+    "status": "not_published",
+    "verified": false
+  },
+  "status": "created",
+  "checks": [
+    {
+      "checkId": "studio.create",
+      "status": "passed",
+      "checkedAt": "2026-09-18T22:49:09.515Z"
+    },
+    {
+      "checkId": "theme.scaffold",
+      "status": "passed",
+      "checkedAt": "2026-09-18T22:49:09.515Z"
+    },
+    {
+      "checkId": "theme.git",
+      "status": "passed",
+      "checkedAt": "2026-09-18T22:49:09.515Z"
+    },
+    {
+      "checkId": "theme.activate",
+      "status": "passed",
+      "checkedAt": "2026-09-18T22:49:09.515Z"
+    },
+    {
+      "checkId": "snapshot.capture",
+      "status": "passed",
+      "checkedAt": "2026-09-18T23:03:44.610Z"
+    },
+    {
+      "checkId": "http.local",
+      "status": "passed",
+      "checkedAt": "2026-09-18T23:04:37.613Z"
+    }
+  ],
+  "httpCheck": {
+    "statusCode": 200,
+    "bytes": 28422
+  }
+}

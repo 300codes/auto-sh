@@ -50,7 +50,7 @@ Oficjalna dokumentacja opisuje `use_figma`, tworzenie natywnych elementów przez
 
 Wniosek projektowy: przewidzieć stanowisko designera z obsługiwanym klientem, zdalnym MCP i Full seat; w pierwszym timeboxie sprawdzić utworzenie ekranu oraz pobranie dowodu. Nie budować własnego edytora Figmy ani nie zakładać, że zakup Professional sam rozwiązuje konfigurację klienta i uprawnień. Nie wykonano zakupu ani zapisu w Figmie podczas tego researchu.
 
-## WordPress: konkretne aktywa do ponownego użycia
+## WordPress: historyczne aktywa — superseded jako integracja runtime
 
 Ścieżki w tej sekcji są względne wobec `/var/www/html/ai-tools/ai-wordpress-orchestrator`.
 
@@ -64,17 +64,23 @@ Wniosek projektowy: przewidzieć stanowisko designera z obsługiwanym klientem, 
 | Historyczne E2E | `docs/studio-preview.md:99,128–131` | Opis udanej publikacji i aktualizacji tego samego hosta 2026-09-08. Termin ważności 2026-09-15: nie jest to bieżący dowód dostępności. |
 | Testy lokalne | `package.json`; `docs/orchestration-evidence.md` | Istnieją lint/unit/orchestration i testy preview. Testy z atrapami nie dowodzą działającej inferencji, Studio ani aktualnego publicznego URL. |
 
-Preferowany PoC: przygotowane stanowisko WordPress i jawny import wybranego raportu oraz referencji preview do OM. Automatyczne pobranie przez lokalny adapter tylko po sprawdzeniu istniejącego mechanizmu sesji. API narzędzia jest lokalne i prywatne; nie wystawiać go publicznie ani kopiować mechanizmu sesji do aplikacji wielotenantowej. OM przechowuje identyfikatory i zweryfikowane dowody, a wykonanie WP pozostaje w istniejącym narzędziu.
+**Historyczna propozycja, superseded decyzją użytkownika 2026-09-19; nie wykonywać:** przygotowane stanowisko WordPress i jawny import wybranego raportu oraz referencji preview do OM. Automatyczne pobranie przez lokalny adapter tylko po sprawdzeniu istniejącego mechanizmu sesji. API narzędzia jest lokalne i prywatne; nie wystawiać go publicznie ani kopiować mechanizmu sesji do aplikacji wielotenantowej. OM przechowuje identyfikatory i zweryfikowane dowody, a wykonanie WP pozostaje w istniejącym narzędziu.
 
 Nie kopiować wprost downloadera obrazów do backendu OM: zewnętrzne adresy z wyniku modelu wymagają ograniczeń SSRF, redirectów, rozmiaru i typu danych. Przy ręcznym imporcie walidować pliki i ich powiązanie z projektem/baseline tak samo jak przy automatycznym.
 
+## Aktualizacja WP — 2026-09-19
+
+Obowiązuje [plan narzędzi Studio](../wordpress-studio-tools/plan.md): własny pakiet Studio CLI i nowa witryna, bez starego runtime/API/DB/kolejki/projektów. Przenośne referencje: `workspaces/studioAdapter.js`, `preview/studioCli.js`, `workspaces/snapshots.js`, scaffold w `wordpress/studio.js` i `git/service.js`; `workspaces/service.js` jest sprzężony z dawną DB i lifecycle. Nie przenosimy go jako gotowego silnika. Szczegółowe ustalenia i ograniczenia są w [nowym researchu](../wordpress-studio-tools/research.md).
+
+Budżet wszystkich prac WP wynosi 6 h, bez gwarancji ukończenia całego PoC. Niezależny pakiet i smoke bez wywołań starego serwera można wykonać wcześniej; powiązanie z task/attempt/baseline i wykonaniem OSS/enterprise wymaga ich gotowych kontraktów. Fixture oraz smoke nie zaliczają integracji ani Progress.
+
 ## Kolejność zatwierdzona przez użytkownika
 
-1. H0–H3: równoległe próby Cezar headless, Figma write/read, uruchomienie OM i odtworzenie WordPress preview; decyzja o automatycznym lub ręcznym transferze Cezara.
+1. H0–H3: równoległe próby Cezar headless, Figma write/read, uruchomienie OM i readiness własnych narzędzi Studio; decyzja o automatycznym lub ręcznym transferze Cezara.
 2. H3–H10: minimalny model OSS, wspólny pakiet wejścia/wyniku, szkielety UI i granica enterprise. Cztery osoby mają rozłączne obszary odpowiedzialności.
 3. H6–H16: oba wejścia, agentowy design i zamrożony baseline z decyzją człowieka.
 4. H8–H24: React end-to-end przez Cezara, obiektywne walidacje, niezależne review i jedna pętla poprawki.
-5. H20–H28: raport dowodów, preview, PoC OM i adapter/import WordPress. Rozszerzenie WP tylko w wyznaczonym timeboxie.
+5. H20–H28: raport dowodów, preview, PoC OM i własne narzędzia WordPress; zależny PoC po podłączeniu OSS/enterprise. Rozszerzenie WP tylko w wyznaczonym timeboxie.
 6. H28–H36: zamrożenie funkcji, testy obu wejść, próba demo, bufor i akceptacja.
 
 Okna zachodzą na siebie między różnymi właścicielami. Szczegółowy plan musi rozliczyć osobogodziny oraz zostawić bufor; nie zakładać czterech pełnych 36-godzinnych zmian bez odpoczynku.
