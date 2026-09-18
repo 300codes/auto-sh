@@ -286,8 +286,8 @@ Ustalone przed H0, poza tym planem:
 #### Automated
 
 - [ ] 1.1 Krok 0 zapisany: `whoami` zwrócił tożsamość, seat i plan zgodne z kontem demo; wynik `create_new_file` zapisany.
-- [ ] 1.2 `figma-readiness.md` i `evidence/figma/` istnieją; pola stanowiska, konta i wersji klientów wypełnione.
-- [ ] 1.3 `git grep` po wzorcach sekretów w `hackathon/delivery-demo` nie zwraca trafień.
+- [x] 1.2 `figma-readiness.md` i `evidence/figma/` istnieją; pola stanowiska, konta i wersji klientów wypełnione.
+- [x] 1.3 `git grep` po wzorcach sekretów w `hackathon/delivery-demo` nie zwraca trafień.
 - [ ] 1.4 Klient podstawowy listuje narzędzie zapisu Figmy; wynik i wskazanie klienta podstawowego zapisane w artefakcie.
 
 #### Manual

@@ -1,7 +1,7 @@
 ---
 id: autonomous-software-delivery
 title: "Autonomous Software Delivery — hackathon 36 h"
-status: plan_reviewed
+status: implementing
 created: 2026-09-18
 updated: 2026-09-19
 ---
