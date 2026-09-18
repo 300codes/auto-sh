@@ -312,10 +312,10 @@ Ustalone przed H0, poza tym planem:
 
 #### Automated
 
-- [ ] 3.1 `figma-readiness.md` ma statusy `write` i `update` oraz osobną sekcję headless z wynikiem i przyczyną.
-- [ ] 3.2 `readiness.md` zawiera jedną linię ze statusami `write` i `update` oraz działającym odnośnikiem.
-- [ ] 3.3 Wynik drugiego klienta zapisany jako osobny fakt (`ok` / `failed` z przyczyną / `not_attempted`).
-- [ ] 3.4 Skan `git grep` na komplecie artefaktów nie zwraca trafień.
+- [x] 3.1 `figma-readiness.md` ma statusy `write` i `update` oraz osobną sekcję headless z wynikiem i przyczyną.
+- [x] 3.2 `readiness.md` zawiera jedną linię ze statusami `write` i `update` oraz działającym odnośnikiem.
+- [x] 3.3 Wynik drugiego klienta zapisany jako osobny fakt (`ok` / `failed` z przyczyną / `not_attempted`).
+- [x] 3.4 Skan `git grep` na komplecie artefaktów nie zwraca trafień.
 
 #### Manual
 
