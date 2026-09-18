@@ -27,3 +27,4 @@ Strictly additive; not mirrored into the create-app template. Not in scope: `pac
 | Task | Note |
 |------|------|
 | OSS-01 (T001) | [`handover/OSS-01-readiness.md`](handover/OSS-01-readiness.md) — environment, runner, ports, queue settings, baseline build, gate timing, H3 blockers, patch text for `hackathon/delivery-demo/readiness.md` |
+| OSS-01 (T003) | [`handover/OSS-01-api-and-tests.md`](handover/OSS-01-api-and-tests.md) — frozen v1 API paths R1–R22, internal commands, planned test files per layer; specs `.ai/specs/2026-09-18-delivery-os-hackathon.md` and `.ai/specs/enterprise/2026-09-18-delivery-agents-hackathon.md` |
