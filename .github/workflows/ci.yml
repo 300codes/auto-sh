@@ -283,7 +283,7 @@ jobs:
       should_run: ${{ steps.dependency-files.outputs.should_run }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Fetch comparison ref
         if: github.event_name == 'pull_request'
