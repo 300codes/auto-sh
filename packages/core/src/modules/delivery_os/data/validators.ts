@@ -23,6 +23,8 @@ import {
   isoDateTimeSchema,
   proposalQuestionSchema,
   proposalRiskSchema,
+  PUBLICATION_LIST_MAX_PAGE_SIZE,
+  publicationResultV1Schema,
   reconciliationResolutionSchema,
   repoRelativePathSchema,
   requirementSchema,
@@ -618,3 +620,21 @@ export const commentThreadTriageCommandSchema = z.object({
   triage: commentThreadTriageRequestSchema,
 })
 export type CommentThreadTriageCommandInput = z.infer<typeof commentThreadTriageCommandSchema>
+
+export const recordPublicationCommandInputSchema = z
+  .object({
+    projectId: uuidSchema,
+    publication: publicationResultV1Schema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.publication.projectId.toLowerCase() !== value.projectId.toLowerCase()) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['publication', 'projectId'], 'Publication belongs to another project')
+    }
+  })
+export type RecordPublicationCommandInput = z.infer<typeof recordPublicationCommandInputSchema>
+
+export const publicationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(PUBLICATION_LIST_MAX_PAGE_SIZE).default(50),
+})
+export type PublicationListQuery = z.infer<typeof publicationListQuerySchema>

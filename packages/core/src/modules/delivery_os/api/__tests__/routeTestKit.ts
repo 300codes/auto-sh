@@ -14,6 +14,7 @@ import {
   DeliveryFlowStageDecision,
   DeliveryIntake,
   DeliveryProject,
+  DeliveryPublication,
   DeliveryStaffLink,
   DeliveryTask,
 } from '../../data/entities'
@@ -64,10 +65,11 @@ type RouteStore = {
   staffLinks: Row[]
   commentThreads: Row[]
   commentReplies: Row[]
+  publications: Row[]
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [], publications: [] }
 }
 
 export const routeState: {
@@ -80,6 +82,7 @@ export const routeState: {
   staffAccess: StaffAccessResolverMock | null
   kanbanAdapter: DeliveryStaffKanbanAdapter | null
   writes: number
+  flowTemplateProvider: unknown
 } = {
   auth: null,
   features: [],
@@ -90,6 +93,7 @@ export const routeState: {
   staffAccess: null,
   kanbanAdapter: null,
   writes: 0,
+  flowTemplateProvider: null,
 }
 
 function rowsFor(entity: unknown): Row[] {
@@ -106,11 +110,12 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryStaffLink) return store.staffLinks
   if (entity === DeliveryCommentThread) return store.commentThreads
   if (entity === DeliveryCommentReply) return store.commentReplies
+  if (entity === DeliveryPublication) return store.publications
   throw new Error('[internal] unexpected entity in route test store')
 }
 
-/** Only the stage history and comment entities honour `orderBy`; the v1 suites rely on insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryCommentThread, DeliveryCommentReply])
+/** Only the stage history, comment and publication entities honour `orderBy`; the v1 suites rely on insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryCommentThread, DeliveryCommentReply, DeliveryPublication])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()
@@ -232,6 +237,7 @@ export const containerMock = {
         return createDeliveryOsFlowQueries(em)
       }
       if (name === 'deliveryFlowTemplateProvider') {
+        if (routeState.flowTemplateProvider) return routeState.flowTemplateProvider
         const { createBuiltInFlowTemplateProvider } = jest.requireActual('../../commands/flowTemplateProvider')
         return createBuiltInFlowTemplateProvider()
       }
@@ -273,6 +279,7 @@ export function resetRouteState(): void {
   routeState.staffAccess = null
   routeState.kanbanAdapter = null
   routeState.writes = 0
+  routeState.flowTemplateProvider = null
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()
   routeState.queryEngine.query.mockReset()

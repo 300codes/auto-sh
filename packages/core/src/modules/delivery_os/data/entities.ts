@@ -15,6 +15,7 @@ import type {
   IntakeStep,
   PlatformChoice,
   PlatformRecommendation,
+  PublicationResultV1,
   SourceRevision,
   StageArtifactDependency,
   StageArtifactV1,
@@ -743,6 +744,73 @@ export class DeliveryCommentReply {
 
   @Property({ name: 'fetched_at', type: Date })
   fetchedAt!: Date
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
+export type DeliveryPublicationTarget = PublicationResultV1['target']
+export type DeliveryPublicationVerification = PublicationResultV1['verification']
+
+@Entity({ tableName: 'delivery_publications' })
+@Index({
+  name: 'delivery_publications_scope_project_created_idx',
+  properties: ['tenantId', 'organizationId', 'projectId', 'createdAt'],
+})
+@Unique({
+  name: 'delivery_publications_scope_project_payload_hash_uq',
+  properties: ['tenantId', 'organizationId', 'projectId', 'payloadHash'],
+})
+export class DeliveryPublication {
+  [OptionalProps]?: 'createdAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ name: 'baseline_id', type: 'uuid' })
+  baselineId!: string
+
+  @Property({ name: 'source_revision', type: 'jsonb' })
+  sourceRevision!: SourceRevision
+
+  @Property({ name: 'snapshot_ref', type: 'jsonb', nullable: true })
+  snapshotRef?: AttachmentRef | null
+
+  @Property({ type: 'jsonb' })
+  target!: DeliveryPublicationTarget
+
+  @Property({ type: 'text' })
+  url!: string
+
+  @Property({ name: 'deploy_decision_id', type: 'uuid' })
+  deployDecisionId!: string
+
+  @Property({ name: 'deployment_evidence_id', type: 'uuid' })
+  deploymentEvidenceId!: string
+
+  @Property({ type: 'jsonb' })
+  verification!: DeliveryPublicationVerification
+
+  @Property({ name: 'published_at', type: Date })
+  publishedAt!: Date
+
+  @Property({ name: 'published_by', type: 'uuid', nullable: true })
+  publishedBy?: string | null
+
+  @Property({ name: 'payload_hash', type: 'text' })
+  payloadHash!: string
+
+  @Property({ name: 'recorded_by', type: 'uuid', nullable: true })
+  recordedBy?: string | null
 
   @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
   createdAt: Date = new Date()

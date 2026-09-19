@@ -41,7 +41,8 @@ import { hashFlowTemplate } from '../../lib/flowRules'
 import { DEFAULT_FLOW_TEMPLATE } from '../../lib/flowTemplates'
 import { TARGET_PROFILES } from '../../lib/targetProfiles'
 import { issueTrustedExecution } from '../../lib/trustedExecution'
-import type { AttemptReconcileResult, AttemptReserveResult } from '../attempts'
+import type { AttemptReserveResult } from '../attempts'
+import type { AttemptReconcileResult } from '../reconcile'
 import type { DecisionCommandResult } from '../decisions'
 import { createDeliveryOsReportQueries } from '../reportQueries'
 import type { TaskCommandResult } from '../tasks'
@@ -387,6 +388,19 @@ describe('flow gate on the v1 dispatch and publish paths (C21, UA-48)', () => {
       key_visual: 'stage_not_approved',
       design_system_ui: 'stage_not_approved',
     })
+    expect(stageDetails(error).map((detail) => detail.message)).toEqual(FLOW_APPROVAL_STAGE_ORDER.map((stageId) => `Stage ${stageId} is missing (pinned template snapshot is unreadable)`))
+  })
+
+  it('fails closed when the pinned template ref is incomplete even though every stage is approved', async () => {
+    store.projects[0] = pinnedProject({ flowTemplateHash: '' })
+    seedStages('none')
+    await expectAllFourRefused({
+      scope: 'stage_not_approved',
+      ux: 'stage_not_approved',
+      key_visual: 'stage_not_approved',
+      design_system_ui: 'stage_not_approved',
+    })
+    const error = await catchHttpError(runReady)
     expect(stageDetails(error).map((detail) => detail.message)).toEqual(FLOW_APPROVAL_STAGE_ORDER.map((stageId) => `Stage ${stageId} is missing (pinned template snapshot is unreadable)`))
   })
 

@@ -99,7 +99,7 @@ export type AcceptOutcome = {
 
 const RESULT_MANIFEST_UNIQUE_INDEX = 'delivery_evidence_result_manifest_uq'
 
-const evidenceCrudIndexer: CrudIndexerConfig<DeliveryEvidence> = {
+export const evidenceCrudIndexer: CrudIndexerConfig<DeliveryEvidence> = {
   entityType: E.delivery_os.delivery_evidence,
 }
 
@@ -507,6 +507,21 @@ async function recordEvidenceInTransaction(
   scope: DeliveryScope,
 ): Promise<RecordOutcome> {
   const project = await lockScopedProject(tx, projectId, scope)
+  return recordEvidenceWithinTransaction(tx, ctx, project, input, scope)
+}
+
+/**
+ * Records evidence for a project row the caller already holds under its transaction lock. The publication command
+ * (F14) uses it to write the derived v1 `deployment` evidence and the publication row in ONE transaction; the public
+ * `delivery_os.evidence.record` command locks the project and delegates here.
+ */
+export async function recordEvidenceWithinTransaction(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  project: DeliveryProject,
+  input: RecordEvidenceInput,
+  scope: DeliveryScope,
+): Promise<RecordOutcome> {
   const payloadHash = hashEvidenceIdentity(input)
   if (payloadHash === null) {
     throw deliveryHttpError(

@@ -8,6 +8,7 @@ import type {
   DeliveryFlowStageDecision,
   DeliveryIntake,
   DeliveryProject,
+  DeliveryPublication,
   DeliveryTask,
 } from '../data/entities'
 import { parseAttemptRegister } from '../lib/attempts'
@@ -15,9 +16,11 @@ import {
   baselineContentV1Schema,
   clientApprovalSchema,
   type ClientApproval,
+  DELIVERY_FLOW_SCHEMA_VERSIONS,
   type CommentThreadListItem,
   type CommentThreadReplyItem,
   type IntakeResponse,
+  type PublicationListItem,
   type StageArtifactListItem,
   type StageDecisionListItem,
 } from '../lib/contracts'
@@ -230,5 +233,25 @@ export function serializeCommentThread(row: DeliveryCommentThread, replies: Deli
     linkedDeliveryTaskId: row.linkedDeliveryTaskId ?? null,
     replies: replies.map(serializeCommentReply),
     updatedAt: requireIso(row.updatedAt),
+  }
+}
+
+export function serializePublication(row: DeliveryPublication): PublicationListItem {
+  return {
+    schemaVersion: DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult,
+    publicationId: row.id,
+    projectId: row.projectId,
+    baselineId: row.baselineId,
+    sourceRevision: row.sourceRevision,
+    snapshotRef: row.snapshotRef ?? null,
+    target: row.target,
+    url: row.url,
+    deployDecisionId: row.deployDecisionId,
+    deploymentEvidenceId: row.deploymentEvidenceId,
+    publishedAt: requireIso(row.publishedAt),
+    publishedBy: row.publishedBy ?? null,
+    verification: row.verification,
+    recordedBy: row.recordedBy ?? null,
+    createdAt: requireIso(row.createdAt),
   }
 }
