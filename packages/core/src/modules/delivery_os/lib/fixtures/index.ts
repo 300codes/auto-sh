@@ -20,6 +20,9 @@ import {
   type ResultManifestV1,
   type TaskPackageV1,
 } from '../contracts'
+import { hashBaseline } from '../baseline'
+import type { PlanProposalContext } from '../proposals'
+import { getTargetProfile } from '../targetProfiles'
 import taskPackageJson from './task-package.v1.json'
 import taskPackageSnapshotJson from './task-package.snapshot.v1.json'
 import resultManifestJson from './result-manifest.v1.json'
@@ -44,8 +47,12 @@ import planProposalSelfCycleJson from './negative/plan-proposal.self-cycle.v1.js
 import planProposalPathTraversalJson from './negative/plan-proposal.path-traversal.v1.json'
 import planProposalAbsolutePathJson from './negative/plan-proposal.absolute-path.v1.json'
 import planProposalOutsideProfileRootsJson from './negative/plan-proposal.outside-profile-roots.v1.json'
+import planProposalForeignBaselineJson from './negative/plan-proposal.foreign-baseline.v1.json'
+import planProposalPathEscapeJson from './negative/plan-proposal.path-escape.v1.json'
+import planProposalFalseTestMappingJson from './negative/plan-proposal.false-test-mapping.v1.json'
 
 export { buildResultManifest, deriveFakeResultRevision, type ResultManifestOverrides } from './builders'
+export type { PlanProposalContext } from '../proposals'
 
 export const positiveDeliveryFixtures = [
   { name: 'task-package', schema: taskPackageV1Schema, document: taskPackageJson },
@@ -93,6 +100,20 @@ export function loadPlanProposalFixture(): PlanProposalV1 {
   return parseFixture(planProposalV1Schema, planProposalJson, 'plan-proposal')
 }
 
+export const PLAN_PROPOSAL_FIXTURE_BASELINE_ID = '66666666-6666-4666-8666-666666666666'
+
+export function loadPlanProposalContextFixture(): PlanProposalContext {
+  const plan = loadPlanProposalFixture()
+  const profile = getTargetProfile('react-vite', 1)
+  if (!profile) throw new Error('[internal] react-vite@1 target profile is missing')
+  const content = { ...loadBaselineContentFixture(), planSummary: null, acTestMap: {}, manualChecks: {}, declaredTests: [] }
+  return {
+    project: { id: plan.projectId, targetProfileId: profile.id, targetProfileVersion: profile.version },
+    baseline: { id: PLAN_PROPOSAL_FIXTURE_BASELINE_ID, projectId: plan.projectId, contentHash: hashBaseline(content), content },
+    profile,
+  }
+}
+
 export function loadDesignManifestFixture(): DesignManifestV1 {
   return parseFixture(designManifestV1Schema, designManifestJson, 'design-manifest')
 }
@@ -115,7 +136,7 @@ export function buildExecutionWidgetContextFixture(
   )
 }
 
-export const negativeFixtureStages = ['schema', 'profile', 'correlation', 'dag', 'idempotency'] as const
+export const negativeFixtureStages = ['schema', 'profile', 'correlation', 'dag', 'idempotency', 'proposal'] as const
 export type NegativeFixtureStage = (typeof negativeFixtureStages)[number]
 
 export const negativeDeliveryFixtureSchema = z.object({
@@ -146,6 +167,9 @@ const negativeFixtureDocuments = {
   'plan-proposal.path-traversal': planProposalPathTraversalJson,
   'plan-proposal.absolute-path': planProposalAbsolutePathJson,
   'plan-proposal.outside-profile-roots': planProposalOutsideProfileRootsJson,
+  'plan-proposal.foreign-baseline': planProposalForeignBaselineJson,
+  'plan-proposal.path-escape': planProposalPathEscapeJson,
+  'plan-proposal.false-test-mapping': planProposalFalseTestMappingJson,
 } as const
 
 export type NegativeDeliveryFixtureName = keyof typeof negativeFixtureDocuments

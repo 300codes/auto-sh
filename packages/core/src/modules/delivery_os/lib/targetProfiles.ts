@@ -6,10 +6,10 @@ import {
   repoRelativePathSchema,
   validationCheckDefinitionSchema,
   type DeliveryCheckResult,
-  type DeliveryErrorDetail,
   type DeliveryEvidenceKind,
   type SourceRevision,
 } from './contracts'
+import { validateAllowedPaths } from './allowedPaths'
 
 const ROOT_WILDCARD_SUFFIX = '/**'
 
@@ -175,16 +175,7 @@ export function isPathWithinProfileRoots(profile: TargetProfile, path: string): 
 }
 
 export function checkAllowedPathsForProfile(profile: TargetProfile, paths: readonly string[]): DeliveryCheckResult {
-  const details: DeliveryErrorDetail[] = []
-  paths.forEach((path, index) => {
-    if (!repoRelativePathSchema.safeParse(path).success) {
-      details.push({ path: String(index), code: 'path_not_allowed', message: 'Path must be repository-relative without parent segments' })
-    } else if (!isPathWithinProfileRoots(profile, path)) {
-      details.push({ path: String(index), code: 'path_not_allowed', message: `Path is outside the ${profile.id} roots` })
-    }
-  })
-  if (details.length === 0) return { ok: true }
-  return { ok: false, ...buildDeliveryError('path_not_allowed', 'Path is not allowed for the target profile', details) }
+  return validateAllowedPaths(paths, profile)
 }
 
 export function isEvidenceKindPermitted(profile: TargetProfile, kind: DeliveryEvidenceKind): boolean {

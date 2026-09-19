@@ -19,6 +19,8 @@ export const DELIVERY_EXECUTION_CONTEXT_CONTRACT = DELIVERY_SCHEMA_VERSIONS.exec
 
 export const MAX_EXECUTION_ATTEMPTS = 16
 
+export const MAX_PLAN_PROPOSAL_TASKS = 100
+
 export const deliveryErrorCodes = {
   validation_failed: 400,
   idempotency_key_required: 400,
@@ -549,7 +551,7 @@ export const planProposalV1Schema = z
     baselineHash: sha256Schema,
     manifestId: manifestIdSchema,
     architectureSummary: longTextSchema,
-    tasks: z.array(planProposalTaskSchema).min(1).max(100),
+    tasks: z.array(planProposalTaskSchema).min(1).max(MAX_PLAN_PROPOSAL_TASKS),
     acTestMap: acTestMapSchema,
     declaredTests: z.array(declaredTestSchema).max(1000),
     producedBy: producedBySchema.optional(),

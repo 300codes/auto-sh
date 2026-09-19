@@ -19,6 +19,7 @@ import {
 import { hashCanonical } from '../hash'
 import { checkAcyclic } from '../dag'
 import { checkResultCorrelation } from '../resultAcceptance'
+import { validatePlanProposal } from '../proposals'
 import { assertRevisionKind, checkAllowedPathsForProfile, getTargetProfile, type TargetProfile } from '../targetProfiles'
 import {
   buildExecutionWidgetContextFixture,
@@ -26,6 +27,7 @@ import {
   loadBaselineContentFixture,
   loadErrorBodyFixture,
   loadNegativeDeliveryFixtures,
+  loadPlanProposalContextFixture,
   loadPlanProposalFixture,
   loadReserveResponseFixture,
   loadResultManifestFixture,
@@ -75,7 +77,10 @@ function runProfileStage(profile: TargetProfile, document: unknown, schemaVersio
   }
   if (schemaVersion === DELIVERY_SCHEMA_VERSIONS.planProposal) {
     const proposal = document as PlanProposalV1
-    return checkAllowedPathsForProfile(profile, proposal.tasks.flatMap((task) => task.allowedPaths))
+    const failures = proposal.tasks
+      .map((task) => checkAllowedPathsForProfile(profile, task.allowedPaths))
+      .filter((result) => !result.ok)
+    return failures[0] ?? { ok: true }
   }
   throw new Error(`[internal] no profile stage for ${schemaVersion}`)
 }
@@ -89,6 +94,11 @@ function runIdempotencyStage(pair: { idempotencyKey: string; first: unknown; sec
   const secondHash = hashCanonical(reserveAttemptRequestSchema.parse(pair.second))
   if (firstHash === secondHash) return { ok: true }
   return { ok: false, ...buildDeliveryError('idempotency_conflict', 'Idempotency key reused with a different payload') }
+}
+
+function runProposalStage(document: unknown): DeliveryCheckResult {
+  const result = validatePlanProposal(document, loadPlanProposalContextFixture())
+  return result.ok ? { ok: true } : result
 }
 
 function runLabelledStage(fixture: NegativeDeliveryFixture, data: unknown): DeliveryCheckResult {
@@ -106,6 +116,8 @@ function runLabelledStage(fixture: NegativeDeliveryFixture, data: unknown): Deli
       return runDagStage(data as PlanProposalV1)
     case 'idempotency':
       return runIdempotencyStage(data as { idempotencyKey: string; first: unknown; second: unknown })
+    case 'proposal':
+      return runProposalStage(fixture.document)
     default:
       throw new Error(`[internal] unexpected stage ${fixture.expected.stage}`)
   }
@@ -203,6 +215,9 @@ describe('negative delivery fixtures', () => {
       'dag:cycle',
       'schema:path_not_allowed',
       'profile:path_not_allowed',
+      'proposal:foreign_reference',
+      'proposal:path_not_allowed',
+      'proposal:unknown_test_id',
     ]) {
       expect(labels).toContain(label)
     }
@@ -243,6 +258,7 @@ describe('negative delivery fixtures', () => {
     const plan = loadPlanProposalFixture()
     const react = requireProfile('react-vite', 1)
     expect(runDagStage(plan)).toEqual({ ok: true })
+    expect(runProposalStage(loadPlanProposalFixture())).toEqual({ ok: true })
     expect(runProfileStage(react, plan, DELIVERY_SCHEMA_VERSIONS.planProposal)).toEqual({ ok: true })
     expect(runProfileStage(react, loadResultManifestFixture(), DELIVERY_SCHEMA_VERSIONS.resultManifest)).toEqual({ ok: true })
     const body = { mode: 'manual_handoff', baseRevision: loadTaskPackageFixture().baseRevision }
