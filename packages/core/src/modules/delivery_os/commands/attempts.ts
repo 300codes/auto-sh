@@ -7,6 +7,7 @@ import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { DeliveryTask } from '../data/entities'
 import {
+  cancelAttemptCommandSchema,
   claimAttemptCommandSchema,
   linkAttemptWorkflowCommandSchema,
   markAttemptDeliveryCommandSchema,
@@ -19,6 +20,7 @@ import {
   linkAttemptWorkflow,
   markAttemptDelivery,
   parseAttemptRegister,
+  requestCancellation,
   reserveAttempt,
   type AttemptChangeResult,
   type AttemptRegister,
@@ -71,6 +73,14 @@ function requireIdempotencyKey(rawInput: unknown): void {
   throw deliveryHttpError(
     buildDeliveryError('idempotency_key_required', 'The Idempotency-Key header is required', [
       { path: 'idempotencyKey', code: 'idempotency_key_required' },
+    ]),
+  )
+}
+
+function unreadableRegisterError(): ReturnType<typeof deliveryHttpError> {
+  return deliveryHttpError(
+    buildDeliveryError('reconciliation_required', 'Reconcile the unknown attempt before continuing', [
+      { path: 'executionAttempts', code: 'unreadable_attempt_register' },
     ]),
   )
 }
@@ -138,13 +148,7 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
       const project = await lockScopedProject(tx, found.projectId, scope)
       const task = await lockScopedTask(tx, parsed.taskId, scope)
       const register = parseAttemptRegister(task.executionAttempts)
-      if (!register.ok) {
-        throw deliveryHttpError(
-          buildDeliveryError('reconciliation_required', 'Reconcile the unknown attempt before continuing', [
-            { path: 'executionAttempts', code: 'unreadable_attempt_register' },
-          ]),
-        )
-      }
+      if (!register.ok) throw unreadableRegisterError()
       const baseline = await findProjectBaseline(tx, task.baselineId, project.id, scope)
       const reservation = reserveAttempt(register.register, {
         idempotencyKey: parsed.idempotencyKey,
@@ -262,6 +266,88 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
 
 registerCommand(reserveAttemptCommand)
 
+export type AttemptCancelResult = {
+  taskId: string
+  attemptId: string
+  changed: boolean
+  state: 'cancel_requested'
+  stopConfirmation: 'stop_unconfirmed'
+  cancellationRequestedAt: string
+  taskStatus: TaskStatus
+  taskUpdatedAt: string
+  attempt: ExecutionAttempt
+}
+
+function toCancelResult(task: DeliveryTask, attempt: ExecutionAttempt, changed: boolean): AttemptCancelResult {
+  if (attempt.state !== 'cancel_requested' || attempt.stopConfirmation !== 'stop_unconfirmed' || !attempt.cancellationRequestedAt) {
+    throw unreadableRegisterError()
+  }
+  return {
+    taskId: task.id,
+    attemptId: attempt.attemptId,
+    changed,
+    state: attempt.state,
+    stopConfirmation: attempt.stopConfirmation,
+    cancellationRequestedAt: attempt.cancellationRequestedAt,
+    taskStatus: task.status,
+    taskUpdatedAt: (task.updatedAt ?? new Date()).toISOString(),
+    attempt,
+  }
+}
+
+const cancelAttemptCommand: CommandHandler<unknown, AttemptCancelResult> = {
+  id: 'delivery_os.attempts.cancel',
+  async execute(rawInput, ctx) {
+    const scope = resolveDeliveryScope(ctx)
+    const parsed = parseDeliveryInput(cancelAttemptCommandSchema, rawInput)
+
+    const em = resolveDeliveryEm(ctx)
+    const outcome = await em.transactional(async (tx) => {
+      const task = await lockScopedTask(tx, parsed.taskId, scope)
+      if (ctx.request) requireLockHeader(ctx)
+      const register = parseAttemptRegister(task.executionAttempts)
+      if (!register.ok) throw unreadableRegisterError()
+      const cancellation = requestCancellation(register.register, { attemptId: parsed.attemptId, now: new Date().toISOString() })
+      if (cancellation.ok && cancellation.alreadyRequested) return { task, attempt: cancellation.attempt, changed: false }
+
+      if (ctx.request) {
+        await enforceCommandOptimisticLockWithGuards(ctx.container, {
+          resourceKind: DELIVERY_TASK_RESOURCE_KIND,
+          resourceId: task.id,
+          current: task.updatedAt,
+          request: ctx.request,
+          envValue: 'all',
+        })
+      }
+      if (!cancellation.ok) throw deliveryHttpError(cancellation)
+      task.executionAttempts = cancellation.register
+      return { task, attempt: cancellation.attempt, changed: true }
+    })
+
+    if (outcome.changed) {
+      await emitTaskSideEffects(ctx, 'updated', outcome.task)
+      await emitTaskUpdated(outcome.task)
+    }
+    return toCancelResult(outcome.task, outcome.attempt, outcome.changed)
+  },
+  buildLog: async ({ input, result, ctx }) => {
+    if (!result.changed) return null
+    const scope = resolveDeliveryScope(ctx)
+    const parsed = cancelAttemptCommandSchema.safeParse(input)
+    const { translate } = await resolveTranslations()
+    return {
+      actionLabel: translate('delivery_os.audit.attempts.cancel', 'Request execution attempt cancellation'),
+      resourceKind: DELIVERY_TASK_RESOURCE_KIND,
+      resourceId: result.taskId,
+      tenantId: scope.tenantId,
+      organizationId: scope.organizationId,
+      snapshotAfter: { ...result, reason: parsed.success ? (parsed.data.reason ?? null) : null },
+    }
+  },
+}
+
+registerCommand(cancelAttemptCommand)
+
 export type AttemptInternalCommandResult = {
   taskId: string
   attemptId: string
@@ -300,13 +386,7 @@ function registerInternalAttemptCommand<TInput extends InternalAttemptInput>(con
       const outcome = await em.transactional(async (tx) => {
         const task = await lockScopedTask(tx, parsed.taskId, scope)
         const register = parseAttemptRegister(task.executionAttempts)
-        if (!register.ok) {
-          throw deliveryHttpError(
-            buildDeliveryError('reconciliation_required', 'Reconcile the unknown attempt before continuing', [
-              { path: 'executionAttempts', code: 'unreadable_attempt_register' },
-            ]),
-          )
-        }
+        if (!register.ok) throw unreadableRegisterError()
         const applied = config.apply(register.register, parsed, new Date().toISOString())
         if (!applied.ok) throw deliveryHttpError(applied)
         if (applied.changed) task.executionAttempts = applied.register

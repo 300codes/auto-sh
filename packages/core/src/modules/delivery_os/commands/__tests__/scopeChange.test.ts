@@ -258,6 +258,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       .filter((id) => id.startsWith('delivery_os.'))
       .sort()
     expect(ids).toEqual([
+      'delivery_os.attempts.cancel',
       'delivery_os.attempts.claim',
       'delivery_os.attempts.link_workflow',
       'delivery_os.attempts.mark_delivery',

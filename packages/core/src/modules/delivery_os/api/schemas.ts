@@ -145,3 +145,11 @@ export const resultAcceptResponseSchema = z.object({
   taskStatus: taskStatusSchema,
   taskUpdatedAt: isoDateTimeSchema,
 })
+
+export const attemptCancelResponseSchema = z.object({
+  attemptId: uuidSchema,
+  state: z.literal('cancel_requested'),
+  stopConfirmation: z.literal('stop_unconfirmed'),
+  taskStatus: taskStatusSchema,
+  taskUpdatedAt: isoDateTimeSchema,
+})

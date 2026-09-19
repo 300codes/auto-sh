@@ -445,6 +445,12 @@ export const cancelAttemptSchema = z.object({
 })
 export type CancelAttemptInput = z.infer<typeof cancelAttemptSchema>
 
+export const cancelAttemptCommandSchema = cancelAttemptSchema.extend({
+  taskId: uuidSchema,
+  attemptId: uuidSchema,
+})
+export type CancelAttemptCommandInput = z.infer<typeof cancelAttemptCommandSchema>
+
 export const reconcileAttemptSchema = z
   .object({
     resolution: reconciliationResolutionSchema,

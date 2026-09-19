@@ -23,7 +23,14 @@ import { LockMode } from '@mikro-orm/core'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
 import { DeliveryBaseline, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../../data/entities'
-import { closeAttempt, reconcileAttempt, recordAttemptResult, reserveAttempt } from '../../lib/attempts'
+import {
+  closeAttempt,
+  hasUnreconciledAttempt,
+  isArchiveBlocked,
+  reconcileAttempt,
+  recordAttemptResult,
+  reserveAttempt,
+} from '../../lib/attempts'
 import {
   MAX_EXECUTION_ATTEMPTS,
   reserveAttemptResponseSchema,
@@ -32,7 +39,12 @@ import {
 } from '../../lib/contracts'
 import { loadNegativeDeliveryFixtures } from '../../lib/fixtures'
 import { issueTrustedExecution } from '../../lib/trustedExecution'
-import { checkTaskReservable, type AttemptInternalCommandResult, type AttemptReserveResult } from '../attempts'
+import {
+  checkTaskReservable,
+  type AttemptCancelResult,
+  type AttemptInternalCommandResult,
+  type AttemptReserveResult,
+} from '../attempts'
 import {
   ACTOR_ID,
   BASELINE_ID,
@@ -509,6 +521,166 @@ describe('delivery_os.attempts.reserve', () => {
     seed([makeTask()])
     store.projects[0].deletedAt = UPDATED_AT
     expectFrozenBody(await catchHttpError(() => reserve({ headers: FRESH_HEADERS })), 404, 'not_found')
+  })
+})
+
+describe('delivery_os.attempts.cancel', () => {
+  const CANCEL = 'delivery_os.attempts.cancel'
+  const UNKNOWN_ATTEMPT = '77777777-7777-4777-8777-999999999999'
+  const cancelHandler = () => getHandler<AttemptCancelResult>(CANCEL)
+
+  function seedActive(state: 'reserved' | 'claimed' = 'reserved'): string {
+    seed([makeTask()])
+    const register = registerWith(1, 'reserved').map((attempt) =>
+      state === 'claimed' ? { ...attempt, state, claimedAt: NOW, workerRef: 'worker-1' } : attempt,
+    )
+    store.tasks[0] = makeTask({ status: 'executing', attemptNumber: 1, executionAttempts: register })
+    return register[0].attemptId
+  }
+
+  function cancel(input: Row, options: Parameters<typeof makeHarness>[0] = { headers: FRESH_HEADERS }) {
+    const { ctx } = makeHarness(options)
+    return cancelHandler().execute({ taskId: TASK_A, ...input }, ctx)
+  }
+
+  it.each(['reserved', 'claimed'] as const)(
+    'records the request on a %s attempt without claiming a stop, under the task row lock',
+    async (state) => {
+      const attemptId = seedActive(state)
+      const { ctx, em } = makeHarness({ headers: FRESH_HEADERS })
+      const input = { taskId: TASK_A, attemptId, reason: 'Wrong screen picked' }
+      const result = await cancelHandler().execute(input, ctx)
+
+      expect(result).toMatchObject({
+        taskId: TASK_A,
+        attemptId,
+        changed: true,
+        state: 'cancel_requested',
+        stopConfirmation: 'stop_unconfirmed',
+        taskStatus: 'executing',
+        taskUpdatedAt: UPDATED_AT.toISOString(),
+      })
+      const [stored] = store.tasks[0].executionAttempts
+      expect(stored).toEqual(result.attempt)
+      expect(stored).toMatchObject({ state: 'cancel_requested', stopConfirmation: 'stop_unconfirmed', closedAt: null, outcome: null })
+      expect(stored.cancellationRequestedAt).toBe(result.cancellationRequestedAt)
+      expect(store.tasks[0]).toMatchObject({ status: 'executing', statusReason: null })
+      expect(em.transactional).toHaveBeenCalledTimes(1)
+      const lockedReads = mockFindOneWithDecryption.mock.calls
+        .filter(([, , , options]) => options?.lockMode === LockMode.PESSIMISTIC_WRITE)
+        .map(([, entity]) => entity)
+      expect(lockedReads).toEqual([DeliveryTask])
+      expect((ctx.container.resolve('dataEngine') as { markOrmEntityChange: jest.Mock }).markOrmEntityChange).toHaveBeenCalledTimes(1)
+      expect(mockEmitDeliveryOsEvent).toHaveBeenCalledTimes(1)
+      expect(mockEmitDeliveryOsEvent.mock.calls[0][0]).toBe('delivery_os.task.updated')
+      expect(mockEmitDeliveryOsEvent.mock.calls[0][1]).toMatchObject({ taskId: TASK_A, status: 'executing' })
+      const log = await cancelHandler().buildLog?.({ input, result, ctx, snapshots: {} })
+      expect(log).toMatchObject({
+        actionLabel: 'Request execution attempt cancellation',
+        resourceKind: 'delivery_os.task',
+        resourceId: TASK_A,
+        tenantId: TENANT_ID,
+        organizationId: ORG_ID,
+        snapshotAfter: { attemptId, state: 'cancel_requested', reason: 'Wrong screen picked' },
+      })
+    },
+  )
+
+  it('keeps reserve and archive blocked until reconcile, without marking the attempt unknown', async () => {
+    const attemptId = seedActive()
+    await cancel({ attemptId })
+    const register = store.tasks[0].executionAttempts
+    expect(isArchiveBlocked(register)).toBe(true)
+    expect(hasUnreconciledAttempt(register)).toBe(false)
+    const error = await catchHttpError(() => reserve({ headers: FRESH_HEADERS }, body({ idempotencyKey: 'key-after-cancel' })))
+    expectFrozenBody(error, 409, 'attempt_active')
+    expect(store.tasks[0].executionAttempts).toHaveLength(1)
+  })
+
+  it('answers a repeated cancel with the same result and writes nothing, even with a stale header', async () => {
+    const attemptId = seedActive()
+    const first = await cancel({ attemptId })
+    jest.clearAllMocks()
+    const before = JSON.stringify(store.tasks)
+    const { ctx } = makeHarness({ headers: STALE_HEADERS })
+    const input = { taskId: TASK_A, attemptId }
+    const repeat = await cancelHandler().execute(input, ctx)
+    expect(repeat).toMatchObject({ changed: false, state: 'cancel_requested', stopConfirmation: 'stop_unconfirmed' })
+    expect(repeat.cancellationRequestedAt).toBe(first.cancellationRequestedAt)
+    expect(JSON.stringify(store.tasks)).toBe(before)
+    expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+    expect((ctx.container.resolve('dataEngine') as { markOrmEntityChange: jest.Mock }).markOrmEntityChange).not.toHaveBeenCalled()
+    expect(await cancelHandler().buildLog?.({ input, result: repeat, ctx, snapshots: {} })).toBeNull()
+  })
+
+  it('answers 428 without the header and 409 for a stale one, leaving the attempt active', async () => {
+    const attemptId = seedActive()
+    expectFrozenBody(await catchHttpError(() => cancel({ attemptId }, {})), 428, 'optimistic_lock_required')
+    const stale = await catchHttpError(() => cancel({ attemptId }, { headers: STALE_HEADERS }))
+    expect(stale.status).toBe(409)
+    expect(stale.body.code).toBe('optimistic_lock_conflict')
+    expect(store.tasks[0].executionAttempts[0].state).toBe('reserved')
+    expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+  })
+
+  it('lets an in-process caller cancel without a header', async () => {
+    const attemptId = seedActive()
+    expect((await cancel({ attemptId }, { inProcess: true })).changed).toBe(true)
+  })
+
+  it('answers 409 attempt_not_active for an accepted, closed or unknown attempt', async () => {
+    const attemptId = seedActive()
+    const reserved = store.tasks[0].executionAttempts
+    const recorded = recordAttemptResult(reserved, { attemptId, evidenceId: '6b6b6b6b-6666-4666-8666-666666666666', externalRunId: 'run-1' })
+    if (!recorded.ok) throw new Error('[internal] fixture result failed')
+    const accepted = closeAttempt(recorded.register, { attemptId, now: NOW })
+    if (!accepted.ok) throw new Error('[internal] fixture close failed')
+    const unknown = reconcileAttempt(reserved, { attemptId, resolution: 'unknown', note: 'Runner unreachable', observedAt: NOW, actorUserId: ACTOR_ID, now: NOW })
+    if (!unknown.ok) throw new Error('[internal] fixture reconciliation failed')
+    for (const register of [recorded.register, accepted.register, registerWith(1, 'closed'), unknown.register]) {
+      store.tasks[0].executionAttempts = register
+      const before = JSON.stringify(store.tasks)
+      const error = await catchHttpError(() => cancel({ attemptId: register[0].attemptId }))
+      expectFrozenBody(error, 409, 'attempt_not_active')
+      expect(JSON.stringify(store.tasks)).toBe(before)
+    }
+    expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+  })
+
+  it('answers 404 for an unknown attempt, a foreign organization and an archived task', async () => {
+    const attemptId = seedActive()
+    expectFrozenBody(await catchHttpError(() => cancel({ attemptId: UNKNOWN_ATTEMPT })), 404, 'attempt_not_found')
+    const foreign = await catchHttpError(() => cancel({ attemptId }, { headers: FRESH_HEADERS, orgId: FOREIGN_ORG_ID }))
+    expectFrozenBody(foreign, 404, 'not_found')
+    store.tasks[0].deletedAt = UPDATED_AT
+    expectFrozenBody(await catchHttpError(() => cancel({ attemptId })), 404, 'not_found')
+    expect(store.tasks[0].executionAttempts[0].state).toBe('reserved')
+  })
+
+  it('fails closed on an unreadable register', async () => {
+    seedActive()
+    store.tasks[0].executionAttempts = [{ attemptId: 'broken' }] as unknown as ExecutionAttempt[]
+    expectFrozenBody(await catchHttpError(() => cancel({ attemptId: UNKNOWN_ATTEMPT })), 409, 'reconciliation_required')
+  })
+
+  it('fails closed on a stored cancellation that lacks the stop confirmation', async () => {
+    const attemptId = seedActive()
+    store.tasks[0].executionAttempts = store.tasks[0].executionAttempts.map((attempt) => ({
+      ...attempt,
+      state: 'cancel_requested' as const,
+      cancellationRequestedAt: null,
+      stopConfirmation: null,
+    }))
+    const error = await catchHttpError(() => cancel({ attemptId }))
+    expectFrozenBody(error, 409, 'reconciliation_required')
+    expect(detailCodes(error)).toEqual(['unreadable_attempt_register'])
+  })
+
+  it('answers 400 for a reason above 2000 characters or a malformed attempt id', async () => {
+    const attemptId = seedActive()
+    expectFrozenBody(await catchHttpError(() => cancel({ attemptId, reason: 'x'.repeat(2001) })), 400, 'validation_failed')
+    expectFrozenBody(await catchHttpError(() => cancel({ attemptId: 'not-a-uuid' })), 400, 'validation_failed')
+    expect(store.tasks[0].executionAttempts[0].state).toBe('reserved')
   })
 })
 
