@@ -305,3 +305,28 @@ Podłączenie prawdziwych komend, vertical run z prawdziwym CLI.
 **Step 12: Recovery w produkcji**
 - Cron reconciliation co 10 min (scheduler)
 - Monitor `completionDelivery='pending'` dashboard
+
+---
+
+## Implementation Status
+
+| Phase | Status | Date | Notes |
+|-------|--------|------|-------|
+| Faza 1 — Fixture bridge (Steps 1–9) | Done | 2026-09-19 | All files implemented, build + typecheck + 1985 tests passing |
+| Faza 2 — Live (Steps 10–12) | Not Started | — | Blocked on OSS-04 (Mateusz) + UI-03 (Adam) |
+
+### Faza 1 — Detailed Progress
+- [x] Step 1: `lib/attemptWorkflow.ts` + `di.ts` (CezarTaskExecutor/FakeTaskExecutor) + `setup.ts` (seedDefaults)
+- [x] Step 2: `lib/executionBridge.ts` — reserve → startWorkflow → link_workflow → executeWorkflow → poll → enqueue
+- [x] Step 3: `workers/execute-task.ts` — queue: delivery-execute, concurrency: env DELIVERY_EXECUTE_CONCURRENCY ?? 2
+- [x] Step 4: `lib/resultAcceptance.ts` — idempotent results.accept wrapper
+- [x] Step 5: `workers/resume-attempt.ts` — queue: delivery-resume, concurrency: 5, 3× retry with backoff
+- [x] Step 6: `subscribers/evidence-recorded.ts` — persistent, completionDelivery='pending' → enqueue resume
+- [x] Step 7: `api/tasks/[id]/execute/route.ts` + cancel/pause/resume sub-routes
+- [x] Step 8: `widgets/injection/project-execution-action/widget.client.tsx` — Execute/Cancel buttons + status polling
+- [x] Step 9: TC-DELIVERY-EXEC-001..005 integration tests
+
+### Notes
+- `seedDefaults` used instead of `onTenantCreated` for workflow upsert (requires `InitSetupContext.container`)
+- `DELIVERY_EXECUTOR=cezar` env var swaps FakeTaskExecutor → CezarTaskExecutor
+- `workflowRef` = `attemptId` (used as correlationKey for workflow instances)
