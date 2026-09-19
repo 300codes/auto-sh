@@ -1,0 +1,9 @@
+{
+  "delivery_workspace.menu.agentProposals": "Propozycje agentów",
+  "delivery_workspace.menu.agents": "Agenci",
+  "delivery_workspace.menu.kanban": "Kanban",
+  "delivery_workspace.menu.teamProjects": "Projekty zespołu",
+  "delivery_workspace.menu.workflowEditor": "Edytor procesu",
+  "delivery_workspace.menu.workflowInstances": "Instancje procesów",
+  "delivery_workspace.menu.workflows": "Definicje procesów"
+}

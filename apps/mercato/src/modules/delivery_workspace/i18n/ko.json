@@ -1,0 +1,9 @@
+{
+  "delivery_workspace.menu.agentProposals": "에이전트 제안",
+  "delivery_workspace.menu.agents": "에이전트",
+  "delivery_workspace.menu.kanban": "칸반",
+  "delivery_workspace.menu.teamProjects": "팀 프로젝트",
+  "delivery_workspace.menu.workflowEditor": "프로세스 편집기",
+  "delivery_workspace.menu.workflowInstances": "프로세스 인스턴스",
+  "delivery_workspace.menu.workflows": "프로세스 정의"
+}
