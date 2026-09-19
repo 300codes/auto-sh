@@ -118,7 +118,7 @@ export function DeliveryProjectListClient() {
     }
     void load()
     return () => { requestSequence.current += 1 }
-  }, [page, search, includeArchived, sortField, sortDir, reloadToken, scopeVersion, t])
+  }, [page, search, includeArchived, sortField, sortDir, reloadToken, scopeVersion])
 
   const reload = React.useCallback(() => setReloadToken((token) => token + 1), [])
 

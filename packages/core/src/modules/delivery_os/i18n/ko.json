@@ -19,6 +19,8 @@
   "delivery_os.audit.projects.delete": "납품 프로젝트 보관",
   "delivery_os.audit.projects.update": "납품 프로젝트 업데이트",
   "delivery_os.audit.results.accept": "결과 명세서 승인",
+  "delivery_os.audit.stages.create_artifact": "배포 단계 아티팩트 기록",
+  "delivery_os.audit.stages.decide": "배포 단계 결정",
   "delivery_os.audit.tasks.create": "납품 작업 생성",
   "delivery_os.audit.tasks.delete": "납품 작업 보관",
   "delivery_os.audit.tasks.import_plan": "계획 제안 가져오기",

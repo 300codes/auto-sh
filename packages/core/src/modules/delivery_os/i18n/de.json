@@ -19,6 +19,8 @@
   "delivery_os.audit.projects.delete": "Umsetzungsprojekt archivieren",
   "delivery_os.audit.projects.update": "Umsetzungsprojekt aktualisieren",
   "delivery_os.audit.results.accept": "Ergebnismanifest akzeptieren",
+  "delivery_os.audit.stages.create_artifact": "Artefakt der Auslieferungsphase erfassen",
+  "delivery_os.audit.stages.decide": "Auslieferungsphase abschließen",
   "delivery_os.audit.tasks.create": "Umsetzungsaufgabe erstellen",
   "delivery_os.audit.tasks.delete": "Umsetzungsaufgabe archivieren",
   "delivery_os.audit.tasks.import_plan": "Planvorschlag importieren",

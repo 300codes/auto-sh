@@ -19,6 +19,8 @@
   "delivery_os.audit.projects.delete": "Archivar un proyecto de entrega",
   "delivery_os.audit.projects.update": "Actualizar un proyecto de entrega",
   "delivery_os.audit.results.accept": "Aceptar el manifiesto de resultados",
+  "delivery_os.audit.stages.create_artifact": "Registrar artefacto de la fase de entrega",
+  "delivery_os.audit.stages.decide": "Decidir fase de entrega",
   "delivery_os.audit.tasks.create": "Crear una tarea de entrega",
   "delivery_os.audit.tasks.delete": "Archivar una tarea de entrega",
   "delivery_os.audit.tasks.import_plan": "Importar una propuesta de plan",
