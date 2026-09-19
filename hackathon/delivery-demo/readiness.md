@@ -8,9 +8,9 @@
 
 | Obszar | Dostępne | Pozostały warunek |
 |---|---|---|
-| OSS / Mateusz | Kontrakty v1, projekty/baseline/zadania, proposals, rezerwacja/claim/result/cancel/reconcile/evidence | Review evidence, report i decyzje publikacji/release |
+| OSS / Mateusz | Kontrakty v1, projekty/baseline/zadania, proposals, rezerwacja/claim/result/cancel/reconcile/evidence | Report i decyzje publikacji/release; review evidence już dostępne |
 | EXEC / Marcin | [Probe CLI i konfiguracja](../../context/changes/autonomous-software-delivery/exec-01-readiness.md) | Log rzeczywistego workera/concurrency ≥2, provider i bridge |
-| UI / Adam | [Skrypty dowodowe](evidence/figma/), raport Figmy i ekran szczegółów z hostem execution | OAuth na stanowisku demo, live write/update/read, lista projektów i baseline UI |
+| UI / Adam | [Skrypty dowodowe](evidence/figma/), raport Figmy i ekran szczegółów z hostem execution | Utrzymanie OAuth na stanowisku demo; dowody write/update/read zapisane; lista projektów i baseline UI |
 | WP / Michał | [Narzędzia Studio i snapshot](wordpress-reuse.md) | Host wykonania, mapowanie kontroli i skorelowany import do OSS |
 
 Raport CLI WordPressa nie jest ResultManifest. Snapshot ma zgodny kształt SourceRevision, ale checks narzędziowe nie są dowodami AC. Żaden historyczny PASS na innym hoście nie zastępuje testów scalonej rewizji.

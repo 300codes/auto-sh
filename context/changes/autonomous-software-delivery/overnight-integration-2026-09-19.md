@@ -2,12 +2,12 @@
 
 ## Zakres i stan
 
-Scalono roboczo trzy strumienie bez konfliktów, zachowując lokalny commit `94f477e67` (drzewo zadań) i nowe dokumenty `origin/main` (`54e8f0482`). Wynik jest na gałęzi `integration/overnight-20260919`; stan publikacji zostanie zapisany po gate.
+Scalono roboczo trzy strumienie bez konfliktów, zachowując lokalny commit `94f477e67` (drzewo zadań) i nowe dokumenty `origin/main` (`54e8f0482`). Wynik jest na gałęzi `integration/overnight-20260919`; publikacja do `main` jest kończona po lekkich kontrolach, zgodnie z poleceniem użytkownika.
 
 | Branch | Head objęty przeglądem | Zakres |
 |---|---|---|
-| dev-mateusz | c24ac8ba8 | OSS-01–03 i część OSS-04; domena delivery_os, API i testy |
-| feature/design-ui | 9a08a7952 | Dokumentacja UI-01 i narzędzia dowodowe Figmy |
+| dev-mateusz | 124828233 | OSS-01–03 i część OSS-04; domena delivery_os, API i testy |
+| feature/design-ui | 8cd49117c | Dokumentacja UI-01 i narzędzia dowodowe Figmy |
 | feat/wp-m01-studio-tools | 2018cf295 | Niezależny pakiet WordPress Studio |
 
 Referencje PR odczytane przez git zawierają jedynie cztery aktualizacje Dependabota, których nie obejmuje ta integracja. GitHub connector zwrócił brak dostępu do repozytorium; CLI gh nie jest zainstalowane. Nie wykonano oceny etykiet/checków GitHuba ani zmian workflow, PR-ów czy Issues. Push przez istniejący SSH jest osobną operacją.
@@ -26,17 +26,17 @@ Referencje PR odczytane przez git zawierają jedynie cztery aktualizacje Dependa
 
 ## Granice aktualnego działania
 
-Wynik OSS kończy się na awaiting_review. R18 reconcile i R19 generic evidence doszły w dwóch kolejnych commitach podczas integracji. Nadal brakuje review evidence (kind=review jest odrzucany), R20/R21 decyzji deploy/release i R22 report. Istnieje minimalny ekran szczegółów projektu z hostem rozszerzenia execution. Lista projektów, baseline UI i enterprise provider/bridge pozostają do zrobienia. Figma ma blocked write/update. WordPress nie ma hosta integracji OM→WP→OM; jego lokalny raport nie jest dowodem AC domeny. Nie zmieniono tych stanów na PASS i nie stworzono zastępczych dowodów.
+Wynik OSS kończy się na awaiting_review. R18 reconcile i R19 generic evidence doszły w dwóch kolejnych commitach podczas integracji. Najnowsze commity dodały review evidence oraz przejścia verified/changes_requested. Nadal brakuje R20/R21 decyzji deploy/release i R22 report. Istnieje minimalny ekran szczegółów projektu z hostem rozszerzenia execution. Lista projektów, baseline UI i enterprise provider/bridge pozostają do zrobienia. Figma ma zapisane dowody write/update/read; autoryzacja na stanowisku demo wymaga utrzymania. WordPress nie ma hosta integracji OM→WP→OM; jego lokalny raport nie jest dowodem AC domeny. Nie zmieniono tych stanów na PASS i nie stworzono zastępczych dowodów.
 
 Nie wykonano migracji bazy ani publikacji preview. Schemat i migracja dodają nowy moduł; nie usuwają istniejących kontraktów. Do odbioru nowej funkcji potrzebne są testy integracyjne z rzeczywistą bazą i autoryzacją, w tym izolacja scope, optimistic lock, up/down migracji oraz pełny przebieg kolejki.
 
 ## Walidacja
 
-Runner: **local**, Node 24.13.1. Docker Desktop nie udostępnia silnika w tym WSL. Zależności pobrano z istniejącego yarn.lock. Natywny isolated-vm wymagał przebudowania tymczasowym GCC12 w /tmp; testy używają LD_LIBRARY_PATH=/tmp/auto-sh-gcc-env/lib oraz --env-mode=loose, aby Turbo przekazało ścieżkę do procesów testowych. Smoke rzeczywistego izolatu zwrócił 42. Nie zmieniono bibliotek systemowych ani zależności projektu.
+Runner poprzedniej sesji: **local**. Poniższe wyniki pochodzą z zapisu poprzedniej sesji i nie potwierdzają końcowej rewizji po dołączeniu nowych commitów. Pełna walidacja została przerwana; na wyraźne polecenie użytkownika nie powtarzamy buildów ani pełnego zestawu testów OM.
 
 | Kontrola | Wynik |
 |---|---|
-| OSS delivery_os (Jest) | Końcowy wynik w pełnym gate poniżej; zawiera 4 przypadki WP consumer contract |
+| OSS delivery_os (Jest) | Brak potwierdzonego końcowego wyniku pełnego gate; dodano 4 przypadki WP consumer contract |
 | WordPress native tests | PASS — 29/29; poza sandboxem ze względu na subprocessy i localhost HTTP |
 | WordPress typecheck + build | PASS po poprawce typeRoots |
 | Figma regressions | PASS — 2 testy z mockiem curl i syntetycznym PNG |
@@ -49,10 +49,14 @@ Runner: **local**, Node 24.13.1. Docker Desktop nie udostępnia silnika w tym WS
 | ACL catalog test | PASS — 1/1 po dodaniu opisów |
 | build:app | PASS — kompilacja, TypeScript i renderowanie tras |
 | Host UI | PASS — 7 testów komponentu, 294 testy module-facts; Playwright discovery: 1 test, wykonanie live oczekuje |
-| Pełne testy po poprawkach | W toku — końcowe wyniki poniżej po wykonaniu |
+| Pełne testy po poprawkach | Przerwane w poprzedniej sesji; nie wznowiono na polecenie użytkownika |
 
 Testy zapisanych raportów WP nie są nowym live PoC; testy Figmy nie wywołują Figmy. Poprzednie logi autorów służą kontekstowi, nie zastępują kontroli wspólnej rewizji.
 
 ## Kolejna runda
 
-[Lista dla czterech osób i kolejność połączeń](workstreams/next-tasks-2026-09-19.md). Najpierw Mateusz kończy review/lifecycle, Marcin provider i worker, Adam Figma/UI projektów, Michał gate/scoped integration i WP-M02 po dostępności hosta.
+[Lista dla czterech osób i kolejność połączeń](workstreams/next-tasks-2026-09-19.md). Następne prace funkcjonalne: report/decyzje publikacji, provider i worker, UI projektów/baseline oraz WP-M02 po dostępności hosta. Nie są częścią samego scalenia.
+
+## Dokończenie po restarcie
+
+Zachowano niezacommitowane poprawki integracyjne, dołączono heady `124828233` i `8cd49117c`, rozwiązano konflikty wyłącznie w dokumentacji, zachowując wpisy obu strumieni. Na prośbę użytkownika pominięto build i pełny gate OM. Lekkie kontrole: spójność historii Git, brak markerów konfliktów, `git diff --check`, składnia zmienionych JSON/shell oraz hashe zapisanych renderów Figmy. Nie wykonano migracji ani wdrożenia.
