@@ -111,7 +111,7 @@ function isDeliveryErrorCode(value: unknown): value is DeliveryErrorCode {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(deliveryErrorCodes, value)
 }
 
-function addDeliveryIssue(
+export function addDeliveryIssue(
   ctx: z.RefinementCtx,
   deliveryCode: DeliveryErrorCode,
   path: PropertyKey[],
@@ -141,15 +141,15 @@ export function deliveryErrorFromZod(error: z.ZodError): DeliveryErrorResult {
   return buildDeliveryError(firstCode, firstIssue.message, details)
 }
 
-const uuidSchema = z.uuid()
-const sha256Schema = z.string().regex(SHA256_HEX_PATTERN)
+export const uuidSchema = z.uuid()
+export const sha256Schema = z.string().regex(SHA256_HEX_PATTERN)
 const commitShaSchema = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/)
-const isoDateTimeSchema = z.iso.datetime({ offset: true })
-const stableIdSchema = z.string().regex(/^[A-Za-z][A-Za-z0-9._-]{0,63}$/)
+export const isoDateTimeSchema = z.iso.datetime({ offset: true })
+export const stableIdSchema = z.string().regex(/^[A-Za-z][A-Za-z0-9._-]{0,63}$/)
 const testIdSchema = z.string().min(1).max(512)
 const shortTextSchema = z.string().min(1).max(300)
 const longTextSchema = z.string().max(8000)
-const idempotencyKeySchema = z.string().regex(/^[\x21-\x7E]{1,200}$/)
+export const idempotencyKeySchema = z.string().regex(/^[\x21-\x7E]{1,200}$/)
 
 export const repoRelativePathSchema = z
   .string()
@@ -202,7 +202,7 @@ export function isSameRevision(first: SourceRevision, second: SourceRevision): b
   return false
 }
 
-function checkUniqueIds(ctx: z.RefinementCtx, ids: string[], field: string, idField: string): void {
+export function checkUniqueIds(ctx: z.RefinementCtx, ids: string[], field: string, idField: string): void {
   const seen = new Set<string>()
   ids.forEach((id, index) => {
     if (seen.has(id)) addDeliveryIssue(ctx, 'duplicate_stable_id', [field, index, idField], `Duplicate id ${id}`)
@@ -433,7 +433,7 @@ export const resultManifestV1Schema = z
   })
 export type ResultManifestV1 = z.infer<typeof resultManifestV1Schema>
 
-const commentAnchorSchema = z.object({ x: z.number(), y: z.number() }).superRefine((value, ctx) => {
+export const commentAnchorSchema = z.object({ x: z.number(), y: z.number() }).superRefine((value, ctx) => {
   const isInside = (coordinate: number) => coordinate >= 0 && coordinate <= 1
   if (!isInside(value.x) || !isInside(value.y)) {
     addDeliveryIssue(ctx, 'invalid_comment_anchor', [], 'Anchor coordinates must be between 0 and 1')
