@@ -16,6 +16,7 @@ Zoptymalizowane wdrożenie dla czterech developerów w 36 godzin, na podstawie s
 - [UI-01 — plan wdrożenia](workstreams/ui-01/plan.md) ([brief](workstreams/ui-01/plan-brief.md), [review planu](workstreams/ui-01/reviews/plan-review.md), [review wdrożenia](workstreams/ui-01/reviews/impl-review.md))
 - [UI-02 — plan wdrożenia](workstreams/ui-02/plan.md) ([brief](workstreams/ui-02/plan-brief.md), [review planu](workstreams/ui-02/reviews/plan-review.md), [review wdrożenia](workstreams/ui-02/reviews/impl-review.md), [przekazanie](workstreams/ui-02/handoff.md))
 - [UI-03 — plan wdrożenia](workstreams/ui-03/plan.md) ([brief](workstreams/ui-03/plan-brief.md), [przekazanie](workstreams/ui-03/handoff.md)) — powstał przed korektą kierunku z 2026-09-19; pokrywa część pakietu UI, rozliczenie w sekcji „Pozycja wobec korekty kierunku"
+- [UI-04 — plan wdrożenia](workstreams/ui-04/plan.md) ([brief](workstreams/ui-04/plan-brief.md)) — UI wykonania i ręcznego przekazania na gotowym API OSS-04; deklaruje Progress 4.3–4.6 jako współodbiór, rozlicza korektę kierunku i podaje nową estymatę ~8 h wobec nominalnych 4 h
 - [Zadania WP wymagające Michała](workstreams/05-wordpress-michal.md)
 - [Review i rozstrzygnięcia](reviews/plan-review.md)
 - [Uzupełnienie analizy i decyzje](research.md)
