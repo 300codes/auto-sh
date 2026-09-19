@@ -395,11 +395,11 @@ Zmiana jest addytywna i mieści się w `delivery_os/backend/`, `delivery_os/comp
 
 #### Automated
 
-- [x] 1.1 Testy modułu przechodzą, w tym nowe testy `proposalImport` dla pięciu ścieżek wejścia
-- [x] 1.2 Test dialogu rozróżnia `200 duplicate` od `409 idempotency_conflict`
-- [x] 1.3 `i18n:check-sync`, `i18n:check-usage` i `i18n:check-hardcoded` są czyste
-- [x] 1.4 Fixture `design-manifest.v1.json` parsuje się `designManifestV1Schema` w teście
-- [x] 1.5 Granica własności `{api,commands,data,lib}` jest pusta
+- [x] 1.1 Testy modułu przechodzą, w tym nowe testy `proposalImport` dla pięciu ścieżek wejścia — 70f57edc53
+- [x] 1.2 Test dialogu rozróżnia `200 duplicate` od `409 idempotency_conflict` — 70f57edc53
+- [x] 1.3 `i18n:check-sync`, `i18n:check-usage` i `i18n:check-hardcoded` są czyste — 70f57edc53
+- [x] 1.4 Fixture `design-manifest.v1.json` parsuje się `designManifestV1Schema` w teście — 70f57edc53
+- [x] 1.5 Granica własności `{api,commands,data,lib}` jest pusta — 70f57edc53
 
 #### Manual
 
@@ -410,12 +410,12 @@ Zmiana jest addytywna i mieści się w `delivery_os/backend/`, `delivery_os/comp
 
 #### Automated
 
-- [x] 2.1 Testy `screenUpload`: hash referencyjny, brak `crypto.subtle`, zły typ i za duży plik
-- [x] 2.2 Test mapera `DesignManifest → ScreenRef[]`: brak pliku dla wpisu jest błędem
-- [x] 2.3 Test zapisu draftu: nieparsowalny `draftSpec` blokuje `PUT`
-- [x] 2.4 Test `FreezeBaselineAction`: cztery rozłączne komunikaty dla czterech wyników
-- [x] 2.5 Test `DesignSection`: nieudane wczytanie obrazu daje nazwany stan, metadane zostają
-- [x] 2.6 Testy modułu, `i18n:*`, `typecheck` przechodzą; granica własności pusta — **`lint` pominięty na polecenie użytkownika**
+- [x] 2.1 Testy `screenUpload`: hash referencyjny, brak `crypto.subtle`, zły typ i za duży plik — 70f57edc53
+- [x] 2.2 Test mapera `DesignManifest → ScreenRef[]`: brak pliku dla wpisu jest błędem — 70f57edc53
+- [x] 2.3 Test zapisu draftu: nieparsowalny `draftSpec` blokuje `PUT` — 70f57edc53
+- [x] 2.4 Test `FreezeBaselineAction`: cztery rozłączne komunikaty dla czterech wyników — 70f57edc53
+- [x] 2.5 Test `DesignSection`: nieudane wczytanie obrazu daje nazwany stan, metadane zostają — 70f57edc53
+- [x] 2.6 Testy modułu, `i18n:*`, `typecheck` przechodzą; granica własności pusta — **`lint` pominięty na polecenie użytkownika** — 70f57edc53
 
 #### Manual
 
@@ -427,11 +427,11 @@ Zmiana jest addytywna i mieści się w `delivery_os/backend/`, `delivery_os/comp
 
 #### Automated
 
-- [x] 3.1 Test wyboru wersji: domyślna, najnowsza przy braku aktywnej, martwe `?baselineId=` czyszczone
-- [x] 3.2 Test `DecisionActions`: odrzucenie bez powodu nie wysyła żądania; hash i wersja z oglądanej wersji
-- [x] 3.3 Test rozłączności `subject_hash_mismatch` i `optimistic_lock_conflict`
-- [x] 3.4 Test F1: `hasActiveBaseline === null` przy `state: 'ready'` nie twierdzi „brak baseline'u"
-- [x] 3.5 Testy modułu, `i18n:*`, `typecheck` przechodzą; granica własności pusta — **`lint` pominięty na polecenie użytkownika**
+- [x] 3.1 Test wyboru wersji: domyślna, najnowsza przy braku aktywnej, martwe `?baselineId=` czyszczone — 70f57edc53
+- [x] 3.2 Test `DecisionActions`: odrzucenie bez powodu nie wysyła żądania; hash i wersja z oglądanej wersji — 70f57edc53
+- [x] 3.3 Test rozłączności `subject_hash_mismatch` i `optimistic_lock_conflict` — 70f57edc53
+- [x] 3.4 Test F1: `hasActiveBaseline === null` przy `state: 'ready'` nie twierdzi „brak baseline'u" — 70f57edc53
+- [x] 3.5 Testy modułu, `i18n:*`, `typecheck` przechodzą; granica własności pusta — **`lint` pominięty na polecenie użytkownika** — 70f57edc53
 
 #### Manual
 
@@ -443,14 +443,14 @@ Zmiana jest addytywna i mieści się w `delivery_os/backend/`, `delivery_os/comp
 
 #### Automated
 
-- [x] 4.1 Testy `proposalImport` dla planu: cykl, nieznane AC, `allowedPaths`, mapowanie na nieistniejący test
-- [x] 4.2 Test dialogu planu: `details[]` renderują się jako lista wszystkich ścieżek
-- [x] 4.3 Test komunikatu po imporcie zawiera stwierdzenie o nieaktywnym scalonym baseline
-- [x] 4.4 `TC-DELIVERY-UI-003` istnieje, przechodzi `typecheck` i `lint`, teardown adresuje projekty po id
+- [x] 4.1 Testy `proposalImport` dla planu: cykl, nieznane AC, `allowedPaths`, mapowanie na nieistniejący test — 70f57edc53
+- [x] 4.2 Test dialogu planu: `details[]` renderują się jako lista wszystkich ścieżek — 70f57edc53
+- [x] 4.3 Test komunikatu po imporcie zawiera stwierdzenie o nieaktywnym scalonym baseline — 70f57edc53
+- [x] 4.4 `TC-DELIVERY-UI-003` istnieje, przechodzi `typecheck` i `lint`, teardown adresuje projekty po id — 70f57edc53
 - [ ] 4.5 Pełna bramka OM przechodzi na wybranym runnerze — **niewykonana: `yarn test`, `yarn lint` i `yarn build:app` pominięte na polecenie użytkownika**
-- [x] 4.6 `yarn check:client-boundaries` nie zgłasza nowych naruszeń
-- [x] 4.7 Granica własności `{api,commands,data,lib}` jest pusta
-- [x] 4.8 Brak zmian w plikach `*.generated.*`; żaden nowy komponent kliencki nie przekracza 300 LOC
+- [x] 4.6 `yarn check:client-boundaries` nie zgłasza nowych naruszeń — 70f57edc53
+- [x] 4.7 Granica własności `{api,commands,data,lib}` jest pusta — 70f57edc53
+- [x] 4.8 Brak zmian w plikach `*.generated.*`; żaden nowy komponent kliencki nie przekracza 300 LOC — 70f57edc53
 
 #### Manual
 
