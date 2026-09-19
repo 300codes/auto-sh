@@ -4,6 +4,7 @@ import {
   acceptanceCriterionSchema,
   addDeliveryIssue,
   attachmentRefSchema,
+  attemptModeSchema,
   buildDeliveryError,
   checkStatusSchema,
   checkUniqueIds,
@@ -230,6 +231,21 @@ export const reserveAttemptBodySchema = reserveAttemptRequestSchema
 export type ReserveAttemptBody = z.infer<typeof reserveAttemptBodySchema>
 
 export const idempotencyKeyHeaderSchema = idempotencyKeySchema
+
+export const trustedExecutionSchema = z.strictObject({
+  source: z.literal('delivery_agents'),
+  actorUserId: uuidSchema,
+})
+export type TrustedExecution = z.infer<typeof trustedExecutionSchema>
+
+export const reserveAttemptCommandSchema = z.object({
+  taskId: uuidSchema,
+  idempotencyKey: idempotencyKeySchema,
+  mode: attemptModeSchema,
+  baseRevision: sourceRevisionSchema,
+  trustedExecution: trustedExecutionSchema.optional(),
+})
+export type ReserveAttemptCommandInput = z.infer<typeof reserveAttemptCommandSchema>
 
 export const packageQuerySchema = z.object({ attemptId: uuidSchema })
 export type PackageQuery = z.infer<typeof packageQuerySchema>

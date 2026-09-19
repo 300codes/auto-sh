@@ -164,3 +164,47 @@ and routes; the export test with real decisions comes with them.
 - A lock header that is not a timestamp answers `400 validation_failed`/`optimistic_lock_invalid`. An older baseline is
   never promoted over a newer active one. **OSS-03:** every baseline writer must take `lockProjectForWrite` so version
   numbers cannot collide.
+
+## Addendum — L4e attempt reservation and TaskPackage builder (T013)
+
+- Command `delivery_os.attempts.reserve` (`commands/attempts.ts`). Input
+  `{ taskId, idempotencyKey, mode, baseRevision, trustedExecution? }`; result
+  `{ created, attemptId, taskId, baselineId, baselineHash, taskUpdatedAt, packageUrl }` (`AttemptReserveResult`).
+  **Route R14 must build the input itself**: `taskId` from the path, `idempotencyKey` from the `Idempotency-Key`
+  header, `mode` + `baseRevision` from `reserveAttemptBodySchema` (literal `manual_handoff`), never `trustedExecution`.
+  Answer `201` for `created: true` and `200` for `created: false`, and drop `created` from the body. The route checks
+  `delivery_os.attempts.manage`; the command does not check features.
+- Check order for a new key: replay → `idempotency_conflict` → task lock header (`428` / `400` / platform `409`; only when
+  a request exists, forced with `OM_OPTIMISTIC_LOCK=off`) → `reconciliation_required` / `attempt_active` /
+  `attempt_limit_reached` → `task_not_ready` → `dependency_not_verified` → `unknown_target_profile` /
+  `revision_kind_mismatch` → `foreign_reference` / `baseline_not_active` → `correction_limit_reached`.
+- Lock order is project → task (same as `lockTaskForWrite`), so a reservation can never race a baseline decision or a
+  dependency status change; reservations of one project serialise.
+- **Safety conditions for `automatic`:** never register this command as workflow-safe
+  (`registerWorkflowSafeCommands`) — a workflow context has no `request` either; and R14 must build the input from
+  `reserveAttemptBodySchema` fields only and always pass `request`.
+- The builder also refuses stored content that no longer hashes to `contentHash` (`hash_mismatch` /
+  `stored_content_altered`).
+- A replay needs no lock header, writes nothing, emits nothing and leaves no audit entry. Its `taskUpdatedAt` is the
+  current task version, so it is always a usable lock token.
+- On create the task moves to `executing`, `attemptNumber` = register length, one `delivery_os.task.updated`.
+- **For EXEC (enterprise):** call the command in-process without `ctx.request`, with `mode: 'automatic'` and
+  `trustedExecution: { source: 'delivery_agents', actorUserId }`; `ctx.auth` must still carry `tenantId` and `orgId`.
+  No lock header is needed there, the row lock serialises. Every other combination answers `403 forbidden` /
+  `trusted_execution_required`. `actorUserId` becomes the actor of the audit entry.
+- **For UI:** new detail codes `task_blocked`, `task_not_ready`, `dependency_not_verified` (path
+  `dependsOnTaskIds.<taskId>`, message names the dependency status or `missing`), `trusted_execution_required`,
+  `unreadable_attempt_register`. Audit label key `delivery_os.audit.attempts.reserve` (English fallback in code).
+- Builder `buildTaskPackageV1({ project, task, baseline, attempt, profile })` in `lib/taskPackage.ts` is pure; entities
+  fit its input types structurally. **Route R15**: load task (scope → 404), project, `findProjectBaseline`,
+  `parseAttemptRegister` + `findAttempt(register, attemptId)`, `getTargetProfile`, then return `taskPackage` or the
+  failure's `status` + `body`. No write, no lock.
+- `commands/tasks.ts` now exports `findProjectBaseline`, `loadCorrectionBudget`, `emitTaskSideEffects`,
+  `emitTaskUpdated`.
+- Limitations: a `changes_requested` task pinned to a superseded baseline cannot be re-reserved (422
+  `baseline_not_active`) — cancel it or re-plan on the new baseline. `task.updatedAt` is set by the ORM `onUpdate` hook
+  at flush; the mocked EM cannot prove it, so check `taskUpdatedAt` over HTTP in the routes task. No route exists yet.
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 19 suites, 548 tests
+  green; `tsc --noEmit` for `@open-mercato/core` clean; eslint of the touched files clean. No migration, no workspace
+  or dependency change. Rows: 2.1 (one key reserves one attempt, stale update rejected, foreign scope 404) and 4.1
+  (OSS side, reservation).

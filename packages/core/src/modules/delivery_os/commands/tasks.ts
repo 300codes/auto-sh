@@ -185,7 +185,7 @@ function requireTaskProfile(id: string, version: number): TargetProfile {
   )
 }
 
-async function findProjectBaseline(
+export async function findProjectBaseline(
   tx: EntityManager,
   baselineId: string,
   projectId: string,
@@ -365,7 +365,7 @@ async function checkReadyGate(
   return readinessFailure(reasons)
 }
 
-async function loadCorrectionBudget(
+export async function loadCorrectionBudget(
   tx: EntityManager,
   task: DeliveryTask,
   project: DeliveryProject,
@@ -406,7 +406,7 @@ function applyPropagation(changes: readonly PlannedStatusChange[], tasks: readon
   return changed
 }
 
-async function emitTaskSideEffects(
+export async function emitTaskSideEffects(
   ctx: CommandRuntimeContext,
   action: 'created' | 'updated' | 'deleted',
   task: DeliveryTask,
@@ -420,7 +420,7 @@ async function emitTaskSideEffects(
   })
 }
 
-async function emitTaskUpdated(task: DeliveryTask): Promise<void> {
+export async function emitTaskUpdated(task: DeliveryTask): Promise<void> {
   await emitDeliveryOsEvent(
     'delivery_os.task.updated',
     {
