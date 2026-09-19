@@ -29,6 +29,7 @@ import {
   type AttachmentReference,
   type AttachmentSnapshot,
 } from '../lib/designReview'
+import { normalizeAttachmentIds } from '../lib/evidenceRules'
 import { collectArtifactReferences } from '../lib/resultAcceptance'
 import type { DeliveryScope } from './shared'
 
@@ -162,5 +163,56 @@ export async function verifyResultArtifacts(
   return {
     ok: false,
     ...buildDeliveryError('foreign_reference', 'An artifact points at a file that is not available in this organization', verified.body.details),
+  }
+}
+
+type EvidenceAttachmentInput = {
+  screenshot?: { attachmentId: string; sha256: string }
+  attachmentIds: readonly string[]
+}
+
+function foreignAttachmentError(details: DeliveryErrorResult['body']['details']): { ok: false } & DeliveryErrorResult {
+  return {
+    ok: false,
+    ...buildDeliveryError('foreign_reference', 'An evidence file is not available in this organization', details),
+  }
+}
+
+export async function verifyEvidenceAttachments(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  input: EvidenceAttachmentInput,
+  scope: DeliveryScope,
+): Promise<ResultArtifactVerification> {
+  const attachmentIds = normalizeAttachmentIds(input.attachmentIds)
+  if (attachmentIds.length > 0) {
+    const found = await findWithDecryption(
+      tx,
+      Attachment,
+      { id: { $in: attachmentIds }, tenantId: scope.tenantId, organizationId: scope.organizationId },
+      undefined,
+      scope,
+    )
+    const foundIds = new Set(found.map((attachment) => attachment.id.toLowerCase()))
+    const missing = input.attachmentIds.flatMap((attachmentId, index) =>
+      foundIds.has(attachmentId.toLowerCase()) ? [] : [{ path: `attachmentIds.${index}`, code: 'attachment_scope_mismatch' }],
+    )
+    if (missing.length > 0) return foreignAttachmentError(missing)
+  }
+  if (!input.screenshot) return { ok: true, attachmentIds }
+
+  const reference: AttachmentReference = {
+    path: 'payload',
+    role: 'screen',
+    attachmentId: input.screenshot.attachmentId,
+    declared: { sha256: input.screenshot.sha256 },
+  }
+  const verified = await verifyAttachmentReferences(tx, ctx, [reference], scope)
+  if (verified.ok) return { ok: true, attachmentIds: normalizeAttachmentIds([...attachmentIds, reference.attachmentId]) }
+  if (verified.body.code === 'attachment_scope_mismatch') return foreignAttachmentError(verified.body.details)
+  if (verified.body.code === 'payload_too_large') return verified
+  return {
+    ok: false,
+    ...buildDeliveryError('hash_mismatch', 'The stored screenshot does not match the declared file', verified.body.details),
   }
 }

@@ -4,6 +4,7 @@ import {
   deliveryLimitsSchema,
   executionAttemptSchema,
   isoDateTimeSchema,
+  reconciliationResolutionSchema,
   sha256Schema,
   taskStatusSchema,
   uuidSchema,
@@ -146,10 +147,25 @@ export const resultAcceptResponseSchema = z.object({
   taskUpdatedAt: isoDateTimeSchema,
 })
 
+export const evidenceRecordResponseSchema = z.object({
+  evidenceId: uuidSchema,
+  duplicate: z.boolean(),
+  taskStatus: taskStatusSchema.optional(),
+  taskUpdatedAt: isoDateTimeSchema.optional(),
+})
+
 export const attemptCancelResponseSchema = z.object({
   attemptId: uuidSchema,
   state: z.literal('cancel_requested'),
   stopConfirmation: z.literal('stop_unconfirmed'),
   taskStatus: taskStatusSchema,
   taskUpdatedAt: isoDateTimeSchema,
+})
+
+export const attemptReconcileResponseSchema = z.object({
+  attemptId: uuidSchema,
+  resolution: reconciliationResolutionSchema,
+  taskStatus: taskStatusSchema,
+  taskUpdatedAt: isoDateTimeSchema,
+  evidenceId: uuidSchema.optional(),
 })

@@ -451,22 +451,34 @@ export const cancelAttemptCommandSchema = cancelAttemptSchema.extend({
 })
 export type CancelAttemptCommandInput = z.infer<typeof cancelAttemptCommandSchema>
 
-export const reconcileAttemptSchema = z
-  .object({
-    resolution: reconciliationResolutionSchema,
-    externalEvidence: z.object({
-      note: z.string().trim().min(1).max(4000),
-      observedAt: isoDateTimeSchema,
-      externalRunId: z.string().min(1).max(200).optional(),
-    }),
-    manifest: manifestBodySchema.optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.resolution === 'completed' && !value.manifest) {
-      addDeliveryIssue(ctx, 'manifest_required', ['manifest'], 'Resolution completed needs the result manifest')
-    }
-  })
+const reconcileAttemptShape = {
+  resolution: reconciliationResolutionSchema,
+  externalEvidence: z.object({
+    note: z.string().trim().min(1).max(4000),
+    observedAt: isoDateTimeSchema,
+    externalRunId: z.string().min(1).max(200).optional(),
+  }),
+  manifest: manifestBodySchema.optional(),
+}
+
+function requireCompletedManifest(value: { resolution: string; manifest?: unknown }, ctx: z.RefinementCtx): void {
+  if (value.resolution === 'completed' && !value.manifest) {
+    addDeliveryIssue(ctx, 'manifest_required', ['manifest'], 'Resolution completed needs the result manifest')
+  }
+}
+
+export const reconcileAttemptSchema = z.object(reconcileAttemptShape).superRefine(requireCompletedManifest)
 export type ReconcileAttemptInput = z.infer<typeof reconcileAttemptSchema>
+
+export const reconcileAttemptCommandSchema = z
+  .object({
+    ...reconcileAttemptShape,
+    taskId: uuidSchema,
+    attemptId: uuidSchema,
+    trustedExecution: trustedExecutionSchema.optional(),
+  })
+  .superRefine(requireCompletedManifest)
+export type ReconcileAttemptCommandInput = z.infer<typeof reconcileAttemptCommandSchema>
 
 export const deployDecisionSchema = z
   .object({
