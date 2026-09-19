@@ -1,0 +1,31 @@
+{
+  "status": "environment_blocked",
+  "nativeCommand": "node --require /qa/qa-ops/resource-guard.cjs packages/cli/dist/bin.js test:integration TC-DELIVERY-FIXTURE-001 --no-reuse-env",
+  "appBuildCommand": "node --max-old-space-size=4096 /qa/node_modules/next/dist/bin/next build --webpack",
+  "limits": {
+    "appMemoryMiB": 6144,
+    "appCpu": 2,
+    "nodeHeapMiB": 4096,
+    "dbMemoryMiB": 512,
+    "dbCpu": 1
+  },
+  "webpack": {
+    "status": "passed",
+    "seconds": 192,
+    "warnings": true
+  },
+  "nextApplicationTypecheck": {
+    "status": "failed",
+    "reason": "JS heap4096MiB exhausted",
+    "approxSeconds": 92
+  },
+  "liveTests": {
+    "executed": 0,
+    "status": "not_run",
+    "reason": "environment initialization failed before Playwright"
+  },
+  "sourceFix": "explicit server branches for all19 message preview definitions including template",
+  "phase4Source": "stale attempt review guard included; final concurrent replay guard not yet included",
+  "physicalCleanup": "owned services removed by native lifecycle; runtime files scrub pending",
+  "standardProductionBuild": "not passed"
+}

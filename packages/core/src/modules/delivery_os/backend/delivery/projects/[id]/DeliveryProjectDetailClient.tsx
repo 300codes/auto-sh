@@ -25,11 +25,13 @@ import {
   reconcileSelectedBaselineId,
   resolveActiveBaseline,
 } from '@open-mercato/core/modules/delivery_os/components/detail/baselineContent'
+import { ProjectOverview } from '@open-mercato/core/modules/delivery_os/components/detail/ProjectOverview'
 import { BaselinePanel } from '@open-mercato/core/modules/delivery_os/components/detail/BaselinePanel'
 import { TasksSection } from '@open-mercato/core/modules/delivery_os/components/detail/TasksSection'
 import { EvidenceSection } from '@open-mercato/core/modules/delivery_os/components/detail/EvidenceSection'
 import { ProposalImportDialog } from '@open-mercato/core/modules/delivery_os/components/detail/ProposalImportDialog'
 import { ScreenImportDialog } from '@open-mercato/core/modules/delivery_os/components/detail/ScreenImportDialog'
+import { DesignManifestImport } from '@open-mercato/core/modules/delivery_os/components/detail/DesignManifestImport'
 
 const TASK_QUERY_PARAM = 'taskId'
 const BASELINE_QUERY_PARAM = 'baselineId'
@@ -54,7 +56,7 @@ function writeQueryParam(name: string, value: string | null): void {
   window.history.replaceState(window.history.state, '', url.toString())
 }
 
-export function DeliveryProjectDetailClient({ params }: { params: { id: string } }) {
+export function DeliveryProjectDetailClient({ params, actorUserId = null }: { params: { id: string }; actorUserId?: string | null }) {
   const t = useT()
   const [state, setState] = React.useState<DetailState>({ status: 'loading' })
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(() => readQueryParam(TASK_QUERY_PARAM))
@@ -69,9 +71,13 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
   const requestSequence = React.useRef(0)
   const { retryLastMutation } = useGuardedMutation({ contextId: `delivery_os.project.${params.id}` })
   const scopeVersion = useOrganizationScopeVersion()
+  const loadedScope = React.useRef<number | null>(null)
+  const [refreshing, setRefreshing] = React.useState(false)
   const { payload: chrome } = useBackendChrome()
   const canImport = hasFeature(chrome?.grantedFeatures, IMPORT_REQUIREMENTS_FEATURE)
   const canManage = hasFeature(chrome?.grantedFeatures, MANAGE_PROJECT_FEATURE)
+  const canManageFlow = hasFeature(chrome?.grantedFeatures, 'delivery_os.flow.manage')
+  const canApproveStages = hasFeature(chrome?.grantedFeatures, 'delivery_os.stages.approve')
   const canApprove = hasFeature(chrome?.grantedFeatures, APPROVE_BASELINE_FEATURE)
 
   // The widget's `refresh` has to reload the project AND the sections, because an
@@ -83,7 +89,8 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
 
   const refreshProject = React.useCallback(async (): Promise<void> => {
     const sequence = ++requestSequence.current
-    setState({ status: 'loading' })
+    setRefreshing(true)
+    setState((previous) => previous.status === 'ready' && previous.project.id === params.id && loadedScope.current === scopeVersion ? previous : { status: 'loading' })
     try {
       const response = await apiCall<unknown>(`/api/delivery_os/projects/${encodeURIComponent(params.id)}`)
       if (sequence !== requestSequence.current) return
@@ -109,10 +116,13 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
         setState({ status: 'error' })
         return
       }
+      loadedScope.current = scopeVersion
       setProjectVersion(parsed.data.updatedAt)
       setState({ status: 'ready', project: parsed.data, context: context.data })
     } catch {
       if (sequence === requestSequence.current) setState({ status: 'error' })
+    } finally {
+      if (sequence === requestSequence.current) setRefreshing(false)
     }
   }, [params.id, retryLastMutation, widgetRefresh, scopeVersion])
 
@@ -175,7 +185,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
     return parsed.success ? parsed.data : state.context
   }, [state, selectedTaskId])
 
-  if (state.status === 'loading' || (state.status === 'ready' && state.project.id !== params.id)) {
+  if (state.status === 'loading' || (state.status === 'ready' && (state.project.id !== params.id || loadedScope.current !== scopeVersion))) {
     return <Page><PageBody><LoadingMessage label={t('delivery_os.project.loading')} /></PageBody></Page>
   }
   if (state.status === 'notFound' || state.status === 'error') {
@@ -199,12 +209,16 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
         statusBadge={<Badge variant="secondary">{t(`delivery_os.project.status.${state.project.status}`)}</Badge>}
       />
       <PageBody>
+        <ProjectOverview projectId={params.id} projectUpdatedAt={projectVersion ?? state.project.updatedAt!} actorUserId={actorUserId} canManage={canManage} canImport={canImport} canApprove={canApproveStages} canManageFlow={canManageFlow} onChanged={widgetRefresh} />
         {state.project.brief ? <p className="whitespace-pre-wrap text-sm text-muted-foreground">{state.project.brief}</p> : null}
-        <InjectionSpot
-          spotId={extensionPoints.hosts.projectExecution.spotId}
-          context={widgetContext ?? state.context}
-        />
+        <div aria-busy={refreshing}>
+          <InjectionSpot
+            spotId={extensionPoints.hosts.projectExecution.spotId}
+            context={widgetContext ?? state.context}
+          />
+        </div>
         <div className="space-y-6">
+          <DesignManifestImport projectId={params.id} projectUpdatedAt={projectVersion ?? state.project.updatedAt!} canManage={canManage} onChanged={widgetRefresh} />
           <BaselinePanel
             projectId={params.id}
             baselines={sections.baselines}
@@ -220,7 +234,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
             onAddScreen={() => setScreenOpen(true)}
             onMutated={onMutated}
           />
-          <TasksSection
+          <div id="delivery-project-tasks"><TasksSection
             state={sections.tasks}
             attention={state.project.attention}
             hasActiveBaseline={activeBaselineKind === null ? null : activeBaselineKind !== 'none'}
@@ -239,14 +253,15 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
               </Button>
             ) : null}
           />
-          <EvidenceSection
+          </div>
+          <div id="delivery-project-evidence"><EvidenceSection
             projectId={params.id}
             progress={state.project.progress}
             taskCounts={state.project.taskCounts}
             attention={state.project.attention}
             baselines={sections.baselines}
             onRetry={() => void sections.reloadBaselines()}
-          />
+          /></div>
         </div>
       </PageBody>
       <ProposalImportDialog

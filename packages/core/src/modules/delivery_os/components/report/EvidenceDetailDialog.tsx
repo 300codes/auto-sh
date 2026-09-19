@@ -26,6 +26,13 @@ export function EvidenceDetailDialog({ projectId, evidenceId, onOpenChange }: { 
       </DialogHeader>
       {state.status === 'loading' ? <LoadingMessage label={t('delivery_os.report.evidence.loading')} /> : state.status !== 'ready' || !state.data ? <><ErrorMessage label={t(`delivery_os.report.evidence.${state.status}`)} /><Button variant="outline" onClick={state.reload}>{t('delivery_os.report.evidence.retry')}</Button></> : <div className="max-h-96 space-y-3 overflow-auto">
         <p>{t(`delivery_os.report.evidence.kind.${state.data.kind}`)}</p>
+        <dl className="space-y-2 break-all text-sm">
+          <div><dt className="font-medium">{t('delivery_os.report.evidence.source')}</dt><dd>{t(`delivery_os.report.evidence.source.${state.data.source}`)}</dd></div>
+          <div><dt className="font-medium">{t('delivery_os.report.evidence.createdAt')}</dt><dd><time dateTime={state.data.createdAt}>{state.data.createdAt}</time></dd></div>
+          <div><dt className="font-medium">{t('delivery_os.report.summary.baseline')}</dt><dd>{state.data.baselineId}</dd></div>
+          <div><dt className="font-medium">{t('delivery_os.report.evidence.task')}</dt><dd>{state.data.taskId ?? t('delivery_os.report.evidence.notLinked')}</dd></div>
+          <div><dt className="font-medium">{t('delivery_os.report.evidence.attempt')}</dt><dd>{state.data.attemptId ?? t('delivery_os.report.evidence.notLinked')}</dd></div>
+        </dl>
         <p className="break-all">{t('delivery_os.report.evidence.revision')}: {evidenceRevisionLabel(state.data.sourceRevision) ?? t('delivery_os.report.evidence.group.baseline')}</p>
         <p className="break-all">{t('delivery_os.report.evidence.hash')}: {state.data.rawReportHash ?? t('delivery_os.report.evidence.notLinked')}</p>
         <pre className="whitespace-pre-wrap break-all text-xs">{JSON.stringify(state.data.payload, null, 2)}</pre>

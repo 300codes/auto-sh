@@ -46,7 +46,7 @@ describe('delivery report page', () => {
     { features: ['delivery_os.*'], deploy: true, release: true },
     { features: ['*'], deploy: true, release: true },
     { features: ['delivery_os.projects.view'], deploy: false, release: false },
-  ])('keeps separate wildcard-aware ACL and blocks writes without D2/D3: $features', ({ features, deploy, release }) => {
+  ])('keeps separate wildcard-aware ACL and blocks writes without a current snapshot: $features', ({ features, deploy, release }) => {
     mockFeatures = features
     render(<ReleaseDecisionActions historical={false} archived={false} />)
     const deployButton = screen.queryByRole('button', { name: 'delivery_os.report.decisions.deploy' })
@@ -55,7 +55,14 @@ describe('delivery report page', () => {
     expect(Boolean(releaseButton)).toBe(release)
     if (deployButton) expect(deployButton.hasAttribute('disabled')).toBe(true)
     if (releaseButton) expect(releaseButton.hasAttribute('disabled')).toBe(true)
-    expect(screen.getByText('delivery_os.report.decisions.dependencies')).toBeTruthy()
+    expect(screen.getByText('delivery_os.report.decisions.consentOnly')).toBeTruthy()
+    expect(screen.queryAllByText('delivery_os.report.decisions.error.refreshRequired')).toHaveLength(Number(deploy) + Number(release))
+    const rejectDeploy = screen.queryByRole('button', { name: 'delivery_os.report.decisions.reject.deploy' })
+    const rejectRelease = screen.queryByRole('button', { name: 'delivery_os.report.decisions.reject.release' })
+    expect(Boolean(rejectDeploy)).toBe(deploy)
+    expect(Boolean(rejectRelease)).toBe(release)
+    if (rejectDeploy) expect(rejectDeploy.hasAttribute('disabled')).toBe(true)
+    if (rejectRelease) expect(rejectRelease.hasAttribute('disabled')).toBe(true)
   })
 
   it.each([{ historical: true, archived: false }, { historical: false, archived: true }])('offers no actions for history or archive', (props) => {

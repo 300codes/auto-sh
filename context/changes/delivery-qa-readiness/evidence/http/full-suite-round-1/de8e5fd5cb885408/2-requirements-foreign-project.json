@@ -1,0 +1,15 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Proposal belongs to another project",
+    "code": "foreign_reference",
+    "details": [
+      {
+        "path": "projectId",
+        "code": "foreign_project",
+        "message": "The manifest projectId is not this project"
+      }
+    ]
+  },
+  "projectId": "a602653c-994b-426d-89bf-6c701209d769"
+}

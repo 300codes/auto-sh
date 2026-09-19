@@ -1,0 +1,10 @@
+✔ message object browser bundles exclude server loaders while preserving preview fallbacks (321.302419ms)
+✔ message object server bundles retain preview loaders and forward entity and tenant context (154.738077ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 927.756864

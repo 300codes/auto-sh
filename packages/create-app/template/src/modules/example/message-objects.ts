@@ -25,9 +25,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Todo', subtitle: entityId }
+      } else {
+        const { loadTodoPreview } = await import('./lib/messageObjectPreviews')
+        return loadTodoPreview(entityId, ctx)
       }
-      const { loadTodoPreview } = await import('./lib/messageObjectPreviews')
-      return loadTodoPreview(entityId, ctx)
     },
   },
 ]

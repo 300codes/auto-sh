@@ -30,3 +30,13 @@ PASS wymaga wszystkich FLOW-01…09 oraz WP-01…05 z dodatku. Obowiązuje Tailw
 Nie obowiązuje automatyczne zapewnienie, że nowe wymagania zmieszczą się w poprzednich 36 h lub WP 6 h. Dostarczamy nową estymatę; nie przekraczamy budżetu ani nie redukujemy zakresu bez decyzji użytkownika. Flow builder, klientowskie zgody i WordPress E2E są wymaganiami nowego odbioru.
 
 W repo są już niezwiązane, niezatwierdzone zmiany QA/readiness; nie nadpisywać ich. Ten pakiet nie zmienia ich statusu i nie zalicza dawnego Progress.
+
+### Opcja na sam koniec: aplikacje OM przez Sandboxes
+
+**Deferred by user / LAST / OPTIONAL (2026-09-19).** Dopiero po zakończeniu
+i odbiorze głównego flow WordPress, jeśli zostanie czas, można aktywować
+[plan generowania aplikacji OM](../../open-mercato-sandboxes-app-generation/plan.md)
+([skrót](../../open-mercato-sandboxes-app-generation/plan-brief.md),
+[review](../../open-mercato-sandboxes-app-generation/reviews/plan-review.md)).
+To dodatkowy target, nie zamiana obowiązkowego demo WP ani automatyczny start
+podczas oczekiwania na jego zależności. Teraz zlecone są tylko plan i review.

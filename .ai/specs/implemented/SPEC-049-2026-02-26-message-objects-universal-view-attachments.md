@@ -120,7 +120,7 @@ Modules add future actions (e.g., assign, archive, approve) by appending entries
 
 Each new module creates `lib/messageObjectPreviews.ts` following the established pattern:
 - Uses `findOneWithDecryption` (GDPR compliance)
-- Guards with `typeof window !== 'undefined'` — browser returns a lightweight fallback, server loads real data
+- Guards with `typeof window !== 'undefined'` — browser returns a lightweight fallback, while the server-only dynamic import and loader call stay inside the explicit `else` branch. An early return followed by an unguarded dynamic import is insufficient: Webpack still resolves that import while building the browser graph.
 - Maps entity status to a standard status color (`'green' | 'red' | 'amber' | 'gray' | 'blue'`)
 - Returns `{ title, subtitle, status, statusColor, metadata? }` conforming to `ObjectPreviewData`
 
@@ -352,6 +352,7 @@ All changes are purely additive:
 - No database migrations required.
 - No event ID changes.
 - No ACL feature ID changes.
+- The 2026-09-19 client-boundary correction preserves all existing preview definitions, fallback values, server loaders, registry exports, and discovery conventions. It only makes the existing runtime split visible to the browser bundler. A real Webpack regression verifies browser exclusion of Node-dependent loaders and server forwarding for all 19 affected definitions, including the app example and its standalone template mirror.
 
 ---
 
@@ -369,3 +370,4 @@ _None — all decisions resolved during research._
 | 0.2 | 2026-02-26 | Rename ViewOnly→Generic; Detail component is fully action-extensible |
 | 0.3 | 2026-02-26 | Rename Generic→MessageObject for component names |
 | 0.4 | 2026-02-26 | Document metadata rendering in generic components, translated metadata labels, direct component registration approach, and implemented metadata rollout matrix |
+| 0.5 | 2026-09-19 | Keep preview loader imports inside an explicit server branch; preserve browser fallbacks and server loading, with browser/server bundle regression coverage |

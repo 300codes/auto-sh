@@ -23,6 +23,9 @@ import { apiCall, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/u
 import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
 import { projectListItemSchema, type ProjectListItem } from '@open-mercato/core/modules/delivery_os/api/schemas'
 
+import { flowStatusV1Schema, type FlowStatusV1 } from '../../lib/contracts'
+
+const portfolioSchema = z.object({ items: z.array(flowStatusV1Schema).max(50) })
 const PAGE_SIZE = 50
 const SORTABLE_FIELDS = ['name', 'createdAt', 'updatedAt'] as const
 const MUTATION_CONTEXT_ID = 'delivery-projects-list:mutation'
@@ -59,6 +62,9 @@ export function DeliveryProjectListClient() {
     contextId: MUTATION_CONTEXT_ID,
   })
 
+  const [portfolio, setPortfolio] = React.useState<Record<string, FlowStatusV1>>({})
+  const [portfolioError, setPortfolioError] = React.useState(false)
+  const loadedScope = React.useRef(scopeVersion)
   const [rows, setRows] = React.useState<ProjectListItem[]>([])
   const [page, setPage] = React.useState(1)
   const [total, setTotal] = React.useState(0)
@@ -83,6 +89,8 @@ export function DeliveryProjectListClient() {
     const sequence = ++requestSequence.current
     async function load(): Promise<void> {
       setIsLoading(true)
+      setPortfolio({})
+      setPortfolioError(false)
       try {
         const params = new URLSearchParams()
         params.set('page', String(page))
@@ -102,11 +110,22 @@ export function DeliveryProjectListClient() {
           setLoadError(t('delivery_os.projects.list.error.load'))
           return
         }
+        loadedScope.current = scopeVersion
         setRows(parsed.data.items)
         setTotal(parsed.data.total)
         setTotalPages(parsed.data.totalPages ?? 1)
         setTotalIsCapped(parsed.data.totalIsCapped === true)
         setLoadError(null)
+        if (parsed.data.items.length) {
+          try {
+            const ids = parsed.data.items.map((item) => item.id)
+            const flowCall = await apiCall<unknown>(`/api/delivery_os/portfolio?ids=${encodeURIComponent(ids.join(','))}`)
+            if (sequence !== requestSequence.current) return
+            const projection = portfolioSchema.safeParse(flowCall.result)
+            if (!flowCall.ok || !projection.success || projection.data.items.some((item) => !ids.includes(item.projectId))) setPortfolioError(true)
+            else setPortfolio(Object.fromEntries(projection.data.items.map((item) => [item.projectId, item])))
+          } catch { if (sequence === requestSequence.current) setPortfolioError(true) }
+        }
       } catch {
         if (sequence === requestSequence.current) {
           setRows([])
@@ -193,6 +212,22 @@ export function DeliveryProjectListClient() {
       ),
     },
     {
+      id: 'flow',
+      header: t('delivery_os.flow.overview'),
+      enableSorting: false,
+      cell: ({ row }) => {
+        const flow = portfolio[row.original.id]
+        if (!flow) return <span className="text-sm text-muted-foreground">{t(portfolioError ? 'delivery_os.flow.loadError' : 'delivery_os.flow.loading')}</span>
+        const current = flow.stages.find((stage) => stage.stageId === flow.currentStageId)
+        return <div className="space-y-1 text-sm" data-testid={`portfolio-flow-${row.original.id}`}>
+          <p>{flow.currentStageId ? t(`delivery_os.flow.stage.${flow.currentStageId}`) : t('delivery_os.flow.noStage')}{current?.currency ? ` · ${t(`delivery_os.flow.currency.${current.currency}`)}` : ''}</p>
+          <p>{t('delivery_os.flow.pending', { count: flow.pendingApprovals.length })}</p>
+          {flow.blockers.map((blocker, index) => <p key={index} className="text-muted-foreground">{t(`delivery_os.flow.blocker.${blocker.kind}`)}</p>)}
+          <Link href={`/backend/delivery/projects/${row.original.id}`} className="font-medium hover:underline">{t(`delivery_os.flow.nextAction.${flow.nextAction.kind}`)}</Link>
+        </div>
+      },
+    },
+    {
       accessorKey: 'inputMode',
       header: t('delivery_os.projects.list.columns.inputMode'),
       enableSorting: false,
@@ -215,7 +250,7 @@ export function DeliveryProjectListClient() {
       header: t('delivery_os.projects.list.columns.updatedAt'),
       cell: ({ row }) => formatDateTime(row.original.updatedAt),
     },
-  ], [t])
+  ], [t, portfolio, portfolioError])
 
   const filterDefs = React.useMemo<FilterDef[]>(() => [
     { id: 'includeArchived', label: t('delivery_os.projects.list.filters.includeArchived'), type: 'checkbox' },
@@ -247,8 +282,8 @@ export function DeliveryProjectListClient() {
           title={t('delivery_os.projects.list.title')}
           titleHeadingLevel={1}
           columns={columns}
-          data={rows}
-          isLoading={isLoading}
+          data={loadedScope.current === scopeVersion ? rows : []}
+          isLoading={isLoading || loadedScope.current !== scopeVersion}
           error={loadError}
           extensionTableId="delivery_os.projects"
           searchValue={search}

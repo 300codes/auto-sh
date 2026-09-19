@@ -210,6 +210,7 @@ export interface WorkflowGeneratedBy {
 }
 
 export interface WorkflowMetadata {
+  immutablePolicy?: 'delivery'
   tags?: string[]
   category?: string
   icon?: string

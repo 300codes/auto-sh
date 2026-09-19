@@ -1,0 +1,59 @@
+{
+  "at": "2026-09-19T16:51:49.396437+00:00",
+  "head": "67aa2d1f87f3d203eadc590ffb1dfade1f375201",
+  "sourceFingerprint": "1484504e79b0870403e60191f4f808c1bf95a458e50626a24b88e37122008d66",
+  "steps": [
+    {
+      "at": "2026-09-19T16:44:18.756274+00:00",
+      "step": 1,
+      "command": "yarn build:packages",
+      "exitCode": 1,
+      "seconds": 9.01720402400042,
+      "sourceFingerprint": "1484504e79b0870403e60191f4f808c1bf95a458e50626a24b88e37122008d66",
+      "afterFingerprint": "1484504e79b0870403e60191f4f808c1bf95a458e50626a24b88e37122008d66",
+      "status": "failed"
+    }
+  ],
+  "resourceSamples": [
+    {
+      "at": "2026-09-19T16:44:09.147748+00:00",
+      "linuxAvailableBytes": 12791025664,
+      "linuxTotalBytes": 16779223040,
+      "windowsAvailableBytes": 17651806208,
+      "windowsDiskFreeBytes": 30720593920,
+      "wslDiskFreeBytes": 76751241216
+    },
+    {
+      "at": "2026-09-19T16:44:17.440038+00:00",
+      "linuxAvailableBytes": 3308601344,
+      "linuxTotalBytes": 16779223040,
+      "windowsAvailableBytes": 8878624768,
+      "windowsDiskFreeBytes": 30720585728,
+      "wslDiskFreeBytes": 76884451328
+    }
+  ],
+  "failure": {
+    "scope": "core package esbuild service stopped",
+    "DockerOOMKilled": true,
+    "cgroupVersion": 1,
+    "oomKillCount": 1,
+    "memoryMaxUsageBytes": 9663676416,
+    "containerLimitBytes": 9663676416,
+    "configurationCause": "global7168MiBheap applied to package step; previouspackagebudget2048MiB; corrected in unexecuted portablehandoff"
+  },
+  "scannerRegression": {
+    "command": "node scripts/__tests__/i18n-scanner.test.mjs",
+    "tests": 17,
+    "passed": 17,
+    "failed": 0,
+    "sourceSha256": "52932e27baa597bb42a2138a9764c5f89c5a8749aefcacde7c14323ffd5db12f"
+  },
+  "fullOrderedGate": "not_passed",
+  "steps2through8": "not_run_on_this_freeze",
+  "integratedHttp": "not_run",
+  "ownedRunnerStopped": true,
+  "databasePreserved": true,
+  "userDecision": "move heavy validation to another machine",
+  "portableHandoff": "/tmp/qa-wp-heavy-handoff",
+  "portableHandoffValidation": "python syntax and dry-run only; no live execution"
+}

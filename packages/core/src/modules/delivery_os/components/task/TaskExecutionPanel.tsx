@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
+import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
 import { Button } from '@open-mercato/ui/primitives/button'
 import type { TaskDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
 import type { ReserveAttemptResponse, ResultManifestV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
@@ -10,7 +11,9 @@ import { CancelAttemptAction } from './CancelAttemptAction'
 import { ReconcileAttemptDialog } from './ReconcileAttemptDialog'
 import { ReserveAttemptAction } from './ReserveAttemptAction'
 import { ResultImportDialog } from './ResultImportDialog'
+import { useAcceptedResult } from './useAcceptedResult'
 import { ResultSummary } from './ResultSummary'
+import { TaskReviewAction } from './TaskReviewAction'
 import { TaskPackagePanel } from './TaskPackagePanel'
 import type { AttemptRegisterEntry, AttemptRegisterState } from './attemptRegister'
 
@@ -48,8 +51,9 @@ export function TaskExecutionPanel({
   const [reservedAttemptId, setReservedAttemptId] = React.useState<string | null>(null)
   const [resultOpen, setResultOpen] = React.useState(false)
   const [reconcileAttemptId, setReconcileAttemptId] = React.useState<string | null>(null)
-  const [accepted, setAccepted] = React.useState<ResultManifestV1 | null>(null)
   const activeEntry = register.kind === 'entries' ? register.activeEntry : null
+  const acceptedEntry = register.kind === 'entries' ? [...register.entries].reverse().find((entry) => entry.attempt.resultEvidenceId) : null
+  const accepted = useAcceptedResult(task.projectId, task.id, acceptedEntry?.attempt.attemptId ?? null, acceptedEntry?.attempt.resultEvidenceId ?? null, taskVersion)
 
   const onReserved = React.useCallback((reservation: ReserveAttemptResponse) => {
     setReservedAttemptId(reservation.attemptId)
@@ -57,7 +61,6 @@ export function TaskExecutionPanel({
   }, [onMutated])
 
   const onImported = React.useCallback((result: { manifest: ResultManifestV1; taskUpdatedAt: string }) => {
-    setAccepted(result.manifest)
     onMutated(result.taskUpdatedAt)
   }, [onMutated])
 
@@ -112,7 +115,6 @@ export function TaskExecutionPanel({
               {t('delivery_os.task.result.action')}
             </Button>
           )}
-          {accepted ? <ResultSummary manifest={accepted} source="manual" accepted /> : null}
           <ResultImportDialog
             open={resultOpen}
             onOpenChange={setResultOpen}
@@ -123,6 +125,15 @@ export function TaskExecutionPanel({
           />
         </div>
       ) : null}
+
+      <section className="space-y-3" data-testid="delivery-accepted-result">
+        <h3 className="text-sm font-medium">{t('delivery_os.task.result.read.title')}</h3>
+        {accepted.state.status === 'loading' ? <LoadingMessage label={t('delivery_os.task.result.read.loading')} /> : null}
+        {(register.kind === 'unreadable' || accepted.state.status === 'error') ? <ErrorMessage label={t('delivery_os.task.result.read.error')} action={<Button type="button" variant="outline" onClick={() => { if (register.kind === 'unreadable') onMutated(task.updatedAt); else void accepted.reload() }}>{t('delivery_os.task.retry')}</Button>} /> : null}
+        {register.kind !== 'unreadable' && accepted.state.status === 'empty' ? <p className="text-sm text-muted-foreground">{t('delivery_os.task.result.read.empty')}</p> : null}
+        {accepted.state.status === 'ready' ? <ResultSummary result={accepted.state.result} /> : null}
+        {canImportResults && task.status === 'awaiting_review' && accepted.state.status === 'ready' ? <TaskReviewAction result={accepted.state.result} taskUpdatedAt={taskVersion} onMutated={onMutated} /> : null}
+      </section>
 
       {canManageAttempts && activeEntry ? (
         <CancelAttemptAction

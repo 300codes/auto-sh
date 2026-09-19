@@ -2,6 +2,82 @@
 
 Data: 2026-09-19. Stan: implementing; odbiór fazy 1 potwierdzony, bez zaliczenia live.
 
+## Najnowsza decyzja operacyjna
+
+Użytkownik potwierdził dostęp do Figmy po swojej stronie i brak WP Studio.
+Pozostała część wymagająca Studio jest odroczona jako specyfikacja:
+[zakres i procedura wznowienia](../../../../../.ai/specs/2026-09-19-wordpress-studio-tools.md#aktualny-zakres--brak-wp-studio).
+Zachowujemy lokalne narzędzia WP i testy, nie zaliczamy hosta, Preview ani
+WP-01…05. Pozostałe fazy są kontynuowane; wdrożenie OM pozostaje w planie.
+Kolejny `figma.whoami`, ponowiony na prośbę użytkownika, zakończył się sukcesem:
+konto Michała Strześniewskiego, seat Full (300.codes Pro oraz własny Starter).
+Bieżąca tożsamość konektora potwierdzona; odczyt konkretnego pliku, zapis
+i comments API nadal wymagają osobnych prób.
+
+## Końcowa walidacja przed commitem
+
+Runner: local, Node 24.13.0. Użytkownik zatwierdził commit zmian i następnie
+jawnie polecił pominąć build produkcyjny (`yarn build:app`). Build aplikacji
+nie został wykonany; pełny gate nie jest zaliczony. WP Studio/Preview i wdrożenie
+OM pozostają odroczone zgodnie z wcześniejszymi decyzjami.
+
+- `yarn install --immutable`, oba `yarn build:packages`, `yarn typecheck`
+  (42/42 pakiety), `yarn i18n:check-sync` oraz `yarn i18n:check-usage`: exit 0.
+- `yarn agents:check-budget`: exit 0 z istniejącymi ostrzeżeniami długości
+  łańcuchów instrukcji.
+- `yarn check:client-boundaries:fail`: exit 1; 244 istniejące client page roots
+  poza allowlist. Ta zmiana nie dodaje nowych page roots.
+- Pierwszy root `yarn test` przerwano po 43 minutach z powodu wolnego
+  recyklingu workerów. 41 zakończonych pakietów zachowuje wynik; pozostałe
+  uruchomiono osobno z większym limitem pamięci, bez zmian konfiguracji repo.
+- CLI: 103 suites / 1943 tests PASS; storage-s3: 15 suites / 128 tests PASS.
+- Core: 2103 suites / 20055 tests PASS, trzy audyty zgłosiły braki jawnych
+  komparatorów, użycie low-level ACL i brak etykiet uprawnień. Jeden suite
+  i dwa testy są pomijane przez istniejącą konfigurację/testy.
+- Trzy audyty core naprawiono i sprawdzono celowanymi testami: sortowanie
+  i regresje 57 PASS, scoped feature policy i Scope tools 27 PASS, katalog
+  ACL 1 PASS. Tłumaczenia: sync 66 modułów / 5 języków PASS.
+- Końcowy `yarn typecheck` po poprawkach: 42/42 PASS. Regresje kompilacji
+  motywu WordPress: 11/11 PASS poza sandboxem (sandbox blokował child process).
+- Generator OpenAPI zachowuje schematy przy importach JSON z pakietów.
+  CLI 11 testów regresyjnych PASS; przebudowany CLI i końcowy `yarn generate`:
+  exit 0, 615 ścieżek API, bez fallback do static regex extraction.
+- create-mercato-app: 885 PASS, 2 FAIL, 3 istniejące skipped (890 tests).
+  Rozjazd modules.ts naprawiono przez `yarn template:sync:fix`; celowany test
+  zgodności szablonu 2/2 PASS. Drugim błędem była niespójna data wydania
+  w UPGRADE_NOTES względem CHANGELOG; skorygowano jedną linię, cały
+  celowany release-upgrade-skill-contract test PASS. Pełnego root `yarn test`
+  nie powtarzano; naprawione błędy sprawdzono testami celowanymi.
+- Migracji nie zastosowano; browser, realny crash/race na bazie, live Figma/WP
+  oraz ręczny odbiór faz 2–8 nie mają wyniku PASS. Checkboksy tych wymagań
+  pozostają otwarte.
+
+## Integracja pobranego main
+
+Na polecenie użytkownika scalono `origin/main` (`b190a37c6e`) z bieżącą pracą.
+Rozwiązano dwa konflikty dokumentów przy merge oraz 24 konflikty przy
+przywróceniu lokalnych zmian. Osobno porównano 31 różnych plików, które były
+lokalnie untracked, a na main już istniały. Zachowano scoped idempotencję Staff,
+durable intent/reconcile, bindingi, sesje importu i ochronę kandydatów; włączono
+poprawki main, w tym F10 missing-link 404, sortowanie F12 po updatedAt,
+typowaną rewizję publikacji oraz komplet helperów testów integracyjnych.
+
+Wyniki po scaleniu (runner local, Node 24.13.0):
+
+- Delivery OS i test rejestru idempotencji: 149 suites / 2392 tests PASS;
+  `yarn jest --config packages/core/jest.config.cjs --runInBand packages/core/src/modules/delivery_os packages/core/src/modules/staff/commands/__tests__/createIdempotency.test.ts`.
+- Delivery Agents: 5 suites / 27 tests PASS; core i enterprise typecheck PASS.
+- Opcjonalne pakiety: Figma 13 tests PASS, Workflows 19 tests PASS.
+- WordPress: 259 tests PASS; uruchomienie poza sandboxem potrzebne dla wyjścia
+  procesów potomnych. Nie uruchomiono rzeczywistego Studio ani publikacji.
+- `git ls-files -u` i lista konfliktów są puste. `git diff --check` dla
+  niestage'owanych zmian jest czysty; staged check zgłasza tylko whitespace
+  w historycznych logach z main, których treści dowodowej nie zmieniano.
+
+W chwili powyższej weryfikacji merge pozostawał bez commitu. Stash `fcb0a297254e0a56e9fab72862f32358dd94e7e2`
+zabezpiecza pracę sprzed scalenia i nie został usunięty. Pełny gate repo,
+generacja oraz browser/live pozostają osobnymi krokami, nie wynikają z tego testu.
+
 ## Inwentarz rewizji
 
 Punkt wejścia: `4a8839443212a1d29a3c24556eeafd7aa6caf7a6`, branch
@@ -175,7 +251,35 @@ Preview WP nadal wymaga korelacji i verify, nie stanowi automatycznego release.
 - F1/F2/F4 backend: scalanie z zachowaniem D1–D3, candidate guards i obu
   addytywnych migracji. Testy po integracji ujawniły historyczne fixture
   zakładające brak kandydata lub starszy report DTO; są dostosowywane bez
-  osłabiania bramek produkcyjnych. Wynik końcowy pending.
+  osłabiania bramek produkcyjnych. Pierwszy pełny przebieg Delivery OS po reuse:
+  133 suites / 2231 tests PASS; późniejsze zmiany wymagają ponownego przebiegu.
 - `yarn check:client-boundaries:fail`: exit 1, 245 istniejących nieobjętych
   allowlist client page roots; zmiana widgetu nie dodaje page root. Nie zaliczono
   tego checka ani całej fazy 2. Pełny gate repo jeszcze nie wykonany.
+
+### Recovery Staff i provider Figmy — kolejny punkt integracji
+
+- Staff task/comment create przyjmują opcjonalny idempotencyKey. Scoped rejestr
+  klucz/hash/resourceId zapisuje się atomowo z rekordem Staff; advisory transaction
+  lock serializuje ten sam klucz. Callerzy bez klucza zachowują dotychczasową ścieżkę.
+- Delivery zapisuje durable batch key/hash oraz pierwsze payloady tworzenia przed
+  efektem. Adapter używa publicznych komend bez proxy EM/DI i buforowania efektów.
+  Po utracie odpowiedzi odtwarza ID przez ten sam klucz; mapowania i cursor
+  utrwala po powodzeniu. Importy jednego scope/project/file serializuje osobny
+  advisory lock; re-link jest zablokowany także przy nierozstrzygniętym intent.
+- Local: 6 suites / 99 tests PASS (Staff, rejestr, adapter, import i link),
+  obejmujące utratę odpowiedzi oraz konflikt zmienionego payloadu po częściowej
+  awarii. Core typecheck PASS. To nadal nie dowód crash/race na prawdziwej bazie.
+- Nowy opcjonalny `packages/delivery-figma`: scoped credentials/state,
+  stały HTTPS origin, bounded fetch/backoff, normalizacja edits/deletes/replies,
+  guarded public import oraz odpowiedź 207 dla częściowej synchronizacji.
+  Local: 4 suites / 13 tests PASS, package typecheck PASS.
+- [API komentarzy Figmy](https://developers.figma.com/docs/rest-api/comments-endpoints/)
+  zwraca pełny snapshot bez paginacji; provider ogranicza go do 8 MB / 5000
+  komentarzy i dzieli na paczki Delivery po 200 wątków. Brak komentarza staje się
+  tombstone tylko po pełnym, poprawnym odczycie. Źródło nie zwraca wersji designu
+  ani czasu edycji: versionConfirmed pozostaje false, czas wykrytej edycji jest
+  czasem obserwacji. UI i live są nadal w toku.
+- Migracje wygenerowano, ale nie zastosowano. Niepowiązaną migrację/snapshot WMS
+  wygenerowaną przy okazji usunięto z tej zmiany; snapshot Staff zawiera wyłącznie
+  nowy scoped rejestr idempotencji.

@@ -34,6 +34,7 @@ import {
   ACTIVE_WORKFLOW_INSTANCE_STATUSES,
   buildStructuralEditConflictBody,
   diffDefinitionStructure,
+  assertImmutableDefinitionUpdate,
 } from '../../../lib/definition-edit-safety'
 import {
   authorizeWorkflowGrantChange,
@@ -235,6 +236,9 @@ export async function PUT(
 
       let savedOverride: WorkflowDefinition
       if (existingOverride) {
+        assertImmutableDefinitionUpdate(existingOverride, {
+          definition: input.definition ?? codeDef.definition, metadata: codeDef.metadata ?? null, version: codeDef.version,
+        })
         try {
           await enforceCommandOptimisticLockWithGuards(container, {
             resourceKind: 'workflows.definition',
@@ -362,6 +366,7 @@ export async function PUT(
     // are still executing; the structured body offers the new-version remedy.
     // Cosmetic, config and metadata edits stay in-place, and the per-user draft
     // layer (a separate route) is untouched so work-in-progress stays saveable.
+    assertImmutableDefinitionUpdate(definition, input)
     if (input.definition !== undefined) {
       const structuralChanges = diffDefinitionStructure(definition.definition, input.definition)
       if (structuralChanges.length > 0) {
@@ -463,6 +468,7 @@ export async function PUT(
       message: 'Workflow definition updated successfully',
     })
   } catch (error) {
+    if (isCrudHttpError(error)) return NextResponse.json(error.body, { status: error.status })
     logger.error('Error updating workflow definition', { err: error })
     return NextResponse.json(
       { error: 'Failed to update workflow definition' },
@@ -557,6 +563,8 @@ export async function DELETE(
       )
     }
 
+    assertImmutableDefinitionUpdate(definition, { deletedAt: new Date() })
+
     // Soft delete
     definition.deletedAt = new Date()
     definition.updatedAt = new Date()
@@ -583,6 +591,7 @@ export async function DELETE(
       message: 'Workflow definition deleted successfully',
     })
   } catch (error) {
+    if (isCrudHttpError(error)) return NextResponse.json(error.body, { status: error.status })
     logger.error('Error deleting workflow definition', { err: error })
     return NextResponse.json(
       { error: 'Failed to delete workflow definition' },

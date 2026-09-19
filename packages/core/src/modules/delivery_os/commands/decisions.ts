@@ -28,6 +28,7 @@ import {
 } from '../lib/contracts'
 import { isVerifiedDeploymentPayload } from '../lib/deliveryReport'
 import { hashCanonical } from '../lib/hash'
+import { checkProjectFlowGateV1 } from './flowGate'
 import { createDeliveryOsReportQueries } from './reportQueries'
 import { assertReportDecisionContext, assertCurrentCandidateDeployConsent, candidateConsentHash } from './reportContext'
 import { findProjectBaseline, requireTaskProfile } from './tasks'
@@ -189,6 +190,7 @@ async function recordDeployDecision(rawInput: unknown, ctx: CommandContext): Pro
           ),
         )
       }
+      assertDeliveryCheck(await checkProjectFlowGateV1(tx, project, scope))
     }
     const existing = await findWithDecryption(
       tx,

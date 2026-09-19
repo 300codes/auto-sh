@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "operation": "fast_forward_main_preserving_local_changes",
+  "completedAt": "2026-09-19T14:32:00.848615+00:00",
+  "baseRevision": "5d485ae5e713ba9c5c6f69809b4fba5b6b2f87c0",
+  "integratedRevision": "92bcb813dac3c464ac9114b7acb9a8c80d8b0549",
+  "upstreamFilesChanged": 342,
+  "preservedOtherLocalFiles": 504,
+  "otherLocalFilesChangedByIntegration": [],
+  "resolvedOverlaps": [
+    {
+      "path": "packages/core/src/modules/delivery_os/commands/evidence.ts",
+      "sha256": "06ce840f5d38d0e7fd2164ae6e63da6e0e288e0fcc98dde21ec0c5773798c4fb"
+    },
+    {
+      "path": "packages/core/src/modules/delivery_os/commands/__tests__/evidence.test.ts",
+      "sha256": "3d95428e580030b8d7bb6bba97b760fcee04c9e2464ff11bb5280904f91f30ee"
+    }
+  ],
+  "resolution": "Keep upstream scoped lock before evidence read/replay; retain latest accepted attempt guard and regression tests; omit redundant second locked read.",
+  "staticReview": "passed_independent",
+  "targetedTests": {
+    "status": "passed",
+    "suites": 2,
+    "tests": 100,
+    "evidence": "q-preparation/current-main-focused-jest.json"
+  },
+  "fullIntegratedBuild": "not_run",
+  "previousAppBuild": "passed_on_previous_frozen_manifest_only",
+  "published": false
+}

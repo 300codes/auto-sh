@@ -1,0 +1,88 @@
+Listing tests:
+  TC-DELIVERY-001.spec.ts:22:1 › TC-DELIVERY-001: R1–R19 enforce authentication, features and tenant/organization scope without writes
+  TC-DELIVERY-002.qa-regression.spec.ts:12:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: immutable snapshot, replay and both current decisions gate execution
+  TC-DELIVERY-002.qa-regression.spec.ts:74:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: invalid render bytes hash, foreign attachment and missing content cannot freeze
+  TC-DELIVERY-002.qa-regression.spec.ts:107:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: verified old baseline does not prove the new approved snapshot
+  TC-DELIVERY-002.qa-regression.spec.ts:136:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: concurrent contradictory decisions accept one current version
+  TC-DELIVERY-002.qa-regression.spec.ts:12:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: immutable snapshot, replay and both current decisions gate execution
+  TC-DELIVERY-002.qa-regression.spec.ts:74:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: invalid render bytes hash, foreign attachment and missing content cannot freeze
+  TC-DELIVERY-002.qa-regression.spec.ts:107:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: verified old baseline does not prove the new approved snapshot
+  TC-DELIVERY-002.qa-regression.spec.ts:136:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: concurrent contradictory decisions accept one current version
+  TC-DELIVERY-002.spec.ts:167:3 › TC-DELIVERY-002: baseline input modes on the real database › FROM_BRIEF (source: manual) baseline returns baselineId, contentHash, version 1, duplicate false
+  TC-DELIVERY-002.spec.ts:205:3 › TC-DELIVERY-002: baseline input modes on the real database › FROM_DESIGN (source: requirements_proposal) baseline returns baselineId, contentHash, version 1, duplicate false
+  TC-DELIVERY-002.spec.ts:259:3 › TC-DELIVERY-002: baseline input modes on the real database › POST baseline with empty acceptanceCriteria returns 422 identifying the field
+  TC-DELIVERY-002.spec.ts:309:3 › TC-DELIVERY-002: baseline input modes on the real database › attachment scope: create baseline with attachmentId, GET baseline back and verify attachmentIds includes it
+  TC-DELIVERY-002.spec.ts:355:3 › TC-DELIVERY-002: baseline input modes on the real database › duplicate content hash: POSTing the same baseline content twice returns duplicate:true with the same baselineId
+  TC-DELIVERY-002.spec.ts:404:3 › TC-DELIVERY-002: baseline input modes on the real database › unknown targetProfileId: create project with non-existent targetProfileId returns 422
+  TC-DELIVERY-002.spec.ts:444:3 › TC-DELIVERY-002: baseline input modes on the real database › cross-tenant: org B token gets 404 on a project created by org A
+  TC-DELIVERY-002.spec.ts:511:3 › TC-DELIVERY-002: baseline input modes on the real database › approved baseline marks the project activeBaselineId and is listed as isActive: true
+  TC-DELIVERY-003.spec.ts:13:5 › TC-DELIVERY-003: requirements and plan proposals › from_brief: proposals replay without duplication and merged baseline requires new decisions
+  TC-DELIVERY-003.spec.ts:115:5 › TC-DELIVERY-003: requirements and plan proposals › from_brief: invalid requirements and plan manifests leave no new baselines or tasks
+  TC-DELIVERY-003.spec.ts:13:5 › TC-DELIVERY-003: requirements and plan proposals › from_design: proposals replay without duplication and merged baseline requires new decisions
+  TC-DELIVERY-003.spec.ts:115:5 › TC-DELIVERY-003: requirements and plan proposals › from_design: invalid requirements and plan manifests leave no new baselines or tasks
+  TC-DELIVERY-004.qa-regression.spec.ts:37:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › project updates and archive reject stale versions and accept the current version
+  TC-DELIVERY-004.qa-regression.spec.ts:67:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › task CRUD preserves state on stale versions, invalid paths, foreign references and invalid transitions
+  TC-DELIVERY-004.qa-regression.spec.ts:118:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › baseline, decision, reserve, cancel and reconcile enforce their parent or task version
+  TC-DELIVERY-004.qa-regression.spec.ts:157:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › a new unapproved baseline cannot ready or reserve a task using previous approvals
+  TC-DELIVERY-004.spec.ts:207:3 › TC-DELIVERY-004: task plan validation and import on the real database › task with a cyclic dependsOnTaskIds (A→B→A) returns 422 cycle
+  TC-DELIVERY-004.spec.ts:248:3 › TC-DELIVERY-004: task plan validation and import on the real database › cross-tenant: org B token gets 409 (lock-based 404 equivalent) on task update for org A task
+  TC-DELIVERY-004.spec.ts:315:3 › TC-DELIVERY-004: task plan validation and import on the real database › unknown AC ID in acIds of task create returns 422 unknown_ac
+  TC-DELIVERY-004.spec.ts:351:3 › TC-DELIVERY-004: task plan validation and import on the real database › optimistic lock mismatch on task update returns 409 optimistic_lock_conflict
+  TC-DELIVERY-004.spec.ts:391:3 › TC-DELIVERY-004: task plan validation and import on the real database › task status READY transition blocked by unresolved predecessors that are not done
+  TC-DELIVERY-004.spec.ts:443:3 › TC-DELIVERY-004: task plan validation and import on the real database › re-import: POST same task twice does not create a duplicate
+  TC-DELIVERY-004.spec.ts:488:3 › TC-DELIVERY-004: task plan validation and import on the real database › plan import: task acIds referencing an AC absent from the baseline returns 422
+  TC-DELIVERY-004.spec.ts:552:3 › TC-DELIVERY-004: task plan validation and import on the real database › plan import with a cycle in dependsOn returns 422 cycle
+  TC-DELIVERY-004.spec.ts:616:3 › TC-DELIVERY-004: task plan validation and import on the real database › missing lock header on task update returns 428 optimistic_lock_required
+  TC-DELIVERY-005.spec.ts:11:3 › TC-DELIVERY-005: reservation concurrency and replay › concurrent identical keys persist one attempt; replay ignores the stale lock
+  TC-DELIVERY-005.spec.ts:85:3 › TC-DELIVERY-005: reservation concurrency and replay › public reservation rejects automatic mode and missing keys without creating attempts
+  TC-DELIVERY-005.spec.ts:110:3 › TC-DELIVERY-005: reservation concurrency and replay › sixteen closed attempts preserve history and reject the seventeenth reservation
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects malformed manifest without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects oversized body without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects unknown version without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign project without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign task without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign attempt without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign baseline without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects wrong baseline hash without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects wrong base revision without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects outside paths without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects unknown test without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects too many paths without persisting evidence
+  TC-DELIVERY-006.qa-regression.spec.ts:51:3 › TC-DELIVERY-006: result validation and durable replay › concurrent identical results create one evidence; a changed replay conflicts
+  TC-DELIVERY-006.spec.ts:284:3 › TC-DELIVERY-006: evidence recording edge cases › duplicate result idempotency: same attemptId and identical manifest hash answers 200 duplicate:true with the same evidenceId and writes no new row
+  TC-DELIVERY-006.spec.ts:334:3 › TC-DELIVERY-006: evidence recording edge cases › hash conflict: same attemptId but a different manifest hash answers 409 result_conflict
+  TC-DELIVERY-006.spec.ts:371:3 › TC-DELIVERY-006: evidence recording edge cases › unknown baselineId: POST evidence with a made-up baselineId answers 404 or 422
+  TC-DELIVERY-006.spec.ts:413:3 › TC-DELIVERY-006: evidence recording edge cases › cancelled attempt: POST results for a cancelled attempt answers 409 attempt_closed or attempt_cancelled
+  TC-DELIVERY-006.spec.ts:451:3 › TC-DELIVERY-006: evidence recording edge cases › foreign-tenant attempt: POST results using org B token for an attempt owned by org A answers 404
+  TC-DELIVERY-006.spec.ts:519:3 › TC-DELIVERY-006: evidence recording edge cases › tenantId field in body is ignored: evidence is scoped to the auth context tenant, not the provided field
+  TC-DELIVERY-007.qa-regression.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › cancel preserves the execution and review gates
+  TC-DELIVERY-007.qa-regression.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › unknown preserves the execution and review gates
+  TC-DELIVERY-007.qa-regression.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › stopped preserves the execution and review gates
+  TC-DELIVERY-007.qa-regression.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › completed preserves the execution and review gates
+  TC-DELIVERY-007.spec.ts:314:3 › TC-DELIVERY-007: cancel and reconcile ACL + state transitions › cancel requires delivery_os.attempts.manage: user without that feature gets 403
+  TC-DELIVERY-007.spec.ts:364:3 › TC-DELIVERY-007: cancel and reconcile ACL + state transitions › reconcile requires delivery_os.attempts.reconcile: user without that feature gets 403
+  TC-DELIVERY-007.spec.ts:424:3 › TC-DELIVERY-007: cancel and reconcile ACL + state transitions › late result after cancel: POST results for a cancel_requested attempt answers 409
+  TC-DELIVERY-007.spec.ts:477:3 › TC-DELIVERY-007: cancel and reconcile ACL + state transitions › unknown resolution: POST reconcile with an invalid resolution value answers 422
+  TC-DELIVERY-007.spec.ts:529:3 › TC-DELIVERY-007: cancel and reconcile ACL + state transitions › completed→verified direct transition is not available via a public HTTP route
+  TC-DELIVERY-008.qa-regression.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve failed evidence
+  TC-DELIVERY-008.qa-regression.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve not_run evidence
+  TC-DELIVERY-008.qa-regression.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve missing evidence
+  TC-DELIVERY-008.qa-regression.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve wrong_revision evidence
+  TC-DELIVERY-008.qa-regression.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve manual_agent evidence
+  TC-DELIVERY-008.qa-regression.spec.ts:46:3 › TC-DELIVERY-008: review requires current complete proof › exhausted correction budget blocks another execution
+  TC-DELIVERY-008.spec.ts:192:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › unknown discriminator kind → 422 unsupported_evidence_kind
+  TC-DELIVERY-008.spec.ts:217:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › screenshot kind without required payload fields → 422 validation_failed
+  TC-DELIVERY-008.spec.ts:243:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › scan kind without required AC mapping fields → 422 validation_failed
+  TC-DELIVERY-008.spec.ts:267:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › scan kind with sourceRevision missing → 422 (sourceRevision required for scan)
+  TC-DELIVERY-008.spec.ts:300:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › screenshot evidence with declared sha256 not matching attachment content → 422 attachment_hash_mismatch
+  TC-DELIVERY-008.spec.ts:337:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › partial AC coverage keeps task in awaiting_review after result and review
+  TC-DELIVERY-008.spec.ts:417:3 › TC-DELIVERY-008: evidence discriminator validation and review gate › changes_requested review does not move task to verified; deploy gate blocks when report not green
+  TC-DELIVERY-010.spec.ts:10:5 › TC-DELIVERY-010: OSS manual lifecycle › only reviewed proof unlocks the dependent task
+  TC-DELIVERY-010.spec.ts:10:5 › TC-DELIVERY-010: OSS manual lifecycle › keeps correction history and reviews the new result
+  TC-DELIVERY-FIXTURE-001.spec.ts:66:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › scopes real actors and cleans a reserved manual attempt without changing another fixture
+  TC-DELIVERY-FIXTURE-001.spec.ts:146:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › cleans every registered resource after setup fails midway
+  TC-DELIVERY-OSS-001.spec.ts:288:3 › TC-DELIVERY-OSS-001: delivery_os v1 manual flow on the real database › manual flow: baseline with a real attachment → verified task → report proof → publication gates
+  TC-DELIVERY-OSS-001.spec.ts:378:3 › TC-DELIVERY-OSS-001: delivery_os v1 manual flow on the real database › foreign organisation and foreign tenant users get 404 on every id of the owner
+  TC-DELIVERY-OSS-001.spec.ts:496:3 › TC-DELIVERY-OSS-001: delivery_os v1 manual flow on the real database › stale versions answer the platform 409 and the baseline unique index answers duplicate, never 5xx
+  TC-DELIVERY-OSS-001.spec.ts:553:3 › TC-DELIVERY-OSS-001: delivery_os v1 manual flow on the real database › a claimed attempt is cancelled, refuses a new reservation and is reconciled as stopped
+Total: 86 tests in 16 files

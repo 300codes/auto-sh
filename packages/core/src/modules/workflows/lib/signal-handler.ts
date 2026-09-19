@@ -129,6 +129,8 @@ export async function sendSignal(
       throw new SignalError('Workflow definition not found', 'DEFINITION_NOT_FOUND', { definitionId: instance.definitionId })
     }
 
+    await validateDeliverySignalGuard(container, branchDefinition, options)
+
     const pausedBranches = await em.find(WorkflowBranchInstance, {
       workflowInstanceId: instanceId,
       status: 'PAUSED',
@@ -215,6 +217,8 @@ export async function sendSignal(
       { definitionId: instance.definitionId }
     )
   }
+
+  await validateDeliverySignalGuard(container, definition, options)
 
   // Find current step
   const currentStep = definition.definition.steps.find(
@@ -496,4 +500,10 @@ export async function sendSignalByCorrelationKey(
   }
 
   return signalsProcessed
+}
+
+async function validateDeliverySignalGuard(container: AwilixContainer, definition: WorkflowDefinition, options: SendSignalOptions): Promise<void> {
+  if (definition.metadata?.immutablePolicy !== 'delivery') return
+  if (!container.hasRegistration('workflowSignalGuard')) throw new SignalError('[internal] Delivery signal guard unavailable', 'DELIVERY_GUARD_UNAVAILABLE')
+  await container.resolve<{ validate(options: SendSignalOptions): Promise<void> }>('workflowSignalGuard').validate(options)
 }

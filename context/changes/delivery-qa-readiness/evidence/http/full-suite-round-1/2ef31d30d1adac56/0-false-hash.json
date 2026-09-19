@@ -1,0 +1,16 @@
+{
+  "inputMode": "from_brief",
+  "status": 422,
+  "body": {
+    "error": "Stored attachment does not match the declared file",
+    "code": "attachment_hash_mismatch",
+    "details": [
+      {
+        "path": "screens.0.sha256",
+        "code": "sha256_mismatch",
+        "message": "The stored bytes do not hash to the declared sha256"
+      }
+    ]
+  },
+  "baselineCount": 0
+}

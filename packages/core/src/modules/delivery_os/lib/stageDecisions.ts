@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { hasAllFeatures } from '@open-mercato/shared/security/features'
+import { authorizeFeatures } from '@open-mercato/shared/security/featurePolicy'
 import {
   FLOW_APPROVAL_STAGE_ORDER,
   buildDeliveryFlowError,
@@ -80,7 +80,7 @@ export function hashStageDecisionRequest(request: StageDecisionRequest): string 
  * feature suffices.
  */
 export function checkStageApprover(grantedFeatures: readonly string[], templateStage: Pick<FlowTemplateStage, 'stageId' | 'approverFeatures'>): DeliveryFlowCheckResult {
-  if (hasAllFeatures(grantedFeatures, templateStage.approverFeatures)) return { ok: true }
+  if (authorizeFeatures(templateStage.approverFeatures, { grantedFeatures })) return { ok: true }
   return fail(
     buildDeliveryFlowError('forbidden', 'The caller may not decide this stage', [
       { path: `stages.${templateStage.stageId}.approverFeatures`, code: 'forbidden', message: `Requires ${templateStage.approverFeatures.join(', ')}` },
@@ -281,7 +281,7 @@ export function planStageDecision(input: {
     verdict: request.verdict,
     reason: request.reason ?? null,
     clientApproved: request.verdict === 'approved' && Boolean(request.clientApproval),
-    deferredThreadKeys: deferrals.map((deferral) => deferral.threadKey),
+    deferredThreadKeys: [...new Set(deferrals.map((deferral) => deferral.threadKey))],
   }
   const projected: StageDecisionRecord = {
     id: `pending:${input.idempotencyKey}`,

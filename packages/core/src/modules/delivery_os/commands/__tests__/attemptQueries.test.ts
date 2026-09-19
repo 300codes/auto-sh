@@ -18,6 +18,8 @@ import {
   routeState,
 } from '../../api/__tests__/routeTestKit'
 import { createDeliveryOsAttemptQueries, type DeliveryOsAttemptQueries } from '../attemptQueries'
+import type { DeliveryFlowTemplateProvider } from '../flowTemplateProvider'
+import { DEFAULT_FLOW_TEMPLATE } from '../../lib/flowTemplates'
 import { BASELINE_ID, FOREIGN_ORG_ID, ORG_ID, TENANT_ID, makeBaseline, makeProject, type Row } from './baselineTestKit'
 
 const SCOPE = { tenantId: TENANT_ID, organizationId: ORG_ID }
@@ -78,18 +80,35 @@ describe('deliveryOsAttemptQueries', () => {
     const registrations: Record<string, { resolve: (container: { resolve: (name: string) => unknown }) => unknown }> = {}
     register({ register: (entries: typeof registrations) => Object.assign(registrations, entries) } as never)
     expect(Object.keys(registrations)).toEqual([
+      'deliveryOsCommentQueries',
+      'deliveryOsDesignImportQueries',
+      'deliveryOsResultQueries',
+      'deliveryOsEvidenceQueries',
       'deliveryOsAttemptQueries',
       'deliveryOsReportQueries',
+      'deliveryOsFlowQueries',
       'deliveryOsAttachmentInspector',
       'deliveryFlowTemplateProvider',
+      'deliveryStaffKanbanAdapter',
     ])
     const lazyResolve = jest.fn()
     expect(typeof registrations.deliveryOsAttachmentInspector.resolve({ resolve: lazyResolve })).toBe('function')
     expect(lazyResolve).not.toHaveBeenCalled()
     const service = registrations.deliveryOsAttemptQueries.resolve({ resolve: () => em }) as DeliveryOsAttemptQueries
-    expect(Object.keys(service).sort()).toEqual(['buildTaskPackage', 'getAttempt', 'listPendingDeliveries'])
+    expect(Object.keys(service).sort()).toEqual(['assertExecutionReady', 'buildTaskPackage', 'getAttempt', 'listPendingDeliveries'])
     const reports = registrations.deliveryOsReportQueries.resolve({ resolve: () => em }) as Record<string, unknown>
     expect(Object.keys(reports)).toEqual(['buildReport'])
+    const flows = registrations.deliveryOsFlowQueries.resolve({ resolve: () => em }) as Record<string, unknown>
+    expect(Object.keys(flows).sort()).toEqual(['flowStatus', 'portfolio'])
+    expect(typeof flows.flowStatus).toBe('function')
+  })
+
+  it('registers the built-in flow template provider under deliveryFlowTemplateProvider (replaceable by the workflows owner)', async () => {
+    const registrations: Record<string, { resolve: (container: { resolve: (name: string) => unknown }) => unknown }> = {}
+    register({ register: (entries: typeof registrations) => Object.assign(registrations, entries) } as never)
+    const provider = registrations.deliveryFlowTemplateProvider.resolve({ resolve: () => em }) as DeliveryFlowTemplateProvider
+    expect(await provider.getTemplate(DEFAULT_FLOW_TEMPLATE.templateId, DEFAULT_FLOW_TEMPLATE.version)).toBe(DEFAULT_FLOW_TEMPLATE)
+    expect(await provider.getTemplate(DEFAULT_FLOW_TEMPLATE.templateId, 2)).toBeNull()
   })
 
   it('throws an internal error when the scope is missing', async () => {

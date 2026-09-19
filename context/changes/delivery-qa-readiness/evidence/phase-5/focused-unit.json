@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "command": "node node_modules/jest/bin/jest.js --config packages/core/jest.config.cjs --runInBand --runTestsByPath packages/core/src/modules/delivery_os/commands/__tests__/executorFlow.test.ts packages/core/src/modules/delivery_os/commands/__tests__/reconcile.test.ts packages/core/src/modules/delivery_os/lib/__tests__/acProof.test.ts",
+  "runner": "isolated current immutable dependencies, Docker 6144MiB/2CPU",
+  "provenance": "unit mocks; no HTTP or live executor",
+  "suites": 3,
+  "passed": 44,
+  "failed": 0,
+  "sourceHashes": {
+    "packages/core/src/modules/delivery_os/commands/__tests__/executorFlow.test.ts": "b2d72cd885620163f4ecb56e9ab03617fbb76671c7a6af641e44e9cf5a3a5716",
+    "packages/core/src/modules/delivery_os/commands/__tests__/reconcile.test.ts": "e100899b8ab709cdb3d519b1674844ea3bc16ab8bbccf3f870d7f5dc799604d9",
+    "packages/core/src/modules/delivery_os/lib/__tests__/acProof.test.ts": "2aa8ef13201a586048d5c58f0a2a44985ae43186cbd96dea7350dc80de0e9f4f"
+  }
+}

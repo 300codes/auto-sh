@@ -5,79 +5,114 @@ import type { InjectionWidgetComponentProps } from '@open-mercato/shared/modules
 import type { ExecutionWidgetContextV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { useAppEvent } from '@open-mercato/ui/backend/injection/useAppEvent'
 import { Button } from '@open-mercato/ui/primitives/button'
-import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
+import { apiCall, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/utils/apiCall'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
+import { taskDtoSchema, type TaskDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
+import { findActiveAttempt } from '@open-mercato/core/modules/delivery_os/components/task/attemptRegister'
+import { useOrganizationScopeVersion } from '@open-mercato/shared/lib/frontend/useOrganizationScope'
+import { useGuardedMutation } from '@open-mercato/ui/backend/injection/useGuardedMutation'
+import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
+import { surfaceRecordConflict } from '@open-mercato/ui/backend/conflicts'
+import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
-
-type AttemptState = {
-  attemptId: string | null
-  state: string | null
-  stopConfirmation: string | null
-}
-
-const INITIAL_ATTEMPT_STATE: AttemptState = { attemptId: null, state: null, stopConfirmation: null }
 
 export default function ProjectExecutionActionWidget({
   context,
 }: InjectionWidgetComponentProps<ExecutionWidgetContextV1, undefined>) {
-  const { taskId } = context
-  const { t } = useT('delivery_agents')
-  const [attempt, setAttempt] = React.useState<AttemptState>(INITIAL_ATTEMPT_STATE)
+  const { taskId, projectId } = context
+  const t = useT()
+  const scopeVersion = useOrganizationScopeVersion()
+  const [task, setTask] = React.useState<TaskDto | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [problem, setProblem] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
+  const pending = React.useRef(false)
+  const requestSequence = React.useRef(0)
+  const loadedScope = React.useRef<number | null>(null)
+  const { runMutation, retryLastMutation } = useGuardedMutation({ contextId: `delivery_agents.execute.${taskId}` })
 
-  useAppEvent('delivery_os.task.updated', (payload: Record<string, unknown>) => {
-    if (payload.taskId !== taskId) return
-    if (payload.status && payload.status !== 'executing') {
-      setAttempt(INITIAL_ATTEMPT_STATE)
+  const loadTask = React.useCallback(async () => {
+    const sequence = ++requestSequence.current
+    setLoading(true)
+    setProblem(false)
+    try {
+      if (!taskId) return
+      const response = await apiCall<unknown>(`/api/delivery_os/tasks/${encodeURIComponent(taskId)}`)
+      if (sequence !== requestSequence.current) return
+      const parsed = taskDtoSchema.safeParse(response.result)
+      if (!response.ok || !parsed.success || parsed.data.id !== taskId || parsed.data.projectId !== projectId) {
+        setProblem(true)
+        return
+      }
+      loadedScope.current = scopeVersion
+      setTask(parsed.data)
+    } catch {
+      if (sequence === requestSequence.current) setProblem(true)
+    } finally {
+      if (sequence === requestSequence.current) setLoading(false)
     }
+  }, [taskId, projectId, scopeVersion])
+
+  React.useEffect(() => { setTask(null) }, [loadTask])
+
+  React.useEffect(() => {
+    void loadTask()
+    return () => { requestSequence.current += 1 }
+  }, [loadTask, context.updatedAt])
+
+  useAppEvent('delivery_os.task.updated', (event) => {
+    if (event.payload.taskId === taskId) void loadTask()
   })
 
-  const handleExecute = React.useCallback(async () => {
-    if (!taskId || busy) return
-    setBusy(true)
-    try {
-      const idempotencyKey = `exec-${taskId}-${Date.now()}`
-      const res = await apiCall<{ attemptId?: string; state?: string }>(
-        `/api/delivery_agents/tasks/${taskId}/execute`,
-        { method: 'POST', body: JSON.stringify({ idempotencyKey }) },
-      )
-      if (!res.ok) {
-        flash(`[internal] Execution failed (${res.status})`, 'error')
-        return
-      }
-      const data = res.result
-      setAttempt({ attemptId: data?.attemptId ?? null, state: data?.state ?? 'reserved', stopConfirmation: null })
-      flash(t('delivery_agents.widget.execute.started'), 'success')
-      await context.refresh()
-    } finally {
-      setBusy(false)
-    }
-  }, [taskId, busy])
+  const currentTask = loadedScope.current === scopeVersion && task?.id === taskId && task?.projectId === projectId ? task : null
+  const activeAttempt = currentTask ? findActiveAttempt(currentTask) : null
+  const isRunning = activeAttempt !== null
+  const isCancelPending = activeAttempt?.stopConfirmation === 'stop_unconfirmed'
+  const unavailable = loading || problem || !currentTask || !currentTask.attemptRegisterReadable || currentTask.archivedAt !== null
 
-  const handleCancel = React.useCallback(async () => {
-    if (!taskId || !attempt.attemptId || busy) return
+  const mutate = React.useCallback(async (cancel: boolean) => {
+    if (!taskId || !task || unavailable || pending.current || (cancel && !activeAttempt)) return
+    pending.current = true
     setBusy(true)
+    const payload = cancel
+      ? { attemptId: activeAttempt!.attemptId }
+      : { idempotencyKey: `exec-${taskId}-${crypto.randomUUID()}` }
     try {
-      const res = await apiCall<{ stopConfirmation?: string; state?: string }>(
-        `/api/delivery_agents/tasks/${taskId}/execute/cancel`,
-        { method: 'POST', body: JSON.stringify({ attemptId: attempt.attemptId }) },
-      )
-      if (!res.ok) {
-        flash(`[internal] Cancel failed (${res.status})`, 'error')
-        return
+      await runMutation({
+        operation: async () => {
+          const response = await withScopedApiRequestHeaders(
+            buildOptimisticLockHeader(task.updatedAt),
+            () => apiCall<unknown>(`/api/delivery_agents/tasks/${encodeURIComponent(taskId)}/execute${cancel ? '/cancel' : ''}`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            }),
+          )
+          if (!response.ok) {
+            throw Object.assign(new Error('[internal] Delivery execution mutation failed'), {
+              status: response.status,
+              ...(typeof response.result === 'object' && response.result !== null ? response.result : {}),
+            })
+          }
+          await loadTask()
+          await context.refresh()
+          flash(t(cancel ? 'delivery_agents.widget.cancel.requested' : 'delivery_agents.widget.execute.started'), 'success')
+        },
+        context: { resourceKind: 'delivery_os.task', resourceId: taskId, retryLastMutation },
+        mutationPayload: payload,
+      })
+    } catch (error) {
+      if (!surfaceRecordConflict(error, t)) {
+        flash(t(cancel ? 'delivery_agents.widget.cancel.failed' : 'delivery_agents.widget.execute.failed'), 'error')
       }
-      setAttempt((prev) => ({ ...prev, stopConfirmation: 'stop_unconfirmed' }))
-      flash(t('delivery_agents.widget.cancel.requested'), 'success')
-      await context.refresh()
+      await loadTask()
     } finally {
+      pending.current = false
       setBusy(false)
     }
-  }, [taskId, attempt.attemptId, busy])
+  }, [activeAttempt, context, loadTask, retryLastMutation, runMutation, t, task, taskId, unavailable])
 
   if (!taskId) return null
-
-  const isRunning = !!attempt.attemptId && attempt.stopConfirmation !== 'stop_unconfirmed'
-  const isCancelPending = attempt.stopConfirmation === 'stop_unconfirmed'
 
   return (
     <div
@@ -86,13 +121,15 @@ export default function ProjectExecutionActionWidget({
       data-task-id={taskId}
       className="flex items-center gap-2"
     >
+      {problem ? <ErrorMessage label={t('delivery_os.task.loadError')} action={<Button type="button" variant="outline" onClick={() => void loadTask()}>{t('delivery_os.project.retry')}</Button>} /> : null}
+      {loading ? <LoadingMessage label={t('delivery_os.task.loading')} /> : null}
       {!isRunning && !isCancelPending && (
         <Button
           type="button"
           variant="default"
           size="sm"
-          onClick={handleExecute}
-          disabled={busy}
+          onClick={() => void mutate(false)}
+          disabled={busy || unavailable || (task?.status !== 'ready' && task?.status !== 'changes_requested')}
           aria-label={t('delivery_agents.widget.execute.ariaLabel')}
         >
           {busy ? t('delivery_agents.widget.execute.starting') : t('delivery_agents.widget.execute.label')}
@@ -103,8 +140,8 @@ export default function ProjectExecutionActionWidget({
           type="button"
           variant="outline"
           size="sm"
-          onClick={handleCancel}
-          disabled={isCancelPending || busy}
+          onClick={() => void mutate(true)}
+          disabled={isCancelPending || busy || unavailable}
           aria-label={t('delivery_agents.widget.cancel.ariaLabel')}
         >
           {isCancelPending ? t('delivery_agents.widget.cancel.cancelling') : t('delivery_agents.widget.cancel.label')}

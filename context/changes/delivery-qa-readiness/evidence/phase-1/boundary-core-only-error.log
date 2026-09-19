@@ -1,0 +1,19 @@
+Module not found: Can't resolve '@valkey/valkey-glide' in '/qa/node_modules/bullmq/dist/esm/classes'
+Module not found: Can't resolve '@valkey/valkey-glide' in '/qa/node_modules/bullmq/dist/esm/classes'
+Module not found: Can't resolve 'fs'
+./src/modules/example/lib/messageObjectPreviews.ts
+./src/modules/example/message-objects.ts
+Module not found: Can't resolve 'tls'
+./src/modules/example/lib/messageObjectPreviews.ts
+./src/modules/example/message-objects.ts
+Module not found: Can't resolve 'net'
+./src/modules/example/lib/messageObjectPreviews.ts
+./src/modules/example/message-objects.ts
+Module not found: Can't resolve 'net'
+./src/modules/example/lib/messageObjectPreviews.ts
+./src/modules/example/message-objects.ts
+Module not found: Can't resolve 'net'
+./src/modules/example/lib/messageObjectPreviews.ts
+./src/modules/example/message-objects.ts
+> Build failed because of webpack errors
+HTTP tests executed: 0

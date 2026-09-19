@@ -1,0 +1,30 @@
+{
+  "scenario": "stopped",
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "attemptId": "6d651556-6054-4fb0-aa52-16c611e91f57",
+  "resolution": "stopped",
+  "provenance": "http-fixture"
+}

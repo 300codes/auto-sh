@@ -1,0 +1,12 @@
+PASS packages/core/src/helpers/integration/__tests__/deliveryFixtureLedger.test.ts
+  delivery fixture cleanup ownership and recovery
+    ✓ cleans reverse task dependencies before projects, files and identities; repeated cleanup does nothing (5 ms)
+    ✓ preserves parents after a failure, cleans independent resources and retries only pending resources (4 ms)
+    ✓ coalesces concurrent cleanup and refuses registration while cleanup is pending (10 ms)
+    ✓ rejects unowned dependencies and duplicate ids before accepting cleanup callbacks (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        0.763 s
+Ran all test suites within paths "packages/core/src/helpers/integration/__tests__/deliveryFixtureLedger.test.ts".

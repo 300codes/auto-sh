@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "suiteRunId": "79898108-bcba-4ea7-96aa-0bb204de77ec",
+  "testId": "65f3e98afd8e589a3d93-7fc7cbcb0ad32f4e92f2",
+  "title": "sixteen closed attempts preserve history and reject the seventeenth reservation",
+  "provenance": "http-fixture",
+  "codeRevision": null,
+  "appRevision": null,
+  "environmentId": "auto-sh-delivery-qa-4gb",
+  "namespace": "79898108-bcb-65f3e98afd8e589a3d-retry0-ee2746bd-b481-494a-b32c-ed1e2710220a",
+  "scopes": {
+    "A1": {
+      "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+      "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+    }
+  },
+  "timestamp": "2026-09-19T11:08:19.572Z",
+  "cleanup": {
+    "resources": [
+      {
+        "kind": "tenant",
+        "id": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "id": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "kind": "organization",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "id": "a29f44b3-944f-4e56-9521-7960fb066831",
+        "kind": "role",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "id": "115af1ad-91ba-4e8d-a7b3-4150aa46304b",
+        "kind": "user",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "kind": "project",
+        "id": "126dcc2a-622b-41b7-94cd-e44352f5e592",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "kind": "attachment",
+        "id": "f8da35ae-5723-474d-a011-3b603b177854",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "kind": "task",
+        "id": "d1a0bd23-55f4-410b-a742-a0052e78f060",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7",
+        "state": "cleaned",
+        "retained": true
+      }
+    ],
+    "failures": [],
+    "retainedHistory": [
+      {
+        "kind": "baseline",
+        "id": "2eb1e3f6-1e94-4b67-a165-39821958b992",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "decision",
+        "id": "183ce80c-92a2-4fcd-9b29-a87b81b4c197",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "decision",
+        "id": "88fd2f65-2755-41a1-a7c1-8ac803b22459",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "4bd3d36b-5416-4902-af17-66fc30ee3796",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "9d239362-491a-4818-b827-725590d43c07",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "844b09b9-2f76-4117-a173-93303f4318d2",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "b886505f-ba84-4760-81db-413f029107bd",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "c8cc839c-852b-4d0b-852a-8cc20c7268c6",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "fe0f13a2-6eac-434f-a3f1-29ac38c1ccae",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "fa47db07-e2ce-4f96-bb78-ba3473fd8dd0",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "a3f88cf7-2254-4fbc-a462-7f12529bbf13",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "4afba0d5-a02a-4d55-ae67-b2d32b1bd936",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "0fd8940e-228e-4d4f-bb4b-38542f7ca5d3",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "b781625f-996b-4b95-8f43-04b843a91cb7",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "2bced818-fa7a-4b45-b18c-2d7b1cbff7b5",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "ed5e1e4a-98d6-4fba-bcf9-c03e1b5e0f78",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "6a0492af-7399-4006-b50d-04c75c3bbb71",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "ac222eb2-c833-4cc6-b281-cf036b482494",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      },
+      {
+        "kind": "attempt",
+        "id": "e5ed4651-fb02-4072-9f90-63eec6a8135b",
+        "tenantId": "4592d82c-78fb-4ff2-8c7d-d443f9ff4294",
+        "organizationId": "86400d24-2d84-4d48-b4e4-ca0c7c5d2ac7"
+      }
+    ],
+    "physicalCleanup": "pending_environment_disposal"
+  },
+  "cleanupStatus": "pending_environment_disposal",
+  "unmanagedMutations": [],
+  "assertionOutcome": "see-native-playwright-result"
+}

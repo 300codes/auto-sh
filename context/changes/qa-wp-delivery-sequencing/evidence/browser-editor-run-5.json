@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "reason": "Template-part editor transition raced iframe content: footer keyboard edit hit previous header. Require exact initial part content and persisted save state before moving on.",
+  "nativeFixtureCleanup": {
+    "nativeFixtureCleanup": "cleaned",
+    "browserCloseFailed": false,
+    "cleanupDiagnosticFailed": false,
+    "themeUpdate": "retained_intentionally"
+  },
+  "firstBuild": {
+    "status": "passed",
+    "action": "updated",
+    "cssHash": "6dbfb0fcad9a319ca54480b688764c628a6c9c8d67a410a56cd195ece50b76f7",
+    "files": [
+      {
+        "path": "templates/page.html",
+        "sha256": "919f000c6529d88ed2797d28f411d81b3a2fc059338e7f77126d30084eea3cc7"
+      }
+    ]
+  },
+  "sourceHashes": {
+    "packages/core/src/helpers/integration/wordpressBrowserFixtures.ts": "b509257f777d8b2e52b0777d6272fc67500a2dcb87c99d80b65663d4245cd87c",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress/TC-DELIVERY-WP-EDITOR-001.spec.ts": "f169e92a0254df241283b14ca3183395fbd11aba7a632cac24c9630194ce8a8e",
+    "/tmp/auto-sh-wp-foundation-20260919/playwright.wp.config.ts": "5bd0689ef866d440728c360b7fb38d805e46d100dc09b22892ed0f557fbd32e0"
+  },
+  "rawReportHash": "03b10e53f2a9f180a8b622675984abc3db5407a6df2a86b74692cbc4fb27f644",
+  "effectiveConfiguration": {
+    "base": "Repository .ai/qa/tests/playwright.config.ts",
+    "privateWrapperOverrides": {
+      "use.actionTimeout": 20000,
+      "use.navigationTimeout": 60000
+    },
+    "cli": {
+      "timeout": 900000,
+      "retries": 0,
+      "workers": 1
+    }
+  }
+}

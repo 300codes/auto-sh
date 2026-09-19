@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-09-19T14:34:14.760645+00:00",
+  "status": "passed",
+  "scope": "Focused EXEC bridge unit regressions; mocked command bus, workflow and queue; real trusted issuer and UUID validator",
+  "tests": {
+    "passed": 11,
+    "failed": 0,
+    "suites": 1
+  },
+  "runner": "host node/Jest, existing open-mercato dependency cache, private /tmp configuration; ts-jest diagnostics disabled (not a typecheck)",
+  "command": "NODE_PATH=/var/www/html/open-mercato/node_modules node /var/www/html/open-mercato/node_modules/jest/bin/jest.js --config /tmp/delivery-exec-integration-jest.config.cjs --runInBand --runTestsByPath /var/www/html/auto-sh/packages/enterprise/src/modules/delivery_agents/lib/__tests__/executionIntegration.test.ts",
+  "sha256": {
+    "packages/enterprise/src/modules/delivery_agents/lib/executionBridge.ts": "87027eb9a1dc1af0b6c544f4d6c5ad4b17a03653c1032507b02d23f5c8f5aedc",
+    "packages/enterprise/src/modules/delivery_agents/lib/resultAcceptance.ts": "8d7ed6acfbae3070b1e97957616448155b774e8171bd9480e90f279b21c7c2f2",
+    "packages/enterprise/src/modules/delivery_agents/lib/__tests__/executionIntegration.test.ts": "8c40e97c5e95c5cb7908e1c736ceb4918052f1cfdacc4be5c92b60e12ca1cad2"
+  },
+  "notExecuted": [
+    "live workflow/queue",
+    "WordPress runtime",
+    "full automatic end-to-end",
+    "package build/typecheck"
+  ],
+  "knownGap": "A reserved+linked attempt from failed initial parking is not recovered by replay of the same idempotency key."
+}

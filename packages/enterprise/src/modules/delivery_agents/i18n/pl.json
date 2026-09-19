@@ -1,0 +1,16 @@
+{
+  "delivery_agents.scope.description": "Asystent przygotowuje propozycje. Potwierdzenie importu zapisuje tylko propozycję. Osobno przejrzyj artefakt zakresu i zapisz decyzję klienta.",
+  "delivery_agents.scope.open": "Omów zakres z AI",
+  "delivery_agents.scope.placeholder": "Opisz cel lub zadaj pytanie o zakres…",
+  "delivery_agents.scope.title": "Asystent zakresu",
+  "delivery_agents.widget.cancel.ariaLabel": "Anuluj próbę wykonania",
+  "delivery_agents.widget.cancel.cancelling": "Anulowanie…",
+  "delivery_agents.widget.cancel.failed": "Nie udało się anulować",
+  "delivery_agents.widget.cancel.label": "Anuluj",
+  "delivery_agents.widget.cancel.requested": "Wysłano żądanie anulowania",
+  "delivery_agents.widget.execute.ariaLabel": "Wykonaj zadanie dostarczenia za pomocą Cezara",
+  "delivery_agents.widget.execute.failed": "Wykonanie nie powiodło się",
+  "delivery_agents.widget.execute.label": "Wykonaj",
+  "delivery_agents.widget.execute.started": "Rozpoczęto wykonanie",
+  "delivery_agents.widget.execute.starting": "Uruchamianie…"
+}

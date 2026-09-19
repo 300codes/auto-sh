@@ -9,6 +9,7 @@ import type { ModuleInjectionTable } from '@open-mercato/shared/modules/widgets/
  * this declaration is additive and safe to load before the spot exists.
  */
 export const injectionTable: ModuleInjectionTable = {
+  'delivery_os.project.scoping': [{ widgetId: 'delivery_agents.injection.scope-assistant', priority: 50 }],
   'delivery_os.project.execution': [
     {
       widgetId: 'delivery_agents.injection.project-execution-action',

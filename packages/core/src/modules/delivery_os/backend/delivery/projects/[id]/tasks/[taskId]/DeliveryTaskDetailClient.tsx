@@ -50,7 +50,7 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
         return
       }
       const parsed = taskDtoSchema.safeParse(response.result)
-      if (!response.ok || !parsed.success || parsed.data.id !== params.taskId) {
+      if (!response.ok || !parsed.success || parsed.data.id !== params.taskId || parsed.data.projectId !== params.id) {
         setState({ status: 'error' })
         return
       }
@@ -59,7 +59,7 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
     } catch {
       if (sequence === requestSequence.current) setState({ status: 'error' })
     }
-  }, [params.taskId, scopeVersion])
+  }, [params.id, params.taskId, scopeVersion])
 
   React.useEffect(() => {
     void refreshTask()

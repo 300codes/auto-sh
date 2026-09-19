@@ -1,6 +1,6 @@
 # Lessons
 
-This catalog indexes 144 focused lessons. Route the task first, then read only records whose modules, areas, or topics match the work.
+This catalog indexes 147 focused lessons. Route the task first, then read only records whose modules, areas, or topics match the work.
 
 ## How to use this catalog
 
@@ -19,6 +19,8 @@ This catalog indexes 144 focused lessons. Route the task first, then read only r
 ## Catalog
 
 ### architecture
+
+- [Local build precedes preview deployment](lessons/local-build-precedes-preview-deployment.md) — area:architecture,testing; module:delivery_wordpress; topic:build-output,provider-lifecycle,deployment
 
 - [Reuse tool capabilities does not imply reuse of orchestration runtime](lessons/reuse-tool-capabilities-does-not-imply-reuse-of-orchestration-runtime.md) — area:architecture,ai-workflow; module:delivery_wordpress; topic:module-boundaries,provider-lifecycle,scope
 
@@ -169,11 +171,14 @@ This catalog indexes 144 focused lessons. Route the task first, then read only r
 
 ### testing
 
+- [Validate binary fixtures before runtime use](lessons/validate-binary-fixtures-before-runtime-use.md) — area:testing,integration; module:delivery_wordpress; topic:binary-fixtures,media,cleanup
+
 - [Validate downloaded design assets before integration](lessons/validate-downloaded-design-assets-before-integration.md) — area:testing,backend-ui; module:design_system; topic:figma,asset-integrity,downloads
 
 - [Determine super-admin via the immutable `isSuperAdmin` flag, never by role name](lessons/determine-super-admin-via-the-immutable-issuperadmin.md) — area:testing,module-data,debugging; module:auth,events; topic:access-control,command-pattern,data-scoping
 - [Enqueue then stamp](lessons/enqueue-then-stamp.md) — area:testing; module:events; topic:events,workers
 - [Integration routing tests must establish the route they claim to cover](lessons/integration-routing-tests-must-establish-the-route-they-claim-to-cover.md) — area:testing,integration,debugging; module:search,query_index; topic:async-indexing,polling,query-index,route-coverage
+- [Negative mutation tests must track uncertain effects](lessons/negative-mutation-tests-must-track-uncertain-effects.md) — area:testing,integration,debugging; module:delivery_os,delivery_wordpress; topic:testing,data-scoping,concurrency,cleanup
 - [Keep executable integration tests module-local](lessons/keep-executable-integration-tests-module-local.md) — area:testing,module-data; module:platform; topic:module-boundaries,package-runtime,testing
 - [Meilisearch container healthchecks must probe IPv4 explicitly](lessons/meilisearch-container-healthchecks-must-probe-ipv4.md) — area:testing,architecture; module:search,create_app; topic:network-security,package-runtime,runtime-startup
 - [Restart stale UI previews after package edits](lessons/restart-stale-ui-previews-after-package-edits.md) — area:testing,debugging; module:create_app,ui; topic:package-runtime,testing

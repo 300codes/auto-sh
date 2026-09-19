@@ -1,0 +1,1592 @@
+{
+  "stats": {
+    "startTime": "2026-09-19T11:06:39.145Z",
+    "duration": 179485.797,
+    "expected": 43,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  },
+  "rawReportSha256": "0545985bef37a34a9bc6c48025b6a89635d9d872aee4c8a4e9273ae42bce20e6",
+  "rows": [
+    {
+      "id": "ea0e070197aa4a3b",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts",
+      "title": "TC-DELIVERY-001: R1\u2013R19 enforce authentication, features and tenant/organization scope without writes",
+      "repeatOrdinal": 0,
+      "status": "failed",
+      "durationMs": 13736,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "acl-scope-matrix.json",
+          "path": "http/full-suite-round-1/ea0e070197aa4a3b/0-acl-scope-matrix.json",
+          "sha256": "29aadc56f0892e6a169a4f367a00bd5ae9e72da4fa832794ef5a43aec7768123"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/ea0e070197aa4a3b/2-delivery-case.json",
+          "sha256": "b4c30102b7ff855bdc07aae385c7351499d583a431b0e2a1d1f5679cb9f5d498"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "errors": [
+        "Error: R3: foreign A2 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R4: foreign A2 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R12: foreign A2 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R13: foreign A2 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R3: foreign B1 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R4: foreign B1 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R12: foreign B1 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: R13: foreign B1 record\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 404\nReceived: 409\n\n  90 |         const response = await fixture.request(foreignActor, route.method, route.path, { ...route, expectedStatus: 404 })\n  91 |         observations.push({ route: route.id, check: `foreign-${foreignKey}`, status: response.status() })\n> 92 |         expect.soft(response.status(), `${route.id}: foreign ${foreignKey} record`).toBe(404)\n     |                                                                                     ^\n  93 |       }\n  94 |       const invalidSelection = await fixture.request(project.actor, 'GET', `/api/delivery_os/projects/${project.id}`, {\n  95 |         selectedOrganizationId: foreignProject.organizationId, expectedStatus: 422,\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:92:85)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3",
+        "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 403\n\n  130 |       updatedAt: projectBefore.updatedAt ?? undefined,\n  131 |     })\n> 132 |     expect(updated.status()).toBe(200)\n      |                              ^\n  133 |     expect((await fixture.readProject(project)).brief).toBe('Wildcard mutation control')\n  134 |     expect(await fixture.readProject(foreignProject)).toEqual(foreignBefore)\n  135 |     const report = { provenance: 'fixture', status: 'not_run', reason: 'scanner_not_executed' }\n    at withDeliveryFixture.full (/qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:132:30)\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:23:3"
+      ],
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "168ca23374822be3",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_brief: immutable snapshot, replay and both current decisions gate execution",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 4210,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "immutable-baseline-decision-gates.json",
+          "path": "http/full-suite-round-1/168ca23374822be3/0-immutable-baseline-decision-gates.json",
+          "sha256": "8fbd41a3f4f70628694770d38785da9f05d0b79de351bdc2bc9bb7f4d1c04337"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/168ca23374822be3/2-delivery-case.json",
+          "sha256": "13311940db717df5b8cf7a17c414de9a79badda09a0042b7f7b30220ad0bf1e7"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "2ef31d30d1adac56",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_brief: invalid render bytes hash, foreign attachment and missing content cannot freeze",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 10473,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "false-hash.json",
+          "path": "http/full-suite-round-1/2ef31d30d1adac56/0-false-hash.json",
+          "sha256": "364bb5c99f1907e4ed1082b42ec9aade3d3b4d670e234ac8546acad927c5858b"
+        },
+        {
+          "name": "foreign-attachment.json",
+          "path": "http/full-suite-round-1/2ef31d30d1adac56/2-foreign-attachment.json",
+          "sha256": "56e90575f09919b6e7c49e088a37a3e29040ecc7ddae2f66f0e4601d5e853ad2"
+        },
+        {
+          "name": "missing-render.json",
+          "path": "http/full-suite-round-1/2ef31d30d1adac56/4-missing-render.json",
+          "sha256": "3e6bb105c1c521ba2a730db9728bef3d2f41da7be47fc7352d9b0e59a131cfa3"
+        },
+        {
+          "name": "missing-ac.json",
+          "path": "http/full-suite-round-1/2ef31d30d1adac56/6-missing-ac.json",
+          "sha256": "d42e97ef8665dfcf9286fb51c0635674d706e5c50a8e8807db3e58cbab05f8f0"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/2ef31d30d1adac56/8-delivery-case.json",
+          "sha256": "42bf5f6cc7568aeeae97bed701a68705f1cb7fef44152bfab7254ff8192b0515"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "10581dc79088acd7",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_brief: verified old baseline does not prove the new approved snapshot",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3511,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "old-proof-new-baseline.json",
+          "path": "http/full-suite-round-1/10581dc79088acd7/0-old-proof-new-baseline.json",
+          "sha256": "702b4aa7a86c923d256eee3754377ef7b5e0d31cdce01687196d9e6397b9708d"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/10581dc79088acd7/2-delivery-case.json",
+          "sha256": "ca577870daea84d6a3cbbee5a673d38e1dab892be2a2b54e53706be614ea0285"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "17ca01f939ba2dd4",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_brief: concurrent contradictory decisions accept one current version",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2659,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "concurrent-decisions.json",
+          "path": "http/full-suite-round-1/17ca01f939ba2dd4/0-concurrent-decisions.json",
+          "sha256": "a18a9bcbc4c9fb0b7c85697d41409ef55f468bd1c07073b29595a7510970c6fd"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/17ca01f939ba2dd4/2-delivery-case.json",
+          "sha256": "d75e776d3a0267f60acba69dc125730f8a4027394a40debb3d73ed19b3ca6083"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "94cc184d0a6c68d1",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_design: immutable snapshot, replay and both current decisions gate execution",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3812,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "immutable-baseline-decision-gates.json",
+          "path": "http/full-suite-round-1/94cc184d0a6c68d1/0-immutable-baseline-decision-gates.json",
+          "sha256": "1afb578be8929cd7fe4028186d0105bcd6f2b32bfa2832b6618b6cb5d099080d"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/94cc184d0a6c68d1/2-delivery-case.json",
+          "sha256": "d01640965aa8be6c2670df8dff83a176b7f673ae1ac334efd4fd3bdcaa1069fd"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "01fa1db380eb52db",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_design: invalid render bytes hash, foreign attachment and missing content cannot freeze",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 10008,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "false-hash.json",
+          "path": "http/full-suite-round-1/01fa1db380eb52db/0-false-hash.json",
+          "sha256": "5d77a00811a010e07b040aefd3ea57ab74b50e5afaee69eb940b65c6bf2735b1"
+        },
+        {
+          "name": "foreign-attachment.json",
+          "path": "http/full-suite-round-1/01fa1db380eb52db/2-foreign-attachment.json",
+          "sha256": "065428d22fbc0efcf6d1dbd676a1c273de05ed90de6ea694d156bd26af270c95"
+        },
+        {
+          "name": "missing-render.json",
+          "path": "http/full-suite-round-1/01fa1db380eb52db/4-missing-render.json",
+          "sha256": "1031e01d4289d8bcc16f95d4f43bcbdc6103aa23d3b8d23ab20f55b063d0ed8b"
+        },
+        {
+          "name": "missing-ac.json",
+          "path": "http/full-suite-round-1/01fa1db380eb52db/6-missing-ac.json",
+          "sha256": "2b5d710b44596b420caa82770b06b477d058a645cf06e86ca2a7410a538b6557"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/01fa1db380eb52db/8-delivery-case.json",
+          "sha256": "9d22b2fd2a6c0184a1e254859b4bd4ebb5503248748959542d0ace2eba2bcc95"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "40475368676d952b",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_design: verified old baseline does not prove the new approved snapshot",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3395,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "old-proof-new-baseline.json",
+          "path": "http/full-suite-round-1/40475368676d952b/0-old-proof-new-baseline.json",
+          "sha256": "0db222969cbdcb843449284c5efce89121bc0ac928731a4d2061a4e1380206eb"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/40475368676d952b/2-delivery-case.json",
+          "sha256": "54b612b0d933b97da6409cdcdc91eba1800a9239789c53af8a5ce3284e426552"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "52bb4dd4c39f1d37",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "title": "from_design: concurrent contradictory decisions accept one current version",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2614,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "concurrent-decisions.json",
+          "path": "http/full-suite-round-1/52bb4dd4c39f1d37/0-concurrent-decisions.json",
+          "sha256": "1d89303587e986b00b90c349bd8552da69857596f0316be8d63b5d6ed108285d"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/52bb4dd4c39f1d37/2-delivery-case.json",
+          "sha256": "b87f0d46700aa65c5657230ab959b0d2dfbfd14c87df29e4c29f60077ed40e91"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "bdab46ab40c4f09b",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts",
+      "title": "from_brief: proposals replay without duplication and merged baseline requires new decisions",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 4157,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "plan-lock-428.json",
+          "path": "http/full-suite-round-1/bdab46ab40c4f09b/0-plan-lock-428.json",
+          "sha256": "3560af633518c13148ffadc4b1cebfaa3b74fb37f3853ead75865b9e975c996b"
+        },
+        {
+          "name": "plan-lock-409.json",
+          "path": "http/full-suite-round-1/bdab46ab40c4f09b/2-plan-lock-409.json",
+          "sha256": "cab241c147fb51cca462974226c280d0706a5b2cade94b90572c0eb8d7abf748"
+        },
+        {
+          "name": "proposal-pipeline.json",
+          "path": "http/full-suite-round-1/bdab46ab40c4f09b/4-proposal-pipeline.json",
+          "sha256": "8c1a53c22b1c24644b548f59a808bb20f4337eef318c66a31c61e4e66a3f1936"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/bdab46ab40c4f09b/6-delivery-case.json",
+          "sha256": "68c03c7cfb6ba0efc204a316574bc4da9ed5c61533c20b634a3ab2ef4eb89037"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "1cfe0e810c1391a9",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts",
+      "title": "from_brief: invalid requirements and plan manifests leave no new baselines or tasks",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3595,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "requirements-version.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/0-requirements-version.json",
+          "sha256": "6b72e932072ce3546895064d20f8e7abe6880a423f570f4cabe8459ed15a1a14"
+        },
+        {
+          "name": "requirements-foreign-project.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/2-requirements-foreign-project.json",
+          "sha256": "b7055753e8452f901c77734271b7384c435e96ef5b4fb6b8bb743fe8f9d58cf3"
+        },
+        {
+          "name": "requirements-duplicate-id.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/4-requirements-duplicate-id.json",
+          "sha256": "10633b8056ff87b3bbcbee89001e268f6930c6e052bc629d0fa1cfce172d1873"
+        },
+        {
+          "name": "requirements-missing-ac.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/6-requirements-missing-ac.json",
+          "sha256": "7a65646eadec47663ae6661a6ac4d02ca6ab33ddf03c4e41a60b16964cbebba8"
+        },
+        {
+          "name": "plan-version.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/8-plan-version.json",
+          "sha256": "e045ab20f09f18aa55e6fc019f0924efa2eb4b24f7cdc08804cadaca5d4db669"
+        },
+        {
+          "name": "plan-foreign-baseline.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/10-plan-foreign-baseline.json",
+          "sha256": "6c2c0d402ec873b8a982d8c656f0bfa2ee3c854d3e564731127307313c2043ff"
+        },
+        {
+          "name": "plan-baseline-hash.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/12-plan-baseline-hash.json",
+          "sha256": "1c88c7901bd36f7161ea0360bb7e858f56f51bfa9193940e51fa3d8acf9ff34c"
+        },
+        {
+          "name": "plan-absolute-path.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/14-plan-absolute-path.json",
+          "sha256": "189f5e646829646f53d73a91658d2220e41d9fb2b4fce117324996f26511075b"
+        },
+        {
+          "name": "plan-traversal-path.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/16-plan-traversal-path.json",
+          "sha256": "189f5e646829646f53d73a91658d2220e41d9fb2b4fce117324996f26511075b"
+        },
+        {
+          "name": "plan-outside-profile.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/18-plan-outside-profile.json",
+          "sha256": "218c3c9340635078c35436b60a5532a6cd54f47dc6ea10067c6c51e2aeafd4d1"
+        },
+        {
+          "name": "plan-unknown-ac.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/20-plan-unknown-ac.json",
+          "sha256": "19a5a31ed449bfaeffd3ebd851268c2f01ed7290986ea19aee3e61a085bbcd4b"
+        },
+        {
+          "name": "plan-unknown-test.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/22-plan-unknown-test.json",
+          "sha256": "1341d116ebe43a05163527a7db25838e9c1578d54c36616a62dd066618549a19"
+        },
+        {
+          "name": "plan-cycle.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/24-plan-cycle.json",
+          "sha256": "e2db3c2cf3080c70b553f1e92c055329f1227a1e3d558545e3f2100be2649360"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/1cfe0e810c1391a9/26-delivery-case.json",
+          "sha256": "6dde881588ae159162cfa65d2ff919742bfeed29f837d19cf2cbaa68420804d8"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "7847fd1f341db372",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts",
+      "title": "from_design: proposals replay without duplication and merged baseline requires new decisions",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3978,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "plan-lock-428.json",
+          "path": "http/full-suite-round-1/7847fd1f341db372/0-plan-lock-428.json",
+          "sha256": "3560af633518c13148ffadc4b1cebfaa3b74fb37f3853ead75865b9e975c996b"
+        },
+        {
+          "name": "plan-lock-409.json",
+          "path": "http/full-suite-round-1/7847fd1f341db372/2-plan-lock-409.json",
+          "sha256": "aa3c3c76fe590aae7d8259a38799bd2344a5f5b2ed4d30f21f46c89c2ca59fb1"
+        },
+        {
+          "name": "proposal-pipeline.json",
+          "path": "http/full-suite-round-1/7847fd1f341db372/4-proposal-pipeline.json",
+          "sha256": "5be93b88fd594705ccf3f4c617266b7f9dc10103e5b11c757e40d2bd386eb9d0"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/7847fd1f341db372/6-delivery-case.json",
+          "sha256": "caf8dc9363d471e88a47c9d4d3e58dd9d30c40a57ae6be6e03b08e1054565c54"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "de8e5fd5cb885408",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts",
+      "title": "from_design: invalid requirements and plan manifests leave no new baselines or tasks",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3506,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "requirements-version.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/0-requirements-version.json",
+          "sha256": "90b2a67d0cf091bb596ec90aa6e716c70d4690619f45777140dcffee8f877979"
+        },
+        {
+          "name": "requirements-foreign-project.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/2-requirements-foreign-project.json",
+          "sha256": "71ce8eecb4b35438280b27b060e838236a21135843567cbf928c7b7d3544fd9c"
+        },
+        {
+          "name": "requirements-duplicate-id.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/4-requirements-duplicate-id.json",
+          "sha256": "c9522db23dbd4b945211ca8a14073efaf0e2cd113be60ae571ba2d795e01a452"
+        },
+        {
+          "name": "requirements-missing-ac.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/6-requirements-missing-ac.json",
+          "sha256": "fd9dc0c506e7dc74fade4771cf98003b5a31869b5801b19eb721d8d33596e8e5"
+        },
+        {
+          "name": "plan-version.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/8-plan-version.json",
+          "sha256": "e79061fe61bbe1cb4ec13185664b3b9b5a97ff9b16496f091d423337e8ce0c6a"
+        },
+        {
+          "name": "plan-foreign-baseline.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/10-plan-foreign-baseline.json",
+          "sha256": "0c6154db2fba755da076d0e98fde87490db1ca4e56702edfdcb3f066ca127754"
+        },
+        {
+          "name": "plan-baseline-hash.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/12-plan-baseline-hash.json",
+          "sha256": "dbdd2642a2fd4cec930a8040b06fcdaec71bb525a8e4025e1789025ec1791aa7"
+        },
+        {
+          "name": "plan-absolute-path.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/14-plan-absolute-path.json",
+          "sha256": "87c9220d4792165a34f2b60f2fde59cc8365cb183d8f871ed8495bf23a574a82"
+        },
+        {
+          "name": "plan-traversal-path.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/16-plan-traversal-path.json",
+          "sha256": "87c9220d4792165a34f2b60f2fde59cc8365cb183d8f871ed8495bf23a574a82"
+        },
+        {
+          "name": "plan-outside-profile.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/18-plan-outside-profile.json",
+          "sha256": "bcfbe9236df63d2ba478718ed84c5cbdf1ef705da4afdd805ad0e4227d78b493"
+        },
+        {
+          "name": "plan-unknown-ac.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/20-plan-unknown-ac.json",
+          "sha256": "e4de60d7a44aa64b6a45879c8fd1acf081602a22bc81fc1bc1f893ffebed730e"
+        },
+        {
+          "name": "plan-unknown-test.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/22-plan-unknown-test.json",
+          "sha256": "94271a048ec4e742e3a057fa88a39d06b80fc91af5de16c80b0d73a0a36c729f"
+        },
+        {
+          "name": "plan-cycle.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/24-plan-cycle.json",
+          "sha256": "cc4e8be637aa5d385ddcaa01aacb035f5ed04b95023d80805b66164e786f33c0"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/de8e5fd5cb885408/26-delivery-case.json",
+          "sha256": "de5748fbfe02951dc883b62c99cc6dc39585231a1f90ce3ba91ba4e4043ee1ff"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "b157a591d7d9dbb3",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "title": "project updates and archive reject stale versions and accept the current version",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2442,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejection-a5e579a1-d233-44e7-a5a8-95d07b1e28e7.json",
+          "path": "http/full-suite-round-1/b157a591d7d9dbb3/0-rejection-a5e579a1-d233-44e7-a5a8-95d07b1e28e7.json",
+          "sha256": "10bf1783fc7c6203295d2e3d7f3eed54fa7855eafc91c61c6a6ec384727564a2"
+        },
+        {
+          "name": "rejection-860d06f6-724f-4113-aa9d-219d2921d359.json",
+          "path": "http/full-suite-round-1/b157a591d7d9dbb3/2-rejection-860d06f6-724f-4113-aa9d-219d2921d359.json",
+          "sha256": "10bf1783fc7c6203295d2e3d7f3eed54fa7855eafc91c61c6a6ec384727564a2"
+        },
+        {
+          "name": "project-locks.json",
+          "path": "http/full-suite-round-1/b157a591d7d9dbb3/4-project-locks.json",
+          "sha256": "4bff73c085b9c3c20cb5c641386cf3cd9b623980276cbcb6d465a41a8d7d3f3c"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/b157a591d7d9dbb3/6-delivery-case.json",
+          "sha256": "ccf52ad362a4ce559e473aae108809ccfe5f5502a2b7ac4c6ef1bfb23899dceb"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "46316a1675037a22",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "title": "task CRUD preserves state on stale versions, invalid paths, foreign references and invalid transitions",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3340,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejection-b635f0d5-280a-4710-9e18-cd1ae4a6189b.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/0-rejection-b635f0d5-280a-4710-9e18-cd1ae4a6189b.json",
+          "sha256": "3faecae719aabda70f5a762b9dc2d6689da82f824d3a93eff4a78f574325e2ee"
+        },
+        {
+          "name": "rejection-5922ff17-a5c9-4fa6-a196-7313b6ed271c.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/2-rejection-5922ff17-a5c9-4fa6-a196-7313b6ed271c.json",
+          "sha256": "3faecae719aabda70f5a762b9dc2d6689da82f824d3a93eff4a78f574325e2ee"
+        },
+        {
+          "name": "rejection-e55917d2-8263-40b4-b8f0-9f5a81234bed.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/4-rejection-e55917d2-8263-40b4-b8f0-9f5a81234bed.json",
+          "sha256": "dfe6ef8dc31a75d9144217a296454bacf2a9b2a820ed70cff6e8c4017e1c5557"
+        },
+        {
+          "name": "rejection-66283e67-a552-4cd3-b88f-42c0f5b9b937.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/6-rejection-66283e67-a552-4cd3-b88f-42c0f5b9b937.json",
+          "sha256": "4fb56ab8e0150579b63708dd88a01f002bdece5e12e3f6ca28ad8521e43d7df3"
+        },
+        {
+          "name": "rejection-555ee23f-4da8-410d-b4be-ef006d9edbe0.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/8-rejection-555ee23f-4da8-410d-b4be-ef006d9edbe0.json",
+          "sha256": "377d31a427e98c1a7dbf14e11a634816a32e29ab2490c18ba7c8afa02851c6ff"
+        },
+        {
+          "name": "rejection-193a5c16-44a5-4084-805b-09bf8763e261.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/10-rejection-193a5c16-44a5-4084-805b-09bf8763e261.json",
+          "sha256": "03a356d1d50b5f0d12b5b351cdf0c809db2d54b733619964295a7c872529d84a"
+        },
+        {
+          "name": "rejection-57f59e79-b0c1-42f2-93f1-4cd0e18d9d05.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/12-rejection-57f59e79-b0c1-42f2-93f1-4cd0e18d9d05.json",
+          "sha256": "b6b943138209ed6dfdbcc90b749242cb50939966082be18cbadfb38d35fad103"
+        },
+        {
+          "name": "rejection-0eafaee8-d090-4bcd-9653-7791a483ddef.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/14-rejection-0eafaee8-d090-4bcd-9653-7791a483ddef.json",
+          "sha256": "27d6a7e9b90cacf2654f3af41581a9584dd525c9145a2612649b9ae13bd77fde"
+        },
+        {
+          "name": "rejection-b1171bcd-c44f-4cd7-848a-2cb57c92da6a.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/16-rejection-b1171bcd-c44f-4cd7-848a-2cb57c92da6a.json",
+          "sha256": "c06f7e3be35904ef256d0155243c59f22eac2f730f47c7d9e78de7dac910f0f8"
+        },
+        {
+          "name": "task-locks-and-domain-guards.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/18-task-locks-and-domain-guards.json",
+          "sha256": "28faeffa2c50641b0c83161a049cca6a27a447f15a1fd6a040a3f765981adbfa"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/46316a1675037a22/20-delivery-case.json",
+          "sha256": "72599142a5091ea0462d6767d9643aa10cbf29cecb7394ec137b5853058754fe"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "27100f841179546a",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "title": "baseline, decision, reserve, cancel and reconcile enforce their parent or task version",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3347,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejection-c6bff06e-53a6-43d2-9d48-e0f281275ea8.json",
+          "path": "http/full-suite-round-1/27100f841179546a/0-rejection-c6bff06e-53a6-43d2-9d48-e0f281275ea8.json",
+          "sha256": "d98b0e1238248ce5c0a22f202bb51a82688d3140f0fac4d926c8c7593128c3b0"
+        },
+        {
+          "name": "rejection-708f5ac8-675c-4643-91c2-c767416697bb.json",
+          "path": "http/full-suite-round-1/27100f841179546a/2-rejection-708f5ac8-675c-4643-91c2-c767416697bb.json",
+          "sha256": "d3655546cec95e7a069a09a7895e51007c8cb14e279e242d5fc4df9f0f956296"
+        },
+        {
+          "name": "rejection-7fe28e14-adbf-420a-9bad-401b843a3b11.json",
+          "path": "http/full-suite-round-1/27100f841179546a/4-rejection-7fe28e14-adbf-420a-9bad-401b843a3b11.json",
+          "sha256": "d98b0e1238248ce5c0a22f202bb51a82688d3140f0fac4d926c8c7593128c3b0"
+        },
+        {
+          "name": "rejection-2ca0d369-8a14-4d91-b69d-6204ff0320c2.json",
+          "path": "http/full-suite-round-1/27100f841179546a/6-rejection-2ca0d369-8a14-4d91-b69d-6204ff0320c2.json",
+          "sha256": "d3655546cec95e7a069a09a7895e51007c8cb14e279e242d5fc4df9f0f956296"
+        },
+        {
+          "name": "rejection-ad7951af-55f6-445d-a05a-d168db14e065.json",
+          "path": "http/full-suite-round-1/27100f841179546a/8-rejection-ad7951af-55f6-445d-a05a-d168db14e065.json",
+          "sha256": "d98b0e1238248ce5c0a22f202bb51a82688d3140f0fac4d926c8c7593128c3b0"
+        },
+        {
+          "name": "rejection-4a0fccfb-771b-47e6-b567-b05fc720455d.json",
+          "path": "http/full-suite-round-1/27100f841179546a/10-rejection-4a0fccfb-771b-47e6-b567-b05fc720455d.json",
+          "sha256": "15d9bad839f6572ba2a3ee4358bcf9e41f09bdd0332cc2c36d84853ad6bd72c5"
+        },
+        {
+          "name": "rejection-ff1c3102-f086-492f-98f9-0a5a916fb74d.json",
+          "path": "http/full-suite-round-1/27100f841179546a/12-rejection-ff1c3102-f086-492f-98f9-0a5a916fb74d.json",
+          "sha256": "d98b0e1238248ce5c0a22f202bb51a82688d3140f0fac4d926c8c7593128c3b0"
+        },
+        {
+          "name": "rejection-0fbc7677-dd7a-40d9-b5fa-54ddbee412ed.json",
+          "path": "http/full-suite-round-1/27100f841179546a/14-rejection-0fbc7677-dd7a-40d9-b5fa-54ddbee412ed.json",
+          "sha256": "15d9bad839f6572ba2a3ee4358bcf9e41f09bdd0332cc2c36d84853ad6bd72c5"
+        },
+        {
+          "name": "rejection-9a22c684-44bb-4c7e-bae0-7f45dcad77ff.json",
+          "path": "http/full-suite-round-1/27100f841179546a/16-rejection-9a22c684-44bb-4c7e-bae0-7f45dcad77ff.json",
+          "sha256": "d98b0e1238248ce5c0a22f202bb51a82688d3140f0fac4d926c8c7593128c3b0"
+        },
+        {
+          "name": "rejection-9b87cbad-96e8-4715-9f47-58dc21a2843c.json",
+          "path": "http/full-suite-round-1/27100f841179546a/18-rejection-9b87cbad-96e8-4715-9f47-58dc21a2843c.json",
+          "sha256": "15d9bad839f6572ba2a3ee4358bcf9e41f09bdd0332cc2c36d84853ad6bd72c5"
+        },
+        {
+          "name": "rejection-9a9acc5c-6c2f-458a-9d9f-1a0b6c49a206.json",
+          "path": "http/full-suite-round-1/27100f841179546a/20-rejection-9a9acc5c-6c2f-458a-9d9f-1a0b6c49a206.json",
+          "sha256": "8d8419f569a265b5a60fc676ba46841277b7d7fb9919007c30dda442ac369aca"
+        },
+        {
+          "name": "required-parent-and-task-locks.json",
+          "path": "http/full-suite-round-1/27100f841179546a/22-required-parent-and-task-locks.json",
+          "sha256": "9a8d268ee1f91e864b3eb998bd7592814a1845cb397e33a86b80fa690770c421"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/27100f841179546a/24-delivery-case.json",
+          "sha256": "ddfaab37cf4ad9eb99479de7099ba1328904b62982dd85a904e51911d9cbc6a5"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "bcdc14b6b0862f62",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "title": "a new unapproved baseline cannot ready or reserve a task using previous approvals",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2834,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejection-bbbd7696-8098-4d30-81ca-f6891837842e.json",
+          "path": "http/full-suite-round-1/bcdc14b6b0862f62/0-rejection-bbbd7696-8098-4d30-81ca-f6891837842e.json",
+          "sha256": "32fd56cfa5b78ceb5daa6ce838a4063815ba4aac5e652d4cbd45cd69969614bc"
+        },
+        {
+          "name": "rejection-7a874cc5-37b4-4fc1-a3dc-e061cb5760f6.json",
+          "path": "http/full-suite-round-1/bcdc14b6b0862f62/2-rejection-7a874cc5-37b4-4fc1-a3dc-e061cb5760f6.json",
+          "sha256": "6faf9237366c4015bf5d41a393b7fd27d3bc1c831a03e0859b4883dc206ec6ec"
+        },
+        {
+          "name": "unapproved-baseline-gate.json",
+          "path": "http/full-suite-round-1/bcdc14b6b0862f62/4-unapproved-baseline-gate.json",
+          "sha256": "ed8340e3af743dfffdb2e47a2c722f229498e6b8e5d8fc333ac201c27fdb5452"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/bcdc14b6b0862f62/6-delivery-case.json",
+          "sha256": "cfb7424ed34375e771403dd98cc7cc57254038591317f5804167f5730c98c7ae"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "1e00a35d6a1bf92d",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-005.spec.ts",
+      "title": "concurrent identical keys persist one attempt; replay ignores the stale lock",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3245,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "database-before.json",
+          "path": "http/full-suite-round-1/1e00a35d6a1bf92d/0-database-before.json",
+          "sha256": "9569e8d990af317f427d6607003e7f778a94922f8d19e816d088cb5287b71b46"
+        },
+        {
+          "name": "concurrent-reserve.json",
+          "path": "http/full-suite-round-1/1e00a35d6a1bf92d/2-concurrent-reserve.json",
+          "sha256": "995c981cbbc0e704ff5a9e290c7fd913926ec8b702704c3e0a35f244023543f2"
+        },
+        {
+          "name": "database-after.json",
+          "path": "http/full-suite-round-1/1e00a35d6a1bf92d/4-database-after.json",
+          "sha256": "228bbc67cf9606dc70849c9f0b4aa7f7fea6938555e4eb797c32b860cbde1fd5"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/1e00a35d6a1bf92d/6-delivery-case.json",
+          "sha256": "0a09e6d7cd7ba2c60f5d288b2291e4f8caf3c14df6923019e80bde0f849a0150"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "0e83b7fa090595f3",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-005.spec.ts",
+      "title": "public reservation rejects automatic mode and missing keys without creating attempts",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2594,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "spoofed-trusted-execution.json",
+          "path": "http/full-suite-round-1/0e83b7fa090595f3/0-spoofed-trusted-execution.json",
+          "sha256": "44857d6360383890dccc40f97cc7d61fa4533f4f0df62b43eb6910670cd6a1b5"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/0e83b7fa090595f3/2-delivery-case.json",
+          "sha256": "8ead7b975364a510b5628adb4bf3253f92d5810cbf1c8e67ad5accaf42f27a0a"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "0f66a14ea2d8ca00",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-005.spec.ts",
+      "title": "sixteen closed attempts preserve history and reject the seventeenth reservation",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 5822,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "attempt-limit-before.json",
+          "path": "http/full-suite-round-1/0f66a14ea2d8ca00/0-attempt-limit-before.json",
+          "sha256": "9569e8d990af317f427d6607003e7f778a94922f8d19e816d088cb5287b71b46"
+        },
+        {
+          "name": "attempt-limit-rejection.json",
+          "path": "http/full-suite-round-1/0f66a14ea2d8ca00/2-attempt-limit-rejection.json",
+          "sha256": "b3483c9c0cbe648209455c21dde1409854486576354d0c14b5b1af6ab6c37d96"
+        },
+        {
+          "name": "bounded-attempt-history.json",
+          "path": "http/full-suite-round-1/0f66a14ea2d8ca00/4-bounded-attempt-history.json",
+          "sha256": "a9d8e16cc2c7c01d5a2b2bad1c8baae09562b505b4e5c661a9e0c1207f9833cb"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/0f66a14ea2d8ca00/6-delivery-case.json",
+          "sha256": "09a09fc08294c85b87304b266a7dfb012577f6af060b4cb0bda2925c86d6636d"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "d9e53ead259039e0",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects malformed manifest without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2904,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/d9e53ead259039e0/0-rejected-result.json",
+          "sha256": "73da9cb539358f89466a49f07c96a448d278fc3e3d313afc6fc011f0044d4c44"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/d9e53ead259039e0/2-delivery-case.json",
+          "sha256": "7c1010d9a66bb1fdca51128d6ef3075d4960cd1cec3ff99cbe17d303e3133a62"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "6181e96971e525d2",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects oversized body without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2930,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/6181e96971e525d2/0-rejected-result.json",
+          "sha256": "3998a87d3aa000f07041bb696eb7ea95d9704f6b0b3d56baf4a5b1d64a845ddd"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/6181e96971e525d2/2-delivery-case.json",
+          "sha256": "786a8c7749500e497e2d2ff96071f927d45420bcb58f93d3adf5e6c4a1df2311"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "6cb54335ff24ca4a",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects unknown version without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2837,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/6cb54335ff24ca4a/0-rejected-result.json",
+          "sha256": "048455437390243d5784db0fe10b575bcf44077555d998895400e26fce47186e"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/6cb54335ff24ca4a/2-delivery-case.json",
+          "sha256": "acfeebe9ae3c10dfcadbb20d5d1513ca8fe028e63c500ff947684466e66b9347"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "487346be1b9744c4",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects foreign project without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2913,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/487346be1b9744c4/0-rejected-result.json",
+          "sha256": "1a1544dfdfbb6c23e111289e0d3950b1e7a0985f8df9ab7a5994a0f5d9e0877e"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/487346be1b9744c4/2-delivery-case.json",
+          "sha256": "71c843fc9c34f86d670e8493a4a67a284a44eca0af82f262bfeab4507d2e5570"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "41d6cd496c2d8749",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects foreign task without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2846,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/41d6cd496c2d8749/0-rejected-result.json",
+          "sha256": "4040f30e0cf89e5a0ce76f5504e8d8c9b9e5020457d8c47d5d3554ea12017430"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/41d6cd496c2d8749/2-delivery-case.json",
+          "sha256": "3c6cd997cacbf2b65b93aa1725f19a01e87aeb693ba0b363919954b74cc9863d"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "a7f00f817dc181a9",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects foreign attempt without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2842,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/a7f00f817dc181a9/0-rejected-result.json",
+          "sha256": "78527075d8cc7c761e4f9d2b1a32818d9af74fdbaf31288f31f2b9b60ccb06c7"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/a7f00f817dc181a9/2-delivery-case.json",
+          "sha256": "581e94e38d4e1f4b3469cfcafd94f6ccd0981b472d5a94b49d6709d872a4b81b"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "4a424eb0fc13ae19",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects foreign baseline without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2939,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/4a424eb0fc13ae19/0-rejected-result.json",
+          "sha256": "366433ed89d4ef23df4082818370a27b612acd41b4291a8a470a120f8e0a5de4"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/4a424eb0fc13ae19/2-delivery-case.json",
+          "sha256": "eea1a05ed7dff0d192ba3fb3a325b67cc0ef62616d19154e58b22bf62ee35004"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "4476db45414e4d37",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects wrong baseline hash without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2926,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/4476db45414e4d37/0-rejected-result.json",
+          "sha256": "25ec06a0df12f10acbf7a30c7771ba24d94181f74656c600a457f1a2771643ee"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/4476db45414e4d37/2-delivery-case.json",
+          "sha256": "99fd07c5dd7b9f1abea8f707c6dd3e17538c06b0969ac603ae8987cd51cc41e5"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "0a83600374ad723d",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects wrong base revision without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2867,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/0a83600374ad723d/0-rejected-result.json",
+          "sha256": "1884df6f6d6556ddb37ac96df65263affd4b6e7e703841ea5ffd9876ca12a2f5"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/0a83600374ad723d/2-delivery-case.json",
+          "sha256": "d9ff2efd830b9893857c8832a5da64c049be9ccafa2ba0db44d62a76646c3c7e"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "78d1623c10d6ace1",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects outside paths without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3059,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/78d1623c10d6ace1/0-rejected-result.json",
+          "sha256": "efa115efd82b713e286ba1a869027f806553393396a896d6cdb7537bb22a8745"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/78d1623c10d6ace1/2-delivery-case.json",
+          "sha256": "0420c508bf8221125f99a06d2ec87fa71761d4de9b1f23199be11bb03e28d125"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "cd820d16fcbe468f",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects unknown test without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2938,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/cd820d16fcbe468f/0-rejected-result.json",
+          "sha256": "71632eb506aea10f3d36ba3aacb05ccadec28990aabcfc840157634e01e0cd67"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/cd820d16fcbe468f/2-delivery-case.json",
+          "sha256": "fac01c2674f2b4411200ff870c4da59d9998abee231940f5ce334f95d04ef4b3"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "21fa1cf57e6f1532",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "rejects too many paths without persisting evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2873,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "rejected-result.json",
+          "path": "http/full-suite-round-1/21fa1cf57e6f1532/0-rejected-result.json",
+          "sha256": "469c37f4ffa41b4571e89cfe068eaf030c9d004902228426e0ceef23f60ea226"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/21fa1cf57e6f1532/2-delivery-case.json",
+          "sha256": "ec5353010803b0335443d0272929291d4cd1592bb915d724e25dfacb2e44f9a0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "36a117d697e09762",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "title": "concurrent identical results create one evidence; a changed replay conflicts",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3006,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "unknown-attempt.json",
+          "path": "http/full-suite-round-1/36a117d697e09762/0-unknown-attempt.json",
+          "sha256": "25f1d16469cf7d85ce24e1ee8353dc8e86f735d723f66292a3a6c5b5f0c0040f"
+        },
+        {
+          "name": "result-transport.json",
+          "path": "http/full-suite-round-1/36a117d697e09762/2-result-transport.json",
+          "sha256": "9566ffd68bc08a0465f6473fa342053ddba34e8050411dd283bea4fe25e959c6"
+        },
+        {
+          "name": "concurrent-result.json",
+          "path": "http/full-suite-round-1/36a117d697e09762/4-concurrent-result.json",
+          "sha256": "e5001fb693c4a87714146fc3ac925774b0fa9c329f7187a29859e439239012f5"
+        },
+        {
+          "name": "result-counts.json",
+          "path": "http/full-suite-round-1/36a117d697e09762/6-result-counts.json",
+          "sha256": "d3973f3d9d703d0eaf6c87858cb55aa7a3b8e392f74ba9910ce1cb1c85fe5431"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/36a117d697e09762/8-delivery-case.json",
+          "sha256": "ddb34a84512e1ded27342f458c9ce897f279fec4d2ec755c011ff2e499080bc4"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "c89f6c0669a9246e",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts",
+      "title": "cancel preserves the execution and review gates",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3713,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reconcile-gates.json",
+          "path": "http/full-suite-round-1/c89f6c0669a9246e/0-reconcile-gates.json",
+          "sha256": "aaa09550247e65ebeda4e5ffa7185f272b7a1476fbcb7b8c2de2a34f3a232437"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/c89f6c0669a9246e/2-delivery-case.json",
+          "sha256": "ea67790dd28f5569b98ab3c6452a231251dff2c53a4df3aca6df351cf5d65b82"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "f184a8405b59f15e",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts",
+      "title": "unknown preserves the execution and review gates",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3399,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reconcile-gates.json",
+          "path": "http/full-suite-round-1/f184a8405b59f15e/0-reconcile-gates.json",
+          "sha256": "e2ce92786d83e23187f02629d0fd0f8f906fdcc602cd56cb26148766af54f685"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/f184a8405b59f15e/2-delivery-case.json",
+          "sha256": "bb96718e8c6dc11ea3a8bf2a082e9c044dc130fd3e5e63af836c41115de43eea"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "7ded66f8d88cb9ce",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts",
+      "title": "stopped preserves the execution and review gates",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3405,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reconcile-gates.json",
+          "path": "http/full-suite-round-1/7ded66f8d88cb9ce/0-reconcile-gates.json",
+          "sha256": "0bc66684e67e174d5f426503f945cc35e14237cfa856398c53e14c7184a07a86"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/7ded66f8d88cb9ce/2-delivery-case.json",
+          "sha256": "e911b7017b02431d2876d01d945b03e35882745b0a40cbb42c8d717f44d88ef3"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "5ded7ec990bbd157",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts",
+      "title": "completed preserves the execution and review gates",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3075,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "completed-reconcile.json",
+          "path": "http/full-suite-round-1/5ded7ec990bbd157/0-completed-reconcile.json",
+          "sha256": "2255d4e9e6b4d456cfbc0004489f887d549311cd954ca32185de47d5aac9dbb4"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/5ded7ec990bbd157/2-delivery-case.json",
+          "sha256": "b8f5274fcdc62e06527678d1486baae47aeb6e2cd60049c358fd5d0b5e797ad9"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "1f307bb45e8fca59",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve failed evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2937,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/full-suite-round-1/1f307bb45e8fca59/0-review-input.json",
+          "sha256": "f9a24f14683c9983ee11d2ceb750037c316443836d229e98da1753604d359384"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/full-suite-round-1/1f307bb45e8fca59/2-refused-review.json",
+          "sha256": "53e83a58c1064991458d14df99f71554f7a3cebe140d10816a339e8a86c88385"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/1f307bb45e8fca59/4-delivery-case.json",
+          "sha256": "e0e459ca42fd0fb9a1a26e80aa023ecca5dd8e8dcb85f738a9cf232f7b586906"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "54a547780715be4f",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve not_run evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2824,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/full-suite-round-1/54a547780715be4f/0-review-input.json",
+          "sha256": "00769325b0ff304196476c118d285c44898513c9080b298437b3463a9d8f29aa"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/full-suite-round-1/54a547780715be4f/2-refused-review.json",
+          "sha256": "6f0a1f49d69adaaf7c31d0faaf99e8112bb818f9d1f6d5f47e5e58993271916a"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/54a547780715be4f/4-delivery-case.json",
+          "sha256": "4e76a0f5c7143ba3cf4504e0b171361a408d88841fd9fe7a67d362f18040fc93"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "80ea9e9152bb41f4",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve missing evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2845,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/full-suite-round-1/80ea9e9152bb41f4/0-review-input.json",
+          "sha256": "ab303f503fac4978f73f130670a3f255ccdd3bb68019c9ac18b0231ea3f58e1c"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/full-suite-round-1/80ea9e9152bb41f4/2-refused-review.json",
+          "sha256": "f62d93e4cb0a45a7cfd4e85afdd62f4f3b752bacf53d888771828196afe08e6e"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/80ea9e9152bb41f4/4-delivery-case.json",
+          "sha256": "42e88a9b2672671a804f3a208c8912a1babc7d7fe24ac29c0ef9f54a39fc201a"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "80218010ca7f5a56",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve wrong_revision evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2846,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/full-suite-round-1/80218010ca7f5a56/0-review-input.json",
+          "sha256": "6ea590cc5207c0f92aaa61fc4f81ec7ad7139783f0bf2a02f19eccb862fa8cbd"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/full-suite-round-1/80218010ca7f5a56/2-refused-review.json",
+          "sha256": "976e6e328a413bac1cc85213d3568b019bc2bf03b17b6ae085b912239da898af"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/80218010ca7f5a56/4-delivery-case.json",
+          "sha256": "721148c693ae1ed5532621767294c1e5690dae4b13678c4c839bd82454ca8cd2"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "6f2c11ea6aadc4f7",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve manual_agent evidence",
+      "repeatOrdinal": 0,
+      "status": "failed",
+      "durationMs": 2889,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/full-suite-round-1/6f2c11ea6aadc4f7/0-review-input.json",
+          "sha256": "328c7d1aa996ad196d37a824bf8abd2cf77be4e0f16c7a1c0d0cc51d575e8868"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/6f2c11ea6aadc4f7/2-delivery-case.json",
+          "sha256": "765279b5e90455bd2cb401cd2ff0e00e6c0d817034045ef821fe9479ef7c2c0a"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "errors": [
+        "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 201\nReceived: 422\n\n  22 |         const importBody = await readJsonSafe(imported)\n  23 |         await attachDeliveryEvidence(testInfo, 'review-input', { scenario, manifest, status: imported.status(), body: importBody, provenance: 'synthetic-executor-over-http' })\n> 24 |         expect(imported.status()).toBe(201)\n     |                                   ^\n  25 |         const detail = await fixture.readProject(project)\n  26 |         const sentinel = { projectId: project.id, tenantId: project.tenantId, organizationId: project.organizationId, runId: fixture.namespace, projectName: detail.name }\n  27 |         const before = await readDeliveryDbCounts(sentinel, { taskId: task.id })\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:24:35\n    at withDeliveryFixture (/qa/packages/core/src/helpers/integration/deliveryEvidence.ts:32:5)\n    at /qa/packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:11:7"
+      ],
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "9a1408d5cc467997",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "exhausted correction budget blocks another execution",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3897,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "correction-limit-review.json",
+          "path": "http/full-suite-round-1/9a1408d5cc467997/0-correction-limit-review.json",
+          "sha256": "09ffc70ded1723f40920548eda621ef8a3d07d05512d34900cb66fc1a6b809a4"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/9a1408d5cc467997/2-delivery-case.json",
+          "sha256": "5c00f10aa05a8150a5e07a4a0171971a3288e6bcdfdc323117d69a2a2b8c7201"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "4925fe4f1532da15",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-010.spec.ts",
+      "title": "only reviewed proof unlocks the dependent task",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3495,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "round-0-result.json",
+          "path": "http/full-suite-round-1/4925fe4f1532da15/0-round-0-result.json",
+          "sha256": "2ddab9e7e47ed1f79a0dc8f682cdf2c603e2888fa3a9a7dad9a65bf51a7e21b8"
+        },
+        {
+          "name": "round-0-dependent-blocked.json",
+          "path": "http/full-suite-round-1/4925fe4f1532da15/2-round-0-dependent-blocked.json",
+          "sha256": "978950c75e1e95cc30a3e6d65b5e2f5b748735c4b95e9043407d30a81f9daf04"
+        },
+        {
+          "name": "round-0-review.json",
+          "path": "http/full-suite-round-1/4925fe4f1532da15/4-round-0-review.json",
+          "sha256": "9ee197ce61cab3011c4485ad482681b1d9cd5461ed8b2e0320a210c8610f06d9"
+        },
+        {
+          "name": "oss-lifecycle.json",
+          "path": "http/full-suite-round-1/4925fe4f1532da15/6-oss-lifecycle.json",
+          "sha256": "3e6793b670d4e0f5fad2ce211dc37dc0dd576acd7afa595d26bc4063a395a384"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/4925fe4f1532da15/8-delivery-case.json",
+          "sha256": "db33360de4369dfee5d5015ff40655b6de9fe578e7dbcd95c13ea5ad6cf71465"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    },
+    {
+      "id": "dd5dabbae634f246",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-010.spec.ts",
+      "title": "keeps correction history and reviews the new result",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 4169,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "round-0-result.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/0-round-0-result.json",
+          "sha256": "f7b6229ac7cc46bed2425033c71fce6073c5b0c95286a5709d0c9c73a1d4ecc9"
+        },
+        {
+          "name": "round-0-dependent-blocked.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/2-round-0-dependent-blocked.json",
+          "sha256": "c1f0d02d63e4ba718f254ed679479aca30cfb6e04de06fa8b97e58d94c455cfe"
+        },
+        {
+          "name": "round-0-review.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/4-round-0-review.json",
+          "sha256": "fea3e73a230756fe1ea18f8a8b8e8879524fa79476da214a62f952f36b0df9c6"
+        },
+        {
+          "name": "round-1-result.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/6-round-1-result.json",
+          "sha256": "ad2339eb5caa0974e7f967b8ebedc6c342f310c85210d97023419a02256eb1c8"
+        },
+        {
+          "name": "round-1-dependent-blocked.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/8-round-1-dependent-blocked.json",
+          "sha256": "c1f0d02d63e4ba718f254ed679479aca30cfb6e04de06fa8b97e58d94c455cfe"
+        },
+        {
+          "name": "old-review-replay.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/10-old-review-replay.json",
+          "sha256": "f63a5decbfe08a24113f9e4e2d8fd57f12b77ddf39a5561647e3fa9fe64056f7"
+        },
+        {
+          "name": "round-1-review.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/12-round-1-review.json",
+          "sha256": "e6d402bef1444e077b02e8684da9b887400f5a285caf91cc551ddcb545d56e36"
+        },
+        {
+          "name": "oss-lifecycle.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/14-oss-lifecycle.json",
+          "sha256": "f53c38160b801d3880d551ddd11081b2b8b41b5f1006a7eaafeca1597f50dd15"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/full-suite-round-1/dd5dabbae634f246/16-delivery-case.json",
+          "sha256": "2ffcc7fd075913c406976f99573a8c70b803726cdec633fc17322c741c3b1cf3"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": null,
+      "runtimeAppRevision": null
+    }
+  ]
+}

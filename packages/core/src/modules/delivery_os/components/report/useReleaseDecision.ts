@@ -9,6 +9,7 @@ import { surfaceRecordConflict } from '@open-mercato/ui/backend/conflicts'
 import { deployDecisionCreateResponseSchema } from '../../api/schemas'
 import type { ReportSnapshot } from './useDeliveryReport'
 import { decisionBlocker, decisionFingerprint, decisionPayload, type ReleaseDecisionKind, type ReleaseVerdict } from './decisionInput'
+import { decisionBlockerLinks, type DecisionBlockerLink } from './reportView'
 
 export function useReleaseDecision({ snapshot, kind, verdict, refresh, onSaved }: {
   snapshot: ReportSnapshot; kind: ReleaseDecisionKind; verdict: ReleaseVerdict
@@ -19,7 +20,7 @@ export function useReleaseDecision({ snapshot, kind, verdict, refresh, onSaved }
   const [problem, setProblem] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [locked, setLocked] = React.useState(false)
-  const [blockers, setBlockers] = React.useState<string[]>([])
+  const [blockers, setBlockers] = React.useState<DecisionBlockerLink[]>([])
   const lifecycle = React.useRef({ active: true, busy: false, locked: false, reviewed: decisionFingerprint(snapshot) })
   React.useEffect(() => { lifecycle.current.active = true; return () => { lifecycle.current.active = false } }, [])
   const contextId = `delivery-report-${kind}-${snapshot.project.id}`
@@ -75,11 +76,7 @@ export function useReleaseDecision({ snapshot, kind, verdict, refresh, onSaved }
             markLocked('contextChanged')
           } else if (response.status === 422) {
             setProblem('serverBlocked')
-            if ('details' in body && Array.isArray(body.details)) setBlockers(body.details.map((item: unknown) => {
-              if (!item || typeof item !== 'object') return ''
-              const detail = item as Record<string, unknown>
-              return [detail.path, detail.code].filter((value) => typeof value === 'string').join(': ')
-            }).filter(Boolean))
+            setBlockers(decisionBlockerLinks('details' in body ? body.details : [], fresh.report))
           } else setProblem(response.status === 428 ? 'lockRequired' : response.status === 403 ? 'forbidden' : 'failed')
           throw error
         }

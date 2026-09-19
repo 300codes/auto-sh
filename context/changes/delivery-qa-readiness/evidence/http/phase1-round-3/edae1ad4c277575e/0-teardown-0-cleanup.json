@@ -1,0 +1,59 @@
+{
+  "resources": [
+    {
+      "kind": "tenant",
+      "id": "de1fa374-9076-416a-a897-315be56cb833",
+      "state": "cleaned",
+      "retained": true
+    },
+    {
+      "kind": "tenant",
+      "id": "5cbff07b-9cd2-48ab-83c1-78b709b62f6f",
+      "state": "cleaned",
+      "retained": true
+    },
+    {
+      "tenantId": "de1fa374-9076-416a-a897-315be56cb833",
+      "organizationId": "60820c83-e262-443d-90d2-1d92b5c14894",
+      "id": "60820c83-e262-443d-90d2-1d92b5c14894",
+      "kind": "organization",
+      "state": "cleaned",
+      "retained": true
+    },
+    {
+      "tenantId": "de1fa374-9076-416a-a897-315be56cb833",
+      "organizationId": "9bdd3746-a289-400a-8e88-b7dbe4ba4026",
+      "id": "9bdd3746-a289-400a-8e88-b7dbe4ba4026",
+      "kind": "organization",
+      "state": "cleaned",
+      "retained": true
+    },
+    {
+      "tenantId": "5cbff07b-9cd2-48ab-83c1-78b709b62f6f",
+      "organizationId": "5d321943-f3eb-4ed2-8b19-7e593f5d5913",
+      "id": "5d321943-f3eb-4ed2-8b19-7e593f5d5913",
+      "kind": "organization",
+      "state": "cleaned",
+      "retained": true
+    },
+    {
+      "tenantId": "de1fa374-9076-416a-a897-315be56cb833",
+      "organizationId": "60820c83-e262-443d-90d2-1d92b5c14894",
+      "id": "bc2dc519-2a80-490d-b766-ed80898cddf5",
+      "kind": "role",
+      "state": "cleaned",
+      "retained": false
+    },
+    {
+      "tenantId": "de1fa374-9076-416a-a897-315be56cb833",
+      "organizationId": "60820c83-e262-443d-90d2-1d92b5c14894",
+      "id": "0fe417ca-2635-4354-a21a-b0432c27528c",
+      "kind": "user",
+      "state": "cleaned",
+      "retained": false
+    }
+  ],
+  "failures": [],
+  "retainedHistory": [],
+  "physicalCleanup": "pending_environment_disposal"
+}

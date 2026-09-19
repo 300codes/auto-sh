@@ -1,4 +1,5 @@
 import { decisionPreflightShape } from '../lib/reportContracts'
+import { designImportManifestSchema } from '../lib/designImportContracts'
 import { z } from 'zod'
 import { parseBooleanWithDefault } from '@open-mercato/shared/lib/boolean'
 import {
@@ -10,6 +11,9 @@ import {
   checkStatusSchema,
   checkUniqueIds,
   commentAnchorSchema,
+  commentImportBatchV1Schema,
+  commentThreadTriageRequestSchema,
+  commentThreadTriageStatusSchema,
   declaredTestSchema,
   deliveryErrorFromZod,
   deliveryLimitsSchema,
@@ -21,6 +25,8 @@ import {
   isoDateTimeSchema,
   proposalQuestionSchema,
   proposalRiskSchema,
+  PUBLICATION_LIST_MAX_PAGE_SIZE,
+  publicationResultV1Schema,
   reconciliationResolutionSchema,
   repoRelativePathSchema,
   requirementSchema,
@@ -34,6 +40,7 @@ import {
   stableIdSchema,
   stageArtifactV1Schema,
   stageDecisionRequestSchema,
+  staffLinkRequestSchema,
   taskStatusSchema,
   USER_SETTABLE_TASK_STATUSES,
   uuidSchema,
@@ -125,6 +132,8 @@ export const draftSpecV1Schema = z
     risks: z.array(proposalRiskSchema).max(200).default([]),
     adr: z.array(draftAdrSchema).max(100).default([]),
     screens: z.array(screenRefSchema).max(100).default([]),
+    designImportSessionId: uuidSchema.optional(),
+    manifestHash: sha256Schema.optional(),
     tokens: z.record(z.string().min(1).max(200), z.json()).refine(hasAtMostEntries, { message: 'Too many entries' }).default({}),
     architectureSummary: descriptionSchema.nullable().default(null),
     planSummary: descriptionSchema.nullable().default(null),
@@ -583,3 +592,65 @@ export const stageHistoryListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
 })
 export type StageHistoryListQuery = z.infer<typeof stageHistoryListQuerySchema>
+
+// --- Flow F2: staff link and comment import (F10–F13) ---------------------
+
+export const staffLinkCommandSchema = staffLinkRequestSchema.extend({ projectId: uuidSchema })
+export type StaffLinkCommandInput = z.infer<typeof staffLinkCommandSchema>
+
+export const commentImportCommandSchema = z
+  .object({
+    projectId: uuidSchema,
+    idempotencyKey: idempotencyKeySchema,
+    batch: commentImportBatchV1Schema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.batch.projectId !== value.projectId) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['batch', 'projectId'], 'Comment batch belongs to another project')
+    }
+  })
+export type CommentImportCommandInput = z.infer<typeof commentImportCommandSchema>
+
+export const commentThreadListQuerySchema = z.object({
+  stageId: flowStageIdSchema.optional(),
+  status: z.enum(['open', 'resolved', 'deleted']).optional(),
+  triage: commentThreadTriageStatusSchema.optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+})
+export type CommentThreadListQuery = z.infer<typeof commentThreadListQuerySchema>
+
+export const commentThreadTriageCommandSchema = z.object({
+  projectId: uuidSchema,
+  threadId: uuidSchema,
+  triage: commentThreadTriageRequestSchema,
+})
+export type CommentThreadTriageCommandInput = z.infer<typeof commentThreadTriageCommandSchema>
+export const recordPublicationCommandInputSchema = z
+  .object({
+    projectId: uuidSchema,
+    publication: publicationResultV1Schema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.publication.projectId.toLowerCase() !== value.projectId.toLowerCase()) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['publication', 'projectId'], 'Publication belongs to another project')
+    }
+  })
+export type RecordPublicationCommandInput = z.infer<typeof recordPublicationCommandInputSchema>
+
+export const publicationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(PUBLICATION_LIST_MAX_PAGE_SIZE).default(50),
+})
+export type PublicationListQuery = z.infer<typeof publicationListQuerySchema>
+
+export const designImportCreateCommandSchema = z.object({
+  projectId: uuidSchema,
+  manifest: designImportManifestSchema,
+})
+export const designImportUpdateBodySchema = z.object({
+  renders: z.array(z.object({ key: z.string().min(1).max(1000), attachmentId: uuidSchema })).max(100).default([]),
+  selectedKeys: z.array(z.string().min(1).max(1000)).max(100).optional(),
+  action: z.enum(['save', 'complete', 'cancel']).default('save'),
+})
+export const designImportUpdateCommandSchema = designImportUpdateBodySchema.extend({ projectId: uuidSchema, sessionId: uuidSchema })

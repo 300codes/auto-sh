@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "status": "passed_after_explicit_reconciliation",
+  "nativeFixtureCleanup": "cleaned",
+  "themeUpdate": "retained_intentionally",
+  "unexpectedArtifact": {
+    "provenance": "WordPress dashboard Quick Draft created during owned actor login",
+    "source": "wp-admin/includes/dashboard.php:551-576",
+    "preparedHash": "dd9ec1d658e7099bb02db7f28301c666193133aa97b0213b3a50203c0f3e8793",
+    "before": {
+      "id": 14,
+      "author": 2,
+      "type": "post",
+      "status": "auto-draft",
+      "parent": 0,
+      "emptyContent": true,
+      "dashboardOptionMatches": true,
+      "children": 0
+    },
+    "deleted": true,
+    "remainingActorPosts": 0
+  },
+  "freshRunPrevention": "Login redirect_to the exact owned page editor; no dashboard navigation",
+  "actorGuard": "unchanged",
+  "privateEvidenceHashes": {
+    "editor-prepared-live.json": "dd9ec1d658e7099bb02db7f28301c666193133aa97b0213b3a50203c0f3e8793",
+    "editor-cleanup-provenance.json": "b0cb0a7954aa8320149d963d6961f5bda9cb9a9ce1f6f5a9a11c032bacc300c4",
+    "editor-reconciliation.json": "1e388c88800183a95169c1e8b4ddb4adcfdd3a4472e484dad258a5aa5c57032b",
+    "editor-cleanup-v1-reconciled.json": "55949853bade0f243fb7dc9020dbd4de711f0812c9464b4dd2a3765c2357f339"
+  }
+}

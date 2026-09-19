@@ -1,0 +1,44 @@
+{
+  "case": "wrong baseline hash",
+  "status": 422,
+  "body": {
+    "error": "baselineHash does not match the reserved attempt",
+    "code": "baseline_mismatch",
+    "details": [
+      {
+        "path": "baselineHash",
+        "code": "baseline_mismatch",
+        "message": "baselineHash does not match the reserved attempt"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "709df4a0-2c87-40e7-bcf2-31e046195073",
+  "taskId": "6b9a48f0-dde3-466c-bf7e-a628f2c6733b",
+  "attemptId": "0962a7d8-68df-41e2-a940-f60e5687944f",
+  "baselineId": "4df578b3-b25f-4b30-8525-7a1914f9c9fd",
+  "baselineHash": "767d2f86bc1ac62662358d4f4fb5eea9fab77a616c622785046035dbe6e29243"
+}

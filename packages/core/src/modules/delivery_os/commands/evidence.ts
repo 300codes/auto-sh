@@ -100,7 +100,7 @@ export type AcceptOutcome = {
 
 const RESULT_MANIFEST_UNIQUE_INDEX = 'delivery_evidence_result_manifest_uq'
 
-const evidenceCrudIndexer: CrudIndexerConfig<DeliveryEvidence> = {
+export const evidenceCrudIndexer: CrudIndexerConfig<DeliveryEvidence> = {
   entityType: E.delivery_os.delivery_evidence,
 }
 
@@ -508,6 +508,21 @@ async function recordEvidenceInTransaction(
   scope: DeliveryScope,
 ): Promise<RecordOutcome> {
   const project = await lockScopedProject(tx, projectId, scope)
+  return recordEvidenceWithinTransaction(tx, ctx, project, input, scope)
+}
+
+/**
+ * Records evidence for a project row the caller already holds under its transaction lock. The publication command
+ * (F14) uses it to write the derived v1 `deployment` evidence and the publication row in ONE transaction; the public
+ * `delivery_os.evidence.record` command locks the project and delegates here.
+ */
+export async function recordEvidenceWithinTransaction(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  project: DeliveryProject,
+  input: RecordEvidenceInput,
+  scope: DeliveryScope,
+): Promise<RecordOutcome> {
   const payloadHash = hashEvidenceIdentity(input)
   if (payloadHash === null) {
     throw deliveryHttpError(
@@ -637,7 +652,7 @@ function findAcceptedResult(
   task: DeliveryTask,
   attemptId: string | null,
 ): { row: DeliveryEvidence; revision: SourceRevision } {
-  const results = taskRows.filter((row) => row.kind === 'result_manifest' && (attemptId === null || row.attemptId === attemptId))
+  const results = taskRows.filter((row) => row.kind === 'result_manifest')
   const onBaseline = results.filter((row) => row.baselineId === task.baselineId)
   if (onBaseline.length === 0) {
     if (results.length > 0) {
@@ -654,6 +669,13 @@ function findAcceptedResult(
     )
   }
   const row = onBaseline[onBaseline.length - 1]
+  if (attemptId !== null && row.attemptId !== attemptId) {
+    throw deliveryHttpError(
+      buildDeliveryError('missing_required_tests', 'The review names another attempt than the latest accepted result', [
+        { path: 'attemptId', code: 'attempt_mismatch', message: 'Review the attempt of the latest accepted result' },
+      ]),
+    )
+  }
   const revision = sourceRevisionSchema.safeParse(row.sourceRevision)
   if (!revision.success) {
     throw deliveryHttpError(

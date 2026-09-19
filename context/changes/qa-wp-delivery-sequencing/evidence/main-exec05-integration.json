@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "timestamp": "2026-09-19T15:14:03.658484+00:00",
+  "previousHead": "92bcb813dac3c464ac9114b7acb9a8c80d8b0549",
+  "currentHead": "68361d16342074eb5b3a1c57f86187f428509aca",
+  "status": "fast_forward_completed_local_work_preserved",
+  "retainedQaSuites": [
+    {
+      "path": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "retainedPath": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.qa-regression.spec.ts",
+      "sha256": "3b067976eef300b81f6a142ed02b54bcb4802efcd79764c44e54a64608fd35c1"
+    },
+    {
+      "path": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "retainedPath": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.qa-regression.spec.ts",
+      "sha256": "e6fb3c4b516494ee55e5902795bbf0c8a2b32ca650ad1cd0d9bb065dd8fe7a6a"
+    },
+    {
+      "path": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "retainedPath": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.qa-regression.spec.ts",
+      "sha256": "462f3049310fd7f29084ff0c9153803db26938b4d46046d0a84548cd2f976bf0"
+    },
+    {
+      "path": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts",
+      "retainedPath": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.qa-regression.spec.ts",
+      "sha256": "b48436507512dac2ef44eb708cf5885435b614194916f4ffb60fc3396c266249"
+    },
+    {
+      "path": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "retainedPath": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.qa-regression.spec.ts",
+      "sha256": "b8ae143ff0128aeaef9d13a5469e172dbc0df710bd98d8666bc1dd55f4b4ecac"
+    }
+  ],
+  "reason": "Upstream added different suites at five paths previously untracked locally. Both contents are retained without replacing either coverage set. Playwright discovery must establish the new count.",
+  "additionalRepair": {
+    "path": "packages/enterprise/src/modules/delivery_agents/widgets/injection/project-execution-action/widget.client.tsx",
+    "change": "Use const t = useT(); actual shared hook returns translator directly and accepts no namespace argument.",
+    "sha256": "40d85b8115b7514ea73dbf714decec5e802482cb83f04657ca5c19ff5bf045b7",
+    "verification": "source_contract_checked; integrated_build_pending"
+  },
+  "previousExecRepairs": "retained; upstream did not touch bridge/resultAcceptance",
+  "fullBuild": "not_run_on_this_revision",
+  "e2e": "not_run_on_this_revision"
+}

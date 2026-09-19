@@ -29,10 +29,10 @@ export function safeEvidencePayload(row: Pick<DeliveryEvidence, 'kind' | 'payloa
     const check = typeof value === 'object' && value !== null ? value as Record<string, unknown> : {}
     return { status: check.status, rawReportHash: sha256Schema.safeParse(check.rawReportHash).success ? check.rawReportHash : null }
   })
-  const safe: Record<string, unknown> = {}
+  let safe: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(candidate)) {
     const parsed = evidenceSafePayloadSchema.safeParse({ [key]: value })
-    if (parsed.success) Object.assign(safe, parsed.data)
+    if (parsed.success) safe = { ...safe, ...parsed.data }
   }
   return evidenceSafePayloadSchema.parse(safe)
 }

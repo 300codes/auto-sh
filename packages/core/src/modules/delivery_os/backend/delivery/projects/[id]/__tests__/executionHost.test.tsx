@@ -2,7 +2,9 @@
 import * as React from 'react'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { executionWidgetContextV1Schema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
-import DeliveryProjectDetailPage from '../page'
+import { DeliveryProjectDetailClient as DeliveryProjectDetailPage } from '../DeliveryProjectDetailClient'
+
+jest.mock('@open-mercato/core/modules/delivery_os/components/detail/ProjectOverview', () => ({ ProjectOverview: () => null }))
 
 const EXECUTE_FEATURE = 'delivery_agents.execute'
 
@@ -210,4 +212,26 @@ it('keeps the extension host and the other sections mounted when the task reques
   expect(screen.getByTestId('delivery-design-section')).toBeTruthy()
   expect(screen.getByTestId('delivery-evidence-section')).toBeTruthy()
   expect(injectionSpotSpy).toHaveBeenCalledWith('delivery_os.project.execution')
+})
+
+
+it('preserves the mounted extension while refreshing the project and its sections', async () => {
+  window.history.replaceState({}, '', `/backend/delivery/projects/${projectId}?taskId=${taskId}`)
+  await renderDetail()
+  const original = await screen.findByTestId('delivery-execution-action')
+  const context = executionWidgetContextV1Schema.parse(receivedContext)
+  let finishProject: (response: unknown) => void = () => undefined
+  apiCallMock.mockImplementation((url: string) => {
+    if (url.endsWith('/baselines')) return Promise.resolve({ ok: true, status: 200, result: { items: [], total: 0 } })
+    if (url.endsWith('/tasks')) return Promise.resolve({ ok: true, status: 200, result: { items: [task(taskId)], total: 1 } })
+    return new Promise((resolve) => { finishProject = resolve })
+  })
+  let refreshed: void | Promise<void>
+  await act(async () => { refreshed = context.refresh() })
+  expect(screen.getByTestId('delivery-execution-action')).toBe(original)
+  await act(async () => {
+    finishProject({ ok: true, status: 200, result: { ...project, updatedAt: '2026-09-19T11:00:00.000Z' } })
+    await refreshed
+  })
+  expect(screen.getByTestId('delivery-execution-action')).toBe(original)
 })

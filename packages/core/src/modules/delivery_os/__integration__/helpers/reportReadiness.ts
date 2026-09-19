@@ -58,7 +58,7 @@ export async function setupReportFixture(request: APIRequestContext, token: stri
 
 export async function importReportResult(request: APIRequestContext, token: string, fixture: { projectId: string; baselineId: string }, revision: SourceRevision) {
   const created = await apiRequest(request, 'POST', `/api/delivery_os/projects/${fixture.projectId}/tasks`, {
-    token, data: { source: 'manual', baselineId: fixture.baselineId, title: 'Integration fixture task', acIds: ['AC-1'], allowedPaths: ['tests'] },
+    token, data: { source: 'manual', baselineId: fixture.baselineId, title: 'Integration fixture task', acIds: ['AC-1'], allowedPaths: ['tests/**'] },
   })
   expect(created.status()).toBe(201)
   const task = taskCreateResponseSchema.parse(await readJsonSafe(created))
@@ -85,15 +85,19 @@ export async function importReportResult(request: APIRequestContext, token: stri
 }
 
 export async function cleanupReportFixture(request: APIRequestContext, token: string, resources: ReportFixtureResources) {
-  try {
-    if (resources.projectId) {
-      const updatedAt = await reportProjectVersion(request, token, resources.projectId)
-      const archived = await apiRequest(request, 'DELETE', `/api/delivery_os/projects?id=${resources.projectId}`, {
-        token, headers: { [OPTIMISTIC_LOCK_HEADER_NAME]: updatedAt },
-      })
-      expect(archived.ok()).toBe(true)
-    }
-  } finally {
-    for (const attachmentId of resources.attachmentIds) await deleteAttachmentIfExists(request, token, attachmentId)
+  if (resources.projectId) {
+    const updatedAt = await reportProjectVersion(request, token, resources.projectId)
+    const archived = await apiRequest(request, 'DELETE', `/api/delivery_os/projects?id=${resources.projectId}`, {
+      token, headers: { [OPTIMISTIC_LOCK_HEADER_NAME]: updatedAt },
+    })
+    expect(archived.ok(), 'retain attachments if their owning project could not be archived').toBe(true)
   }
+  const attachmentIds = [...resources.attachmentIds]
+  const outcomes = await Promise.allSettled(attachmentIds.map((attachmentId) => deleteAttachmentIfExists(request, token, attachmentId)))
+  const failures: unknown[] = []
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status === 'rejected') failures.push(outcome.reason)
+    else resources.attachmentIds.splice(resources.attachmentIds.indexOf(attachmentIds[index]), 1)
+  })
+  if (failures.length > 0) throw new AggregateError(failures, '[internal] report_fixture_attachment_cleanup_failed')
 }

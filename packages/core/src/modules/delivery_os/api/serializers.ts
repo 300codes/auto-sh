@@ -1,6 +1,30 @@
-import type { DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../data/entities'
+import { toIntakeDocument, toIntakeResponse } from '../commands/intake'
+import type {
+  DeliveryBaseline,
+  DeliveryCommentReply,
+  DeliveryCommentThread,
+  DeliveryDecision,
+  DeliveryFlowStageArtifact,
+  DeliveryFlowStageDecision,
+  DeliveryIntake,
+  DeliveryProject,
+  DeliveryPublication,
+  DeliveryTask,
+} from '../data/entities'
 import { parseAttemptRegister } from '../lib/attempts'
-import { baselineContentV1Schema } from '../lib/contracts'
+import {
+  baselineContentV1Schema,
+  clientApprovalSchema,
+  type ClientApproval,
+  DELIVERY_FLOW_SCHEMA_VERSIONS,
+  type CommentThreadListItem,
+  type CommentThreadReplyItem,
+  type IntakeResponse,
+  type PublicationListItem,
+  type StageArtifactListItem,
+  type StageDecisionListItem,
+} from '../lib/contracts'
+import { defaultIntake } from '../lib/intakeRules'
 import type { ProjectStatusSummary } from '../lib/projectStatus'
 import type { BaselineDto, ProjectDetail, ProjectListItem, TaskDto } from './schemas'
 
@@ -111,5 +135,123 @@ export function serializeTask(task: DeliveryTask): TaskDto {
     createdAt: requireIso(task.createdAt),
     updatedAt: requireIso(task.updatedAt),
     archivedAt: toIso(task.deletedAt),
+  }
+}
+
+/** F1: the stored draft (decrypted by the caller's loader) or the empty default whose version is the project `createdAt`. */
+export function serializeIntakeResponse(project: DeliveryProject, intake: DeliveryIntake | null): IntakeResponse {
+  if (intake) return toIntakeResponse(toIntakeDocument(intake), project, intake.updatedAt)
+  return toIntakeResponse(defaultIntake(project.id), project, project.createdAt)
+}
+
+export function serializeStageArtifact(row: DeliveryFlowStageArtifact): StageArtifactListItem {
+  return {
+    artifactId: row.id,
+    projectId: row.projectId,
+    stageId: row.stageId,
+    version: row.version,
+    contentHash: row.contentHash,
+    source: row.source,
+    content: row.content,
+    dependsOn: row.dependsOn,
+    attachmentIds: row.attachmentIds,
+    templateHash: row.templateHash,
+    createdBy: row.createdBy ?? null,
+    createdAt: requireIso(row.createdAt),
+  }
+}
+
+function readClientApproval(row: DeliveryFlowStageDecision): ClientApproval | null {
+  if (typeof row.clientApproverName !== 'string' || row.clientApproverName.length === 0) return null
+  const parsed = clientApprovalSchema.safeParse({
+    approverName: row.clientApproverName,
+    approverRole: row.clientApproverRole ?? null,
+    evidence: row.clientApprovalEvidence,
+  })
+  return parsed.success ? parsed.data : null
+}
+
+/** Approver fields arrive decrypted: rows are loaded with `findWithDecryption` for the session scope only. */
+export function serializeStageDecision(row: DeliveryFlowStageDecision): StageDecisionListItem {
+  return {
+    decisionId: row.id,
+    projectId: row.projectId,
+    stageId: row.stageId,
+    artifactId: row.artifactId,
+    subjectHash: row.subjectHash,
+    subjectVersion: row.subjectVersion,
+    verdict: row.verdict,
+    reason: row.reason ?? null,
+    actorUserId: row.actorUserId,
+    decidedAt: requireIso(row.decidedAt),
+    clientApproved: typeof row.clientApproverName === 'string' && row.clientApproverName.length > 0,
+    clientApproval: readClientApproval(row),
+    deferredThreadKeys: row.deferredThreadKeys,
+    templateHash: row.templateHash,
+  }
+}
+
+export { toStaffLink as serializeStaffLink } from '../commands/staffLink'
+
+function serializeCommentReply(row: DeliveryCommentReply): CommentThreadReplyItem {
+  return {
+    replyId: row.id,
+    commentKey: row.commentKey,
+    revision: row.revision,
+    author: row.author,
+    body: row.body,
+    sourceCreatedAt: requireIso(row.sourceCreatedAt),
+    editedAt: toIso(row.editedAt),
+    deleted: row.deleted,
+    staffCommentId: row.staffCommentId ?? null,
+    fetchedAt: requireIso(row.fetchedAt),
+  }
+}
+
+/** Author and body arrive decrypted: threads and replies are loaded with `findWithDecryption` for the session scope. */
+export function serializeCommentThread(row: DeliveryCommentThread, replies: DeliveryCommentReply[]): CommentThreadListItem {
+  return {
+    threadId: row.id,
+    threadKey: row.threadKey,
+    source: row.source,
+    fileKey: row.fileKey,
+    stageId: row.stageId,
+    artifactId: row.artifactId ?? null,
+    nodeId: row.nodeId ?? null,
+    sourceUrl: row.sourceUrl,
+    author: row.author,
+    body: row.body,
+    sourceCreatedAt: requireIso(row.sourceCreatedAt),
+    sourceUpdatedAt: toIso(row.sourceUpdatedAt),
+    sourceStatus: row.sourceStatus,
+    figmaVersion: row.figmaVersion ?? null,
+    versionConfirmed: row.versionConfirmed,
+    fetchedAt: requireIso(row.fetchedAt),
+    staffTaskId: row.staffTaskId ?? null,
+    triageStatus: row.triageStatus,
+    deferral: row.deferral ?? null,
+    linkedDeliveryTaskId: row.linkedDeliveryTaskId ?? null,
+    replies: replies.map(serializeCommentReply),
+    updatedAt: requireIso(row.updatedAt),
+  }
+}
+
+export function serializePublication(row: DeliveryPublication): PublicationListItem {
+  return {
+    schemaVersion: DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult,
+    publicationId: row.id,
+    projectId: row.projectId,
+    baselineId: row.baselineId,
+    sourceRevision: row.sourceRevision,
+    snapshotRef: row.snapshotRef ?? null,
+    target: row.target,
+    url: row.url,
+    deployDecisionId: row.deployDecisionId,
+    deploymentEvidenceId: row.deploymentEvidenceId,
+    publishedAt: requireIso(row.publishedAt),
+    publishedBy: row.publishedBy ?? null,
+    verification: row.verification,
+    recordedBy: row.recordedBy ?? null,
+    createdAt: requireIso(row.createdAt),
   }
 }

@@ -1,0 +1,14 @@
+{
+  "delivery_figma.credentials.authType": "Authentication type",
+  "delivery_figma.credentials.healthFileKey": "Health check file key",
+  "delivery_figma.credentials.personal": "Personal access token",
+  "delivery_figma.credentials.token": "Access token",
+  "delivery_figma.errors.figma_access_denied": "Figma denied access. Check the connection permissions.",
+  "delivery_figma.errors.figma_file_missing": "The Figma file was not found.",
+  "delivery_figma.errors.figma_rate_limited": "Figma rate limit reached. Retry later.",
+  "delivery_figma.errors.figma_response_invalid": "Figma returned an incomplete or invalid comment snapshot.",
+  "delivery_figma.errors.figma_response_too_large": "The comment snapshot exceeds the supported size.",
+  "delivery_figma.errors.figma_unavailable": "Figma is currently unavailable.",
+  "delivery_figma.errors.healthFailed": "Cannot read comments from the configured Figma file.",
+  "delivery_figma.errors.healthUnconfigured": "Configure an accessible file for the health check."
+}

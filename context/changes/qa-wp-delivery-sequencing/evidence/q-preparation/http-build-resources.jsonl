@@ -1,0 +1,30 @@
+{"at": "2026-09-19T14:10:04.133925+00:00", "linuxAvailableBytes": 11017359360, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 9665568768}
+{"at": "2026-09-19T14:10:12.475868+00:00", "linuxAvailableBytes": 10006904832, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 8512618496}
+{"at": "2026-09-19T14:10:20.808362+00:00", "linuxAvailableBytes": 9534922752, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 7987662848}
+{"at": "2026-09-19T14:10:29.166154+00:00", "linuxAvailableBytes": 9124487168, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 7211831296}
+{"at": "2026-09-19T14:10:37.525293+00:00", "linuxAvailableBytes": 8699052032, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 7046311936}
+{"at": "2026-09-19T14:10:45.856217+00:00", "linuxAvailableBytes": 8569049088, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6916960256}
+{"at": "2026-09-19T14:10:54.187845+00:00", "linuxAvailableBytes": 8170389504, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6471249920}
+{"at": "2026-09-19T14:11:02.515745+00:00", "linuxAvailableBytes": 7650689024, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5955821568}
+{"at": "2026-09-19T14:11:10.844236+00:00", "linuxAvailableBytes": 7316590592, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5577801728}
+{"at": "2026-09-19T14:11:19.159264+00:00", "linuxAvailableBytes": 5802868736, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5464305664}
+{"at": "2026-09-19T14:11:27.485214+00:00", "linuxAvailableBytes": 5288693760, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5392117760}
+{"at": "2026-09-19T14:11:35.816253+00:00", "linuxAvailableBytes": 5002260480, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5413744640}
+{"at": "2026-09-19T14:11:44.144844+00:00", "linuxAvailableBytes": 4592197632, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5333716992}
+{"at": "2026-09-19T14:11:52.463919+00:00", "linuxAvailableBytes": 4450422784, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5411426304}
+{"at": "2026-09-19T14:12:00.792831+00:00", "linuxAvailableBytes": 10622783488, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5725057024}
+{"at": "2026-09-19T14:12:09.113930+00:00", "linuxAvailableBytes": 10028814336, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6516355072}
+{"at": "2026-09-19T14:12:17.457170+00:00", "linuxAvailableBytes": 9583898624, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6512267264}
+{"at": "2026-09-19T14:12:25.791122+00:00", "linuxAvailableBytes": 8762011648, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6453383168}
+{"at": "2026-09-19T14:12:34.119497+00:00", "linuxAvailableBytes": 7618994176, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6215561216}
+{"at": "2026-09-19T14:12:42.468076+00:00", "linuxAvailableBytes": 6957862912, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5754970112}
+{"at": "2026-09-19T14:12:50.811027+00:00", "linuxAvailableBytes": 9964937216, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 6109192192}
+{"at": "2026-09-19T14:12:59.168446+00:00", "linuxAvailableBytes": 8405430272, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5949992960}
+{"at": "2026-09-19T14:13:07.538835+00:00", "linuxAvailableBytes": 7397871616, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5756284928}
+{"at": "2026-09-19T14:13:15.907177+00:00", "linuxAvailableBytes": 6738427904, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 5095886848}
+{"at": "2026-09-19T14:13:24.295378+00:00", "linuxAvailableBytes": 6644461568, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 4606947328}
+{"at": "2026-09-19T14:13:32.643981+00:00", "linuxAvailableBytes": 6196662272, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 4352458752}
+{"at": "2026-09-19T14:13:41.027522+00:00", "linuxAvailableBytes": 5676597248, "linuxTotalBytes": 16779223040, "windowsAvailableBytes": 3786084352}
+{"at": "2026-09-19T14:13:41.027746+00:00", "action": "stop_owned_runner_resource_pressure"}
+{"at": "2026-09-19T14:13:52.255014+00:00", "ownedRunnerStopConfirmed": true}
+{"at": "2026-09-19T14:13:52.289661+00:00", "reason": "gate_failed_first_error", "ownedRunnerStopConfirmed": true}

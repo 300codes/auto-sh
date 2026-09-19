@@ -540,18 +540,24 @@ Oczekiwanie na konta/licencje/operatorów i renderowanie live może wydłużyć 
 
 ## Progress
 
+Decyzja użytkownika 2026-09-19: brak WP Studio; pozostały host, publikacja Preview
+i odbiór live WP odroczone do późniejszego wdrożenia według
+[specyfikacji](../../../../../.ai/specs/2026-09-19-wordpress-studio-tools.md#aktualny-zakres--brak-wp-studio).
+Powiązane kryteria faz 7–8 pozostają niezaznaczone (deferred_by_user / not_run).
+To nie odracza niezależnych prac UI/Figma ani nie usuwa wymagań z planu.
+
 > Stan wykonania tej zmiany. Wszystkie pozycje zaczynają jako pending; closing commit SHA dopisuje implementer. Tytułów nie zmieniać. Odbiór całego produktu pozostaje w nadrzędnym rejestrze QA.
 
 ### Phase 1: Uzgodnienie bieżących dostaw i readiness
 
 #### Automated
 
-- [x] 1.1 Inwentarz SHA i plików oraz kontrola referencji dokumentów potwierdzają mapę istniejących i brakujących dostaw bez odtwarzania D1–D3.
-- [x] 1.2 Kontrakty delty i ledger wskazują request/response, scope, ACL, lock, idempotencję, błędy, testy i właściciela każdego nowego punktu integracji.
+- [x] 1.1 Inwentarz SHA i plików oraz kontrola referencji dokumentów potwierdzają mapę istniejących i brakujących dostaw bez odtwarzania D1–D3. — c1f3e215bc
+- [x] 1.2 Kontrakty delty i ledger wskazują request/response, scope, ACL, lock, idempotencję, błędy, testy i właściciela każdego nowego punktu integracji. — c1f3e215bc
 
 #### Manual
 
-- [x] 1.3 Właściciele potwierdzają przekazanie kontraktów i readiness z dowodami albo nazwanymi blockerami; ustalają operatorów, odbierającego i ponowną estymatę.
+- [x] 1.3 Właściciele potwierdzają przekazanie kontraktów i readiness z dowodami albo nazwanymi blockerami; ustalają operatorów, odbierającego i ponowną estymatę. — c1f3e215bc
 
 ### Phase 2: Stabilizacja istniejącego UI
 

@@ -7,6 +7,7 @@ import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optim
 import { extractOptimisticLockConflict } from '@open-mercato/ui/backend/utils/optimisticLock'
 import DeliveryProjectListPage from '../page'
 import { metadata } from '../page.meta'
+import { loadFlowStatusFixture } from '../../../../lib/fixtures/flow'
 
 type DataTableProps = {
   data: Array<Record<string, unknown>>
@@ -104,7 +105,7 @@ function listResponse(items: Array<Record<string, unknown>>) {
 }
 
 function lastListUrl(): string {
-  const calls = apiCallMock.mock.calls.filter(([url]) => typeof url === 'string' && !String(url).includes('?id='))
+  const calls = apiCallMock.mock.calls.filter(([url]) => typeof url === 'string' && String(url).startsWith('/api/delivery_os/projects?') && !String(url).includes('?id='))
   return String(calls.at(-1)?.[0] ?? '')
 }
 
@@ -154,10 +155,10 @@ it('maps list state onto the query parameters the OSS list schema accepts', asyn
   })
 })
 
-it('keeps derived status and progress off the list, which the list API does not return', async () => {
+it('adds a separate backend flow projection column without deriving status from list rows', async () => {
   await renderList([projectRow()])
-  const accessors = (dataTableMock.mock.calls.at(-1)?.[0].columns ?? []).map((column: { accessorKey?: string }) => column.accessorKey)
-  expect(accessors).toEqual(['name', 'inputMode', 'targetProfileId', 'repositoryRef', 'updatedAt'])
+  const accessors = (dataTableMock.mock.calls.at(-1)?.[0].columns ?? []).map((column: { accessorKey?: string; id?: string }) => column.accessorKey ?? column.id)
+  expect(accessors).toEqual(['name', 'flow', 'inputMode', 'targetProfileId', 'repositoryRef', 'updatedAt'])
   expect(accessors).not.toContain('status')
   expect(accessors).not.toContain('progress')
   expect(dataTableMock.mock.calls.at(-1)?.[0].pagination.pageSize).toBeLessThanOrEqual(100)
@@ -234,3 +235,17 @@ it('surfaces a load failure instead of rendering an empty list as success', asyn
   await waitFor(() => expect(dataTableMock.mock.calls.at(-1)?.[0].error).toBe('delivery_os.projects.list.error.load'))
   expect(dataTableMock.mock.calls.at(-1)?.[0].data).toHaveLength(0)
 })
+
+ it('loads one bounded portfolio projection for the visible page and renders its server next action', async () => {
+  const flow = { ...loadFlowStatusFixture(), projectId }
+  apiCallMock.mockImplementation(async (url: string) => url.startsWith('/api/delivery_os/portfolio') ? { ok: true, result: { items: [flow] } } : listResponse([projectRow()]))
+  render(<DeliveryProjectListPage />)
+  await waitFor(() => expect(apiCallMock.mock.calls.some(([url]) => String(url).includes('/portfolio?ids='))).toBe(true))
+  await act(async () => undefined)
+  const columns = dataTableMock.mock.calls.at(-1)![0].columns
+  const column = columns.find((item: { id?: string }) => item.id === 'flow')
+  const rendered = render(column.cell({ row: { original: projectRow() } }))
+  expect(rendered.getByRole('link')).toHaveAttribute('href', `/backend/delivery/projects/${projectId}`)
+  expect(rendered.getByRole('link')).toHaveTextContent(`delivery_os.flow.nextAction.${flow.nextAction.kind}`)
+  expect(apiCallMock.mock.calls.filter(([url]) => String(url).includes('/portfolio?'))).toHaveLength(1)
+ })

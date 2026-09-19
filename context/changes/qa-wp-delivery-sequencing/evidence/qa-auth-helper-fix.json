@@ -1,0 +1,20 @@
+{
+  "scope": "QA credentials helper only; application auth and seeded accounts unchanged",
+  "sourceHashes": {
+    "packages/core/src/helpers/integration/auth.ts": "02867f165ce3b60abe064a637e77603171828e3a83d0a2887ef2a69fb431a1e6",
+    "packages/core/src/helpers/integration/__tests__/authCredentials.test.ts": "3954c392cd504f8c6c50439cf280a932ae061dc1393999c3d44b6cb133c87550"
+  },
+  "regression": {
+    "before": {
+      "passed": 1,
+      "failed": 2
+    },
+    "after": {
+      "passed": 3,
+      "failed": 0
+    },
+    "runner": "local isolated Jest with existing QA dependencies, fs mock and restored process.env"
+  },
+  "review": "independent root source review passed",
+  "httpRetest": "pending separate runtime evidence"
+}

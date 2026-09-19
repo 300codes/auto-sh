@@ -1,0 +1,17 @@
+[check] Checking translation sync across 5 locales (en, pl, es, de, ko)...
+Found 64 modules with translations
+
+[auth] en.json: format issue (unsorted keys)
+[auth] pl.json: format issue (unsorted keys)
+[auth] es.json: format issue (unsorted keys)
+[auth] de.json: format issue (unsorted keys)
+[auth] ko.json: format issue (unsorted keys)
+[delivery_os] en.json: format issue (unsorted keys)
+[delivery_os] pl.json: format issue (unsorted keys)
+[delivery_os] es.json: format issue (unsorted keys)
+[delivery_os] de.json: format issue (unsorted keys)
+[delivery_os] ko.json: format issue (unsorted keys)
+[enterprise/delivery_agents] MISSING FILES: pl.json, es.json, de.json, ko.json
+
+14 issues found across 3 modules
+Run with --fix to auto-repair: yarn i18n:check-sync --fix

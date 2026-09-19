@@ -1,0 +1,5 @@
+✓ Compiled successfully in 3.2min
+[656:0x7f638fbbe000]    89574 ms: Scavenge 4056.7 (4086.1) -> 4043.7 (4087.6) MB, pooled: 0 MB, 5.17 / 0.00 ms  (average mu = 0.338, current mu = 0.316) allocation failure; 
+[656:0x7f638fbbe000]    91957 ms: Mark-Compact (reduce) 4067.6 (4097.3) -> 4034.9 (4056.6) MB, pooled: 0 MB, 57.22 / 0.00 ms  (+ 2071.1 ms in 254 steps since start of marking, biggest step 49.3 ms, walltime since start of marking 2369 ms) (average mu = 0.
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+Failed to type check.

@@ -1,0 +1,30 @@
+{
+  "scenario": "unknown",
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "attemptId": "0d756bec-f5c8-4859-854c-db1217c65c91",
+  "resolution": "not_started",
+  "provenance": "http-fixture"
+}

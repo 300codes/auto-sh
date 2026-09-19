@@ -14,6 +14,7 @@ export type FlowTemplateLookup = FlowTemplateV1 | ResolvedFlowTemplate | null
  */
 export type DeliveryFlowTemplateProvider = {
   getTemplate(templateId: string, version: number): Promise<FlowTemplateLookup>
+  forScope?(scope: { tenantId: string; organizationId: string }): DeliveryFlowTemplateProvider
 }
 
 export function createBuiltInFlowTemplateProvider(): DeliveryFlowTemplateProvider {
@@ -38,9 +39,10 @@ export function parseFlowTemplateLookup(value: FlowTemplateLookup): { template: 
 
 type ContainerLike = { resolve(name: string): unknown }
 
-export function resolveFlowTemplateProvider(container: ContainerLike): DeliveryFlowTemplateProvider | null {
+export function resolveFlowTemplateProvider(container: ContainerLike, scope?: { tenantId: string; organizationId: string }): DeliveryFlowTemplateProvider | null {
   try {
-    return container.resolve(DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY) as DeliveryFlowTemplateProvider
+    const provider = container.resolve(DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY) as DeliveryFlowTemplateProvider
+    return scope && provider.forScope ? provider.forScope(scope) : provider
   } catch {
     return null
   }

@@ -1,3 +1,4 @@
+import type { DeliveryStaffKanbanAdapter } from '../../commands/staffKanbanAdapter'
 import { randomUUID } from 'node:crypto'
 import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
@@ -6,9 +7,19 @@ import { Attachment } from '@open-mercato/core/modules/attachments/data/entities
 import {
   DeliveryBaseline,
   DeliveryReleaseCandidate,
+  DeliveryCommentReply,
+  DeliveryCommentThread,
   DeliveryDecision,
   DeliveryEvidence,
+  DeliveryFlowStageArtifact,
+  DeliveryFlowStageDecision,
+  DeliveryIntake,
+  DeliveryFlowBaselineBinding,
+  DeliveryDesignImportSession,
+  DeliveryStaffImportIntent,
   DeliveryProject,
+  DeliveryStaffLink,
+  DeliveryPublication,
   DeliveryTask,
 } from '../../data/entities'
 import { deliveryErrorBodySchema } from '../../lib/contracts'
@@ -23,6 +34,12 @@ import {
   matches,
   type Row,
 } from '../../commands/__tests__/baselineTestKit'
+
+export const STAFF_ACCESS_RESOLVER_KEY = 'timeTrackingAccessResolver'
+export const DELIVERY_STAFF_KANBAN_ADAPTER_KEY = 'deliveryStaffKanbanAdapter'
+export type StaffAccessResolverMock = {
+  resolveProjectAccess: (ctx: { userId: string; tenantId: string; organizationId: string }) => Promise<{ canManageAll: boolean; projectIds: string[] }>
+}
 
 export const FOREIGN_TENANT_ID = '99999999-9999-4999-8999-999999999991'
 export const TASK_ID = '7c7c7c7c-7777-4777-8777-777777777777'
@@ -40,6 +57,20 @@ type RouteStore = {
   evidence: Row[]
   candidates: Row[]
   attachments: Row[]
+  intakes: Row[]
+  stageArtifacts: Row[]
+  stageDecisions: Row[]
+  flowBaselineBindings: Row[]
+  designImportSessions: Row[]
+  staffImportIntents: Row[]
+  publications: Row[]
+  staffLinks: Row[]
+  commentThreads: Row[]
+  commentReplies: Row[]
+}
+
+function emptyRouteStore(): RouteStore {
+  return { flowBaselineBindings: [], designImportSessions: [], staffImportIntents: [], projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], publications: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [] }
 }
 
 export const routeState: {
@@ -50,18 +81,29 @@ export const routeState: {
   store: RouteStore
   queryEngine: { query: jest.Mock }
   writes: number
+  staffAccess: StaffAccessResolverMock | null
+  kanbanAdapter: DeliveryStaffKanbanAdapter | null
+  extraServices: Record<string, unknown>
+  flowTemplateProvider: unknown
 } = {
   auth: null,
   features: [],
   rbacAvailable: true,
   selectionRejected: false,
-  store: { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [] },
+  store: emptyRouteStore(),
   queryEngine: { query: jest.fn() },
   writes: 0,
+  staffAccess: null,
+  kanbanAdapter: null,
+  extraServices: {},
+  flowTemplateProvider: null,
 }
 
 function rowsFor(entity: unknown): Row[] {
   const { store } = routeState
+  if (entity === DeliveryFlowBaselineBinding) return store.flowBaselineBindings
+  if (entity === DeliveryDesignImportSession) return store.designImportSessions
+  if (entity === DeliveryStaffImportIntent) return store.staffImportIntents
   if (entity === DeliveryReleaseCandidate) return store.candidates
   if (entity === DeliveryProject) return store.projects
   if (entity === DeliveryBaseline) return store.baselines
@@ -69,14 +111,42 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryTask) return store.tasks
   if (entity === DeliveryEvidence) return store.evidence
   if (entity === Attachment) return store.attachments
+  if (entity === DeliveryIntake) return store.intakes
+  if (entity === DeliveryFlowStageArtifact) return store.stageArtifacts
+  if (entity === DeliveryFlowStageDecision) return store.stageDecisions
+  if (entity === DeliveryStaffLink) return store.staffLinks
+  if (entity === DeliveryCommentThread) return store.commentThreads
+  if (entity === DeliveryCommentReply) return store.commentReplies
+  if (entity === DeliveryPublication) return store.publications
   throw new Error('[internal] unexpected entity in route test store')
+}
+
+/** Stage histories and candidate selection honour `orderBy`; legacy v1 suites retain insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryReleaseCandidate, DeliveryPublication, DeliveryCommentThread, DeliveryCommentReply])
+
+function sortKey(value: unknown): number | string {
+  if (value instanceof Date) return value.getTime()
+  return typeof value === 'number' ? value : String(value ?? '')
+}
+
+function sortRows(rows: Row[], orderBy: Record<string, 'asc' | 'desc'>): Row[] {
+  return [...rows].sort((left, right) => {
+    for (const [key, direction] of Object.entries(orderBy)) {
+      const a = sortKey(left[key])
+      const b = sortKey(right[key])
+      if (a === b) continue
+      return (a < b ? -1 : 1) * (direction === 'desc' ? -1 : 1)
+    }
+    return 0
+  })
 }
 
 export const findMock = {
   findOneWithDecryption: async (_em: unknown, entity: unknown, where: Row) =>
     rowsFor(entity).find((row) => matches(row, where)) ?? null,
-  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number }) => {
-    const rows = rowsFor(entity).filter((row) => matches(row, where))
+  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number; orderBy?: Record<string, 'asc' | 'desc'> }) => {
+    const filtered = rowsFor(entity).filter((row) => matches(row, where))
+    const rows = options?.orderBy && ORDERED_ENTITIES.has(entity) ? sortRows(filtered, options.orderBy) : filtered
     const offset = options?.offset ?? 0
     return rows.slice(offset, options?.limit === undefined ? undefined : offset + options.limit)
   }),
@@ -92,6 +162,8 @@ function entityDefaults(entity: unknown): Row {
 
 export const em = {
   fork: () => em,
+  getConnection: () => ({ execute: jest.fn(async () => []) }),
+  getTransactionContext: () => undefined,
   transactional: jest.fn(async (work: (tx: unknown) => Promise<unknown>) => work(em)),
   create: (entity: unknown, data: Row) => {
     const now = new Date()
@@ -117,6 +189,7 @@ export const em = {
   nativeInsert: jest.fn(async () => undefined),
   nativeUpdate: jest.fn(async () => 0),
   findOne: async () => null,
+  count: async (entity: unknown, where: Row) => rowsFor(entity).filter((row) => matches(row, where)).length,
 }
 
 export const EM_WRITE_METHODS = ['transactional', 'persist', 'flush', 'nativeInsert', 'nativeUpdate'] as const
@@ -155,6 +228,13 @@ const services: Record<string, unknown> = {
 export const containerMock = {
   createRequestContainer: async () => ({
     resolve: (name: string) => {
+      if (name in routeState.extraServices) return routeState.extraServices[name]
+      if (name === STAFF_ACCESS_RESOLVER_KEY) return routeState.staffAccess ?? undefined
+      if (name === DELIVERY_STAFF_KANBAN_ADAPTER_KEY) return routeState.kanbanAdapter ?? undefined
+      if (name === 'deliveryOsCommentQueries') {
+        const { createDeliveryOsCommentQueries } = jest.requireActual('../../commands/commentQueries')
+        return createDeliveryOsCommentQueries(em)
+      }
       if (name === 'rbacService') {
         if (!routeState.rbacAvailable) throw new Error('[internal] rbacService is not registered')
         return rbacService
@@ -162,9 +242,26 @@ export const containerMock = {
       if (name === 'deliveryOsAttachmentInspector') {
         return makeAttachmentInspector(() => routeState.store.attachments)
       }
+      if (name === 'deliveryOsDesignImportQueries') {
+        const { createDeliveryOsDesignImportQueries } = jest.requireActual('../../commands/designImportQueries')
+        return createDeliveryOsDesignImportQueries(em)
+      }
+      if (name === 'deliveryOsResultQueries') {
+        const { createDeliveryOsResultQueries } = jest.requireActual('../../commands/resultQueries')
+        return createDeliveryOsResultQueries(em)
+      }
       if (name === 'deliveryOsAttemptQueries') {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
         return createDeliveryOsAttemptQueries(em)
+      }
+      if (name === 'deliveryOsFlowQueries') {
+        const { createDeliveryOsFlowQueries } = jest.requireActual('../../commands/flowQueries')
+        return createDeliveryOsFlowQueries(em)
+      }
+      if (name === 'deliveryFlowTemplateProvider') {
+        if (routeState.flowTemplateProvider) return routeState.flowTemplateProvider
+        const { createBuiltInFlowTemplateProvider } = jest.requireActual('../../commands/flowTemplateProvider')
+        return createBuiltInFlowTemplateProvider()
       }
       if (name === 'deliveryOsReportQueries') {
         const { createDeliveryOsReportQueries } = jest.requireActual('../../commands/reportQueries')
@@ -200,8 +297,12 @@ export function resetRouteState(): void {
   routeState.features = [...ALL_FEATURES]
   routeState.rbacAvailable = true
   routeState.selectionRejected = false
-  routeState.store = { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [] }
+  routeState.store = emptyRouteStore()
   routeState.writes = 0
+  routeState.staffAccess = null
+  routeState.kanbanAdapter = null
+  routeState.extraServices = {}
+  routeState.flowTemplateProvider = null
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()
   routeState.queryEngine.query.mockReset()

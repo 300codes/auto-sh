@@ -1472,6 +1472,54 @@ export const stageDecisionResponseSchema = z.object({
 })
 export type StageDecisionResponse = z.infer<typeof stageDecisionResponseSchema>
 
+export const STAGE_HISTORY_MAX_PAGE_SIZE = 100
+
+export const stageArtifactListItemSchema = z.object({
+  artifactId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+  source: stageArtifactSourceSchema,
+  content: z.record(z.string(), z.unknown()),
+  dependsOn: z.array(stageArtifactDependencySchema).max(3),
+  attachmentIds: z.array(uuidSchema).max(200),
+  templateHash: sha256Schema,
+  createdBy: uuidSchema.nullable(),
+  createdAt: isoDateTimeSchema,
+})
+export type StageArtifactListItem = z.infer<typeof stageArtifactListItemSchema>
+
+export const stageArtifactListResponseSchema = z.object({
+  items: z.array(stageArtifactListItemSchema).max(STAGE_HISTORY_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type StageArtifactListResponse = z.infer<typeof stageArtifactListResponseSchema>
+
+export const stageDecisionListItemSchema = z.object({
+  decisionId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema,
+  subjectHash: sha256Schema,
+  subjectVersion: z.number().int().positive(),
+  verdict: stageDecisionVerdictSchema,
+  reason: z.string().max(4000).nullable(),
+  actorUserId: uuidSchema,
+  decidedAt: isoDateTimeSchema,
+  clientApproved: z.boolean(),
+  clientApproval: clientApprovalSchema.nullable(),
+  deferredThreadKeys: z.array(z.string().min(1).max(200)).max(200),
+  templateHash: sha256Schema,
+})
+export type StageDecisionListItem = z.infer<typeof stageDecisionListItemSchema>
+
+export const stageDecisionListResponseSchema = z.object({
+  items: z.array(stageDecisionListItemSchema).max(STAGE_HISTORY_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type StageDecisionListResponse = z.infer<typeof stageDecisionListResponseSchema>
+
 // --- Flow status (read model) ----------------------------------------------
 
 export const flowBlockerKindSchema = z.enum([
@@ -1572,6 +1620,10 @@ export const deliveryReportFlowSectionSchema = z.object({
 })
 export type DeliveryReportFlowSection = z.infer<typeof deliveryReportFlowSectionSchema>
 
+/** F15: the R22 answer — v1 report plus the optional flow section (present only for pinned projects). */
+export const deliveryReportWithFlowSchema = deliveryReportV1Schema.extend({ flow: deliveryReportFlowSectionSchema.optional() })
+export type DeliveryReportWithFlow = z.infer<typeof deliveryReportWithFlowSchema>
+
 // --- Staff Kanban link and comment import ----------------------------------
 
 const externalKeySchema = z.string().min(1).max(200)
@@ -1581,9 +1633,12 @@ export type StaffLinkRequest = z.infer<typeof staffLinkRequestSchema>
 
 export const staffSyncCursorSchema = z.object({
   cursor: z.string().max(500).nullable(),
+  lastBatchKey: z.string().max(200).nullable().default(null),
+  lastBatchHash: sha256Schema.nullable().default(null),
   lastSyncAt: isoDateTimeSchema.nullable(),
   lastError: z.string().max(1000).nullable(),
 })
+export type StaffSyncCursor = z.infer<typeof staffSyncCursorSchema>
 
 export const staffLinkSchema = z.object({
   projectId: uuidSchema,
@@ -1680,6 +1735,7 @@ export const commentImportResultSchema = z.object({
 export type CommentImportResult = z.infer<typeof commentImportResultSchema>
 
 export const commentThreadTriageStatusSchema = z.enum(['new', 'triaged', 'deferred', 'resolved'])
+export type CommentThreadTriageStatus = z.infer<typeof commentThreadTriageStatusSchema>
 
 export const commentThreadTriageRequestSchema = z
   .object({
@@ -1696,6 +1752,61 @@ export const commentThreadTriageRequestSchema = z
     }
   })
 export type CommentThreadTriageRequest = z.infer<typeof commentThreadTriageRequestSchema>
+
+export const commentThreadDeferralSchema = z.object({
+  artifactId: uuidSchema,
+  contentHash: sha256Schema,
+  reason: z.string().min(1).max(4000),
+  decidedBy: uuidSchema,
+  decidedAt: isoDateTimeSchema,
+})
+export type CommentThreadDeferral = z.infer<typeof commentThreadDeferralSchema>
+
+export const commentThreadReplyItemSchema = z.object({
+  replyId: uuidSchema,
+  commentKey: externalKeySchema,
+  revision: z.number().int().positive(),
+  author: commentAuthorSchema,
+  body: z.string().min(1).max(20000),
+  sourceCreatedAt: isoDateTimeSchema,
+  editedAt: isoDateTimeSchema.nullable(),
+  deleted: z.boolean(),
+  staffCommentId: uuidSchema.nullable(),
+  fetchedAt: isoDateTimeSchema,
+})
+export type CommentThreadReplyItem = z.infer<typeof commentThreadReplyItemSchema>
+
+export const commentThreadListItemSchema = z.object({
+  threadId: uuidSchema,
+  threadKey: externalKeySchema,
+  source: z.literal('figma'),
+  fileKey: z.string().min(1).max(200),
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema.nullable(),
+  nodeId: z.string().min(1).max(200).nullable(),
+  sourceUrl: z.url().max(2000),
+  author: commentAuthorSchema,
+  body: z.string().min(1).max(20000),
+  sourceCreatedAt: isoDateTimeSchema,
+  sourceUpdatedAt: isoDateTimeSchema.nullable(),
+  sourceStatus: z.enum(['open', 'resolved', 'deleted']),
+  figmaVersion: z.string().min(1).max(200).nullable(),
+  versionConfirmed: z.boolean(),
+  fetchedAt: isoDateTimeSchema,
+  staffTaskId: uuidSchema.nullable(),
+  triageStatus: commentThreadTriageStatusSchema,
+  deferral: commentThreadDeferralSchema.nullable(),
+  linkedDeliveryTaskId: uuidSchema.nullable(),
+  replies: z.array(commentThreadReplyItemSchema).max(500),
+  updatedAt: isoDateTimeSchema,
+})
+export type CommentThreadListItem = z.infer<typeof commentThreadListItemSchema>
+
+export const commentThreadListResponseSchema = z.object({
+  items: z.array(commentThreadListItemSchema).max(100),
+  total: z.number().int().min(0),
+})
+export type CommentThreadListResponse = z.infer<typeof commentThreadListResponseSchema>
 
 // --- Publication result ----------------------------------------------------
 
@@ -1751,3 +1862,21 @@ export const deliveryFlowDocumentSchemas = {
   [DELIVERY_FLOW_SCHEMA_VERSIONS.flowStatus]: flowStatusV1Schema,
   [DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult]: publicationResultV1Schema,
 } as const
+
+// --- Publication list (F14 GET) ----------------------------------------------
+
+export const PUBLICATION_LIST_MAX_PAGE_SIZE = 100
+
+export const publicationListItemSchema = publicationResultV1Schema.omit({ releaseDecisionId: true }).extend({
+  publicationId: uuidSchema,
+  deploymentEvidenceId: uuidSchema,
+  recordedBy: uuidSchema.nullable(),
+  createdAt: isoDateTimeSchema,
+})
+export type PublicationListItem = z.infer<typeof publicationListItemSchema>
+
+export const publicationListResponseSchema = z.object({
+  items: z.array(publicationListItemSchema).max(PUBLICATION_LIST_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type PublicationListResponse = z.infer<typeof publicationListResponseSchema>

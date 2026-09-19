@@ -88,7 +88,7 @@ async function resolveTemplate(ctx: CommandRuntimeContext, request: FlowPinComma
         { path: 'templateId', code: 'unknown_flow_template', message: `${request.templateId}@${request.templateVersion}` },
       ]),
     )
-  const provider = resolveFlowTemplateProvider(ctx.container)
+  const provider = resolveFlowTemplateProvider(ctx.container, resolveDeliveryScope(ctx))
   if (!provider) throw unknown()
   const lookup = parseFlowTemplateLookup(await provider.getTemplate(request.templateId, request.templateVersion))
   if (!lookup || lookup.template.templateId !== request.templateId || lookup.template.version !== request.templateVersion) {
@@ -151,6 +151,16 @@ const pinFlowCommand: CommandHandler<FlowPinCommandInput, FlowPinCommandResult> 
       project.flowTemplateSnapshot = resolved.template
       project.flowPinnedAt = now
       project.updatedAt = now
+      if (typeof ctx.container.hasRegistration === 'function' && ctx.container.hasRegistration('deliveryProjectWorkflowService')) {
+        const service = ctx.container.resolve<{ initialize(scope: DeliveryScope, projectId: string, userId: string, manager: typeof tx, selection: { workflowId: string; version: number }): Promise<{ definitionId: string; workflowInstanceId: string } | null> }>('deliveryProjectWorkflowService')
+        const initialized = await service.initialize(scope, project.id, ctx.auth?.sub ?? '', tx, {
+          workflowId: resolved.template.templateId, version: resolved.template.version,
+        })
+        if (initialized) {
+          project.flowWorkflowDefinitionId = initialized.definitionId
+          project.flowWorkflowInstanceId = initialized.workflowInstanceId
+        }
+      }
       return {
         project,
         pinned: { templateId: resolved.template.templateId, version: resolved.template.version, hash: resolved.hash, pinnedAt: now },

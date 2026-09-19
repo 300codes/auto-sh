@@ -1,0 +1,15 @@
+{
+  "status": 400,
+  "body": {
+    "error": "Validation failed",
+    "code": "validation_failed",
+    "details": [
+      {
+        "path": "mode",
+        "code": "invalid_value",
+        "message": "Invalid input: expected \"manual_handoff\""
+      }
+    ]
+  },
+  "taskId": "4d5d407c-ffd9-4f1d-89b7-158f3ab4040d"
+}

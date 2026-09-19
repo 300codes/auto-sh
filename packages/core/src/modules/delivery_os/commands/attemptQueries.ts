@@ -1,12 +1,14 @@
+import { isFlowPinned } from './flowGate'
+import { assertDeliveryCheck, lockScopedProject, lockScopedProjectTasks } from './shared'
 import type { EntityManager, FilterQuery } from '@mikro-orm/postgresql'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { DeliveryTask, type DeliveryProject } from '../data/entities'
-import { findAttempt, parseAttemptRegister } from '../lib/attempts'
+import { findAttempt, isAttemptActive, hasUnreconciledAttempt, parseAttemptRegister } from '../lib/attempts'
 import { buildDeliveryError, type ExecutionAttempt, type TaskPackageV1 } from '../lib/contracts'
 import { getTargetProfile } from '../lib/targetProfiles'
 import { buildTaskPackageV1, type TaskPackageOptions, type TaskPackageResult } from '../lib/taskPackage'
 import { deliveryHttpError, requireScopedProject, requireScopedTask, type DeliveryScope } from './shared'
-import { findProjectBaseline } from './tasks'
+import { checkReadyGate, findProjectBaseline } from './tasks'
 
 export type PendingDelivery = {
   taskId: string
@@ -19,6 +21,7 @@ export type PendingDelivery = {
 export type PendingDeliveryOptions = { limit?: number }
 
 export type DeliveryOsAttemptQueries = {
+  assertExecutionReady(scope: DeliveryScope, taskId: string, attemptId: string, mode?: 'execute' | 'resume', workflowRef?: string): Promise<void>
   getAttempt(scope: DeliveryScope, taskId: string, attemptId: string): Promise<ExecutionAttempt | null>
   buildTaskPackage(scope: DeliveryScope, taskId: string, attemptId: string): Promise<TaskPackageV1>
   listPendingDeliveries(scope: DeliveryScope, options?: PendingDeliveryOptions): Promise<PendingDelivery[]>
@@ -106,6 +109,33 @@ export function createDeliveryOsAttemptQueries(rootEm: EntityManager): DeliveryO
       )
       if (!task) return null
       return findAttempt(readRegister(task), attemptId) ?? null
+    },
+
+    async assertExecutionReady(rawScope, taskId, attemptId, mode = 'execute', workflowRef) {
+      const scope = assertQueryScope(rawScope)
+      const em = rootEm.fork()
+      const probe = await requireScopedTask(em, taskId, scope)
+      await em.transactional(async (tx) => {
+        const project = await lockScopedProject(tx, probe.projectId, scope)
+        const tasks = await lockScopedProjectTasks(tx, project.id, scope)
+        const task = tasks.find((candidate) => candidate.id === taskId)
+        if (!task) throw deliveryHttpError(buildDeliveryError('foreign_reference', 'Task not found'))
+        const attempt = findAttempt(readRegister(task), attemptId)
+        const allowed = mode === 'resume'
+          ? attempt?.state === 'result_received' && attempt.completionDelivery === 'pending' && attempt.workflowRef === workflowRef
+          : attempt?.state === 'reserved' || attempt?.state === 'claimed'
+        if (!attempt || !allowed) throw deliveryHttpError(buildDeliveryError('attempt_not_active', 'Attempt cannot execute this effect'))
+        if (!isFlowPinned(project)) return
+        const baseline = await findProjectBaseline(tx, task.baselineId, project.id, scope)
+        if (!baseline || baseline.contentHash !== attempt.baselineHash || task.baselineId !== project.activeBaselineId) {
+          throw deliveryHttpError(buildDeliveryError('baseline_not_approved', 'Attempt baseline is no longer current'))
+        }
+        assertDeliveryCheck(await checkReadyGate(tx, task, project, scope))
+        const otherAttempts = tasks.flatMap((candidate) => readRegister(candidate).filter((entry) => candidate.id !== taskId || entry.attemptId !== attemptId))
+        if (hasUnreconciledAttempt(otherAttempts) || otherAttempts.some(isAttemptActive)) {
+          throw deliveryHttpError(buildDeliveryError('attempt_active', 'Another attempt requires completion or reconciliation'))
+        }
+      })
     },
 
     async buildTaskPackage(rawScope, taskId, attemptId) {

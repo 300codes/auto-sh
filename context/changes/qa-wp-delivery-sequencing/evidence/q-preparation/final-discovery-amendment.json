@@ -1,0 +1,20 @@
+{
+  "head": "68361d16342074eb5b3a1c57f86187f428509aca",
+  "finalExec006Sha256": "a89070d037936b85f57b3f55f3c6f4199dcce54b1856fa4216cd975d01ecc6a4",
+  "uniqueTests": 115,
+  "files": 26,
+  "categories": {
+    "OSS_HTTP": 86,
+    "UI": 8,
+    "EXEC": 21
+  },
+  "runtimePlan": {
+    "fixtureExecutions": 4,
+    "domainExecutable": 82,
+    "domainProfileNotRun": 2,
+    "maximumPassingExecutionsThisProfile": 86,
+    "maximumPassingUniqueThisProfile": 84
+  },
+  "profileGap": "TC010 two tests require actual registry without enterprise; current integrated profile has enterprise enabled; no false verification flag set",
+  "newExec006Proof": "Final source checked before runtime; no changed discovery cardinality"
+}

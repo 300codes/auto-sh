@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildPrefixIndex, scanText } from '../i18n-scanner.mjs'
+import { buildPrefixIndex, createTextScanner, scanText } from '../i18n-scanner.mjs'
 
 test('direct t()/translate() calls are detected', () => {
   const text = [
@@ -233,4 +233,33 @@ test('a template-literal t() call outside a code sample is still counted as dyna
 
   assert.deepEqual(refs.map((ref) => ref.key), ['module.entity.status.active'])
   assert.equal(dynamicCount, 1)
+})
+
+
+test('prepared scanner preserves complete refs and line numbers across files', () => {
+  const keys = new Set(['module.title', 'module.state.ready', 'module.state.failed'])
+  const scan = createTextScanner(keys)
+  const sources = [
+    "t('module.title')\ntranslate('module.missing')",
+    't(`module.state.${status}`)\nconst labelKey = "module.title"',
+    't(dynamicKey)',
+    '',
+  ]
+  for (const [index, source] of sources.entries()) {
+    const options = { file: `file-${index}.tsx` }
+    assert.deepEqual(scan(source, options), scanText(source, keys, options))
+  }
+})
+
+test('prepared scanner owns a stable catalog snapshot while new scans see mutations', () => {
+  const keys = new Set(['module.state.ready'])
+  const scan = createTextScanner(keys)
+  const source = 't(`module.state.${status}`)'
+  const before = scan(source)
+  keys.delete('module.state.ready')
+  keys.add('module.state.failed')
+  assert.deepEqual(scan(source), before)
+  const updated = scanText(source, keys)
+  assert.ok(updated.refs.some((ref) => ref.key === 'module.state.failed'))
+  assert.ok(!updated.refs.some((ref) => ref.key === 'module.state.ready'))
 })

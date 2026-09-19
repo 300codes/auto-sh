@@ -1,0 +1,14 @@
+{
+  "delivery_figma.credentials.authType": "Authentifizierungstyp",
+  "delivery_figma.credentials.healthFileKey": "Dateischlüssel für die Verbindungsprüfung",
+  "delivery_figma.credentials.personal": "Persönliches Zugriffstoken",
+  "delivery_figma.credentials.token": "Zugriffstoken",
+  "delivery_figma.errors.figma_access_denied": "Figma hat den Zugriff verweigert. Prüfen Sie die Verbindungsberechtigungen.",
+  "delivery_figma.errors.figma_file_missing": "Die Figma-Datei wurde nicht gefunden.",
+  "delivery_figma.errors.figma_rate_limited": "Das Figma-Anfragelimit wurde erreicht. Versuchen Sie es später erneut.",
+  "delivery_figma.errors.figma_response_invalid": "Figma hat einen unvollständigen oder ungültigen Kommentarstand zurückgegeben.",
+  "delivery_figma.errors.figma_response_too_large": "Der Kommentarstand überschreitet die unterstützte Größe.",
+  "delivery_figma.errors.figma_unavailable": "Figma ist derzeit nicht verfügbar.",
+  "delivery_figma.errors.healthFailed": "Die Kommentare der konfigurierten Figma-Datei können nicht gelesen werden.",
+  "delivery_figma.errors.healthUnconfigured": "Konfigurieren Sie eine zugängliche Datei für die Verbindungsprüfung."
+}

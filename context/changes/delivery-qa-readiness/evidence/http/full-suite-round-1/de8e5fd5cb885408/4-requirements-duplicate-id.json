@@ -1,0 +1,15 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Duplicate id REQ-1",
+    "code": "duplicate_stable_id",
+    "details": [
+      {
+        "path": "requirements.2.id",
+        "code": "duplicate_stable_id",
+        "message": "Duplicate id REQ-1"
+      }
+    ]
+  },
+  "projectId": "a602653c-994b-426d-89bf-6c701209d769"
+}

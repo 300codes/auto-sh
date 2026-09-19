@@ -14,7 +14,7 @@ import type { BaselineContentV1 } from '../lib/contracts'
  * TC-DELIVERY-004: Task plan validation and import — real-database constraint matrix.
  *
  * Covers: cyclic dependsOnTaskIds; cross-tenant task mutation 404; unknown acIds 422; optimistic-lock
- * mismatch 409; READY-transition blocked by unresolved predecessors; re-import idempotency (no
+ * mismatch 409; reservation blocked by unresolved predecessors; re-import idempotency (no
  * duplicate); plan-proposal import where task acIds reference unknown ACs.
  *
  * Each test seeds its own project+baseline fixture (project with approved baseline) and tears down in
@@ -388,7 +388,7 @@ test.describe('TC-DELIVERY-004: task plan validation and import on the real data
     }
   })
 
-  test('task status READY transition blocked by unresolved predecessors that are not done', async ({ request }) => {
+  test('ready task cannot reserve an attempt before its predecessor is verified', async ({ request }) => {
     test.slow()
     let token: string | null = null
     const localProjectIds: string[] = []
@@ -418,14 +418,21 @@ test.describe('TC-DELIVERY-004: task plan validation and import on the real data
         body: { id: taskBId, status: 'ready' },
         lock: lockB,
       })
-      // Behavior: dependency checks are enforced at execution time (reserve attempt), not at status
-      // update time. The API allows setting status to 'ready' even when predecessors are unresolved.
-      // This is intentional — the guard fires when the attempt is reserved, not when the task
-      // is staged as ready. Asserting the response is 2xx and status is 'ready'.
-      expect([200, 409, 422]).toContain(readyAttempt.status)
-      if (readyAttempt.status === 200) {
-        expect(readyAttempt.body.status).toBe('ready')
-      }
+      expect(readyAttempt.status, `ready with unresolved predecessor: ${JSON.stringify(readyAttempt.body)}`).toBe(200)
+      expect(readyAttempt.body.status).toBe('ready')
+      const beforeReserve = await call('GET', `${API}/tasks/${taskBId}`)
+      expect(beforeReserve.status).toBe(200)
+      const reservation = await call('POST', `${API}/tasks/${taskBId}/attempts`, {
+        body: { mode: 'manual_handoff', baseRevision: { kind: 'git', commitSha: 'a'.repeat(40) } },
+        lock: String(beforeReserve.body.updatedAt),
+        headers: { 'Idempotency-Key': randomUUID() },
+      })
+      expect(reservation.status, `reserve with unresolved predecessor: ${JSON.stringify(reservation.body)}`).toBe(409)
+      expect(reservation.body.code).toBe('dependency_not_verified')
+      const afterReserve = await call('GET', `${API}/tasks/${taskBId}`)
+      expect(afterReserve.status).toBe(200)
+      expect(afterReserve.body).toEqual(beforeReserve.body)
+      expect(afterReserve.body.executionAttempts).toEqual([])
     } finally {
       await deleteProjectsInDb(localProjectIds).catch(() => undefined)
     }
@@ -604,7 +611,7 @@ test.describe('TC-DELIVERY-004: task plan validation and import on the real data
     }
   })
 
-  test('missing lock header on task update returns 428 optimistic_lock_required', async ({ request }) => {
+  test('task CRUD permits an omitted lock header but attempt reservation requires it', async ({ request }) => {
     test.slow()
     let token: string | null = null
     const localProjectIds: string[] = []
@@ -620,20 +627,29 @@ test.describe('TC-DELIVERY-004: task plan validation and import on the real data
       expect(task.status, `task create: ${JSON.stringify(task.body)}`).toBe(201)
       const taskId = task.body.id as string
 
-      // PUT without the lock header
       const noLock = await call('PUT', `${API}/tasks`, {
-        body: { id: taskId, title: 'Should fail without lock' },
-        // no `lock` option → no LOCK_HEADER sent
+        body: { id: taskId, title: 'Updated through compatible CRUD call' },
       })
-      // Behavior: the task update route does not require an optimistic-lock header — the header
-      // is optional for this endpoint (enforced only on routes that declare it mandatory).
-      // Asserting the update succeeded without the header.
-      expect([200, 428]).toContain(noLock.status)
-      if (noLock.status === 200) {
-        expect(noLock.body.ok).toBe(true)
-      } else {
-        expect(noLock.body.code).toBe('optimistic_lock_required')
-      }
+      expect(noLock.status, `CRUD without lock header: ${JSON.stringify(noLock.body)}`).toBe(200)
+      const updated = await call('GET', `${API}/tasks/${taskId}`)
+      expect(updated.status).toBe(200)
+      expect(updated.body.title).toBe('Updated through compatible CRUD call')
+      const ready = await call('PUT', `${API}/tasks`, {
+        body: { id: taskId, status: 'ready' }, lock: String(updated.body.updatedAt),
+      })
+      expect(ready.status).toBe(200)
+      const beforeReserve = await call('GET', `${API}/tasks/${taskId}`)
+      expect(beforeReserve.status).toBe(200)
+      const reservation = await call('POST', `${API}/tasks/${taskId}/attempts`, {
+        body: { mode: 'manual_handoff', baseRevision: { kind: 'git', commitSha: 'a'.repeat(40) } },
+        headers: { 'Idempotency-Key': randomUUID() },
+      })
+      expect(reservation.status, `reserve without lock header: ${JSON.stringify(reservation.body)}`).toBe(428)
+      expect(reservation.body.code).toBe('optimistic_lock_required')
+      const afterReserve = await call('GET', `${API}/tasks/${taskId}`)
+      expect(afterReserve.status).toBe(200)
+      expect(afterReserve.body).toEqual(beforeReserve.body)
+      expect(afterReserve.body.executionAttempts).toEqual([])
     } finally {
       await deleteProjectsInDb(localProjectIds).catch(() => undefined)
     }

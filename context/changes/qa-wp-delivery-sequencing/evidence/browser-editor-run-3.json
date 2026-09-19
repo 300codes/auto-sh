@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "reason": "Native readback caught unsaved header/footer/navigation after metabox Save draft. Correction saves three owned entities before the metabox draft save; assertions unchanged.",
+  "nativeFixtureCleanup": {
+    "nativeFixtureCleanup": "cleaned",
+    "browserCloseFailed": false,
+    "cleanupDiagnosticFailed": false,
+    "themeUpdate": "retained_intentionally"
+  },
+  "firstBuild": {
+    "status": "passed",
+    "action": "updated",
+    "cssHash": "6dbfb0fcad9a319ca54480b688764c628a6c9c8d67a410a56cd195ece50b76f7",
+    "files": [
+      {
+        "path": "templates/page.html",
+        "sha256": "7463747e60bb523f30fd0b1b543a8da74ca2ed0d527d2115150cb1b04145dfaf"
+      }
+    ]
+  },
+  "sourceHashes": {
+    "packages/core/src/helpers/integration/wordpressBrowserFixtures.ts": "b509257f777d8b2e52b0777d6272fc67500a2dcb87c99d80b65663d4245cd87c",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress/TC-DELIVERY-WP-EDITOR-001.spec.ts": "416192323543d4bcf85266af5c338c0f5a1459715aceb0a8948816a7809d20e7",
+    "/tmp/auto-sh-wp-foundation-20260919/playwright.wp.config.ts": "5bd0689ef866d440728c360b7fb38d805e46d100dc09b22892ed0f557fbd32e0"
+  },
+  "rawReportHash": "3295b97e019cf5437dccdd54adc946b77cd5ca12aa692e82d015bd37525bf044",
+  "effectiveConfiguration": {
+    "base": "Repository .ai/qa/tests/playwright.config.ts",
+    "privateWrapperOverrides": {
+      "use.actionTimeout": 20000,
+      "use.navigationTimeout": 60000
+    },
+    "cli": {
+      "timeout": 900000,
+      "retries": 0,
+      "workers": 1
+    }
+  }
+}

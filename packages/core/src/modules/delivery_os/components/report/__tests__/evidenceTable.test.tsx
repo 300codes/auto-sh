@@ -7,14 +7,21 @@ import { EvidenceTable } from '../EvidenceTable'
 import { EvidenceSources } from '../EvidenceSources'
 import { EvidenceDetailDialog } from '../EvidenceDetailDialog'
 
-jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => (key: string) => key }))
+const mockApiCall = jest.fn()
+const translate = (key: string) => key === 'delivery_os.report.evidence.forbidden' ? 'Evidence access denied' : key
+jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => translate, useOptionalT: () => translate }))
+jest.mock('@open-mercato/ui/backend/utils/apiCall', () => ({ apiCall: (...args: unknown[]) => mockApiCall(...args) }))
+jest.mock('@open-mercato/shared/lib/frontend/useOrganizationScope', () => ({ useOrganizationScopeVersion: () => 0 }))
 jest.mock('@open-mercato/ui/backend/DataTable', () => ({
-  DataTable: ({ data, pagination }: { data: { id: string; acId: string | null }[]; pagination: { page: number; total: number; onPageChange: (page: number) => void } }) => <div>
-    <span data-testid="page">{pagination.page}</span><span data-testid="total">{pagination.total}</span>
+  DataTable: ({ data, pagination, emptyState }: { data: { id: string; acId: string | null }[]; pagination?: { page: number; total: number; onPageChange: (page: number) => void }; emptyState?: React.ReactNode }) => <div>
+    {pagination ? <><span data-testid="page">{pagination.page}</span><span data-testid="total">{pagination.total}</span></> : null}
     {data.map((row) => <div data-testid="row" key={row.id}>{row.acId}</div>)}
-    <button type="button" onClick={() => pagination.onPageChange(pagination.page + 1)}>Next</button>
+    {data.length === 0 ? emptyState : null}
+    {pagination ? <button type="button" onClick={() => pagination.onPageChange(pagination.page + 1)}>Next</button> : null}
   </div>,
 }))
+
+beforeEach(() => { mockApiCall.mockReset(); mockApiCall.mockResolvedValue({ ok: false, status: 403 }) })
 
 describe('report evidence UI', () => {
   it('paginates only available relationships in batches of 50 despite a truncated server total', () => {
@@ -31,17 +38,22 @@ describe('report evidence UI', () => {
     expect(screen.getByText('AC-59')).toBeTruthy()
   })
 
-  it('describes the absent read API rather than claiming no evidence or missing files', () => {
-    render(<EvidenceSources />)
-    expect(screen.getByText('delivery_os.report.evidence.apiUnavailable')).toBeTruthy()
-    expect(screen.queryByText('delivery_os.report.evidence.empty')).toBeNull()
+  it('distinguishes a forbidden scoped read from an empty evidence collection', async () => {
+    render(<EvidenceSources projectId={fixture.projectId} baselineId={fixture.baselineId} revision={null} onEvidenceSelect={() => undefined} />)
+    expect(await screen.findByText('Evidence access denied')).toBeTruthy()
+    expect(screen.queryByText('delivery_os.report.evidence.sourcesEmpty')).toBeNull()
+    expect(mockApiCall).toHaveBeenCalledWith(expect.stringContaining(`/projects/${fixture.projectId}/evidence?baselineId=${fixture.baselineId}&group=baseline`), expect.any(Object))
+    fireEvent.click(screen.getByRole('button', { name: 'delivery_os.report.evidence.retry' }))
+    await waitFor(() => expect(mockApiCall).toHaveBeenCalledTimes(2))
   })
 
-  it('shows the selected ID, never a fabricated payload, and closes on Escape', () => {
+  it('shows the selected ID and denied read without a fabricated payload, and closes on Escape', async () => {
     const onOpenChange = jest.fn()
-    render(<EvidenceDetailDialog evidenceId={fixture.rows[0].evidenceId} onOpenChange={onOpenChange} />)
+    render(<EvidenceDetailDialog projectId={fixture.projectId} evidenceId={fixture.rows[0].evidenceId} onOpenChange={onOpenChange} />)
     expect(screen.getByText(fixture.rows[0].evidenceId)).toBeTruthy()
-    expect(screen.getByText('delivery_os.report.evidence.detailUnavailable')).toBeTruthy()
+    expect(await screen.findByText('Evidence access denied')).toBeTruthy()
+    expect(screen.getByRole('dialog').querySelector('pre')).toBeNull()
+    expect(screen.queryByText('delivery_os.report.evidence.noFiles')).toBeNull()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
@@ -51,7 +63,7 @@ describe('report evidence UI', () => {
       const [evidenceId, setEvidenceId] = React.useState<string | null>(null)
       return <>
         <button type="button" onClick={() => setEvidenceId(fixture.rows[0].evidenceId)}>Open evidence</button>
-        <EvidenceDetailDialog evidenceId={evidenceId} onOpenChange={(open) => { if (!open) setEvidenceId(null) }} />
+        <EvidenceDetailDialog projectId={fixture.projectId} evidenceId={evidenceId} onOpenChange={(open) => { if (!open) setEvidenceId(null) }} />
       </>
     }
     render(<Harness />)

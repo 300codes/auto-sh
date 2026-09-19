@@ -1,5 +1,13 @@
 # UI-01 — gotowość agentowego zapisu w Figmie
 
+## Ponowione połączenie Codex — 2026-09-19
+
+Po ponowieniu na prośbę użytkownika `whoami` zakończyło się sukcesem. Konto
+Michała Strześniewskiego ma seat Full w planie 300.codes Pro i własnym Starter.
+To usuwa wcześniejszą blokadę uwierzytelnienia tego konektora. Read/render
+konkretnego pliku, write oraz comments API pozostają do osobnego sprawdzenia;
+nie wynikają z samego `whoami`. Historyczne wyniki poniżej zachowują swój zakres.
+
 ## Aktualny probe Codex — 2026-09-19
 
 O 17:21:51 UTC operator techniczny (agent Codex 0.155.1) wykonał read-only

@@ -70,7 +70,14 @@ type Store = KitStore & { evidence: DeliveryEvidence[] }
 const MODULE_ROOT = join(__dirname, '..', '..')
 const V2_BASELINE_ID = '5a5a5a5a-5555-4555-8555-5555555555b2'
 const V2_TASK_ID = '66666666-6666-4666-8666-6666666666b2'
-const IMMUTABLE_SUBJECTS = ['baselines', 'decisions', 'results', 'evidence']
+const IMMUTABLE_SUBJECTS = [
+  'baselines',
+  'decisions',
+  'results',
+  'evidence',
+  'artifacts',
+  'publications',
+]
 const WRITE_METHODS = ['PUT', 'PATCH', 'DELETE']
 const MUTATING_ACTIONS = /(^|[._])(update|delete|remove|edit|archive|replace|patch|override|expire|auto_approve)/
 
@@ -266,16 +273,24 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.attempts.reserve',
       'delivery_os.baselines.create',
       'delivery_os.baselines.import_requirements',
+      'delivery_os.comments.import',
+      'delivery_os.comments.triage',
       'delivery_os.decisions.record',
+      'delivery_os.design_imports.create',
+      'delivery_os.design_imports.update',
       'delivery_os.evidence.record',
       'delivery_os.flow.link_instance',
+      'delivery_os.flow.materialize_baseline',
       'delivery_os.flow.pin',
       'delivery_os.intake.import_proposal',
       'delivery_os.intake.update',
       'delivery_os.projects.create',
       'delivery_os.projects.delete',
       'delivery_os.projects.update',
+      'delivery_os.publications.record',
+      'delivery_os.release_candidates.nominate',
       'delivery_os.results.accept',
+      'delivery_os.staff.link',
       'delivery_os.stages.create_artifact',
       'delivery_os.stages.decide',
       'delivery_os.tasks.create',
@@ -289,25 +304,31 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.baselines.import_requirements',
       'delivery_os.decisions.record',
       'delivery_os.evidence.record',
+      'delivery_os.publications.record',
       'delivery_os.results.accept',
     ])
     expect(appendOnly.filter((id) => MUTATING_ACTIONS.test(id.slice('delivery_os.'.length)))).toEqual([])
     expect(appendOnly.filter((id) => commandRegistry.get(id)?.undo)).toEqual([])
   })
 
-  it('exposes no PUT, PATCH or DELETE on any baseline, decision, result or evidence route', () => {
+  it('exposes no PUT, PATCH or DELETE on any baseline, decision, result, evidence, publication or stage artifact route', () => {
     const routes = routeMethods()
     const appendOnlyRoutes = [...routes.keys()].filter((path) => IMMUTABLE_SUBJECTS.some((subject) => path.split('/').includes(subject)))
     expect(appendOnlyRoutes.sort()).toEqual([
       'baselines/[id]/decisions/route.ts',
       'projects/[id]/baselines/route.ts',
+      'projects/[id]/evidence/[evidenceId]/attachments/[attachmentId]/route.ts',
+      'projects/[id]/evidence/[evidenceId]/route.ts',
       'projects/[id]/evidence/route.ts',
+      'projects/[id]/publications/route.ts',
+      'projects/[id]/stages/[stageId]/artifacts/route.ts',
+      'projects/[id]/stages/[stageId]/decisions/route.ts',
       'tasks/[id]/results/route.ts',
     ])
     for (const path of appendOnlyRoutes) {
       const methods = routes.get(path) ?? new Set<string>()
       expect({ path, writes: [...methods].filter((method) => WRITE_METHODS.includes(method)) }).toEqual({ path, writes: [] })
-      expect(methods.has('POST')).toBe(true)
+      expect(methods.has(path.includes('[evidenceId]') ? 'GET' : 'POST')).toBe(true)
     }
   })
 

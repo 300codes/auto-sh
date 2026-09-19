@@ -1,0 +1,21 @@
+PASS packages/core/src/modules/delivery_os/commands/__tests__/evidence.test.ts
+06:31:48.184 WARN  [delivery_os] Stored attachment could not be read for verification attachmentId=c1c1c1c1-1111-4111-8111-111111111111
+Error: [internal] stored file is not readable
+    at /qa/packages/core/src/modules/delivery_os/commands/__tests__/baselineTestKit.ts:212:48
+    at /qa/node_modules/jest-mock/build/index.js:305:39
+    at /qa/node_modules/jest-mock/build/index.js:312:13
+    at mockConstructor (/qa/node_modules/jest-mock/build/index.js:57:19)
+    at inspectOrNull (/qa/packages/core/src/modules/delivery_os/commands/attachments.ts:80:18)
+    at verifyAttachmentReferences (/qa/packages/core/src/modules/delivery_os/commands/attachments.ts:122:71)
+    at verifyEvidenceAttachments (/qa/packages/core/src/modules/delivery_os/commands/attachments.ts:210:20)
+    at recordEvidenceInTransaction (/qa/packages/core/src/modules/delivery_os/commands/evidence.ts:528:23)
+    at Object.execute (/qa/packages/core/src/modules/delivery_os/commands/evidence.ts:832:21)
+    at catchHttpError (/qa/packages/core/src/modules/delivery_os/commands/__tests__/baselineTestKit.ts:224:5)
+    at Object.<anonymous> (/qa/packages/core/src/modules/delivery_os/commands/__tests__/evidence.test.ts:456:24)
+PASS packages/core/src/modules/delivery_os/api/__tests__/evidence.route.test.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       66 passed, 66 total
+Snapshots:   0 total
+Time:        4.274 s
+Ran all test suites within paths "packages/core/src/modules/delivery_os/commands/__tests__/evidence.test.ts", "packages/core/src/modules/delivery_os/api/__tests__/evidence.route.test.ts".

@@ -14,9 +14,9 @@
   "target": {
     "kind": "wordpress",
     "environment": "preview",
-    "ref": "psi-fryzjer-preview"
+    "ref": "fixture:psi-fryzjer-preview"
   },
-  "url": "https://preview.example.com/psi-fryzjer",
+  "url": "https://preview.example.test/psi-fryzjer",
   "deployDecisionId": "ddddddd9-dddd-4ddd-8ddd-ddddddddddd9",
   "publishedAt": "2026-09-19T12:00:00.000Z",
   "publishedBy": "66666666-6666-4666-8666-666666666666",

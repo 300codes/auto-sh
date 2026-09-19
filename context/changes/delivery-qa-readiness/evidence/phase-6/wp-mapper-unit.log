@@ -1,0 +1,45 @@
+PASS packages/core/src/modules/delivery_os/lib/__tests__/wordpressStudioContract.test.ts
+  WordPress Studio evidence at the delivery domain boundary
+    ✓ accepts the recorded snapshot revision and theme paths for the WordPress target (8 ms)
+    ✓ rejects the standalone report evidence/local-studio.live.json as a domain result manifest (4 ms)
+    ✓ rejects the standalone report fixtures/tool-evidence.fixture.json as a domain result manifest (1 ms)
+    ✓ does not accept successful local tool checks as acceptance-criterion evidence (2 ms)
+  WP-M02 synthetic snapshot to OSS mapping (no live tool or preview execution)
+    ✓ serializes a correlated snapshot manifest with exact added/modified/deleted paths and byte-backed artifacts (16 ms)
+    ✓ rejects mismatched projectId in both the mapper ledger and OSS correlation (27 ms)
+    ✓ rejects mismatched taskId in both the mapper ledger and OSS correlation (18 ms)
+    ✓ rejects mismatched attemptId in both the mapper ledger and OSS correlation (5 ms)
+    ✓ rejects mismatched baselineId in both the mapper ledger and OSS correlation (5 ms)
+    ✓ rejects mismatched baselineHash in both the mapper ledger and OSS correlation (4 ms)
+    ✓ rejects mismatched targetProfileVersion in both the mapper ledger and OSS correlation (3 ms)
+    ✓ rejects tool scope outside trusted host tenantId (3 ms)
+    ✓ rejects tool scope outside trusted host organizationId (2 ms)
+    ✓ rejects tool scope outside trusted host projectId (2 ms)
+    ✓ rejects foreign base revisions and revision kind (25 ms)
+    ✓ guards the result workspace locally while documenting the current OSS acceptance gap (3 ms)
+    ✓ rejects unknown_ac at the real OSS acceptance boundary (2 ms)
+    ✓ rejects unknown_test at the real OSS acceptance boundary (2 ms)
+    ✓ rejects old_validation_profile at the real OSS acceptance boundary (1 ms)
+    ✓ rejects duplicate_check at the real OSS acceptance boundary (2 ms)
+    ✓ rejects wrong_check_revision at the real OSS acceptance boundary (2 ms)
+    ✓ rejects disallowed_path at the real OSS acceptance boundary (2 ms)
+    ✓ detects changed database bytes with stale SHA rather than trusting schema (2 ms)
+    ✓ detects changed theme bytes with stale SHA rather than trusting schema (2 ms)
+    ✓ detects changed definition bytes with stale SHA rather than trusting schema (2 ms)
+    ✓ detects changed report bytes with stale SHA rather than trusting schema (2 ms)
+    ✓ rejects untracked tool executions, stale snapshot hashes and path escapes (5 ms)
+    ✓ gives a database-only change a new revision without inventing a changed theme path (2 ms)
+    ✓ does not turn failed into acceptance proof (2 ms)
+    ✓ does not turn not_run into acceptance proof (2 ms)
+    ✓ does not turn partial into acceptance proof (2 ms)
+    ✓ does not turn missing into acceptance proof (1 ms)
+    ✓ never upgrades http.local ToolCheck into ResultCheck (2 ms)
+    ✓ never upgrades studio.create ToolCheck into ResultCheck (1 ms)
+    ✓ never upgrades snapshot.capture ToolCheck into ResultCheck (1 ms)
+    ✓ keeps expired, unverified and even current fixture previews out of live acceptance (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       36 passed, 36 total
+Snapshots:   0 total
+Time:        1.766 s
+Ran all test suites within paths "packages/core/src/modules/delivery_os/lib/__tests__/wordpressStudioContract.test.ts".

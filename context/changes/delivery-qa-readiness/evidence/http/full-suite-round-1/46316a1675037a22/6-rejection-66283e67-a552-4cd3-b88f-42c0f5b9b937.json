@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 422,
+    "code": "unknown_ac"
+  },
+  "actual": {
+    "status": 422,
+    "body": {
+      "code": "unknown_ac",
+      "details": [
+        {
+          "path": "acIds.AC-unknown",
+          "code": "unknown_ac"
+        }
+      ]
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { LockMode } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
@@ -7,7 +8,7 @@ import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
-import { DeliveryFlowStageArtifact, DeliveryFlowStageDecision, type DeliveryProject } from '../data/entities'
+import { DeliveryCommentThread, DeliveryFlowStageArtifact, DeliveryFlowStageDecision, type DeliveryProject } from '../data/entities'
 import {
   stageArtifactCreateCommandSchema,
   stageDecisionCommandSchema,
@@ -17,6 +18,7 @@ import {
 import {
   buildDeliveryError,
   buildDeliveryFlowError,
+  flowStageIdSchema,
   stageArtifactCreateResponseSchema,
   stageDecisionResponseSchema,
   uuidSchema,
@@ -30,9 +32,10 @@ import {
   type StageDecisionResponse,
 } from '../lib/contracts'
 import { collectAttachmentReferences, type AttachmentReference } from '../lib/designReview'
-import { type StageArtifactRecord, type StageDecisionRecord } from '../lib/flowRules'
+import { type StageDecisionRecord } from '../lib/flowRules'
 import { planStageArtifact, type AcReference, type StageArtifactPlan } from '../lib/stageArtifacts'
 import {
+  blockingThreadsFor,
   hashStageDecisionRequest,
   planStageDecision,
   type CommentThreadRecord,
@@ -44,6 +47,7 @@ import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/tru
 import { emitDeliveryOsEvent } from '../events'
 import { verifyAttachmentReferences } from './attachments'
 import { requireIdempotencyKey } from './attempts'
+import { loadStageArtifactRows, loadStageDecisionRows, toStageArtifactRecord, toStageDecisionRecord } from './flowGate'
 import { checkProjectArchivable } from './projects'
 import {
   assertDeliveryCheck,
@@ -77,7 +81,7 @@ type FeatureGrantReader = {
 
 const logger = createLogger('delivery_os')
 
-function readPinnedSnapshot(project: DeliveryProject): PinnedSnapshot {
+function readPinnedSnapshot(project: Pick<DeliveryProject, 'flowTemplateSnapshot' | 'flowTemplateHash'>): PinnedSnapshot {
   if (project.flowTemplateSnapshot && project.flowTemplateHash) {
     return { template: project.flowTemplateSnapshot, hash: project.flowTemplateHash }
   }
@@ -96,51 +100,37 @@ function requireTemplateStage(template: FlowTemplateV1, stageId: FlowStageId): F
   )
 }
 
+/**
+ * Route-level check of the path `stageId` (F7/F8/F9) with the same errors as the commands: `422 flow_not_pinned` for an
+ * unpinned project, `422 stage_unknown` for a value that is not an approval stage of the pinned snapshot.
+ */
+export function requirePinnedTemplateStage(
+  project: Pick<DeliveryProject, 'flowTemplateSnapshot' | 'flowTemplateHash'>,
+  rawStageId: string,
+): FlowStageId {
+  const { template } = readPinnedSnapshot(project)
+  const parsed = flowStageIdSchema.safeParse(rawStageId)
+  const stages = Array.isArray(template.stages) ? template.stages : []
+  if (parsed.success && stages.some((stage) => stage.kind === parsed.data)) return parsed.data
+  throw deliveryFlowHttpError(
+    buildDeliveryFlowError('stage_unknown', 'Stage is not part of the pinned template', [
+      { path: 'stageId', code: 'stage_unknown', message: rawStageId.slice(0, 100) },
+    ]),
+  )
+}
+
 function projectContext(project: DeliveryProject) {
   return { projectId: project.id, targetProfileId: project.targetProfileId, targetProfileVersion: project.targetProfileVersion }
-}
-
-async function loadStageArtifacts(em: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryFlowStageArtifact[]> {
-  const rows = await findWithDecryption(
-    em,
-    DeliveryFlowStageArtifact,
-    { projectId, tenantId: scope.tenantId, organizationId: scope.organizationId },
-    undefined,
-    scope,
-  )
-  return [...rows].sort((left, right) => left.version - right.version)
-}
-
-async function loadStageDecisions(em: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryFlowStageDecision[]> {
-  const rows = await findWithDecryption(
-    em,
-    DeliveryFlowStageDecision,
-    { projectId, tenantId: scope.tenantId, organizationId: scope.organizationId },
-    undefined,
-    scope,
-  )
-  return [...rows].sort((left, right) => left.decidedAt.getTime() - right.decidedAt.getTime() || left.id.localeCompare(right.id))
-}
-
-function toArtifactRecord(row: DeliveryFlowStageArtifact): StageArtifactRecord {
-  return { id: row.id, stageId: row.stageId, version: row.version, contentHash: row.contentHash, dependsOn: row.dependsOn }
 }
 
 function toArtifactRef(row: Pick<DeliveryFlowStageArtifact, 'id' | 'version' | 'contentHash'>): StageArtifactRef {
   return { artifactId: row.id, version: row.version, contentHash: row.contentHash }
 }
 
-/** Only an approval stores the approver columns, so their presence is the exact `clientApproved` flag. */
 function toStoredDecision(row: DeliveryFlowStageDecision): StoredDecision {
   return {
-    id: row.id,
-    stageId: row.stageId,
-    artifactId: row.artifactId,
-    subjectHash: row.subjectHash,
+    ...toStageDecisionRecord(row),
     subjectVersion: row.subjectVersion,
-    verdict: row.verdict,
-    decidedAt: row.decidedAt.toISOString(),
-    clientApproved: row.verdict === 'approved' && typeof row.clientApproverName === 'string' && row.clientApproverName.length > 0,
     idempotencyKey: row.idempotencyKey,
     requestHash: row.requestHash,
   }
@@ -150,23 +140,68 @@ function toDecisionRecords(rows: readonly DeliveryFlowStageDecision[]): StageDec
   return rows.map(toStoredDecision)
 }
 
-/**
- * Comment threads of a stage (F11/F12, L17). Until the comment tables are populated by the import command this answers
- * no threads, so approvals are not blocked by feedback; L17 replaces this loader with the `delivery_comment_threads`
- * query and keeps the signature.
- */
-export async function loadStageCommentThreads(
-  _em: EntityManager,
-  _projectId: string,
-  _stageId: FlowStageId,
-  _scope: DeliveryScope,
-): Promise<CommentThreadRecord[]> {
-  return []
+async function loadStageThreadRows(
+  em: EntityManager,
+  projectId: string,
+  stageId: FlowStageId,
+  scope: DeliveryScope,
+  lock = false,
+): Promise<DeliveryCommentThread[]> {
+  return findWithDecryption(
+    em,
+    DeliveryCommentThread,
+    { projectId, stageId, tenantId: scope.tenantId, organizationId: scope.organizationId },
+    lock ? { lockMode: LockMode.PESSIMISTIC_WRITE, orderBy: { id: 'asc' } } : { orderBy: { id: 'asc' } },
+    scope,
+  )
 }
 
-/** Persists hash-bound deferrals on the thread rows (L17). No thread rows exist before the import lands, so this is a no-op. */
-export async function recordThreadDeferrals(_tx: EntityManager, _deferrals: readonly ThreadDeferral[]): Promise<void> {
-  return undefined
+/** Only the non-PII columns the F8 blocking rule needs leave this mapper; author and body stay on the row. */
+function toCommentThreadRecord(row: DeliveryCommentThread): CommentThreadRecord {
+  return {
+    threadKey: row.threadKey,
+    stageId: row.stageId,
+    artifactId: row.artifactId ?? null,
+    sourceStatus: row.sourceStatus,
+    triageStatus: row.triageStatus,
+    deferral: row.deferral ? { artifactId: row.deferral.artifactId, contentHash: row.deferral.contentHash } : null,
+  }
+}
+
+/** Comment threads of a stage (F11–F13) in the shape the pure F8 rule consumes. */
+export async function loadStageCommentThreads(
+  em: EntityManager,
+  projectId: string,
+  stageId: FlowStageId,
+  scope: DeliveryScope,
+  lock = false,
+): Promise<CommentThreadRecord[]> {
+  return (await loadStageThreadRows(em, projectId, stageId, scope, lock)).map(toCommentThreadRecord)
+}
+
+export type ThreadDeferralContext = { stageId: FlowStageId; actor: string; now: Date }
+
+/**
+ * Persists the hash-bound deferrals of an approval on the row-locked thread rows of the F8 transaction. A thread key is only
+ * unique per Figma file, so the blocking rule is re-applied per row: a same-key thread of another file that is resolved,
+ * deleted or bound to another artifact never receives a deferral it did not earn.
+ */
+export function recordThreadDeferrals(threads: readonly DeliveryCommentThread[], deferrals: readonly ThreadDeferral[], context: ThreadDeferralContext): void {
+  if (deferrals.length === 0) return
+  const byKey = new Map(deferrals.map((deferral) => [deferral.threadKey, deferral]))
+  for (const thread of threads) {
+    const deferral = byKey.get(thread.threadKey)
+    if (!deferral || blockingThreadsFor([toCommentThreadRecord(thread)], context.stageId, deferral).length === 0) continue
+    thread.triageStatus = 'deferred'
+    thread.deferral = {
+      artifactId: deferral.artifactId,
+      contentHash: deferral.contentHash,
+      reason: deferral.reason,
+      decidedBy: context.actor,
+      decidedAt: context.now.toISOString(),
+    }
+    thread.updatedAt = context.now
+  }
 }
 
 /**
@@ -250,13 +285,13 @@ async function planArtifactFor(
 ): Promise<ArtifactPlanning> {
   const snapshot = readPinnedSnapshot(project)
   requireTemplateStage(snapshot.template, parsed.stageId)
-  const artifactRows = await loadStageArtifacts(em, project.id, scope)
-  const decisionRows = await loadStageDecisions(em, project.id, scope)
+  const artifactRows = await loadStageArtifactRows(em, project.id, scope)
+  const decisionRows = await loadStageDecisionRows(em, project.id, scope)
   const plan = planStageArtifact({
     artifact: parsed.artifact,
     project: projectContext(project),
     template: snapshot.template,
-    existing: artifactRows.map(toArtifactRecord),
+    existing: artifactRows.map(toStageArtifactRecord),
     decisions: toDecisionRecords(decisionRows),
     resolvedScopeAcIds: resolveScopeAcIds(parsed.artifact, artifactRows),
     acReferences: collectArtifactAcReferences(parsed.artifact),
@@ -404,7 +439,7 @@ const createArtifactCommand: CommandHandler<StageArtifactCreateCommandInput, Sta
 
 // --- F8 stages.decide --------------------------------------------------------
 
-type DecisionPlanning = { snapshot: PinnedSnapshot; plan: StageDecisionPlan & { ok: true }; stored: StoredDecision[] }
+type DecisionPlanning = { snapshot: PinnedSnapshot; plan: StageDecisionPlan & { ok: true }; stored: StoredDecision[]; threadRows: DeliveryCommentThread[] }
 
 type DecisionGrants = { grantedFeatures: string[] }
 
@@ -422,26 +457,28 @@ async function planDecisionFor(
   parsed: StageDecisionCommandInput,
   scope: DeliveryScope,
   now: Date,
+  lockThreads = false,
 ): Promise<DecisionPlanning> {
   const snapshot = readPinnedSnapshot(project)
   requireTemplateStage(snapshot.template, parsed.stageId)
   const { grantedFeatures } = grants
-  const artifactRows = await loadStageArtifacts(em, project.id, scope)
-  const stored = (await loadStageDecisions(em, project.id, scope)).map(toStoredDecision)
-  const threads = await loadStageCommentThreads(em, project.id, parsed.stageId, scope)
+  const artifactRows = await loadStageArtifactRows(em, project.id, scope)
+  const stored = (await loadStageDecisionRows(em, project.id, scope)).map(toStoredDecision)
+  const threadRows = await loadStageThreadRows(em, project.id, parsed.stageId, scope, lockThreads)
+  const threads = threadRows.map(toCommentThreadRecord)
   const plan = planStageDecision({
     request: parsed.decision,
     idempotencyKey: parsed.idempotencyKey,
     stageId: parsed.stageId,
     template: snapshot.template,
     grantedFeatures,
-    artifacts: artifactRows.map(toArtifactRecord),
+    artifacts: artifactRows.map(toStageArtifactRecord),
     projectDecisions: stored,
     threads,
     now: now.toISOString(),
   })
   if (!plan.ok) throw deliveryFlowHttpError(plan)
-  return { snapshot, plan, stored }
+  return { snapshot, plan, stored, threadRows }
 }
 
 function findDecisionByKey(em: EntityManager, projectId: string, idempotencyKey: string, scope: DeliveryScope): Promise<DeliveryFlowStageDecision | null> {
@@ -531,7 +568,7 @@ const decideCommand: CommandHandler<StageDecisionCommandInput, StageDecisionComm
       const written = await em.transactional(async (tx) => {
         const project = await lockScopedProject(tx, parsed.projectId, scope)
         const now = new Date()
-        const planning = await planDecisionFor(tx, grants, project, parsed, scope, now)
+        const planning = await planDecisionFor(tx, grants, project, parsed, scope, now, true)
         const { snapshot, plan } = planning
         if (plan.duplicate) return { project, row: null, subject: replayedSubject(planning, plan.existing.id), currency: plan.currency }
         await enforceProjectLock(ctx, project)
@@ -558,7 +595,7 @@ const decideCommand: CommandHandler<StageDecisionCommandInput, StageDecisionComm
           createdAt: now,
         })
         tx.persist(row)
-        await recordThreadDeferrals(tx, plan.deferrals)
+        recordThreadDeferrals(planning.threadRows, plan.deferrals, { stageId: parsed.stageId, actor, now })
         project.updatedAt = now
         return { project, row, subject: null, currency: plan.currency }
       })

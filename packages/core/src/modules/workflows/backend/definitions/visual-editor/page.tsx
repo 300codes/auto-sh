@@ -77,7 +77,7 @@ import { resolveDefinitionInterpolationMode, type WorkflowInterpolationMode } fr
 import { findRouteKindDescriptorForHandle } from '../../../lib/route-kinds'
 import { buildWorkflowRouteEdge } from '../../../lib/route-edge'
 import { isDecisionSourceHandle, type DecisionRowLike } from '../../../lib/node-outcome-rows'
-import { STRUCTURAL_EDIT_CONFLICT_CODE } from '../../../lib/definition-edit-safety'
+import { STRUCTURAL_EDIT_CONFLICT_CODE, IMMUTABLE_DEFINITION_CONFLICT_CODE } from '../../../lib/definition-edit-safety'
 import type { WorkflowErrorHandlerConfig } from '../../../data/validators'
 import { WORKFLOW_NODE_DELETE_EVENT } from '../../../components/WorkflowNodeCard'
 import { WORKFLOW_ROUTE_CHIP_EVENT, WORKFLOW_ROUTE_ACTIVITY_EVENT, type RouteChipEventDetail, type RouteActivityEventDetail } from '../../../lib/route-chip-events'
@@ -270,7 +270,7 @@ type StructuralEditConflict = {
 function readStructuralEditConflictCount(status: number, body: unknown): number | null {
   if (status !== 409) return null
   const record = body && typeof body === 'object' ? (body as Record<string, unknown>) : null
-  if (!record || record.code !== STRUCTURAL_EDIT_CONFLICT_CODE) return null
+  if (!record || (record.code !== STRUCTURAL_EDIT_CONFLICT_CODE && record.code !== IMMUTABLE_DEFINITION_CONFLICT_CODE)) return null
   return typeof record.activeInstanceCount === 'number' ? record.activeInstanceCount : 0
 }
 
@@ -2581,7 +2581,7 @@ export default function VisualEditorPage() {
     try {
       const publishResult = await apiCall<{ data?: { id?: string; version?: number; updatedAt?: string }; error?: string }>(
         `/api/workflows/definitions/${definitionId}/publish`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) },
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loadedMetadata?.immutablePolicy === 'delivery' ? { draft: structuralConflict.payload } : {}) },
       )
       const mintedVersion = publishResult.result?.data
       if (!publishResult.ok || !mintedVersion?.id) {
@@ -2594,7 +2594,7 @@ export default function VisualEditorPage() {
       }
 
       const nextVersion = mintedVersion.version ?? version
-      const saveResult = await withScopedApiRequestHeaders(
+      const saveResult = loadedMetadata?.immutablePolicy === 'delivery' ? publishResult : await withScopedApiRequestHeaders(
         buildOptimisticLockHeader(mintedVersion.updatedAt ?? null),
         () => apiCall<{ data?: { updatedAt?: string }; error?: string }>(
           `/api/workflows/definitions/${mintedVersion.id}`,
@@ -2629,7 +2629,7 @@ export default function VisualEditorPage() {
     } finally {
       setIsCreatingVersion(false)
     }
-  }, [definitionId, structuralConflict, version, router, t])
+  }, [definitionId, structuralConflict, version, router, t, loadedMetadata])
 
   // Customize a code-defined workflow → creates an override and reloads the
   // editor pointed at the new UUID. Mirrors the non-visual edit page button.

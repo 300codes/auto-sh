@@ -88,9 +88,9 @@ describe('validateAllowedPaths — each rule has a failing input and a passing t
   })
 
   it('honours each profile root kind', () => {
-    expect(issueCodes(['src/modules/delivery/**', 'src/modules/delivery/api/[id]/route.ts'], openMercato)).toEqual([])
+    expect(issueCodes(['packages/core/src/modules/delivery_os/**', 'packages/core/src/modules/example/index.ts'], openMercato)).toEqual([])
     expect(issueCodes(['src/**'], openMercato)).toEqual(['outside_profile_roots'])
-    expect(issueCodes(['src/modules/**'], openMercato)).toEqual([])
+    expect(issueCodes(['src/modules/**'], openMercato)).toEqual(['outside_profile_roots'])
     expect(issueCodes(['style.css', 'templates/**', 'parts/header.html'], wordpress)).toEqual([])
     expect(issueCodes(['wp-config.php', 'style.css/**'], wordpress)).toEqual(['outside_profile_roots', 'outside_profile_roots'])
   })

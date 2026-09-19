@@ -23,7 +23,7 @@ import { LockMode } from '@mikro-orm/core'
 import type { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
-import { DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryProject, DeliveryTask } from '../../data/entities'
+import { DeliveryCommentThread, DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryProject, DeliveryTask } from '../../data/entities'
 import { stageDecisionRequestSchema } from '../../data/validators'
 import {
   deliveryFlowErrorBodySchema,
@@ -670,5 +670,113 @@ describe('delivery_os.stages.decide (F8)', () => {
     )
     expect(states.scope.approvedArtifact).toEqual(refs.scope)
     expect(states.ux.approvedArtifact).toEqual(refs.ux)
+  })
+})
+
+describe('delivery_os.stages.decide (F8) — comment threads', () => {
+  function thread(threadKey: string, overrides: Row = {}): Row {
+    return {
+      id: nextId(),
+      tenantId: TENANT_ID,
+      organizationId: ORG_ID,
+      projectId: PROJECT_ID,
+      source: 'figma',
+      fileKey: 'fileA',
+      threadKey,
+      stageId: 'ux',
+      artifactId: null,
+      author: { name: 'Anna', externalId: null },
+      body: 'Move the CTA',
+      sourceStatus: 'open',
+      triageStatus: 'new',
+      deferral: null,
+      updatedAt: UPDATED_AT,
+      ...overrides,
+    }
+  }
+
+  function blockedKeys(error: CrudHttpError): string[] {
+    return (error.body.details as Array<{ path: string }>).map((detail) => detail.path)
+  }
+
+  it('an open thread on the current artifact blocks the approval until it is resolved; a triaged one still blocks', async () => {
+    const refs = await walkStages('ux')
+    store.commentThreads.push(thread('t-new', { artifactId: refs.ux.artifactId }), thread('t-triaged', { artifactId: refs.ux.artifactId, triageStatus: 'triaged' }))
+    const blocked = await catchHttpError(() => decided('ux', decisionRequest(refs.ux), 'ux-1'))
+    expectFlowBody(blocked, 422, 'blocking_comments_open')
+    expect(blockedKeys(blocked)).toEqual(['threads.t-new', 'threads.t-triaged'])
+    expect(store.stageDecisions.filter((row) => row.stageId === 'ux')).toHaveLength(0)
+    const rejected = await decided('ux', decisionRequest(refs.ux, { verdict: 'rejected', reason: 'Feedback is open' }), 'ux-reject')
+    expect(rejected.verdict).toBe('rejected')
+    for (const row of store.commentThreads) row.triageStatus = 'resolved'
+    expect((await decided('ux', decisionRequest(refs.ux), 'ux-2')).currency).toBe('approved')
+  })
+
+  it('a thread without a confirmed design version blocks; threads of another stage, project, organization or closed at the source do not', async () => {
+    const refs = await walkStages('ux')
+    store.commentThreads.push(
+      thread('t-other-stage', { stageId: 'key_visual' }),
+      thread('t-other-project', { projectId: FOREIGN_ARTIFACT_ID }),
+      thread('t-other-org', { organizationId: FOREIGN_ORG_ID }),
+      thread('t-resolved-at-source', { sourceStatus: 'resolved' }),
+      thread('t-deleted-at-source', { sourceStatus: 'deleted' }),
+    )
+    store.commentThreads.push(thread('t-unbound'))
+    const blocked = await catchHttpError(() => decided('ux', decisionRequest(refs.ux), 'ux-1'))
+    expectFlowBody(blocked, 422, 'blocking_comments_open')
+    expect(blockedKeys(blocked)).toEqual(['threads.t-unbound'])
+  })
+
+  it('deferredThreadKeys records hash-bound deferrals on the blocking rows only, inside the decision', async () => {
+    const refs = await walkStages('ux')
+    store.commentThreads.push(
+      thread('t-1', { artifactId: refs.ux.artifactId }),
+      thread('t-1', { fileKey: 'fileB', sourceStatus: 'resolved' }),
+      thread('t-2', { artifactId: refs.ux.artifactId, triageStatus: 'resolved' }),
+    )
+    const approved = await decided('ux', decisionRequest(refs.ux, { deferredThreadKeys: ['t-1', 't-2'], reason: 'Client accepted the follow-up' }), 'ux-1')
+    expect(approved.currency).toBe('approved')
+    expect(store.stageDecisions.at(-1)).toMatchObject({ deferredThreadKeys: ['t-1'] })
+    expect(store.commentThreads[0]).toMatchObject({
+      triageStatus: 'deferred',
+      deferral: { artifactId: refs.ux.artifactId, contentHash: refs.ux.contentHash, reason: 'Client accepted the follow-up', decidedBy: ACTOR_ID },
+    })
+    expect((store.commentThreads[0].updatedAt as Date).getTime()).toBeGreaterThan(UPDATED_AT.getTime())
+    expect(store.commentThreads[1]).toMatchObject({ triageStatus: 'new', deferral: null, updatedAt: UPDATED_AT })
+    expect(store.commentThreads[2]).toMatchObject({ triageStatus: 'resolved', deferral: null })
+  })
+
+  it('row-locks the stage threads once inside the transaction; the same key blocking in two files is deferred on both rows and stored once', async () => {
+    const refs = await walkStages('ux')
+    store.commentThreads.push(thread('t-1', { artifactId: refs.ux.artifactId }), thread('t-1', { fileKey: 'fileB' }))
+    mockFindWithDecryption.mockClear()
+    await decided('ux', decisionRequest(refs.ux, { deferredThreadKeys: ['t-1'] }), 'ux-1')
+    const threadLoads = mockFindWithDecryption.mock.calls.filter((call) => call[1] === DeliveryCommentThread)
+    expect(threadLoads.map((call) => (call[3] as { lockMode?: LockMode }).lockMode)).toEqual([undefined, LockMode.PESSIMISTIC_WRITE])
+    expect(store.commentThreads.map((row) => row.triageStatus)).toEqual(['deferred', 'deferred'])
+    expect(store.stageDecisions.at(-1)).toMatchObject({ deferredThreadKeys: ['t-1'] })
+  })
+
+  it('an unknown deferred key is a foreign reference and writes nothing', async () => {
+    const refs = await walkStages('ux')
+    store.commentThreads.push(thread('t-1', { artifactId: refs.ux.artifactId }))
+    const error = await catchHttpError(() => decided('ux', decisionRequest(refs.ux, { deferredThreadKeys: ['t-1', 't-ghost'] }), 'ux-1'))
+    expectFlowBody(error, 422, 'foreign_reference')
+    expect(store.commentThreads[0].triageStatus).toBe('new')
+  })
+
+  it('a deferral bound to an older hash blocks again on the next artifact version', async () => {
+    const refs = await walkStages('ux')
+    store.commentThreads.push(thread('t-1'))
+    await decided('ux', decisionRequest(refs.ux, { deferredThreadKeys: ['t-1'] }), 'ux-1')
+    expect(store.commentThreads[0].triageStatus).toBe('deferred')
+    const next = toRef(await created('ux', designArtifact('ux', [dependency('scope', refs.scope)], { content: { ...loadStageArtifactFixture('ux').content, summary: 'ux v2', screens: [] } })))
+    expect(next.version).toBe(2)
+    const blocked = await catchHttpError(() => decided('ux', decisionRequest(next), 'ux-2'))
+    expectFlowBody(blocked, 422, 'blocking_comments_open')
+    expect(blockedKeys(blocked)).toEqual(['threads.t-1'])
+    const again = await decided('ux', decisionRequest(next, { deferredThreadKeys: ['t-1'] }), 'ux-3')
+    expect(again.currency).toBe('approved')
+    expect(store.commentThreads[0].deferral).toMatchObject({ artifactId: next.artifactId, contentHash: next.contentHash })
   })
 })

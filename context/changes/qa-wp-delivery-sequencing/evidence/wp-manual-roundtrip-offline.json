@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-19T17:00:53.660Z",
+  "scope": "offline helper verification only; live WP/API two-attempt roundtrip not_run",
+  "sourceHashes": {
+    "packages/core/src/modules/delivery_os/__integration__/wordpress_manual/README.md": "4488046aa630b2312e29dee59d5df8a2ab8f678c63095979f2662c3ff6b0d7f4",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress_manual/TC-DELIVERY-WP-MANUAL-001.spec.ts": "3f6b5559b5898967e447b99ae28399162a19de4a6226eee38ad52a15e5e3d97f",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress_manual/frozen-lint.cjs": "d3965fe817946acd5487b3695ee092d42105673ff9bc12ce61134f2a4f825826",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress_manual/frozen-smoke.cjs": "14bd35760256565577f70ca284f01b72aad3f99bb925bea7de3d60ae959fcbb7",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress_manual/manualRoundtrip.ts": "9fa737362c9fa002034f722d2ab720fc45207c0e8fbeb12abe1ea84f426340cd",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress_manual/meta.ts": "b5d0f6ba7a7325535672d74cde2a687a29f95b9972929916926d810b2607667b"
+  },
+  "typescript": {
+    "runner": "existing cached TypeScript JS API createProgram, strict narrow config including helper/spec/meta and imported sources",
+    "diagnostics": 0,
+    "status": "passed"
+  },
+  "discovery": {
+    "runner": "actual packages/cli/src/lib/testing/integration-discovery.ts",
+    "withoutOptIn": 0,
+    "withManualOnly": 1,
+    "requiredEnvVars": [
+      "OM_WP_MANUAL_ROUNDTRIP_CONFIG"
+    ],
+    "editorConfigRequired": false,
+    "status": "passed"
+  },
+  "offlineChecks": {
+    "inputProvenance": "temporary synthetic frozen-byte fixture; no Studio, API, DB or browser started",
+    "commands": [
+      "npx playwright test",
+      "composer run lint"
+    ],
+    "positive": "3 real command-backed checks returned passed",
+    "negative": "wrong marker rejected with wordpress_roundtrip_real_checks_failed",
+    "stdout": [
+      "offline frozen helper positive: 3 real command-backed checks PASS",
+      "offline frozen helper negative marker: rejected PASS"
+    ],
+    "status": "passed"
+  },
+  "liveIntegration": {
+    "status": "not_run",
+    "reason": "handoff for execution on transferred dedicated environment"
+  },
+  "cleanupContract": {
+    "api": "exact project ID/tenant/organization/name DB sentinel then scoped transaction; attachment only after success",
+    "site": "close browser, settle owned calls/checks, stop site; retained for explicit disposal",
+    "history": "audit history retained; no claim of physical environment disposal"
+  }
+}

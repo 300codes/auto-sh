@@ -98,7 +98,7 @@ packages/enterprise/src/modules/delivery_agents/i18n/
 }
 ```
 
-`widget.client.tsx`: add `const { t } = useT('delivery_agents')` and replace hardcoded strings with `t('delivery_agents.widget.*')` lookups. Internal error flashes (`[internal] Execution failed`, `[internal] Cancel failed`) are already prefixed with `[internal]` — leave them as-is (opted out of i18n checker per convention).
+`widget.client.tsx`: add `const t = useT()` and replace hardcoded strings with `t('delivery_agents.widget.*')` lookups. The shared hook takes no arguments and returns the translator function directly. Internal error flashes (`[internal] Execution failed`, `[internal] Cancel failed`) are already prefixed with `[internal]` — leave them as-is (opted out of i18n checker per convention).
 
 No locale files beyond `en.json` are required until a translator supplies them; the fallback chain in `resolveTranslations()` will serve English to all locales until then.
 
@@ -274,7 +274,7 @@ None — all design decisions are inherited from OSS-04 (merged) and EXEC-04 Faz
 ### Phase 1 — Detailed Progress
 - [x] Step 1.1: Add `delivery_os.audit.stages.create_artifact` + `delivery_os.audit.stages.decide` to en/de/es/ko/pl.json
 - [x] Step 1.2: Create `packages/enterprise/src/modules/delivery_agents/i18n/en.json` (10 keys)
-- [x] Step 1.2: Refactor `widget.client.tsx` — add `useT('delivery_agents')`, replace 6 hardcoded strings
+- [x] Step 1.2: Refactor `widget.client.tsx` — add `const t = useT()`, replace 6 hardcoded strings
 
 ### Phase 2 — Detailed Progress
 - [x] TC-DELIVERY-002: Baseline input modes (7 cases)

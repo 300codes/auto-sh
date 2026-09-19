@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "executedAt": "2026-09-19T13:34:41.914Z",
+  "execution": "real_owned_local_stopped_site",
+  "design": "fixture_not_approved",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "packageId": "6e6e1e39-8d54-4fd8-bbe4-02ca508a3727",
+  "packageHash": "0d2b725192c60663f09e98da8ef46baf2daeae9b832588b29fef90ce9bba020c",
+  "sourceManifestHash": "9f60e7276450e4946a275a690fd57958130da0386a290e152fadc8e114ecb3f0",
+  "fileCount": 3725,
+  "totalBytes": 66951346,
+  "databaseHash": "b7ee053ca9cce28a028e1b2fb2c7a7c06d9267b4c6bfe70979299c1905acacbe",
+  "runtimeIdentity": {
+    "wordpressVersion": "7.1.1",
+    "phpVersion": "8.4.23",
+    "studioVersion": "1.19.0",
+    "verification": "operator_declared"
+  },
+  "configPolicy": {
+    "wpConfig": "omitted",
+    "coreRuntime": "host_provided",
+    "hostSubstitution": "requires_verification"
+  },
+  "checks": {
+    "databaseSecrets": "not_evaluated",
+    "publicContentApproval": "not_evaluated",
+    "pluginLicensing": "not_evaluated"
+  },
+  "completeness": "captured_inventory_only",
+  "publication": "not_authorized",
+  "upload": "not_run",
+  "snapshot": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "toolExecutionId": "fa7837c8-dcc1-41ee-b447-e9b5874d43b8",
+    "creationAttemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+    "sourceRevision": {
+      "kind": "snapshot",
+      "contentHash": "55483a9a13ddfba26c367a5b525fdb5a23836d7e327275d0baafee95e1f9a90a",
+      "externalWorkspaceId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8"
+    },
+    "themeFiles": {
+      "assets/css/base.css": "1694366ce9e16a1ffbdeafe3089a0fac2b141631b08b3856fe6b17c04cbad252",
+      "assets/css/layout.css": "69b2645603f0d4b5da7848d6032ba18f339fa6ead396e984652d01e682976990",
+      "assets/dist/tailwind.css": "6dbfb0fcad9a319ca54480b688764c628a6c9c8d67a410a56cd195ece50b76f7",
+      "functions.php": "d55a1a04a571e5b8206d498cd1ddbc91d8c663d260738b51c97258d7e0cf7b9c",
+      "inc/assets.php": "4e69952bd94a86cdc5e9f3f0ddd8a3eb7d49ee1d49a86c30bbca3d8a1d7c65b4",
+      "inc/setup.php": "28be3ef8711d8b3397e0fe258ecbbe12c1b3972defc3a08e5d5d17efa4c1b003",
+      "parts/footer.html": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1",
+      "parts/header.html": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e",
+      "style.css": "4dcc056cd393895a9ab583b2d6b8746a64cd4466cac5502d33837ff603085703",
+      "templates/front-page.html": "b5f598e6dbee2cfc130da82fa1d7bdf08a2ba944304d0e2018f1fdc2b927c587",
+      "templates/index.html": "01c7d43bd1ffeb0d8a02d56dd6c88371f8bb6e93fe07e108762800f2d04dde8d",
+      "templates/page.html": "6a70471f5a833b53b9d32d6f69566fe5cc79f0111c6a0f799b648a6559f70bbc",
+      "theme.json": "69d4f606e2638f2974df2f17fc259063a2a82d60599a1fc3e4c7e7922e21ce8d"
+    },
+    "databaseHash": "b7ee053ca9cce28a028e1b2fb2c7a7c06d9267b4c6bfe70979299c1905acacbe",
+    "capturedAt": "2026-09-19T13:34:22.239Z"
+  },
+  "sourceHashes": {
+    "deployment-manifest": "3224394f446324058f2b8a98ff4acf8b19350f2ae61340528d9b8a9cf3c259a0",
+    "snapshot": "3ff5c28b05380be34cbe3c284938dbe0434971cfabf2501cb6f705d14cffe7aa",
+    "tools": "35e107a4356ddcbbf1f0f58dca378f453f8c7a009a7fbf0e5be8952c21285133"
+  },
+  "acceptanceBoundary": "Technical capture after interrupted browser run1 with successful native cleanup; not final release candidate and not proof of full browser acceptance."
+}

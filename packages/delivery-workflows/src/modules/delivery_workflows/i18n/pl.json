@@ -1,0 +1,11 @@
+{
+  "delivery_workflows.settings.error": "Nie udało się wczytać ustawień procesu.",
+  "delivery_workflows.settings.loading": "Wczytywanie ustawień procesu…",
+  "delivery_workflows.settings.newProjectsOnly": "Zmiany dotyczą wyłącznie nowych projektów. Istniejące projekty zachowują opublikowaną wersję procesu.",
+  "delivery_workflows.settings.openStudio": "Otwórz Workflows Studio",
+  "delivery_workflows.settings.retry": "Ponów",
+  "delivery_workflows.settings.save": "Zapisz domyślny proces",
+  "delivery_workflows.settings.title": "Proces Delivery",
+  "delivery_workflows.settings.version": "Opublikowana wersja",
+  "delivery_workflows.settings.workflow": "Identyfikator workflow"
+}

@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "scope": "offline_only",
+  "runner": "host Node24, serial native tests; no OM build or Studio live",
+  "wpPackageTests": {
+    "passed": 244,
+    "failed": 0,
+    "skipped": 0,
+    "finalStagingNotIncluded": true
+  },
+  "packageTypecheck": "passed",
+  "captureReceiptTests": 11,
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/capture-owned-snapshot.ts": "1970504b9c16b15252dc7580ab36ff6fe6b1d08bf5d46f9c56e333c4e07de0e7",
+    "packages/delivery-wordpress/src/__tests__/capture-owned-snapshot.test.ts": "87063068828606322e3ff3b5b0a5c2ff2e8793162effafc67f075403d9435303",
+    "packages/delivery-wordpress/src/preview-staging.ts": "badf7af225a60f2d10fcaecd97a090818495b4d50647ae93c4827bc4768a8119",
+    "packages/delivery-wordpress/src/__tests__/preview-staging.test.ts": "3ae4a3f332aa6029e28a90534c49a8e94d1c287df33ec1024b38df9d332f8859"
+  },
+  "limitations": [
+    "fixture-tagged Studio runner; real temporary SQLite",
+    "full integrated gate and live roundtrip not_run",
+    "private raw test logs retained outside source"
+  ],
+  "previewStagingTests": {
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0
+  },
+  "i18nScannerTests": 17,
+  "manualRoundtrip": {
+    "sourceReview": "passed_after_two_fixes",
+    "narrowTypecheck": "passed",
+    "nativeDiscovery": "passed",
+    "actualOfflineCommands": "positive passed; wrong marker rejected",
+    "live": "not_run",
+    "evidence": "wp-manual-roundtrip-offline.json"
+  }
+}

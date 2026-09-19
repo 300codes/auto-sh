@@ -21,9 +21,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
       try {
         if (typeof window !== 'undefined') {
           return { title: 'Inbox Email', subtitle: entityId }
+        } else {
+          const { loadInboxEmailPreview } = await import('./lib/messageObjectPreviews')
+          return loadInboxEmailPreview(entityId, ctx)
         }
-        const { loadInboxEmailPreview } = await import('./lib/messageObjectPreviews')
-        return loadInboxEmailPreview(entityId, ctx)
       } catch {
         return { title: 'Inbox Email', subtitle: entityId }
       }

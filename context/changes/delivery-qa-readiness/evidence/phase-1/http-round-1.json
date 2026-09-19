@@ -1,0 +1,118 @@
+{
+  "status": "failed",
+  "command": "OM_INTEGRATION_MODULES=delivery_os yarn test:integration TC-DELIVERY-FIXTURE-001 --workers=1 --repeat-each=2 --retries=0",
+  "runner": "native ephemeral CLI; QA-only private build, real HTTP/postgres",
+  "stats": {
+    "startTime": "2026-09-19T11:04:06.267Z",
+    "duration": 43070.417,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  },
+  "timeoutMs": 20000,
+  "failure": "spec line119: approver create task minimal body returned400; expected403",
+  "sourceTestSha256": "cd3ff2d4340625bf969d8d1ffb37fba3104623791a26df5095561baeb8d23446",
+  "results": [
+    {
+      "title": "scopes real actors and cleans a reserved manual attempt without changing another fixture",
+      "status": "failed",
+      "durationMs": 15290,
+      "cleanup": [
+        {
+          "attachment": "teardown-0-cleanup.json",
+          "resources": 29,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-0-cleanup-repeated.json",
+          "resources": 29,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-1-cleanup.json",
+          "resources": 5,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-1-cleanup-repeated.json",
+          "resources": 5,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        }
+      ]
+    },
+    {
+      "title": "scopes real actors and cleans a reserved manual attempt without changing another fixture",
+      "status": "failed",
+      "durationMs": 13378,
+      "cleanup": [
+        {
+          "attachment": "teardown-0-cleanup.json",
+          "resources": 29,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-0-cleanup-repeated.json",
+          "resources": 29,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-1-cleanup.json",
+          "resources": 5,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-1-cleanup-repeated.json",
+          "resources": 5,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        }
+      ]
+    },
+    {
+      "title": "cleans every registered resource after setup fails midway",
+      "status": "passed",
+      "durationMs": 2554,
+      "cleanup": [
+        {
+          "attachment": "teardown-0-cleanup.json",
+          "resources": 7,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-0-cleanup-repeated.json",
+          "resources": 7,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        }
+      ]
+    },
+    {
+      "title": "cleans every registered resource after setup fails midway",
+      "status": "passed",
+      "durationMs": 2373,
+      "cleanup": [
+        {
+          "attachment": "teardown-0-cleanup.json",
+          "resources": 7,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        },
+        {
+          "attachment": "teardown-0-cleanup-repeated.json",
+          "resources": 7,
+          "failures": [],
+          "physicalCleanup": "pending_environment_disposal"
+        }
+      ]
+    }
+  ]
+}

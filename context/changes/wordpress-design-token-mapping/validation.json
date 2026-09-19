@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "provenance": "fixture",
+  "runner": "local Node 24 / package TypeScript",
+  "tests": {
+    "command": "node --test --test-isolation=none packages/delivery-wordpress/src/__tests__/design-tokens.test.ts",
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "cwd": "packages/delivery-wordpress",
+    "status": "passed"
+  },
+  "build": {
+    "command": "npm run build",
+    "cwd": "packages/delivery-wordpress",
+    "status": "passed"
+  },
+  "actualFigmaApproval": "not_evaluated",
+  "liveThemeApply": "not_run",
+  "preview": "not_run",
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/design-tokens.ts": "cbdc10de73264a2a57c594845929bf647294de912e210caacb17c697f4e8f6c0",
+    "packages/delivery-wordpress/src/__tests__/design-tokens.test.ts": "3ea23d6ab11e9ae3e35872fb78a1b3836fe922392d3dbce7c36b86228efe1aa0",
+    "context/changes/wordpress-design-token-mapping/fixture.json": "ef03b483747d6370a3fdb7d951847bb1651680a418f57537fab5a0732cabc2cc"
+  },
+  "reviewCorrection": "Normalize recognized generic font families case-insensitively; preserve named families and fallback order."
+}

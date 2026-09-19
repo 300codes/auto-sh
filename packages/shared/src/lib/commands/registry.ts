@@ -43,6 +43,7 @@ class CommandRegistry {
 
       if (loader.id) {
         if (this.loadersById.has(loader.id) && process.env.NODE_ENV !== 'development') {
+          if (this.loadersById.get(loader.id) === loader) continue
           throw new Error(`Duplicate command loader registration for id ${loader.id}`)
         }
         if (this.loadersById.has(loader.id) && process.env.NODE_ENV === 'development' && !this.didWarnAboutDevelopmentLoaderReregistration) {
@@ -56,6 +57,7 @@ class CommandRegistry {
       const key = loader.key ?? `${loader.moduleId}:fallback:${this.fallbackLoadersByModule.get(loader.moduleId)?.size ?? 0}`
       const existing = this.fallbackLoadersByModule.get(loader.moduleId) ?? new Map<string, CommandLoader>()
       if (existing.has(key) && process.env.NODE_ENV !== 'development') {
+        if (existing.get(key) === loader) continue
         throw new Error(`Duplicate command loader registration for key ${key}`)
       }
       if (existing.has(key) && process.env.NODE_ENV === 'development' && !this.didWarnAboutDevelopmentLoaderReregistration) {

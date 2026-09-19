@@ -1,0 +1,8 @@
+PASS packages/shared/src/lib/commands/__tests__/registry.test.ts
+PASS packages/shared/src/lib/bootstrap/__tests__/factory.test.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       15 passed, 15 total
+Snapshots:   0 total
+Time:        5.352 s
+Ran all test suites within paths "packages/shared/src/lib/commands/__tests__/registry.test.ts", "packages/shared/src/lib/bootstrap/__tests__/factory.test.ts".

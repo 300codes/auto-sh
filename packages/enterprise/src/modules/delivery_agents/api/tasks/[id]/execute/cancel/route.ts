@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
-import { CrudHttpError, isCrudHttpError } from '@open-mercato/shared/lib/crud/errors'
-import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
+import type { AttemptCancelResult } from '@open-mercato/core/modules/delivery_os/commands/attempts'
 import {
   deliveryErrorResponse,
+  executeDeliveryCommand,
+  readCappedRouteBody,
+  requireDeliveryFeatures,
   readRouteId,
   resolveDeliveryRouteContext,
 } from '@open-mercato/core/modules/delivery_os/api/routeSupport'
-import { resolveDeliveryScope } from '@open-mercato/core/modules/delivery_os/commands/shared'
+import { resolveDeliveryScope, parseDeliveryInput } from '@open-mercato/core/modules/delivery_os/commands/shared'
 import { uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 
 export const metadata = {
@@ -27,40 +29,18 @@ type RouteParams = { params: { id: string } | Promise<{ id: string }> }
 
 export async function POST(request: Request, context: RouteParams): Promise<Response> {
   try {
-    const routeCtx = await resolveDeliveryRouteContext(request)
-    const scope = resolveDeliveryScope(routeCtx)
+    const ctx = await resolveDeliveryRouteContext(request)
+    const scope = resolveDeliveryScope(ctx)
+    await requireDeliveryFeatures(ctx, scope, ['delivery_agents.execute', 'delivery_os.attempts.manage'])
     const taskId = await readRouteId(context)
-
-    const body = await request.json().catch(() => ({}))
-    const parsed = cancelBodySchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid request body', code: 'validation_failed' }, { status: 400 })
-    }
-
-    const commandBus = routeCtx.container.resolve('commandBus') as CommandBus
-    const ctx: CommandRuntimeContext = {
-      container: routeCtx.container as unknown as CommandRuntimeContext['container'],
-      auth: routeCtx.auth,
-      organizationScope: routeCtx.organizationScope,
-      selectedOrganizationId: routeCtx.selectedOrganizationId,
-      organizationIds: routeCtx.organizationIds,
-      request,
-    }
-
-    const result = await commandBus.execute('delivery_os.attempts.cancel', {
-      input: {
-        taskId,
-        attemptId: parsed.data.attemptId,
-        reason: parsed.data.reason ?? null,
-      },
-      ctx,
+    const body = parseDeliveryInput(cancelBodySchema, await readCappedRouteBody(request, 16_000))
+    const outcome = await executeDeliveryCommand<AttemptCancelResult>(ctx, scope, {
+      commandId: 'delivery_os.attempts.cancel', body, pathInput: { taskId },
+      resourceKind: 'delivery_os.task', resourceId: taskId, operation: 'custom',
     })
-
-    return NextResponse.json(result, { status: 200 })
+    if (outcome.blocked) return outcome.blocked
+    return NextResponse.json(outcome.result)
   } catch (error) {
-    if (isCrudHttpError(error)) {
-      return NextResponse.json(error.body, { status: error.status })
-    }
     return deliveryErrorResponse(error, 'delivery_agents.cancel')
   }
 }

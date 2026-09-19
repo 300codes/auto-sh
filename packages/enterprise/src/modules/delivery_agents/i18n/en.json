@@ -1,4 +1,8 @@
 {
+  "delivery_agents.scope.description": "The assistant prepares proposals. Confirming an import saves the proposal only. Review the scope artifact and record the client's decision separately.",
+  "delivery_agents.scope.open": "Discuss scope with AI",
+  "delivery_agents.scope.placeholder": "Describe the goal or ask a scope question…",
+  "delivery_agents.scope.title": "Scope assistant",
   "delivery_agents.widget.cancel.ariaLabel": "Cancel execution attempt",
   "delivery_agents.widget.cancel.cancelling": "Cancelling…",
   "delivery_agents.widget.cancel.failed": "Cancel failed",

@@ -1,0 +1,30 @@
+[
+  {
+    "localRequestId": "24043a53-1fa2-439f-9ad3-ea03b47b2ea2",
+    "serverRequestId": null,
+    "status": 201,
+    "body": {
+      "attemptId": "69513222-f8c0-4fe2-9aa3-216dd26dee57",
+      "taskId": "3719bed2-c510-4962-89ac-4f0a6146e289",
+      "baselineId": "dc3c0edc-74d7-40f2-8749-75b312d20da1",
+      "baselineHash": "c45134745ef9f612c8479368eaecbbb8cc23cd74ea3fc1b4a442286384509088",
+      "taskUpdatedAt": "2026-09-19T11:08:09.895Z",
+      "packageUrl": "/api/delivery_os/tasks/3719bed2-c510-4962-89ac-4f0a6146e289/package?attemptId=69513222-f8c0-4fe2-9aa3-216dd26dee57"
+    },
+    "tracking": "tracked"
+  },
+  {
+    "localRequestId": "6a50a39b-1b16-404a-a5ec-ea87d64498a0",
+    "serverRequestId": null,
+    "status": 200,
+    "body": {
+      "attemptId": "69513222-f8c0-4fe2-9aa3-216dd26dee57",
+      "taskId": "3719bed2-c510-4962-89ac-4f0a6146e289",
+      "baselineId": "dc3c0edc-74d7-40f2-8749-75b312d20da1",
+      "baselineHash": "c45134745ef9f612c8479368eaecbbb8cc23cd74ea3fc1b4a442286384509088",
+      "taskUpdatedAt": "2026-09-19T11:08:09.895Z",
+      "packageUrl": "/api/delivery_os/tasks/3719bed2-c510-4962-89ac-4f0a6146e289/package?attemptId=69513222-f8c0-4fe2-9aa3-216dd26dee57"
+    },
+    "tracking": "tracked"
+  }
+]

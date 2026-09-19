@@ -1,0 +1,439 @@
+{
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "observations": [
+    {
+      "route": "R1",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R1",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R2",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R2",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R3",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R3",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R4",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R4",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R5",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R5",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R6",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R6",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R7",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R7",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R8",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R8",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R9",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R9",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R10",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R10",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R11",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R11",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R12",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R12",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R13",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R13",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R14",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R14",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R15",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R15",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R16",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R16",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R17",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R17",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R18",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R18",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R19",
+      "check": "unauthenticated",
+      "status": 401
+    },
+    {
+      "route": "R19",
+      "check": "missing-feature",
+      "status": 403
+    },
+    {
+      "route": "R3",
+      "check": "foreign-A2",
+      "status": 409
+    },
+    {
+      "route": "R4",
+      "check": "foreign-A2",
+      "status": 409
+    },
+    {
+      "route": "R5",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R6",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R7",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R8",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R9",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R10",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R11",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R12",
+      "check": "foreign-A2",
+      "status": 409
+    },
+    {
+      "route": "R13",
+      "check": "foreign-A2",
+      "status": 409
+    },
+    {
+      "route": "R14",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R15",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R16",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R17",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R18",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R19",
+      "check": "foreign-A2",
+      "status": 404
+    },
+    {
+      "route": "R5",
+      "check": "invalid-selection-A2",
+      "status": 422
+    },
+    {
+      "route": "R3",
+      "check": "foreign-B1",
+      "status": 409
+    },
+    {
+      "route": "R4",
+      "check": "foreign-B1",
+      "status": 409
+    },
+    {
+      "route": "R5",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R6",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R7",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R8",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R9",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R10",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R11",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R12",
+      "check": "foreign-B1",
+      "status": 409
+    },
+    {
+      "route": "R13",
+      "check": "foreign-B1",
+      "status": 409
+    },
+    {
+      "route": "R14",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R15",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R16",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R17",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R18",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R19",
+      "check": "foreign-B1",
+      "status": 404
+    },
+    {
+      "route": "R5",
+      "check": "invalid-selection-B1",
+      "status": 422
+    },
+    {
+      "route": "R18",
+      "check": "attempt-feature-split",
+      "status": 403
+    },
+    {
+      "route": "R17",
+      "check": "attempt-feature-split",
+      "status": 403
+    },
+    {
+      "route": "R1",
+      "check": "wildcard-read",
+      "status": 200
+    },
+    {
+      "route": "R5",
+      "check": "wildcard-read",
+      "status": 200
+    },
+    {
+      "route": "R6",
+      "check": "wildcard-read",
+      "status": 200
+    },
+    {
+      "route": "R9",
+      "check": "wildcard-read",
+      "status": 200
+    },
+    {
+      "route": "R11",
+      "check": "wildcard-read",
+      "status": 200
+    },
+    {
+      "route": "R15",
+      "check": "wildcard-read",
+      "status": 200
+    }
+  ],
+  "provenance": "http-fixture-v1"
+}

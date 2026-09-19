@@ -26,15 +26,16 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Product', subtitle: entityId }
+      } else {
+        const previews = await import('./lib/messageObjectPreviews')
+        const productLoader = (
+          previews as typeof previews & {
+            loadCatalogProductPreview?: (id: string, previewCtx: typeof ctx) => Promise<{ title: string; subtitle?: string }>
+          }
+        ).loadCatalogProductPreview
+        if (productLoader) return productLoader(entityId, ctx)
+        return previews.loadCatalogCategoryPreview(entityId, ctx)
       }
-      const previews = await import('./lib/messageObjectPreviews')
-      const productLoader = (
-        previews as typeof previews & {
-          loadCatalogProductPreview?: (id: string, previewCtx: typeof ctx) => Promise<{ title: string; subtitle?: string }>
-        }
-      ).loadCatalogProductPreview
-      if (productLoader) return productLoader(entityId, ctx)
-      return previews.loadCatalogCategoryPreview(entityId, ctx)
     },
   },
   {
@@ -59,15 +60,16 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Variant', subtitle: entityId }
+      } else {
+        const previews = await import('./lib/messageObjectPreviews')
+        const variantLoader = (
+          previews as typeof previews & {
+            loadCatalogVariantPreview?: (id: string, previewCtx: typeof ctx) => Promise<{ title: string; subtitle?: string }>
+          }
+        ).loadCatalogVariantPreview
+        if (variantLoader) return variantLoader(entityId, ctx)
+        return previews.loadCatalogProductPreview(entityId, ctx)
       }
-      const previews = await import('./lib/messageObjectPreviews')
-      const variantLoader = (
-        previews as typeof previews & {
-          loadCatalogVariantPreview?: (id: string, previewCtx: typeof ctx) => Promise<{ title: string; subtitle?: string }>
-        }
-      ).loadCatalogVariantPreview
-      if (variantLoader) return variantLoader(entityId, ctx)
-      return previews.loadCatalogProductPreview(entityId, ctx)
     },
   },
   {
@@ -92,9 +94,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Category', subtitle: entityId }
+      } else {
+        const { loadCatalogCategoryPreview } = await import('./lib/messageObjectPreviews')
+        return loadCatalogCategoryPreview(entityId, ctx)
       }
-      const { loadCatalogCategoryPreview } = await import('./lib/messageObjectPreviews')
-      return loadCatalogCategoryPreview(entityId, ctx)
     },
   },
 ]

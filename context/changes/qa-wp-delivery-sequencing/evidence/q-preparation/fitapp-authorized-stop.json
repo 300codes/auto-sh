@@ -1,0 +1,113 @@
+{
+  "authorization": "user_authorized_stop_entire_fitapp_leave_stopped_no_restore_no_deletion",
+  "actionsTaken": [
+    {
+      "at": "2026-09-19T14:15:53.644086+00:00",
+      "action": "stop_exact11",
+      "confirmedStopped": true
+    }
+  ],
+  "containers": [
+    {
+      "name": "supabase_studio_fitapp",
+      "id": "bdfd057dc163b3d2db3d23dd515bd61cbad09176d76f021794715e1cb262d6d5",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_pg_meta_fitapp",
+      "id": "bf903abe78ec1b68d86dafdd0c60804cb5f84a835e269219a8b4aa10cd13f93b",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_storage_fitapp",
+      "id": "32e707a82db70911f1f17b92eb5d59ae8583fe5be6039034c18fd0d031772477",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_rest_fitapp",
+      "id": "4af23a5a8bb6a7f4966ba69c0a9cdc7ed3897384d1ac285b36b0f3ca6749af46",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_realtime_fitapp",
+      "id": "2bfa6a57b01464b3e0c4851eb52bd8793f882d36c549f45603afb2088a12e5d8",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_inbucket_fitapp",
+      "id": "7e55613c6b76383a92777a11e5959db4635146d0dc623ef65c500c28f0cad39a",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_auth_fitapp",
+      "id": "37d0d23c852e469ed5ee85aff80ca150c749a8eedf23aa65e7a0d6506ce816f6",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_kong_fitapp",
+      "id": "d4742ab6880f0410a81f493f307ad547a11422a983b0b01e97a52ca59a2b4128",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_vector_fitapp",
+      "id": "2ad3d7a124947a654cdc8bd035f1529029b40eb03e906985a026cd836e2fadf8",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_analytics_fitapp",
+      "id": "38b1cef46ca0961204f965c94c95a7fd9b5ebf2d6992bf61fdf1a3dad88d3650",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    },
+    {
+      "name": "supabase_db_fitapp",
+      "id": "92a4852b10db2a0820a93afdfc3a2658e22096af2f5dd558121691ed885d0f4f",
+      "originallyRunning": true,
+      "restartPolicy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      }
+    }
+  ],
+  "deletion": false,
+  "automaticRestore": false
+}

@@ -33,7 +33,7 @@ const nominateCandidate: CommandHandler<z.infer<typeof commandSchema>, Candidate
       if (report.mode === 'flow' && !report.flow?.gate.ok) reportContextError('flow_not_publishable', 422)
       const previous = report.currentCandidate
       const createdAt = new Date(Math.max(Date.now(), project.updatedAt.getTime() + 1))
-      const candidate = tx.create(DeliveryReleaseCandidate, { ...scope, projectId: project.id, version: (previous?.version ?? 0) + 1, baselineId: input.baselineId, baselineHash: report.baselineHash, sourceRevision: input.sourceRevision, evidenceIds: [...input.evidenceIds].sort(), createdBy: actor, createdAt })
+      const candidate = tx.create(DeliveryReleaseCandidate, { ...scope, projectId: project.id, version: (previous?.version ?? 0) + 1, baselineId: input.baselineId, baselineHash: report.baselineHash, sourceRevision: input.sourceRevision, evidenceIds: [...input.evidenceIds].sort((left, right) => left < right ? -1 : left > right ? 1 : 0), createdBy: actor, createdAt })
       tx.persist(candidate)
       project.updatedAt = createdAt
       await tx.flush()

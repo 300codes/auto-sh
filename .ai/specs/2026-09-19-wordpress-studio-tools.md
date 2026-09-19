@@ -2,7 +2,55 @@
 
 > **Korekta kierunku — 2026-09-19:** [dodatek produktowy](2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../../context/changes/autonomous-software-delivery/flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
 
-Status: **implemented locally; manual acceptance pending** · Created: 2026-09-19 · Owner: delivery-wordpress
+Status: **partial local implementation; Studio host and live delivery deferred by user** · Created: 2026-09-19 · Owner: delivery-wordpress
+
+## Aktualny zakres — brak WP Studio
+
+Decyzja użytkownika z 2026-09-19: dostęp do Figmy jest dostępny po jego stronie,
+WP Studio nie jest dostępne; brakującą część WordPress pozostawiamy jako
+specyfikację do późniejszego wdrożenia. Zachowujemy istniejący kod narzędzi
+i jego testy. Historyczne wyniki live poniżej nie potwierdzają obecnego środowiska.
+
+Odroczenie obejmuje produkcyjny host wykonania Studio, transport publikacji
+Preview, weryfikację zdalnej rewizji i odbiór WP-01…05. Wymagania dwóch języków,
+edycji bez kodu oraz zachowania treści po redeploy pozostają docelowym kontraktem.
+FLOW-06/07 z rzeczywistym WP i część WP pełnego demo mają status
+**deferred_by_user / not_run**, nigdy PASS. Pozostały UI, domena, integracja Figmy
+i ich niezależna weryfikacja pozostają w bieżącym zakresie. Wdrożenie OM nadal
+jest odroczone zgodnie z wcześniejszą decyzją.
+
+### Przekazanie do wznowienia
+
+1. Przygotować stanowisko Studio: operator, wersje Studio/WP/PHP/Node,
+   dozwolone katalogi i bezpieczne referencje dostępów. Potwierdzić wersje oraz
+   licencje Yoast SEO, ACF Pro i Polylang. Nie wpisywać sekretów do repo.
+2. Dostarczyć zatwierdzony handoff Figmy: file/node/version/hash, tokeny oraz
+   mapę ekran/sekcja → blok/pole → edytor → tłumaczenie → test. Braki wymagają
+   jawnego rozstrzygnięcia przed budowaniem witryny.
+3. Zaimplementować zaufany adapter hosta z core `TaskPackageV1` do
+   `ResultManifestV1`, zachowujący backend-derived scope, task/attempt/baseline,
+   immutable flow binding, allowed paths i gate przed efektem. Integracja
+   enterprise pozostaje opisana w specyfikacji Delivery Agents. Brak adaptera
+   ma blokować wykonanie; legacy stdout ani hash baseline nie zastępują
+   rzeczywistego snapshotu WP. Create/run/reconcile muszą zachować idempotencję.
+4. Po lokalnym buildzie i kontrolach wykonać run → import wyniku → review →
+   rzeczywistą poprawkę z nowym snapshotem i dowodami. Testy narzędzi nie są
+   testami produktu; unknown usage i manual_handoff pozostają jawne.
+5. Dopiero po zgodzie aktualnego kandydata wdrożyć transport na dozwolony target
+   Studio Preview. URL powstaje podczas pracy Studio, nie jest wymagany z góry.
+   Trwały intent wiąże scope, candidate/version, packageHash i target. Timeout
+   wymaga odczytu/reconcile zamiast ponownego uploadu. Verify sprawdza URL oraz
+   tożsamość wysłanej rewizji; sam HTTP 200 lub upload succeeded nie daje release.
+   Wynik trafia przez F14; końcowy release wymaga osobnej decyzji człowieka.
+6. Uruchomić FLOW-06/07 oraz WP-01…05: desktop/mobile, edycja treści, mediów/alt,
+   CTA, sekcji, menu/header/footer, pól ACF, SEO i dwóch języków; potem ponowny
+   deployment bez utraty treści, Global Styles i zapisanych szablonów. Zapisać
+   SHA, rzeczywiste IDs/hash/URL, wyniki oraz odbierającego w indeksie dowodów.
+
+Niezależna walidacja pakietu z Node 24: w `packages/delivery-wordpress` uruchomić
+`npm test`, `npm run typecheck`, `npm run build`. Instrukcje istniejących lokalnych
+operatorów są w [README pakietu](../../packages/delivery-wordpress/README.md).
+Nie ma jeszcze gotowej komendy wdrażającej cały powyższy proces.
 
 ## TLDR
 
@@ -10,7 +58,7 @@ Provide a private, standalone OM package that creates a new local WordPress Stud
 
 ## Overview
 
-This implements the authorized independent portion of WP-M01 and the [Studio tools plan](../../context/changes/wordpress-studio-tools/plan.md). The user removed the original six-hour cap on 2026-09-19. Continue all independent local work under the QA/WP sequencing plan (`context/changes/qa-wp-delivery-sequencing/plan.md`, source revision `83a2d8c2d9`), stopping integration at concrete dependencies on the team's code or required approvals. Readiness and live results belong in [the handoff](../../hackathon/delivery-demo/wordpress-reuse.md).
+This implements the authorized independent portion of WP-M01 and the [Studio tools plan](../../context/changes/wordpress-studio-tools/plan.md). The user removed the original six-hour cap on 2026-09-19. Continue all independent local work under the [QA/WP sequencing plan](../../context/changes/qa-wp-delivery-sequencing/plan.md), stopping integration at concrete dependencies on the team's code or required approvals. Readiness and live results belong in [the handoff](../../hackathon/delivery-demo/wordpress-reuse.md).
 
 ## Problem Statement
 
@@ -94,6 +142,8 @@ No blocking scope decisions remain for independent tools. Future delivery DTO ma
 
 ## Changelog
 
+- 2026-09-19: User deferred the remaining Studio host, Preview transport and live WordPress acceptance because Studio is unavailable. Preserved local implementation and target requirements; added an explicit resumption sequence without claiming live completion.
+
 - 2026-09-19: Reused the additive provider implementation from `83a2d8c2d9` for UI completeness. Package-local token fixtures remove dependence on absent planning artifacts. Node 24.13.0 verification passed 259 tests, typecheck and build; no live WordPress or publication was run. The newer plan requires two languages, still pending.
 
 - 2026-09-19: Recorded removal of the WP time cap and internal theme preparation/update, native editor fixture and deployment inventory implementation; browser acceptance and integration gates remain independently tracked.
@@ -121,8 +171,8 @@ wielojęzycznego probe przed demo.
 
 ## 2026-09-19 — internal demo-readiness operator
 
-Additive local operator implementation: F0 plan (`context/changes/wordpress-demo-foundation/plan.md`, source revision `83a2d8c2d9`)
-and implementation adaptations (`context/changes/wordpress-demo-foundation/implementation-notes.md`, source revision `83a2d8c2d9`).
+Additive local operator implementation: [F0 plan](../../context/changes/wordpress-demo-foundation/plan.md)
+and [implementation adaptations](../../context/changes/wordpress-demo-foundation/implementation-notes.md).
 Existing public createSite v1 and exports stay unchanged. Trusted local config pins the
 three user-selected plugins by version/hash; ownership and inventory are checked under
 the existing operation lock. Frozen verified ZIP bytes are transported via temporary
@@ -143,14 +193,14 @@ nie jest dowodem pełnego builda systemu ani wykonanej publikacji Preview.
 
 ## 2026-09-19 — local build and token fixture preparation
 
-Internal Tailwind builder (`context/changes/wordpress-local-theme-build/plan.md`, source revision `83a2d8c2d9`)
+Internal [Tailwind builder](../../context/changes/wordpress-local-theme-build/plan.md)
 compiles real pinned Tailwind 4.3.3 locally from bounded owned PHP/HTML/JS sources,
 without executing theme code or fetching build dependencies. Only generated CSS is
 written atomically; native content, theme.json and Global Styles are preserved.
 Frontend/editor enqueue was pending at this preparation stage; see the subsequent
 implementation below. Complete WP-01 still requires its full acceptance evidence.
 
-Internal token mapper (`context/changes/wordpress-design-token-mapping/plan.md`, source revision `83a2d8c2d9`)
+Internal [token mapper](../../context/changes/wordpress-design-token-mapping/plan.md)
 validates a small versioned fixture/operator export subset and deterministically emits
 WordPress preset settings plus matching Tailwind variables. Actual authenticated design
 approval, applying the settings fragment, layout/radii/variants and browser fidelity are
@@ -164,7 +214,7 @@ Preview adapter requirement before publishing the approved local result.
 
 ## 2026-09-19 — internal QA/WP sequencing implementation
 
-The sequencing plan (`context/changes/qa-wp-delivery-sequencing/plan.md`, source revision `83a2d8c2d9`) now owns
+The [sequencing plan](../../context/changes/qa-wp-delivery-sequencing/plan.md) now owns
 the remaining work. Internal `prepare-theme.ts` applies controlled preset settings,
 installs native frontend/editor enqueue and builds CSS under one site lock.
 `theme-update.ts` changes only bounded, expected-hash theme files and rebuilds locally;
@@ -208,8 +258,8 @@ Verification: 35 focused unit tests and narrow TypeScript passed; independent re
 closed inventory-scope and resource-bound findings. A recorded provider capture pins
 the hash algorithm. Live store binding, result/review import and full E2E remain pending;
 no production endpoint or UI path was added in this preparation. Evidence and review:
-mapper (`context/changes/qa-wp-delivery-sequencing/evidence/wp-result-mapper.json`, source revision `83a2d8c2d9`),
-review (`context/changes/qa-wp-delivery-sequencing/reviews/impl-review-phase-4-preparation.md`, source revision `83a2d8c2d9`).
+[mapper](../../context/changes/qa-wp-delivery-sequencing/evidence/wp-result-mapper.json),
+[review](../../context/changes/qa-wp-delivery-sequencing/reviews/impl-review-phase-4-preparation.md).
 
 
 ## 2026-09-19 — Original capture receipts and offline handoff
@@ -224,4 +274,4 @@ be assigned retrospective original receipts. Public exports and v1 contracts are
 Eleven focused tests and package TypeScript passed; the full pre-staging WP suite
 passed244 tests. Studio commands are explicitly simulated in receipt unit tests.
 Full OM build and live integration acceptance move to the second computer; see
-handoff (`context/changes/qa-wp-delivery-sequencing/offline-handoff.md`, source revision `83a2d8c2d9`).
+[handoff](../../context/changes/qa-wp-delivery-sequencing/offline-handoff.md).

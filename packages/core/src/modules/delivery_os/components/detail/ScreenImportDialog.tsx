@@ -15,6 +15,7 @@ import { Input } from '@open-mercato/ui/primitives/input'
 import { Label } from '@open-mercato/ui/primitives/label'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
+import { useGuardedMutation } from '@open-mercato/ui/backend/injection/useGuardedMutation'
 import { appendScreen } from './draftSpec'
 import { useDraftMutation } from './useDraftMutation'
 import {
@@ -55,6 +56,8 @@ export function ScreenImportDialog({ open, onOpenChange, projectId, projectUpdat
   const [problem, setProblem] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
   const { applyDraftMutation } = useDraftMutation(projectId, projectUpdatedAt, CONTEXT_ID)
+  const { runMutation, retryLastMutation } = useGuardedMutation({ contextId: `${CONTEXT_ID}-upload` })
+  const pending = React.useRef(false)
 
   React.useEffect(() => {
     if (open) return
@@ -66,6 +69,7 @@ export function ScreenImportDialog({ open, onOpenChange, projectId, projectUpdat
   const hashingAvailable = isHashingAvailable()
 
   const submit = React.useCallback(async () => {
+    if (pending.current) return
     setProblem(null)
     if (!hashingAvailable) {
       setProblem(t('delivery_os.project.screens.error.insecureContext'))
@@ -80,9 +84,13 @@ export function ScreenImportDialog({ open, onOpenChange, projectId, projectUpdat
       return
     }
     setSaving(true)
+    pending.current = true
     try {
       const uploaded = await uploadScreenRender(file, projectId, async (form) => {
-        const response = await apiCall<unknown>('/api/attachments', { method: 'POST', body: form })
+        const response = await runMutation({
+          operation: () => apiCall<unknown>('/api/attachments', { method: 'POST', body: form }),
+          context: { resourceKind: 'delivery_os.project', resourceId: projectId, retryLastMutation },
+        })
         return { ok: response.ok, status: response.status, result: response.result }
       })
       if (!uploaded.ok) {
@@ -110,10 +118,13 @@ export function ScreenImportDialog({ open, onOpenChange, projectId, projectUpdat
           : outcome.reason === 'unreadable_response' ? t('delivery_os.project.draft.unreadableResponse')
           : t('delivery_os.project.draft.writeFailed'),
       )
+    } catch {
+      setProblem(t('delivery_os.designImport.uploadError'))
     } finally {
+      pending.current = false
       setSaving(false)
     }
-  }, [applyDraftMutation, file, hashingAvailable, metadata, onOpenChange, onSaved, projectId, t])
+  }, [applyDraftMutation, file, hashingAvailable, metadata, onOpenChange, onSaved, projectId, retryLastMutation, runMutation, t])
 
   const handleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {

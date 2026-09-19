@@ -11,9 +11,12 @@ import { readJsonSafe } from '@open-mercato/shared/lib/http/readJsonSafe'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
 import { resolveOrganizationScopeForRequest } from '@open-mercato/core/modules/directory/utils/organizationScope'
-import { deliveryHttpError, type DeliveryScope } from '../commands/shared'
+import { z } from 'zod'
+import { deliveryHttpError, parseDeliveryInput, type DeliveryScope } from '../commands/shared'
+import { requirePinnedTemplateStage } from '../commands/stages'
 import { DeliveryProject, DeliveryTask } from '../data/entities'
-import { buildDeliveryError, uuidSchema } from '../lib/contracts'
+import { idempotencyKeyHeaderSchema } from '../data/validators'
+import { buildDeliveryError, uuidSchema, type FlowStageId } from '../lib/contracts'
 
 const logger = createLogger('delivery_os')
 
@@ -96,6 +99,43 @@ export async function readRouteId(context: RouteParams, key: string = 'id'): Pro
   const parsed = uuidSchema.safeParse(params[key])
   if (parsed.success) return parsed.data
   throw deliveryHttpError(buildDeliveryError('not_found', 'Not found', [{ path: key, code: 'not_found' }]))
+}
+
+export async function readRouteText(context: RouteParams, key: string): Promise<string> {
+  const params = (await context.params) ?? {}
+  const value = params[key]
+  return typeof value === 'string' ? value : ''
+}
+
+const IDEMPOTENCY_KEY_HEADER = 'idempotency-key'
+
+export function readIdempotencyKeyHeader(request: Request): string {
+  const header = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+  if (header === null || header.trim().length === 0) {
+    throw deliveryHttpError(
+      buildDeliveryError('idempotency_key_required', 'The Idempotency-Key header is required', [
+        { path: 'idempotencyKey', code: 'idempotency_key_required' },
+      ]),
+    )
+  }
+  return parseDeliveryInput(z.object({ idempotencyKey: idempotencyKeyHeaderSchema }), { idempotencyKey: header.trim() })
+    .idempotencyKey
+}
+
+/**
+ * F7/F8/F9 path check before any body is read: the project must exist in the session scope (archived included, the
+ * commands refuse writes on archived projects themselves) and the path `stageId` must be an approval stage of its
+ * pinned snapshot (`422 flow_not_pinned` / `422 stage_unknown`).
+ */
+export async function requireRouteStage(
+  ctx: CommandRuntimeContext,
+  scope: DeliveryScope,
+  context: RouteParams,
+): Promise<{ project: DeliveryProject; stageId: FlowStageId }> {
+  const projectId = await readRouteId(context)
+  const rawStageId = await readRouteText(context, 'stageId')
+  const project = await requireProjectIncludingArchived(resolveRouteEm(ctx), projectId, scope)
+  return { project, stageId: requirePinnedTemplateStage(project, rawStageId) }
 }
 
 export async function readRouteBody(request: Request): Promise<Record<string, unknown>> {

@@ -3,6 +3,7 @@ import {
   MAX_BASELINE_ATTACHMENT_BYTES,
 } from '@open-mercato/core/modules/delivery_os/lib/designReview'
 import type { DesignManifestV1, ScreenRef } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { designImportScreenKey } from '../../lib/designImportContracts'
 
 /**
  * The client declares the sha256 and the server verifies the stored bytes
@@ -149,8 +150,9 @@ export type ManifestScreenMapping =
 export function mapManifestScreens(
   manifest: DesignManifestV1,
   filesByNodeId: ReadonlyMap<string, File>,
+  keyMode: 'nodeId' | 'screenVersion' = 'nodeId',
 ): ManifestScreenMapping {
-  const missing = manifest.screens.filter((screen) => !filesByNodeId.has(screen.nodeId)).map((screen) => screen.nodeId)
+  const missing = manifest.screens.filter((screen) => !filesByNodeId.has(keyMode === 'screenVersion' ? designImportScreenKey(screen) : screen.nodeId)).map((screen) => screen.nodeId)
   if (missing.length > 0) return { ok: false, reason: 'missing_file', nodeIds: missing }
   return {
     ok: true,

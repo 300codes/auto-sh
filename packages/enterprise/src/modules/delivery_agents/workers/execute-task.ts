@@ -20,6 +20,7 @@ export const metadata: WorkerMeta = {
 type DeliveryScope = { tenantId: string; organizationId: string }
 
 type AttemptQueries = {
+  assertExecutionReady: (scope: DeliveryScope, taskId: string, attemptId: string) => Promise<void>
   getAttempt: (
     scope: DeliveryScope,
     taskId: string,
@@ -85,6 +86,10 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
   // Run Cezar task via executor (fake in tests, real in production)
   const baseDir = process.env.DELIVERY_CEZAR_BASE_DIR ?? process.cwd()
   let runResult
+  await queries.assertExecutionReady(scope, taskId, attemptId)
+  if (typeof taskPackage !== 'object' || taskPackage === null || (taskPackage as { schemaVersion?: unknown }).schemaVersion !== '1') {
+    throw new Error('[internal] No compatible execution host is installed for delivery task-package.v1')
+  }
   try {
     runResult = await taskExecutor.run(taskPackage as Parameters<ITaskExecutor['run']>[0], baseDir)
   } catch (error) {

@@ -1,0 +1,81 @@
+{
+  "at": "2026-09-19T16:32:27.741607+00:00",
+  "head": "67aa2d1f87f3d203eadc590ffb1dfade1f375201",
+  "sourceFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+  "steps": [
+    {
+      "at": "2026-09-19T16:29:53.647073+00:00",
+      "step": 1,
+      "command": "yarn build:packages",
+      "exitCode": 0,
+      "seconds": 76.97389272100008,
+      "sourceFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "afterFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:30:24.308842+00:00",
+      "step": 2,
+      "command": "yarn generate",
+      "exitCode": 0,
+      "seconds": 30.190681794999364,
+      "sourceFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "afterFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:30:38.465688+00:00",
+      "step": 3,
+      "command": "yarn build:packages",
+      "exitCode": 0,
+      "seconds": 13.661819294999987,
+      "sourceFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "afterFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:32:14.601129+00:00",
+      "step": 4,
+      "command": "yarn i18n:check-sync",
+      "exitCode": 1,
+      "seconds": 2.014416145000723,
+      "sourceFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "afterFingerprint": "8b82490cbcdb8aab86696de4c2d282cf8ec9c87c63ab58675e8c4c4ada61e882",
+      "status": "failed"
+    }
+  ],
+  "migration": {
+    "at": "2026-09-19T16:31:27.781670+00:00",
+    "exitCode": 0,
+    "seconds": 4.622774444999777,
+    "database": "qa_final",
+    "approvedScope": "single release_candidates migration",
+    "backupSha256": "cfcd3f5aaa0e31a0cc60c8a0c82736b22de7acb8d6952ec8f70b534de0fce5be",
+    "schemaVerified": true,
+    "historyTables": 50,
+    "onlyExpectedMigrationApplied": true,
+    "releaseCandidateColumnCount": 11
+  },
+  "backup": {
+    "at": "2026-09-19T16:27:17.146666+00:00",
+    "database": "qa_final",
+    "owner": "qa_owner",
+    "containerId": "679ba30d3e5b2237d347cc080b1e5d0ad4d881241ae8ecb98e8b65f73c618646",
+    "file": "qa-final-before-integrated-migration-1789835212846135340.dump",
+    "size": 16198453,
+    "sha256": "cfcd3f5aaa0e31a0cc60c8a0c82736b22de7acb8d6952ec8f70b534de0fce5be",
+    "pgDumpExit": 0,
+    "pgRestoreListExit": 0,
+    "restoreNotExecuted": true,
+    "migrationApplied": false
+  },
+  "fullOrderedGate": "not_passed",
+  "heavyNextStarted": false,
+  "startupThresholdGiB": 12,
+  "proposed8GiBOverride": "paused_by_user_not_executed",
+  "historicalAppStoppedForSourceAndBuild": true,
+  "appAfterIntegration": "not_started",
+  "HTTPAfterIntegration": "not_run",
+  "scope": "current integrated sources; historical HTTP results do not validate this revision",
+  "blockedBy": "i18n:check-sync: unsorted auth/delivery_os locale keys and four missing delivery_agents locales"
+}

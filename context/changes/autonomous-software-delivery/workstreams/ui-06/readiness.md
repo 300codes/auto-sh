@@ -1,5 +1,14 @@
 # UI-06 — fakty i warunki uruchomienia
 
+## Najnowsze ustalenia — 2026-09-19
+
+Figma: ponowione `whoami` potwierdziło tożsamość i seat Full; wcześniejszy
+USER_NOT_LOGGED_IN nie jest już aktualnym stanem konektora. Read/write/comments
+wymagają osobnych prób. WP Studio niedostępne: na polecenie użytkownika host,
+Preview i odbiór live WP pozostają odroczone jako
+[specyfikacja](../../../../../.ai/specs/2026-09-19-wordpress-studio-tools.md#aktualny-zakres--brak-wp-studio),
+bez zaliczenia kryteriów WP. Pozostałe prace kontynuujemy.
+
 ## Aktualizacja z implementacji UI completeness — 2026-09-19
 
 Probe 17:21–17:25 UTC w aktualnej sesji Codex: runner **local**, brak app w dev

@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Required test is not declared",
+    "code": "unknown_test_id",
+    "details": [
+      {
+        "path": "acTestMap.AC-001.0",
+        "code": "unknown_test_id",
+        "message": "undeclared-fixture-test is neither declared nor in the profile test catalogue"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "d4c92a2a-6870-4998-ac3e-68436cf33b38"
+}

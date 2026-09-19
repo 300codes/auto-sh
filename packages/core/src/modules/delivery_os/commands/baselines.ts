@@ -1,3 +1,6 @@
+import { assertDraftImportComplete } from './designImportSessions'
+import { randomUUID } from 'node:crypto'
+import { bindFlowBaseline } from './flowBaseline'
 import { z } from 'zod'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
@@ -208,15 +211,20 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
     try {
       outcome = await em.transactional(async (tx) => {
         const project = await lockProjectForWrite(tx, ctx, projectId, scope, { force: true })
+        await assertDraftImportComplete(tx, project, scope)
         const built = await freezeDraft(tx, ctx, scope, parseProjectDraft(project), { requireRender: true })
         frozen.contentHash = built.contentHash
         frozen.openCommentIds = built.openCommentIds
 
         const existing = await listProjectBaselines(tx, project.id, scope)
         const identical = existing.find((baseline) => baseline.contentHash === built.contentHash)
-        if (identical) return { baseline: identical, duplicate: true, project }
+        if (identical) {
+          await bindFlowBaseline(tx, project, identical, scope, createdBy.success ? createdBy.data : null)
+          return { baseline: identical, duplicate: true, project }
+        }
 
         const baseline = tx.create(DeliveryBaseline, {
+          id: randomUUID(),
           tenantId: scope.tenantId,
           organizationId: scope.organizationId,
           projectId: project.id,
@@ -229,13 +237,18 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
           createdBy: createdBy.success ? createdBy.data : null,
         })
         tx.persist(baseline)
+        await bindFlowBaseline(tx, project, baseline, scope, createdBy.success ? createdBy.data : null)
         return { baseline, duplicate: false, project }
       })
     } catch (error) {
       if (!frozen.contentHash || !isUniqueViolation(error)) throw error
       const winner = await findProjectBaselineByHash(resolveDeliveryEm(ctx), projectId, frozen.contentHash, scope)
       if (!winner) throw error
-      outcome = { baseline: winner, duplicate: true, project: await requireScopedProject(resolveDeliveryEm(ctx), projectId, scope) }
+      outcome = await resolveDeliveryEm(ctx).transactional(async (tx) => {
+        const project = await lockScopedProject(tx, projectId, scope)
+        await bindFlowBaseline(tx, project, winner, scope, createdBy.success ? createdBy.data : null)
+        return { baseline: winner, duplicate: true, project }
+      })
     }
 
     if (!outcome.duplicate) await emitBaselineCreated(ctx, scope, outcome.baseline)

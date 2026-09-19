@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "suiteRunId": "29fdac9d-1c5e-4db1-8373-1b5b89f60608",
+  "testId": "9366a3c0b811687c19a9-bb64d6fd0586aff46209",
+  "title": "from_brief: proposals replay without duplication and merged baseline requires new decisions",
+  "provenance": "http-fixture",
+  "codeRevision": null,
+  "appRevision": null,
+  "environmentId": "auto-sh-delivery-qa-4gb",
+  "namespace": "29fdac9d-1c5-9366a3c0b811687c19-retry0-7ea1675f-94ea-45aa-a374-fa6088ff22ca",
+  "scopes": {
+    "A1": {
+      "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+      "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+    }
+  },
+  "timestamp": "2026-09-19T11:07:44.748Z",
+  "cleanup": {
+    "resources": [
+      {
+        "kind": "tenant",
+        "id": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "id": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "kind": "organization",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "id": "215deee8-1219-44c6-be6c-9fbe6d1c8a28",
+        "kind": "role",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "id": "88986771-5a0f-4483-977b-623efbf89ee5",
+        "kind": "user",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "kind": "project",
+        "id": "3398a0fc-97f6-4366-a441-3a4dc5732eba",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "kind": "project",
+        "id": "933ae536-1170-4990-b8bc-17d430e33b76",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "kind": "attachment",
+        "id": "a06b17ae-b11a-41aa-8d2f-9067eb1138bd",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "kind": "task",
+        "id": "813f3934-b896-4b2b-9ee6-b2588a81f9d1",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "kind": "task",
+        "id": "511adb4f-9fa6-4d43-b36b-944670daf717",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff",
+        "state": "cleaned",
+        "retained": true
+      }
+    ],
+    "failures": [],
+    "retainedHistory": [
+      {
+        "kind": "baseline",
+        "id": "3b0c5fbb-3f4f-487f-b814-1cb82c9d68ac",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      },
+      {
+        "kind": "decision",
+        "id": "480934c3-0aac-4981-8440-6f22fc0d3de6",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      },
+      {
+        "kind": "decision",
+        "id": "26592a04-91ae-4e97-8e3a-8572e2822ba4",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      },
+      {
+        "kind": "baseline",
+        "id": "10e831bf-d9c8-4db5-b2ca-46d64a5e0df0",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      },
+      {
+        "kind": "decision",
+        "id": "5b4535db-751f-4dca-b9a7-6a41333aa637",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      },
+      {
+        "kind": "decision",
+        "id": "eedbb40b-5882-418f-b68d-66f37d93a882",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      },
+      {
+        "kind": "attempt",
+        "id": "4f98abfe-f891-4669-a47e-27ab90731276",
+        "tenantId": "13821f4c-3c72-4812-874b-276f72e4c977",
+        "organizationId": "995e2914-5f0d-4a89-86d8-3a94e0593cff"
+      }
+    ],
+    "physicalCleanup": "pending_environment_disposal"
+  },
+  "cleanupStatus": "pending_environment_disposal",
+  "unmanagedMutations": [],
+  "assertionOutcome": "see-native-playwright-result"
+}

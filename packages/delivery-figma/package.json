@@ -1,0 +1,24 @@
+{
+  "name": "@open-mercato/delivery-figma",
+  "version": "0.8.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./*.json": "./src/*.json",
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --config jest.config.cjs"
+  },
+  "dependencies": {
+    "@open-mercato/core": "workspace:*",
+    "@open-mercato/shared": "workspace:*"
+  }
+}

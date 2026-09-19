@@ -1,0 +1,38 @@
+{
+  "scenario": "manual_agent",
+  "status": 400,
+  "body": {
+    "error": "A manual check is decided by a human",
+    "code": "validation_failed",
+    "details": [
+      {
+        "path": "payload.reviewer.kind",
+        "code": "human_reviewer_required"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  }
+}

@@ -11,7 +11,7 @@ import {
   projectDetailSchema,
 } from '../api/schemas'
 import { DELIVERY_SCHEMA_VERSIONS, deliveryReportV1Schema } from '../lib/contracts'
-import en from '../i18n/en.json'
+import en from '../i18n/en.json' with { type: 'json' }
 
 const labels: Record<string, string> = en
 const api = '/api/delivery_os/projects'

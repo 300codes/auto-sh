@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 409,
+    "code": "task_not_ready"
+  },
+  "actual": {
+    "status": 409,
+    "body": {
+      "code": "task_not_ready",
+      "details": [
+        {
+          "path": "status",
+          "code": "task_not_ready"
+        }
+      ]
+    }
+  }
+}
