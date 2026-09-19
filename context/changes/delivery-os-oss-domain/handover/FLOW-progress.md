@@ -43,3 +43,7 @@ Stand-alone notes per stage live in `FLOW-F0-contracts.md`, `FLOW-F1-L13a-comman
 - Fix found by review: `commands/publications.ts` did not set `id` in `tx.create`, so `publicationId` was `undefined` before the flush → 500 after commit on a real DB (the jest kit assigned ids). Now `id: randomUUID()` like `evidence.ts`; `publications.test.ts` stops faking the publication id (9 cases fail without the fix).
 - Tests: `npx playwright test --config .ai/qa/tests/playwright.config.ts --list TC-DELIVERY-FLOW-07` → 2 tests listed; `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2 --ci` → 96 suites / 1771 tests green; `jest src/__tests__/module-decoupling` → 12/12; core typecheck green. Runner: local.
 - Blocked for the human: the Playwright run needs a server running lane-B code (merge + dev server restart, F4 migration applied), then `yarn test:integration packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FLOW-07-publications.spec.ts`.
+
+## T063 — FLOW-F4 lane-B close-out (docs only)
+
+- Lane-B hand-over: `handover/FLOW-F3-F4-lane-b.md` (SHAs, migration, tests, blockers, merge notes). Spec status line and changelog updated in `.ai/specs/2026-09-18-delivery-os-hackathon.md`; F3 and F4 are complete for this lane. Progress rows 5.1 and 5.4: evidence pointers only, nothing ticked.
