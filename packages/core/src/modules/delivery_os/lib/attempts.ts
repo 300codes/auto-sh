@@ -5,6 +5,7 @@ import {
   deliveryErrorFromZod,
   executionAttemptSchema,
   executionAttemptsSchema,
+  isSameRevision,
   type AttemptMode,
   type DeliveryCheckResult,
   type DeliveryErrorCode,
@@ -146,6 +147,16 @@ export function checkAttemptOpen(attempt: ExecutionAttempt | undefined): Deliver
   return fail('attempt_closed', 'Attempt is closed', 'attemptId', `Attempt is ${attempt.state}`)
 }
 
+function isReplayOf(replayed: ExecutionAttempt, input: ReserveAttemptInput, payloadHash: string): boolean {
+  return (
+    replayed.payloadHash === payloadHash &&
+    replayed.mode === input.mode &&
+    replayed.baselineId === input.baselineId &&
+    replayed.baselineHash === input.baselineHash &&
+    isSameRevision(replayed.baseRevision, input.baseRevision)
+  )
+}
+
 function hashPayload(payload: unknown): string | null {
   try {
     return hashCanonical(payload)
@@ -161,7 +172,7 @@ export function reserveAttempt(register: AttemptRegister, input: ReserveAttemptI
   }
   const replayed = register.find((attempt) => attempt.idempotencyKey === input.idempotencyKey)
   if (replayed) {
-    if (replayed.payloadHash === payloadHash) return { ok: true, outcome: 'existing', attempt: replayed, register: [...register] }
+    if (isReplayOf(replayed, input, payloadHash)) return { ok: true, outcome: 'existing', attempt: replayed, register: [...register] }
     return {
       outcome: 'conflict',
       ...fail('idempotency_conflict', 'Idempotency key was used with another payload', 'idempotencyKey', 'Use a new key for a new request'),

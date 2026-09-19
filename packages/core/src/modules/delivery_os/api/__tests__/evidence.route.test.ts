@@ -135,7 +135,7 @@ describe('POST /api/delivery_os/projects/:id/evidence', () => {
     const created = await recordEvidence(reviewBody)
     expect(created.status).toBe(201)
     const body = await readBody(created)
-    expect(Object.keys(body).sort()).toEqual(['duplicate', 'evidenceId', 'taskStatus', 'taskUpdatedAt'])
+    expect(Object.keys(body).sort()).toEqual(['duplicate', 'evidenceId', 'taskStatus', 'taskStatusReason', 'taskUpdatedAt'])
     expect(evidenceRecordResponseSchema.safeParse(body).success).toBe(true)
     expect(body).toMatchObject({ duplicate: false, taskStatus: 'verified' })
     expect(routeState.store.tasks[0]).toMatchObject({ status: 'verified', statusReason: null })
@@ -184,6 +184,24 @@ describe('POST /api/delivery_os/projects/:id/evidence', () => {
       recordedBy: routeState.auth?.sub,
     })
     expect((await recordEvidence(scanBody)).status).toBe(200)
+  })
+
+  it('never forwards a trustedExecution option sent in the body and stores the evidence as manual', async () => {
+    const smuggled = await recordEvidence({
+      ...scanBody,
+      source: 'adapter',
+      trustedExecution: { source: 'delivery_agents', actorUserId: TASK_ID },
+    })
+    expect(smuggled.status).toBe(201)
+    const body = await readBody(smuggled)
+    expect(routeState.store.evidence).toHaveLength(1)
+    expect(routeState.store.evidence[0]).toMatchObject({ kind: 'scan', source: 'manual', recordedBy: routeState.auth?.sub })
+    expect(routeState.store.evidence[0]).not.toHaveProperty('trustedExecution')
+
+    const replay = await recordEvidence(scanBody)
+    expect(replay.status).toBe(200)
+    expect(await readBody(replay)).toEqual({ evidenceId: body.evidenceId, duplicate: true })
+    expect(routeState.store.evidence).toHaveLength(1)
   })
 
   it('answers 404 for a foreign tenant or organization before looking at the body', async () => {

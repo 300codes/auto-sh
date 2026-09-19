@@ -1,0 +1,201 @@
+{
+  "schemaVersion": "delivery.report/v1",
+  "projectId": "11111111-1111-4111-8111-111111111111",
+  "baselineId": "44444444-4444-4444-8444-444444444444",
+  "baselineHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+  "targetProfile": {
+    "id": "react-vite",
+    "version": 1
+  },
+  "revision": {
+    "kind": "git",
+    "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+  },
+  "revisionSource": "latest_result",
+  "acceptanceCriteria": [
+    {
+      "acId": "AC-001",
+      "requirementId": "REQ-1",
+      "description": "The list renders all seeded services.",
+      "status": "passed",
+      "taskIds": [
+        "22222222-2222-4222-8222-222222222222"
+      ],
+      "tests": [
+        {
+          "testId": "service catalogue AC-001: service list renders seeded services",
+          "status": "passed",
+          "evidenceId": "77777777-7777-4777-8777-777777777771",
+          "rawReportHash": "8d6bd19619f04ac622ba284d0ad08f90c52bcd65d4fd2c7abec58fe07803467d"
+        }
+      ],
+      "manualCheck": null
+    },
+    {
+      "acId": "AC-002",
+      "requirementId": "REQ-2",
+      "description": "Choosing a category shows only services of that category.",
+      "status": "passed",
+      "taskIds": [
+        "22222222-2222-4222-8222-222222222222"
+      ],
+      "tests": [
+        {
+          "testId": "service catalogue AC-002: category filter narrows the list",
+          "status": "passed",
+          "evidenceId": "77777777-7777-4777-8777-777777777771",
+          "rawReportHash": "e8ab0bd2123df3012dd74de61ddcbd2221ed349f049955ce3003424dec8edce3"
+        }
+      ],
+      "manualCheck": null
+    },
+    {
+      "acId": "AC-003",
+      "requirementId": "REQ-1",
+      "description": "The list matches the approved desktop screen.",
+      "status": "manual_pending",
+      "taskIds": [
+        "22222222-2222-4222-8222-222222222222"
+      ],
+      "tests": [],
+      "manualCheck": {
+        "manualCheckId": "MC-visual-001",
+        "status": "missing",
+        "evidenceId": null
+      }
+    }
+  ],
+  "rows": [
+    {
+      "requirementId": "REQ-1",
+      "acId": "AC-001",
+      "acStatus": "passed",
+      "taskId": "22222222-2222-4222-8222-222222222222",
+      "taskStatus": "verified",
+      "testId": "service catalogue AC-001: service list renders seeded services",
+      "testStatus": "passed",
+      "manualCheckId": null,
+      "manualCheckStatus": null,
+      "evidenceId": "77777777-7777-4777-8777-777777777771",
+      "rawReportHash": "8d6bd19619f04ac622ba284d0ad08f90c52bcd65d4fd2c7abec58fe07803467d",
+      "deploymentEvidenceId": "77777777-7777-4777-8777-777777777772"
+    },
+    {
+      "requirementId": "REQ-1",
+      "acId": "AC-003",
+      "acStatus": "manual_pending",
+      "taskId": "22222222-2222-4222-8222-222222222222",
+      "taskStatus": "verified",
+      "testId": null,
+      "testStatus": null,
+      "manualCheckId": "MC-visual-001",
+      "manualCheckStatus": "missing",
+      "evidenceId": null,
+      "rawReportHash": null,
+      "deploymentEvidenceId": "77777777-7777-4777-8777-777777777772"
+    },
+    {
+      "requirementId": "REQ-2",
+      "acId": "AC-002",
+      "acStatus": "passed",
+      "taskId": "22222222-2222-4222-8222-222222222222",
+      "taskStatus": "verified",
+      "testId": "service catalogue AC-002: category filter narrows the list",
+      "testStatus": "passed",
+      "manualCheckId": null,
+      "manualCheckStatus": null,
+      "evidenceId": "77777777-7777-4777-8777-777777777771",
+      "rawReportHash": "e8ab0bd2123df3012dd74de61ddcbd2221ed349f049955ce3003424dec8edce3",
+      "deploymentEvidenceId": "77777777-7777-4777-8777-777777777772"
+    }
+  ],
+  "totalRows": 3,
+  "truncated": false,
+  "limit": 100,
+  "issues": [],
+  "scans": [
+    {
+      "checkId": "dependency-audit",
+      "status": "present",
+      "reportedStatus": "passed",
+      "evidenceId": "77777777-7777-4777-8777-777777777771",
+      "rawReportHash": "a48bf5be3c4735b5a26fa6da503cf5facb7c8b3a3e2e5a60dc61c17f652f543f"
+    }
+  ],
+  "deployment": {
+    "status": "unverified",
+    "verificationStatus": "unverified",
+    "evidenceId": "77777777-7777-4777-8777-777777777772",
+    "url": "https://preview.example.test/delivery-demo/",
+    "environment": "preview",
+    "buildId": "build-2026-09-19-01"
+  },
+  "gates": {
+    "publishable": {
+      "ok": true,
+      "blocking": []
+    },
+    "releasable": {
+      "ok": false,
+      "blocking": [
+        {
+          "kind": "ac",
+          "id": "AC-003",
+          "status": "manual_pending"
+        },
+        {
+          "kind": "deploy_decision",
+          "id": "deploy",
+          "status": "missing"
+        },
+        {
+          "kind": "deployment",
+          "id": "77777777-7777-4777-8777-777777777772",
+          "status": "unverified"
+        }
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "id": "88888888-8888-4888-8888-888888888881",
+      "kind": "requirements",
+      "verdict": "approved",
+      "subjectType": "baseline",
+      "subjectId": "44444444-4444-4444-8444-444444444444",
+      "subjectHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+      "sourceRevision": null,
+      "decidedAt": "2026-09-19T08:30:00.000Z",
+      "reason": null,
+      "appliesToRevision": true
+    },
+    {
+      "id": "88888888-8888-4888-8888-888888888882",
+      "kind": "deploy",
+      "verdict": "approved",
+      "subjectType": "baseline",
+      "subjectId": "44444444-4444-4444-8444-444444444444",
+      "subjectHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+      "sourceRevision": {
+        "kind": "git",
+        "commitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "decidedAt": "2026-09-19T09:00:00.000Z",
+      "reason": "earlier task commit",
+      "appliesToRevision": false
+    }
+  ],
+  "progress": {
+    "proven": 2,
+    "total": 3,
+    "unit": "ac",
+    "percent": 66
+  },
+  "usage": [
+    {
+      "evidenceId": "77777777-7777-4777-8777-777777777771",
+      "source": "runner",
+      "values": "unknown"
+    }
+  ]
+}

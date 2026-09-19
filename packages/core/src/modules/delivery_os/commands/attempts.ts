@@ -227,7 +227,7 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
       assertDeliveryCheck(
         canTransition(task.status, 'executing', {
           source: 'command',
-          statusReason: task.statusReason ?? null,
+          currentStatusReason: task.statusReason ?? null,
           correction: await loadCorrectionBudget(tx, task, project, scope),
         }),
       )

@@ -6,6 +6,7 @@ import {
   isoDateTimeSchema,
   reconciliationResolutionSchema,
   sha256Schema,
+  TASK_STATUS_REASONS,
   taskStatusSchema,
   uuidSchema,
 } from '../lib/contracts'
@@ -101,6 +102,13 @@ export const decisionCreateResponseSchema = z.object({
   projectUpdatedAt: isoDateTimeSchema,
 })
 
+export const deployDecisionCreateResponseSchema = z.object({
+  decisionId: uuidSchema,
+  projectUpdatedAt: isoDateTimeSchema,
+})
+
+export const releaseDecisionCreateResponseSchema = deployDecisionCreateResponseSchema
+
 export const taskDtoSchema = z.object({
   id: uuidSchema,
   projectId: uuidSchema,
@@ -151,6 +159,7 @@ export const evidenceRecordResponseSchema = z.object({
   evidenceId: uuidSchema,
   duplicate: z.boolean(),
   taskStatus: taskStatusSchema.optional(),
+  taskStatusReason: z.enum(TASK_STATUS_REASONS).nullable().optional(),
   taskUpdatedAt: isoDateTimeSchema.optional(),
 })
 

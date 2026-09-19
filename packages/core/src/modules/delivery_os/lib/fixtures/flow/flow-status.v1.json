@@ -1,0 +1,222 @@
+{
+  "schemaVersion": "delivery.flow-status/v1",
+  "projectId": "11111111-1111-4111-8111-111111111111",
+  "template": {
+    "templateId": "delivery-default",
+    "version": 1,
+    "hash": "7777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "workflowInstanceId": "bbbbbbb1-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
+  "intakeStep": "submitted",
+  "currentStageId": "key_visual",
+  "stages": [
+    {
+      "stageId": "scope",
+      "kind": "scope",
+      "title": "Scope with agent and tool choice",
+      "currency": "approved",
+      "currentArtifact": {
+        "artifactId": "aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+        "version": 1,
+        "contentHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "approvedArtifact": {
+        "artifactId": "aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+        "version": 1,
+        "contentHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "latestDecision": {
+        "decisionId": "ddddddd1-dddd-4ddd-8ddd-ddddddddddd1",
+        "verdict": "approved",
+        "decidedAt": "2026-09-19T10:00:00.000Z",
+        "clientApproved": false
+      },
+      "pendingApproval": null,
+      "blockers": [],
+      "openThreads": 0
+    },
+    {
+      "stageId": "ux",
+      "kind": "ux",
+      "title": "UX in Figma",
+      "currency": "approved",
+      "currentArtifact": {
+        "artifactId": "aaaaaaa2-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+        "version": 1,
+        "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "approvedArtifact": {
+        "artifactId": "aaaaaaa2-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+        "version": 1,
+        "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "latestDecision": {
+        "decisionId": "ddddddd2-dddd-4ddd-8ddd-ddddddddddd2",
+        "verdict": "approved",
+        "decidedAt": "2026-09-19T10:00:00.000Z",
+        "clientApproved": false
+      },
+      "pendingApproval": null,
+      "blockers": [],
+      "openThreads": 0
+    },
+    {
+      "stageId": "key_visual",
+      "kind": "key_visual",
+      "title": "Key Visual",
+      "currency": "pending",
+      "currentArtifact": {
+        "artifactId": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+        "version": 1,
+        "contentHash": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "approvedArtifact": null,
+      "latestDecision": null,
+      "pendingApproval": {
+        "stageId": "key_visual",
+        "artifactId": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+        "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+        "version": 1,
+        "approverFeatures": [
+          "delivery_os.stages.approve"
+        ],
+        "clientApprovalRequired": true
+      },
+      "blockers": [
+        {
+          "kind": "decision_pending",
+          "stageId": "key_visual",
+          "ref": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3"
+        }
+      ],
+      "openThreads": 0
+    },
+    {
+      "stageId": "design_system_ui",
+      "kind": "design_system_ui",
+      "title": "Design System and UI",
+      "currency": "missing",
+      "currentArtifact": null,
+      "approvedArtifact": null,
+      "latestDecision": null,
+      "pendingApproval": null,
+      "blockers": [
+        {
+          "kind": "artifact_missing",
+          "stageId": "design_system_ui",
+          "ref": null
+        }
+      ],
+      "openThreads": 0
+    },
+    {
+      "stageId": "implementation",
+      "kind": "implementation",
+      "title": "WordPress implementation",
+      "currency": null,
+      "currentArtifact": null,
+      "approvedArtifact": null,
+      "latestDecision": null,
+      "pendingApproval": null,
+      "blockers": [],
+      "openThreads": 0
+    },
+    {
+      "stageId": "qa",
+      "kind": "qa",
+      "title": "QA and fixes",
+      "currency": null,
+      "currentArtifact": null,
+      "approvedArtifact": null,
+      "latestDecision": null,
+      "pendingApproval": null,
+      "blockers": [],
+      "openThreads": 0
+    },
+    {
+      "stageId": "deploy",
+      "kind": "deploy",
+      "title": "Publish consent",
+      "currency": null,
+      "currentArtifact": null,
+      "approvedArtifact": null,
+      "latestDecision": null,
+      "pendingApproval": null,
+      "blockers": [],
+      "openThreads": 0
+    },
+    {
+      "stageId": "release",
+      "kind": "release",
+      "title": "Final acceptance",
+      "currency": null,
+      "currentArtifact": null,
+      "approvedArtifact": null,
+      "latestDecision": null,
+      "pendingApproval": null,
+      "blockers": [],
+      "openThreads": 0
+    }
+  ],
+  "pendingApprovals": [
+    {
+      "stageId": "key_visual",
+      "artifactId": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+      "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "version": 1,
+      "approverFeatures": [
+        "delivery_os.stages.approve"
+      ],
+      "clientApprovalRequired": true
+    }
+  ],
+  "blockers": [
+    {
+      "kind": "decision_pending",
+      "stageId": "key_visual",
+      "ref": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3"
+    },
+    {
+      "kind": "artifact_missing",
+      "stageId": "design_system_ui",
+      "ref": null
+    }
+  ],
+  "gates": {
+    "dispatchable": {
+      "ok": false,
+      "blocking": [
+        {
+          "kind": "decision_pending",
+          "stageId": "key_visual",
+          "ref": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3"
+        },
+        {
+          "kind": "artifact_missing",
+          "stageId": "design_system_ui",
+          "ref": null
+        }
+      ]
+    },
+    "publishable": {
+      "ok": false,
+      "blocking": [
+        {
+          "kind": "decision_pending",
+          "stageId": "key_visual",
+          "ref": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3"
+        },
+        {
+          "kind": "artifact_missing",
+          "stageId": "design_system_ui",
+          "ref": null
+        }
+      ]
+    }
+  },
+  "nextAction": {
+    "kind": "approve_stage",
+    "stageId": "key_visual"
+  },
+  "updatedAt": "2026-09-19T10:00:00.000Z"
+}

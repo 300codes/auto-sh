@@ -259,6 +259,17 @@ describe('delivery_os.tasks.import_plan', () => {
     expect(Object.keys(baselineContentV1Schema.parse(store.baselines[1].content).acTestMap)).toEqual(['AC-001', 'AC-002'])
   })
 
+  it('keeps the test mapping of an acceptance criterion added to the draft after the baseline was frozen', async () => {
+    const draft = store.projects[0].draftSpec as Row
+    const criteria = draft.acceptanceCriteria as Array<Record<string, unknown>>
+    draft.acceptanceCriteria = [...criteria, { ...criteria[0], id: 'AC-999' }]
+    draft.acTestMap = { 'AC-999': ['T-999'], 'AC-404': ['T-404'] }
+    await importPlan.execute(input(), makeHarness(store, { headers: currentHeaders }).ctx)
+    const synced = (store.projects[0].draftSpec as Row).acTestMap as Record<string, string[]>
+    expect(synced).toEqual({ 'AC-999': ['T-999'], ...makePlan().acTestMap })
+    expect(Object.keys(baselineContentV1Schema.parse(store.baselines[1].content).acTestMap)).toEqual(['AC-001', 'AC-002'])
+  })
+
   it('answers 409 idempotency_conflict for the same manifestId with other content', async () => {
     await importPlan.execute(input(), makeHarness(store, { headers: currentHeaders }).ctx)
     const { ctx, em } = makeHarness(store, { headers: currentHeaders })
@@ -278,13 +289,19 @@ describe('delivery_os.tasks.import_plan', () => {
     const recovered = await importPlan.execute(input(), ctx)
     expect(recovered).toMatchObject({ duplicate: true, baselineId: first.baselineId })
     expect(recovered.tasks.map((task) => task.id)).toEqual(first.tasks.map((task) => task.id))
+  })
 
-    seedApprovedProject()
-    const lost = makeHarness(store, { headers: currentHeaders })
-    lost.em.transactional.mockImplementationOnce(async () => {
+  it('answers 409 idempotency_conflict for a unique violation that no imported manifest explains', async () => {
+    const { ctx, em } = makeHarness(store, { headers: currentHeaders })
+    em.transactional.mockImplementationOnce(async () => {
       throw Object.assign(new Error('duplicate key'), { code: '23505' })
     })
-    await expect(importPlan.execute(input(), lost.ctx)).rejects.toMatchObject({ code: '23505' })
+    const error = await catchHttpError(() => importPlan.execute(input(), ctx))
+    expectFrozenBody(error, 409, 'idempotency_conflict')
+    expect(detailCodes(error)).toEqual(['concurrent_import'])
+    expect(store.baselines).toHaveLength(1)
+    expect(store.tasks).toHaveLength(0)
+    expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
   })
 
   it('refuses hallucinated or escaping plans with 422 and persists nothing', async () => {

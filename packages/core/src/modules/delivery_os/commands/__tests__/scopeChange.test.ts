@@ -268,6 +268,10 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.baselines.import_requirements',
       'delivery_os.decisions.record',
       'delivery_os.evidence.record',
+      'delivery_os.flow.link_instance',
+      'delivery_os.flow.pin',
+      'delivery_os.intake.import_proposal',
+      'delivery_os.intake.update',
       'delivery_os.projects.create',
       'delivery_os.projects.delete',
       'delivery_os.projects.update',
@@ -306,11 +310,17 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
   })
 
   it('keeps the internal attempt commands off every route and off the workflow-safe command list', () => {
-    const internalIds = ['delivery_os.attempts.claim', 'delivery_os.attempts.link_workflow', 'delivery_os.attempts.mark_delivery']
+    const internalIds = [
+      'delivery_os.attempts.claim',
+      'delivery_os.attempts.link_workflow',
+      'delivery_os.attempts.mark_delivery',
+      'delivery_os.flow.link_instance',
+    ]
+    const owners = [join('commands', 'attempts.ts'), join('commands', 'flow.ts')]
     const sources = listFiles(MODULE_ROOT, (path) => /\.tsx?$/.test(path))
-    expect(sources.some((path) => path.endsWith(join('commands', 'attempts.ts')))).toBe(true)
+    for (const owner of owners) expect(sources.some((path) => path.endsWith(owner))).toBe(true)
     const callers = sources.filter((path) => {
-      if (path.endsWith(join('commands', 'attempts.ts'))) return false
+      if (owners.some((owner) => path.endsWith(owner))) return false
       const source = readFileSync(path, 'utf8')
       return internalIds.some((id) => source.includes(id))
     })

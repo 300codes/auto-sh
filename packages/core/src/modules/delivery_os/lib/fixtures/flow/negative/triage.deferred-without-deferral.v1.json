@@ -1,0 +1,14 @@
+{
+  "description": "A deferral without the artifact version and reason.",
+  "expected": {
+    "stage": "schema",
+    "code": "reason_required",
+    "status": 422
+  },
+  "documentType": "triage",
+  "document": {
+    "triageStatus": "deferred",
+    "deferral": null,
+    "linkedDeliveryTaskId": null
+  }
+}

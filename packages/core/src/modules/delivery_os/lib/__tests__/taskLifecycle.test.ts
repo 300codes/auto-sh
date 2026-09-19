@@ -30,7 +30,7 @@ function provenVerification(overrides: Partial<VerificationContext> = {}): Verif
 
 const completeContext: TransitionContext = {
   source: 'command',
-  statusReason: null,
+  currentStatusReason: null,
   readiness: { ok: true },
   correction: { requested: 0, max: 2 },
   verification: provenVerification(),
@@ -190,20 +190,24 @@ describe('correction rounds', () => {
     expect(errorCode(canTransition('awaiting_review', 'changes_requested', { source: 'command', correction: { requested: 2, max: 2 } }))).toBe(
       'correction_limit_reached',
     )
-    expect(canTransition('awaiting_review', 'blocked', { source: 'command', statusReason: 'correction_limit_reached' })).toEqual({ ok: true })
+    expect(canTransition('awaiting_review', 'blocked', { source: 'command', currentStatusReason: null })).toEqual({ ok: true })
+    expect(errorCode(canTransition('awaiting_review', 'blocked', { source: 'command', currentStatusReason: 'correction_limit_reached' }))).toBe(
+      'correction_limit_reached',
+    )
   })
 
   it('lets an escalated task only be cancelled', () => {
-    const escalated: TransitionContext = { ...completeContext, statusReason: 'correction_limit_reached' }
-    for (const to of ['changes_requested', 'ready', 'draft', 'awaiting_review'] as const) {
-      expect({ to, code: errorCode(canTransition('blocked', to, escalated)) }).toEqual({ to, code: 'correction_limit_reached' })
+    const escalated: TransitionContext = { ...completeContext, currentStatusReason: 'correction_limit_reached' }
+    for (const to of ['draft', 'ready', 'awaiting_review', 'changes_requested'] as const) {
+      const result = canTransition('blocked', to, escalated)
+      expect({ to, code: errorCode(result), details: detailCodes(result) }).toEqual({ to, code: 'correction_limit_reached', details: ['correction_limit_reached'] })
     }
     expect(canTransition('blocked', 'cancelled', escalated)).toEqual({ ok: true })
   })
 })
 
 describe('reconciliation_required block', () => {
-  const unknownRun: TransitionContext = { ...completeContext, statusReason: 'reconciliation_required' }
+  const unknownRun: TransitionContext = { ...completeContext, currentStatusReason: 'reconciliation_required' }
 
   it('cannot go to ready, executing or changes_requested until reconciled', () => {
     for (const [from, to] of [['blocked', 'ready'], ['ready', 'executing'], ['blocked', 'changes_requested']] as const) {
@@ -215,9 +219,9 @@ describe('reconciliation_required block', () => {
   it('can still be cancelled or returned to draft, and moves on once the reconcile command clears the reason', () => {
     expect(canTransition('blocked', 'cancelled', unknownRun)).toEqual({ ok: true })
     expect(canTransition('blocked', 'draft', unknownRun)).toEqual({ ok: true })
-    expect(canTransition('blocked', 'ready', { ...unknownRun, statusReason: null })).toEqual({ ok: true })
-    expect(canTransition('blocked', 'awaiting_review', { ...unknownRun, statusReason: null })).toEqual({ ok: true })
-    expect(errorCode(canTransition('blocked', 'awaiting_review', { source: 'status_update', statusReason: null }))).toBe('invalid_transition')
+    expect(canTransition('blocked', 'ready', { ...unknownRun, currentStatusReason: null })).toEqual({ ok: true })
+    expect(canTransition('blocked', 'awaiting_review', { ...unknownRun, currentStatusReason: null })).toEqual({ ok: true })
+    expect(errorCode(canTransition('blocked', 'awaiting_review', { source: 'status_update', currentStatusReason: null }))).toBe('invalid_transition')
   })
 })
 
@@ -245,16 +249,16 @@ describe('block propagation', () => {
     ]
     const blockedAncestorIds = findBlockedAncestors('B', blocked)
     expect(blockedAncestorIds).toEqual(['A'])
-    const context: TransitionContext = { ...completeContext, source: 'status_update', statusReason: 'dependency_blocked', blockedAncestorIds }
+    const context: TransitionContext = { ...completeContext, source: 'status_update', currentStatusReason: 'dependency_blocked', blockedAncestorIds }
     expect(detailCodes(canTransition('blocked', 'ready', context))).toEqual(['dependency_blocked'])
-    expect(detailCodes(canTransition('draft', 'ready', { ...context, statusReason: null, blockedAncestorIds: findBlockedAncestors('N', blocked) }))).toEqual([
+    expect(detailCodes(canTransition('draft', 'ready', { ...context, currentStatusReason: null, blockedAncestorIds: findBlockedAncestors('N', blocked) }))).toEqual([
       'dependency_blocked',
     ])
     expect(canTransition('blocked', 'draft', context)).toEqual({ ok: true })
     expect(canTransition('blocked', 'ready', { ...context, blockedAncestorIds: [] })).toEqual({ ok: true })
   })
 
-  it('never touches descendants that are already running, under review or waiting for a correction', () => {
+  it('leaves running, reviewed or correcting descendants alone: they exist only under verified, terminal ancestors', () => {
     const inFlight: LifecycleTask[] = [
       { id: 'A', status: 'ready', dependsOnTaskIds: [] },
       { id: 'R', status: 'executing', dependsOnTaskIds: ['A'] },
@@ -263,6 +267,14 @@ describe('block propagation', () => {
       { id: 'Z', status: 'draft', dependsOnTaskIds: ['R'] },
     ]
     expect(planBlockPropagation('A', inFlight)).toEqual([{ taskId: 'Z', from: 'draft', to: 'blocked', statusReason: 'dependency_blocked' }])
+  })
+
+  it('relies on verified and cancelled being terminal, so a verified ancestor can never become blocked', () => {
+    expect(TASK_TRANSITIONS.verified).toEqual([])
+    expect(TASK_TRANSITIONS.cancelled).toEqual([])
+    const result = canTransition('verified', 'blocked', completeContext)
+    expect(errorCode(result)).toBe('invalid_transition')
+    expect(detailCodes(result)).toEqual(['not_in_lifecycle'])
   })
 
   it('unblocks descendants to draft only when no other root block remains upstream', () => {

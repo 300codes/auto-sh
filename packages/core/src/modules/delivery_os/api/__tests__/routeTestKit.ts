@@ -163,6 +163,10 @@ export const containerMock = {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
         return createDeliveryOsAttemptQueries(em)
       }
+      if (name === 'deliveryOsReportQueries') {
+        const { createDeliveryOsReportQueries } = jest.requireActual('../../commands/reportQueries')
+        return createDeliveryOsReportQueries(em)
+      }
       return services[name]
     },
   }),

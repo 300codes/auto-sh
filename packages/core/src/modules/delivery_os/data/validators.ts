@@ -12,7 +12,11 @@ import {
   declaredTestSchema,
   deliveryErrorFromZod,
   deliveryLimitsSchema,
+  flowInstanceLinkSchema,
+  flowPinRequestSchema,
+  flowStageIdSchema,
   idempotencyKeySchema,
+  intakeUpdateRequestSchema,
   isoDateTimeSchema,
   proposalQuestionSchema,
   proposalRiskSchema,
@@ -24,14 +28,18 @@ import {
   resultFindingSchema,
   screenRefSchema,
   sha256Schema,
+  scopingProposalV1Schema,
   sourceRevisionSchema,
   stableIdSchema,
+  stageArtifactV1Schema,
+  stageDecisionRequestSchema,
   taskStatusSchema,
   USER_SETTABLE_TASK_STATUSES,
   uuidSchema,
   type DeliveryErrorResult,
   type TaskStatus,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { MAX_TRACEABILITY_ROWS } from '@open-mercato/core/modules/delivery_os/lib/traceability'
 
 const nameSchema = z.string().trim().min(1).max(200)
 const titleSchema = z.string().trim().min(1).max(300)
@@ -276,6 +284,13 @@ export type MarkAttemptDeliveryCommandInput = z.infer<typeof markAttemptDelivery
 export const packageQuerySchema = z.object({ attemptId: uuidSchema })
 export type PackageQuery = z.infer<typeof packageQuerySchema>
 
+export const reportQuerySchema = z.object({
+  baselineId: uuidSchema.optional(),
+  revision: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_TRACEABILITY_ROWS).optional(),
+})
+export type ReportQuery = z.infer<typeof reportQuerySchema>
+
 export const resultsImportSchema = z.object({
   attemptId: uuidSchema,
   manifest: manifestBodySchema,
@@ -387,13 +402,13 @@ export const recordEvidenceSchema = z
   ])
   .superRefine((value, ctx) => {
     if (value.attemptId && !value.taskId) {
-      ctx.addIssue({ code: 'custom', path: ['taskId'], message: 'taskId is required when attemptId is given' })
+      addDeliveryIssue(ctx, 'validation_failed', ['taskId'], 'taskId is required when attemptId is given')
     }
     if (value.kind === 'review' && !value.taskId) {
-      ctx.addIssue({ code: 'custom', path: ['taskId'], message: 'A review must name the task it reviews' })
+      addDeliveryIssue(ctx, 'validation_failed', ['taskId'], 'A review must name the task it reviews')
     }
     if (REVISION_REQUIRED_KINDS.includes(value.kind) && !value.sourceRevision) {
-      ctx.addIssue({ code: 'custom', path: ['sourceRevision'], message: `sourceRevision is required for ${value.kind} evidence` })
+      addDeliveryIssue(ctx, 'validation_failed', ['sourceRevision'], `sourceRevision is required for ${value.kind} evidence`)
     }
     if (value.kind === 'deployment') {
       const { url, environment, buildId } = value.payload
@@ -498,3 +513,70 @@ export const releaseDecisionSchema = z
   })
   .superRefine(requireReasonWhenRejected)
 export type ReleaseDecisionInput = z.infer<typeof releaseDecisionSchema>
+
+export {
+  flowInstanceLinkSchema,
+  flowPinRequestSchema,
+  intakeUpdateRequestSchema,
+  scopingProposalV1Schema,
+  stageArtifactV1Schema,
+  stageDecisionRequestSchema,
+}
+
+export const intakeUpdateCommandSchema = z.object({
+  projectId: uuidSchema,
+  intake: intakeUpdateRequestSchema,
+})
+export type IntakeUpdateCommandInput = z.infer<typeof intakeUpdateCommandSchema>
+
+export const scopingProposalImportCommandSchema = z
+  .object({
+    projectId: uuidSchema,
+    proposal: scopingProposalV1Schema,
+    trustedExecution: trustedExecutionSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.proposal.projectId !== value.projectId) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['proposal', 'projectId'], 'Proposal belongs to another project')
+    }
+  })
+export type ScopingProposalImportCommandInput = z.infer<typeof scopingProposalImportCommandSchema>
+
+export const flowPinCommandSchema = flowPinRequestSchema.extend({ projectId: uuidSchema })
+export type FlowPinCommandInput = z.infer<typeof flowPinCommandSchema>
+
+export const flowInstanceLinkCommandSchema = flowInstanceLinkSchema.extend({
+  trustedExecution: trustedExecutionSchema,
+})
+export type FlowInstanceLinkCommandInput = z.infer<typeof flowInstanceLinkCommandSchema>
+
+export const stageArtifactCreateCommandSchema = z
+  .object({
+    projectId: uuidSchema,
+    stageId: flowStageIdSchema,
+    artifact: stageArtifactV1Schema,
+    trustedExecution: trustedExecutionSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.artifact.stageId !== value.stageId) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['artifact', 'stageId'], 'Artifact stage differs from the path stage')
+    }
+    if (value.artifact.projectId !== value.projectId) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['artifact', 'projectId'], 'Artifact belongs to another project')
+    }
+  })
+export type StageArtifactCreateCommandInput = z.infer<typeof stageArtifactCreateCommandSchema>
+
+export const stageDecisionCommandSchema = z.object({
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  idempotencyKey: idempotencyKeySchema,
+  decision: stageDecisionRequestSchema,
+})
+export type StageDecisionCommandInput = z.infer<typeof stageDecisionCommandSchema>
+
+export const stageHistoryListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+})
+export type StageHistoryListQuery = z.infer<typeof stageHistoryListQuerySchema>

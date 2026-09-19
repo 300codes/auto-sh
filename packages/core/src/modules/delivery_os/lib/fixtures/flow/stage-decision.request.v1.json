@@ -1,0 +1,21 @@
+{
+  "artifactId": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+  "subjectHash": "4444444444444444444444444444444444444444444444444444444444444444",
+  "subjectVersion": 1,
+  "verdict": "approved",
+  "reason": null,
+  "clientApproval": {
+    "approverName": "Anna Kowalska",
+    "approverRole": "Owner, Psi Fryzjer",
+    "evidence": {
+      "kind": "meeting",
+      "reference": "Review call 2026-09-19 10:00, notes in attachment",
+      "attachment": {
+        "attachmentId": "55555555-5555-4555-8555-555555555555",
+        "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "recordedAt": "2026-09-19T10:00:00.000Z"
+    }
+  },
+  "deferredThreadKeys": []
+}

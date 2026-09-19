@@ -7,6 +7,7 @@ export const setup: ModuleSetupConfig = {
       'delivery_os.projects.view',
       'delivery_os.projects.manage',
       'delivery_os.results.import',
+      'delivery_os.comments.import',
     ],
   },
 }

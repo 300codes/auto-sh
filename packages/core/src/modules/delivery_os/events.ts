@@ -47,6 +47,50 @@ const evidenceRecordedPayloadSchema: EventPayloadSchema = {
   ],
 }
 
+const flowPinnedPayloadSchema: EventPayloadSchema = {
+  fields: [
+    { path: 'projectId', type: 'text' },
+    { path: 'templateId', type: 'text' },
+    { path: 'templateVersion', type: 'number' },
+    { path: 'templateHash', type: 'text' },
+    ...scopeFields,
+  ],
+}
+
+const stageArtifactCreatedPayloadSchema: EventPayloadSchema = {
+  fields: [
+    { path: 'projectId', type: 'text' },
+    { path: 'stageId', type: 'text' },
+    { path: 'artifactId', type: 'text' },
+    { path: 'version', type: 'number' },
+    { path: 'contentHash', type: 'text' },
+    { path: 'downstreamNowStale', type: 'object' },
+    ...scopeFields,
+  ],
+}
+
+const stageDecidedPayloadSchema: EventPayloadSchema = {
+  fields: [
+    { path: 'projectId', type: 'text' },
+    { path: 'stageId', type: 'text' },
+    { path: 'artifactId', type: 'text' },
+    { path: 'decisionId', type: 'text' },
+    { path: 'verdict', type: 'select' },
+    { path: 'currency', type: 'select' },
+    ...scopeFields,
+  ],
+}
+
+const commentThreadImportedPayloadSchema: EventPayloadSchema = {
+  fields: [
+    { path: 'projectId', type: 'text' },
+    { path: 'threadId', type: 'text' },
+    { path: 'staffTaskId', type: 'text', optional: true },
+    { path: 'outcome', type: 'select' },
+    ...scopeFields,
+  ],
+}
+
 const events = [
   {
     id: 'delivery_os.project.created',
@@ -77,6 +121,36 @@ const events = [
     category: 'lifecycle',
     clientBroadcast: true,
     payloadSchema: evidenceRecordedPayloadSchema,
+  },
+  {
+    id: 'delivery_os.flow.pinned',
+    label: 'Delivery Flow Template Pinned',
+    entity: 'flow',
+    category: 'lifecycle',
+    payloadSchema: flowPinnedPayloadSchema,
+  },
+  {
+    id: 'delivery_os.stage.artifact_created',
+    label: 'Delivery Stage Artifact Created',
+    entity: 'stage',
+    category: 'lifecycle',
+    clientBroadcast: true,
+    payloadSchema: stageArtifactCreatedPayloadSchema,
+  },
+  {
+    id: 'delivery_os.stage.decided',
+    label: 'Delivery Stage Decided',
+    entity: 'stage',
+    category: 'lifecycle',
+    clientBroadcast: true,
+    payloadSchema: stageDecidedPayloadSchema,
+  },
+  {
+    id: 'delivery_os.comment_thread.imported',
+    label: 'Delivery Comment Thread Imported',
+    entity: 'comment_thread',
+    category: 'lifecycle',
+    payloadSchema: commentThreadImportedPayloadSchema,
   },
 ] as const
 

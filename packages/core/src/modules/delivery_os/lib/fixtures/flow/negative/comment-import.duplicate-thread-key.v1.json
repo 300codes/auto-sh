@@ -1,0 +1,82 @@
+{
+  "description": "Two threads share threadKey in one batch.",
+  "expected": {
+    "stage": "schema",
+    "code": "duplicate_stable_id",
+    "status": 422
+  },
+  "documentType": "versioned",
+  "document": {
+    "schemaVersion": "delivery.comment-import/v1",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "source": "figma",
+    "fileKey": "FIGFILE0001",
+    "stageId": "ux",
+    "artifactId": "aaaaaaa2-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+    "fetchedAt": "2026-09-19T10:10:00.000Z",
+    "cursor": {
+      "after": null,
+      "next": "page-2"
+    },
+    "threads": [
+      {
+        "threadKey": "thr-1001",
+        "nodeId": "12:34",
+        "sourceUrl": "https://www.figma.com/design/FIGFILE0001?node-id=12-34#1001",
+        "author": {
+          "name": "Anna Kowalska",
+          "externalId": "figma-user-1",
+          "email": null
+        },
+        "body": "The booking button is hard to find on mobile.",
+        "createdAt": "2026-09-19T10:00:00.000Z",
+        "updatedAt": null,
+        "status": "open",
+        "figmaVersion": "1234567890",
+        "replies": [
+          {
+            "commentKey": "cmt-2001",
+            "author": {
+              "name": "Adam Designer",
+              "externalId": "figma-user-2",
+              "email": null
+            },
+            "body": "Moving it above the fold.",
+            "createdAt": "2026-09-19T10:05:00.000Z",
+            "editedAt": null,
+            "deleted": false
+          }
+        ]
+      },
+      {
+        "threadKey": "thr-1001",
+        "nodeId": "12:34",
+        "sourceUrl": "https://www.figma.com/design/FIGFILE0001?node-id=12-34#1001",
+        "author": {
+          "name": "Anna Kowalska",
+          "externalId": "figma-user-1",
+          "email": null
+        },
+        "body": "Second thread with the same key.",
+        "createdAt": "2026-09-19T10:00:00.000Z",
+        "updatedAt": null,
+        "status": "open",
+        "figmaVersion": "1234567890",
+        "replies": [
+          {
+            "commentKey": "cmt-2001",
+            "author": {
+              "name": "Adam Designer",
+              "externalId": "figma-user-2",
+              "email": null
+            },
+            "body": "Moving it above the fold.",
+            "createdAt": "2026-09-19T10:05:00.000Z",
+            "editedAt": null,
+            "deleted": false
+          }
+        ]
+      }
+    ]
+  }
+}

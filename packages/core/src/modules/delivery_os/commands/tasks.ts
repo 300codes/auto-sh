@@ -266,7 +266,7 @@ async function loadScopedDependencyNodes(
 export function countCorrectionRounds(evidence: readonly ReviewEvidenceLike[]): number {
   return evidence.filter(
     (item) =>
-      item.kind === 'review' && item.payload.verdict === 'changes_requested' && item.payload.manualCheckId === undefined,
+      item.kind === 'review' && item.payload.verdict === 'changes_requested' && item.payload.manualCheckId == null,
   ).length
 }
 
@@ -494,7 +494,7 @@ async function checkStatusChange(
   assertDeliveryCheck(
     canTransition(task.status, to, {
       source: 'status_update',
-      statusReason: task.statusReason ?? null,
+      currentStatusReason: task.statusReason ?? null,
       readiness,
       correction,
       blockedAncestorIds,
@@ -674,6 +674,7 @@ const deleteTaskCommand: CommandHandler<TaskDeleteInput, TaskCommandResult> = {
     })
 
     await emitTaskSideEffects(ctx, 'deleted', task)
+    await emitTaskUpdated(task)
     return toResult(task)
   },
   buildLog: async ({ result, snapshots }) => {

@@ -1,10 +1,22 @@
 import { OptionalProps } from '@mikro-orm/core'
 import { Check, Entity, Index, PrimaryKey, Property, Unique } from '@mikro-orm/decorators/legacy'
 import type {
+  AttachmentRef,
+  BriefV1,
   DeliveryEvidenceKind,
   DeliveryLimits,
   ExecutionAttempt,
+  FlowStageId,
+  FlowTemplateV1,
+  IntakeQuestion,
+  IntakeStep,
+  PlatformChoice,
+  PlatformRecommendation,
   SourceRevision,
+  StageArtifactDependency,
+  StageArtifactV1,
+  StageDecisionVerdict,
+  ToolChoice,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import type { TaskStatus } from './validators'
 
@@ -15,10 +27,33 @@ export type DeliveryEvidenceSource = 'adapter' | 'manual'
 export type DeliveryDecisionKind = 'requirements' | 'design' | 'deploy' | 'release'
 export type DeliveryDecisionSubjectType = 'baseline' | 'deployment_evidence'
 export type DeliveryDecisionVerdict = 'approved' | 'rejected'
+export type DeliveryFlowStageArtifactSource = StageArtifactV1['source']
+export type DeliveryIntakeProposalRef = {
+  proposalId: string
+  kind: 'scope' | 'platform'
+  contentHash: string
+  proposedAt: string
+  status: 'proposed' | 'accepted' | 'discarded'
+}
+export type DeliveryIntakePlatform = {
+  recommendation: PlatformRecommendation | null
+  chosen: PlatformChoice | null
+}
+export type DeliveryIntakeImportedManifest = { manifestId: string; manifestHash: string }
+export type DeliveryClientApprovalEvidence = {
+  kind: 'email' | 'meeting' | 'signed_document' | 'other'
+  reference: string
+  attachment: AttachmentRef | null
+  recordedAt: string
+}
 
 @Entity({ tableName: 'delivery_projects' })
 @Index({ name: 'delivery_projects_scope_deleted_idx', properties: ['tenantId', 'organizationId', 'deletedAt'] })
 @Index({ name: 'delivery_projects_scope_created_idx', properties: ['tenantId', 'organizationId', 'createdAt'] })
+@Index({
+  name: 'delivery_projects_scope_flow_template_idx',
+  properties: ['tenantId', 'organizationId', 'flowTemplateId', 'flowTemplateVersion'],
+})
 export class DeliveryProject {
   [OptionalProps]?: 'draftSpec' | 'createdAt' | 'updatedAt' | 'deletedAt'
 
@@ -57,6 +92,27 @@ export class DeliveryProject {
 
   @Property({ type: 'jsonb' })
   limits!: DeliveryLimits
+
+  @Property({ name: 'flow_template_id', type: 'text', nullable: true })
+  flowTemplateId?: string | null
+
+  @Property({ name: 'flow_template_version', type: 'integer', nullable: true })
+  flowTemplateVersion?: number | null
+
+  @Property({ name: 'flow_template_hash', type: 'text', nullable: true })
+  flowTemplateHash?: string | null
+
+  @Property({ name: 'flow_template_snapshot', type: 'jsonb', nullable: true })
+  flowTemplateSnapshot?: FlowTemplateV1 | null
+
+  @Property({ name: 'flow_pinned_at', type: Date, nullable: true })
+  flowPinnedAt?: Date | null
+
+  @Property({ name: 'flow_workflow_instance_id', type: 'uuid', nullable: true })
+  flowWorkflowInstanceId?: string | null
+
+  @Property({ name: 'flow_workflow_definition_id', type: 'uuid', nullable: true })
+  flowWorkflowDefinitionId?: string | null
 
   @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
   createdAt: Date = new Date()
@@ -319,6 +375,192 @@ export class DeliveryDecision {
 
   @Property({ name: 'decided_at', type: Date, onCreate: () => new Date() })
   decidedAt: Date = new Date()
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_intakes' })
+@Unique({ name: 'delivery_intakes_scope_project_uq', properties: ['tenantId', 'organizationId', 'projectId'] })
+export class DeliveryIntake {
+  [OptionalProps]?:
+    | 'step'
+    | 'questions'
+    | 'proposals'
+    | 'tools'
+    | 'importedManifests'
+    | 'createdAt'
+    | 'updatedAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ name: 'schema_version', type: 'text' })
+  schemaVersion!: string
+
+  @Property({ type: 'text', default: 'brief' })
+  step: IntakeStep = 'brief'
+
+  @Property({ type: 'jsonb' })
+  brief!: BriefV1
+
+  @Property({ type: 'jsonb', default: [], nullable: false })
+  questions: IntakeQuestion[] = []
+
+  @Property({ type: 'jsonb', default: [], nullable: false })
+  proposals: DeliveryIntakeProposalRef[] = []
+
+  @Property({ type: 'jsonb' })
+  platform!: DeliveryIntakePlatform
+
+  @Property({ type: 'jsonb', default: [], nullable: false })
+  tools: ToolChoice[] = []
+
+  @Property({ name: 'imported_manifests', type: 'jsonb', default: [], nullable: false })
+  importedManifests: DeliveryIntakeImportedManifest[] = []
+
+  @Property({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy?: string | null
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+
+  @Property({ name: 'updated_at', type: Date, onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_flow_stage_artifacts' })
+@Unique({
+  name: 'delivery_flow_stage_artifacts_project_stage_version_uq',
+  properties: ['tenantId', 'organizationId', 'projectId', 'stageId', 'version'],
+})
+@Unique({
+  name: 'delivery_flow_stage_artifacts_project_stage_hash_uq',
+  properties: ['tenantId', 'organizationId', 'projectId', 'stageId', 'contentHash'],
+})
+export class DeliveryFlowStageArtifact {
+  [OptionalProps]?: 'dependsOn' | 'attachmentIds' | 'createdAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ name: 'stage_id', type: 'text' })
+  stageId!: FlowStageId
+
+  @Property({ type: 'integer' })
+  version!: number
+
+  @Property({ name: 'content_hash', type: 'text' })
+  contentHash!: string
+
+  @Property({ type: 'text' })
+  source!: DeliveryFlowStageArtifactSource
+
+  @Property({ type: 'jsonb' })
+  content!: Record<string, unknown>
+
+  @Property({ name: 'depends_on', type: 'jsonb', default: [], nullable: false })
+  dependsOn: StageArtifactDependency[] = []
+
+  @Property({ name: 'attachment_ids', type: 'jsonb', default: [], nullable: false })
+  attachmentIds: string[] = []
+
+  @Property({ name: 'template_hash', type: 'text' })
+  templateHash!: string
+
+  @Property({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy?: string | null
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_flow_stage_decisions' })
+@Index({
+  name: 'delivery_flow_stage_decisions_scope_project_stage_decided_idx',
+  properties: ['tenantId', 'organizationId', 'projectId', 'stageId', 'decidedAt'],
+})
+@Unique({
+  name: 'delivery_flow_stage_decisions_project_idempotency_uq',
+  properties: ['tenantId', 'organizationId', 'projectId', 'idempotencyKey'],
+})
+export class DeliveryFlowStageDecision {
+  [OptionalProps]?: 'deferredThreadKeys' | 'decidedAt' | 'createdAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ name: 'stage_id', type: 'text' })
+  stageId!: FlowStageId
+
+  @Property({ name: 'artifact_id', type: 'uuid' })
+  artifactId!: string
+
+  @Property({ name: 'subject_hash', type: 'text' })
+  subjectHash!: string
+
+  @Property({ name: 'subject_version', type: 'integer' })
+  subjectVersion!: number
+
+  @Property({ type: 'text' })
+  verdict!: StageDecisionVerdict
+
+  @Property({ type: 'text', nullable: true })
+  reason?: string | null
+
+  @Property({ name: 'actor_user_id', type: 'uuid' })
+  actorUserId!: string
+
+  @Property({ name: 'decided_at', type: Date, onCreate: () => new Date() })
+  decidedAt: Date = new Date()
+
+  @Property({ name: 'client_approver_name', type: 'text', nullable: true })
+  clientApproverName?: string | null
+
+  @Property({ name: 'client_approver_role', type: 'text', nullable: true })
+  clientApproverRole?: string | null
+
+  @Property({ name: 'client_approval_evidence', type: 'jsonb', nullable: true })
+  clientApprovalEvidence?: DeliveryClientApprovalEvidence | null
+
+  @Property({ name: 'deferred_thread_keys', type: 'jsonb', default: [], nullable: false })
+  deferredThreadKeys: string[] = []
+
+  @Property({ name: 'template_hash', type: 'text' })
+  templateHash!: string
+
+  @Property({ name: 'idempotency_key', type: 'text' })
+  idempotencyKey!: string
+
+  @Property({ name: 'request_hash', type: 'text' })
+  requestHash!: string
 
   @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
   createdAt: Date = new Date()

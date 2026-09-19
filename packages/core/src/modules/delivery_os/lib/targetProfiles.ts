@@ -165,6 +165,10 @@ export function assertRevisionKind(profile: TargetProfile, revision: SourceRevis
   }
 }
 
+/**
+ * @deprecated Kept for callers of the H4 contract; runtime checks use `validateAllowedPaths` / `isPathAllowed` from
+ * `./allowedPaths`, whose root semantics (a bare directory equal to a root is not a file) are the authoritative ones.
+ */
 export function isPathWithinProfileRoots(profile: TargetProfile, path: string): boolean {
   if (!repoRelativePathSchema.safeParse(path).success) return false
   return profile.allowedPathRoots.some((root) => {

@@ -645,6 +645,16 @@ describe('delivery_os.tasks.delete', () => {
     expect(store.tasks[0].deletedAt).toBeInstanceOf(Date)
   })
 
+  it('emits task.updated for the archived task so live subscribers refresh the card', async () => {
+    const { ctx } = makeHarness()
+    await remove.execute({ id: TASK_A }, ctx)
+    expect(mockEmitDeliveryOsEvent).toHaveBeenCalledWith(
+      'delivery_os.task.updated',
+      expect.objectContaining({ projectId: PROJECT_ID, taskId: TASK_A }),
+      expect.objectContaining({ tenantId: TENANT_ID, organizationId: ORG_ID }),
+    )
+  })
+
   it('blocks the archive on an active attempt and on an unknown attempt', async () => {
     store.tasks[0].executionAttempts = reservedRegister()
     const { ctx } = makeHarness()
@@ -694,5 +704,15 @@ describe('countCorrectionRounds', () => {
         { kind: 'test', payload: { verdict: 'changes_requested' } },
       ]),
     ).toBe(1)
+  })
+
+  it('treats a null manualCheckId like an absent one, so both count as correction rounds', () => {
+    expect(
+      countCorrectionRounds([
+        { kind: 'review', payload: { verdict: 'changes_requested', manualCheckId: null } },
+        { kind: 'review', payload: { verdict: 'changes_requested', manualCheckId: undefined } },
+        { kind: 'review', payload: { verdict: 'changes_requested', manualCheckId: 'MC-1' } },
+      ]),
+    ).toBe(2)
   })
 })

@@ -3,6 +3,10 @@ import { MAX_CANONICAL_DEPTH } from './canonicalConstants'
 
 export { MAX_CANONICAL_DEPTH, SHA256_HEX_PATTERN } from './canonicalConstants'
 
+export function compareCodeUnits(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
 type CanonicalValue = null | boolean | number | string | CanonicalValue[] | { [key: string]: CanonicalValue }
 
 function toCanonicalValue(value: unknown, ancestors: Set<object>): CanonicalValue {
@@ -34,7 +38,7 @@ function toCanonicalValue(value: unknown, ancestors: Set<object>): CanonicalValu
     }
     const source = value as Record<string, unknown>
     const result: { [key: string]: CanonicalValue } = Object.create(null)
-    for (const key of Object.keys(source).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) {
+    for (const key of Object.keys(source).sort(compareCodeUnits)) {
       const entry = source[key]
       if (entry === undefined) continue
       result[key] = toCanonicalValue(entry, ancestors)

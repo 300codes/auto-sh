@@ -45,8 +45,11 @@ export async function POST(request: Request, context: DeliveryRouteContext): Pro
       operation: 'custom',
     })
     if (outcome.blocked) return outcome.blocked
-    const { evidenceId, duplicate, taskStatus, taskUpdatedAt } = outcome.result
-    const body = taskStatus && taskUpdatedAt ? { evidenceId, duplicate, taskStatus, taskUpdatedAt } : { evidenceId, duplicate }
+    const { evidenceId, duplicate, taskStatus, taskStatusReason, taskUpdatedAt } = outcome.result
+    const body =
+      taskStatus && taskUpdatedAt
+        ? { evidenceId, duplicate, taskStatus, taskStatusReason: taskStatusReason ?? null, taskUpdatedAt }
+        : { evidenceId, duplicate }
     return NextResponse.json(body, { status: duplicate ? 200 : 201 })
   } catch (error) {
     return deliveryErrorResponse(error, 'delivery_os.evidence.record')

@@ -1,5 +1,3 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { isBroadcastEvent } from '@open-mercato/shared/modules/events'
 import features from '../acl'
 import { features as indexFeatures, metadata } from '../index'
@@ -11,9 +9,12 @@ import {
   DELIVERY_EXECUTION_SPOT_ID,
   DELIVERY_SCHEMA_VERSIONS,
 } from '../lib/contracts'
+import { FORBIDDEN_IMPORT_PATTERN, findEnterpriseImports } from './enterpriseBoundary'
+import { register as registerDi } from '../di'
+import { DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY, type DeliveryFlowTemplateProvider } from '../commands/flowTemplateProvider'
+import { DEFAULT_FLOW_TEMPLATE } from '../lib/flowTemplates'
 
 const MODULE_ID = 'delivery_os'
-const MODULE_ROOT = path.resolve(__dirname, '..')
 
 const SPEC_FEATURE_IDS = [
   'delivery_os.projects.view',
@@ -24,6 +25,9 @@ const SPEC_FEATURE_IDS = [
   'delivery_os.attempts.reconcile',
   'delivery_os.deploy.approve',
   'delivery_os.release.approve',
+  'delivery_os.flow.manage',
+  'delivery_os.stages.approve',
+  'delivery_os.comments.import',
 ]
 
 const FROZEN_EVENT_IDS = [
@@ -33,7 +37,21 @@ const FROZEN_EVENT_IDS = [
   'delivery_os.evidence.recorded',
 ]
 
-const BROADCAST_EVENT_IDS = ['delivery_os.task.updated', 'delivery_os.evidence.recorded']
+const FLOW_EVENT_IDS = [
+  'delivery_os.flow.pinned',
+  'delivery_os.stage.artifact_created',
+  'delivery_os.stage.decided',
+  'delivery_os.comment_thread.imported',
+]
+
+const ALL_EVENT_IDS = [...FROZEN_EVENT_IDS, ...FLOW_EVENT_IDS]
+
+const BROADCAST_EVENT_IDS = [
+  'delivery_os.task.updated',
+  'delivery_os.evidence.recorded',
+  'delivery_os.stage.artifact_created',
+  'delivery_os.stage.decided',
+]
 
 const EXPECTED_PAYLOAD_PATHS: Record<string, string[]> = {
   'delivery_os.project.created': ['projectId', 'tenantId', 'organizationId'],
@@ -58,18 +76,22 @@ const EXPECTED_PAYLOAD_PATHS: Record<string, string[]> = {
     'tenantId',
     'organizationId',
   ],
+  'delivery_os.flow.pinned': ['projectId', 'templateId', 'templateVersion', 'templateHash', 'tenantId', 'organizationId'],
+  'delivery_os.stage.artifact_created': [
+    'projectId',
+    'stageId',
+    'artifactId',
+    'version',
+    'contentHash',
+    'downstreamNowStale',
+    'tenantId',
+    'organizationId',
+  ],
+  'delivery_os.stage.decided': ['projectId', 'stageId', 'artifactId', 'decisionId', 'verdict', 'currency', 'tenantId', 'organizationId'],
+  'delivery_os.comment_thread.imported': ['projectId', 'threadId', 'staffTaskId', 'outcome', 'tenantId', 'organizationId'],
 }
 
-const FORBIDDEN_IMPORT_PATTERN =
-  /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire(?:\.resolve)?\s*\(\s*|\bimport\s+)['"`](?:@open-mercato\/enterprise(?:\/|['"`])|(?:\.\.\/)+(?:packages\/)?enterprise\/|[^'"`]*delivery-cezar)/
-
-function listSourceFiles(directory: string): string[] {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = path.join(directory, entry.name)
-    if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : listSourceFiles(entryPath)
-    return /\.(?:ts|tsx|js|mjs|cjs)$/.test(entry.name) ? [entryPath] : []
-  })
-}
+const PII_LIKE_PATHS = /name|email|author|body|text|brief|approver|evidence/i
 
 describe('delivery_os module registration', () => {
   describe('access control', () => {
@@ -107,6 +129,7 @@ describe('delivery_os module registration', () => {
         'delivery_os.projects.view',
         'delivery_os.projects.manage',
         'delivery_os.results.import',
+        'delivery_os.comments.import',
       ])
     })
 
@@ -127,6 +150,8 @@ describe('delivery_os module registration', () => {
         'delivery_os.attempts.reconcile',
         'delivery_os.deploy.approve',
         'delivery_os.release.approve',
+        'delivery_os.flow.manage',
+        'delivery_os.stages.approve',
         'delivery_os.*',
       ]) {
         expect(employee.has(privileged)).toBe(false)
@@ -135,16 +160,24 @@ describe('delivery_os module registration', () => {
   })
 
   describe('events', () => {
-    it('declares exactly the frozen event ids in module.entity.action form', () => {
+    it('declares the frozen v1 event ids first and the additive flow ids after them, in module.entity.action form', () => {
       expect(eventsConfig.moduleId).toBe(MODULE_ID)
-      expect(DELIVERY_OS_EVENT_IDS).toEqual(FROZEN_EVENT_IDS)
-      expect(eventsConfig.events.map((event) => event.id)).toEqual(FROZEN_EVENT_IDS)
-      for (const eventId of FROZEN_EVENT_IDS) {
+      expect(DELIVERY_OS_EVENT_IDS).toEqual(ALL_EVENT_IDS)
+      expect(DELIVERY_OS_EVENT_IDS.slice(0, FROZEN_EVENT_IDS.length)).toEqual(FROZEN_EVENT_IDS)
+      expect(eventsConfig.events.map((event) => event.id)).toEqual(ALL_EVENT_IDS)
+      for (const eventId of ALL_EVENT_IDS) {
         expect(eventId).toMatch(/^delivery_os\.[a-z_]+\.[a-z_]+$/)
       }
     })
 
-    it('broadcasts only live task status and evidence to the browser', () => {
+    it('carries ids only in the flow event payloads (no PII paths)', () => {
+      for (const event of eventsConfig.events.filter((candidate) => FLOW_EVENT_IDS.includes(candidate.id))) {
+        const paths = (event.payloadSchema?.fields ?? []).map((field) => field.path)
+        expect(paths.filter((path) => PII_LIKE_PATHS.test(path))).toEqual([])
+      }
+    })
+
+    it('broadcasts only live task status, evidence and stage changes to the browser', () => {
       for (const event of eventsConfig.events) {
         const expected = BROADCAST_EVENT_IDS.includes(event.id)
         expect(event.clientBroadcast === true).toBe(expected)
@@ -178,6 +211,18 @@ describe('delivery_os module registration', () => {
     })
   })
 
+  describe('DI', () => {
+    it('registers the built-in flow template provider that knows only delivery-default@1', async () => {
+      const registrations: Record<string, { resolve: (c: unknown) => unknown }> = {}
+      const container = { register: (entries: typeof registrations) => Object.assign(registrations, entries) }
+      registerDi(container as unknown as Parameters<typeof registerDi>[0])
+      const provider = registrations[DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY].resolve({}) as DeliveryFlowTemplateProvider
+      await expect(provider.getTemplate(DEFAULT_FLOW_TEMPLATE.templateId, DEFAULT_FLOW_TEMPLATE.version)).resolves.toBe(DEFAULT_FLOW_TEMPLATE)
+      await expect(provider.getTemplate(DEFAULT_FLOW_TEMPLATE.templateId, 2)).resolves.toBeNull()
+      await expect(provider.getTemplate('other', 1)).resolves.toBeNull()
+    })
+  })
+
   describe('OSS/enterprise boundary', () => {
     it('recognises forbidden import forms', () => {
       expect(FORBIDDEN_IMPORT_PATTERN.test(`import x from '@open-mercato/enterprise/modules/x'`)).toBe(true)
@@ -192,11 +237,7 @@ describe('delivery_os module registration', () => {
     })
 
     it('has no module file importing enterprise or delivery-cezar code', () => {
-      const offenders = listSourceFiles(MODULE_ROOT)
-        .filter((filePath) => filePath !== __filename)
-        .filter((filePath) => FORBIDDEN_IMPORT_PATTERN.test(fs.readFileSync(filePath, 'utf8')))
-        .map((filePath) => path.relative(MODULE_ROOT, filePath))
-      expect(offenders).toEqual([])
+      expect(findEnterpriseImports([__filename])).toEqual([])
     })
   })
 })
