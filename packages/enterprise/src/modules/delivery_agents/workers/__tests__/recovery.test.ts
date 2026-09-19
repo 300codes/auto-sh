@@ -6,6 +6,8 @@ const mockContainer = { resolve: jest.fn() }
 jest.mock('@open-mercato/shared/lib/di/container', () => ({ createRequestContainer: async () => mockContainer }))
 jest.mock('@open-mercato/shared/lib/logger', () => ({ createLogger: () => ({ child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }) }) }))
 jest.mock('@open-mercato/delivery-cezar/lib/resultManifest', () => ({ mapCezarRunToResultManifest: jest.fn() }), { virtual: true })
+const mockFindEvidence = jest.fn()
+jest.mock('@open-mercato/shared/lib/encryption/find', () => ({ findOneWithDecryption: (...args: unknown[]) => mockFindEvidence(...args) }))
 jest.mock('../../lib/resultAcceptance', () => ({ acceptResult: jest.fn() }))
 jest.mock('../../lib/workflowInstance', () => {
   const actual = jest.requireActual('../../lib/workflowInstance')
@@ -34,6 +36,7 @@ function commandCalls(id: string): unknown[] {
 
 beforeEach(() => {
   jest.resetAllMocks()
+  mockFindEvidence.mockResolvedValue({ recordedBy: '55555555-5555-4555-8555-555555555555' })
   mockCommand.mockResolvedValue({ result: { changed: true } })
   mockRun.mockResolvedValue({ exitCode: 0, durationMs: 1 })
   mockSignal.mockResolvedValue(0)
@@ -119,5 +122,21 @@ describe('REC-04: resume-attempt after a delivery whose signal already landed', 
     await runResume()
     expect(mockFindInstance).not.toHaveBeenCalled()
     expect(commandCalls('delivery_os.attempts.mark_delivery')).toEqual([expect.objectContaining({ outcome: 'delivered' })])
+  })
+
+  it('leaves the delivery pending without signaling when the evidence has no trusted recording actor', async () => {
+    mockFindEvidence.mockResolvedValue({ recordedBy: null })
+    mockSignal.mockResolvedValue(1)
+    await runResume()
+    expect(mockSignal).not.toHaveBeenCalled()
+    expect(commandCalls('delivery_os.attempts.mark_delivery')).toEqual([])
+  })
+
+  it('marks the delivery with the recording actor as the trusted authority', async () => {
+    mockSignal.mockResolvedValue(1)
+    await runResume()
+    const [options] = mockCommand.mock.calls.filter(([id]) => id === 'delivery_os.attempts.mark_delivery').map(([, value]) => value)
+    expect(options.input.trustedExecution.actorUserId).toBe('55555555-5555-4555-8555-555555555555')
+    expect(options.ctx.auth.sub).toBe('55555555-5555-4555-8555-555555555555')
   })
 })

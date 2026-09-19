@@ -6,6 +6,8 @@ const mockContainer = { resolve: jest.fn() }
 jest.mock('@open-mercato/shared/lib/di/container', () => ({ createRequestContainer: async () => mockContainer }))
 jest.mock('@open-mercato/shared/lib/logger', () => ({ createLogger: () => ({ child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }) }) }))
 jest.mock('@open-mercato/delivery-cezar/lib/resultManifest', () => ({ mapCezarRunToResultManifest: jest.fn() }), { virtual: true })
+const mockFindEvidence = jest.fn()
+jest.mock('@open-mercato/shared/lib/encryption/find', () => ({ findOneWithDecryption: (...args: unknown[]) => mockFindEvidence(...args) }))
 jest.mock('../../lib/resultAcceptance', () => ({ acceptResult: jest.fn() }))
 import execute from '../execute-task'
 import resume from '../resume-attempt'
@@ -17,6 +19,7 @@ const context = {} as JobContext
 
 beforeEach(() => {
   jest.resetAllMocks()
+  mockFindEvidence.mockResolvedValue({ recordedBy: '55555555-5555-4555-8555-555555555555' })
   mockGate.mockResolvedValue(undefined)
   mockCommand.mockResolvedValue({ result: {} })
   mockRun.mockResolvedValue({ exitCode: 0, durationMs: 1 })

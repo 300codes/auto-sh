@@ -5,6 +5,9 @@ import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
+import { uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { DeliveryEvidence } from '@open-mercato/core/modules/delivery_os/data/entities'
+import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { DELIVERY_RESUME_QUEUE, type ResumeAttemptJobPayload } from '../lib/queue'
 import { DELIVERY_AGENTS_SIGNAL_NAME } from '../lib/attemptWorkflow'
 import { findDeliveryWorkflowInstance, hasLeftEvidenceWait } from '../lib/workflowInstance'
@@ -35,11 +38,11 @@ type SignalHandlerLike = {
   ) => Promise<number>
 }
 
-function buildTrustedCtx(container: unknown, scope: DeliveryScope): CommandRuntimeContext {
+function buildTrustedCtx(container: unknown, scope: DeliveryScope, actorUserId: string): CommandRuntimeContext {
   return {
     container: container as unknown as CommandRuntimeContext['container'],
     auth: {
-      sub: 'delivery_agents_worker',
+      sub: actorUserId,
       tenantId: scope.tenantId,
       orgId: scope.organizationId,
     } as CommandRuntimeContext['auth'],
@@ -97,6 +100,12 @@ async function workflowLeftEvidenceWait(em: EntityManager, workflowRef: string, 
   }
 }
 
+async function resolveDeliveryActor(em: EntityManager, scope: DeliveryScope, evidenceId: string): Promise<string | null> {
+  const evidence = await findOneWithDecryption(em.fork(), DeliveryEvidence, { id: evidenceId, ...scope }, undefined, scope)
+  const actor = uuidSchema.safeParse(evidence?.recordedBy)
+  return actor.success ? actor.data : null
+}
+
 export default async function handle(job: QueuedJob<ResumeAttemptJobPayload>, _ctx: JobContext): Promise<void> {
   const payload = job.payload
   if (!payload?.attemptId || !payload?.taskId || !payload?.workflowRef || !payload?.tenantId || !payload?.organizationId) {
@@ -110,8 +119,13 @@ export default async function handle(job: QueuedJob<ResumeAttemptJobPayload>, _c
   const container = await createRequestContainer()
   const em = (container.resolve('em') as EntityManager).fork()
   const commandBus = container.resolve('commandBus') as CommandBus
-  const ctx = buildTrustedCtx(container, scope)
-  const trustedExecution = issueTrustedExecution('delivery_agents_worker')
+  const actorUserId = await resolveDeliveryActor(em, scope, payload.evidenceId)
+  if (!actorUserId) {
+    logger.warn('evidence has no trusted recording actor; leaving the delivery pending', { attemptId, evidenceId: payload.evidenceId })
+    return
+  }
+  const ctx = buildTrustedCtx(container, scope, actorUserId)
+  const trustedExecution = issueTrustedExecution(actorUserId)
 
   // Resolve signalHandler from DI (optional peer)
   let signalHandler: SignalHandlerLike | null = null
