@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "delivery.publication-result/v1",
+  "projectId": "11111111-1111-4111-8111-111111111111",
+  "baselineId": "66666666-6666-4666-8666-666666666666",
+  "sourceRevision": {
+    "kind": "snapshot",
+    "contentHash": "8888888888888888888888888888888888888888888888888888888888888888",
+    "externalWorkspaceId": "wp-local-1"
+  },
+  "snapshotRef": {
+    "attachmentId": "55555555-5555-4555-8555-555555555555",
+    "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "target": {
+    "kind": "wordpress",
+    "environment": "preview",
+    "ref": "psi-fryzjer-preview"
+  },
+  "url": "https://preview.example.com/psi-fryzjer",
+  "deployDecisionId": "ddddddd9-dddd-4ddd-8ddd-ddddddddddd9",
+  "publishedAt": "2026-09-19T12:00:00.000Z",
+  "publishedBy": "66666666-6666-4666-8666-666666666666",
+  "verification": {
+    "status": "verified",
+    "method": "http",
+    "checkedAt": "2026-09-19T12:01:00.000Z",
+    "httpStatus": 200,
+    "evidenceId": "99999999-9999-4999-8999-999999999999"
+  },
+  "releaseDecisionId": null
+}

@@ -908,3 +908,840 @@ export function parseVersioned<TMap extends VersionedSchemaMap>(
   if (!parsed.success) return { ok: false, ...deliveryErrorFromZod(parsed.error) }
   return { ok: true, schemaVersion, data: parsed.data } as ParseVersionedSuccess<TMap>
 }
+
+// ---------------------------------------------------------------------------
+// Flow delta v1 (FLOW-F0) — additive on top of the frozen v1 contract above.
+// Nothing above this line changes; every export below is new. Spec:
+// `.ai/specs/2026-09-18-delivery-os-hackathon.md` § "Flow delta v1 (FLOW-F0)".
+// ---------------------------------------------------------------------------
+
+export const DELIVERY_FLOW_CONTRACT_VERSION = 1
+
+export const DELIVERY_FLOW_SCHEMA_VERSIONS = {
+  intake: 'delivery.intake/v1',
+  scopingProposal: 'delivery.scoping-proposal/v1',
+  flowTemplate: 'delivery.flow-template/v1',
+  stageArtifact: 'delivery.stage-artifact/v1',
+  commentImport: 'delivery.comment-import/v1',
+  flowStatus: 'delivery.flow-status/v1',
+  publicationResult: 'delivery.publication-result/v1',
+} as const
+
+export const deliveryFlowErrorCodes = {
+  target_profile_frozen: 422,
+  flow_already_pinned: 409,
+  flow_not_pinned: 422,
+  unknown_flow_template: 422,
+  flow_template_hash_mismatch: 422,
+  stage_unknown: 422,
+  stage_not_approved: 422,
+  stage_dependency_stale: 422,
+  stage_artifact_stale: 409,
+  client_approval_required: 422,
+  blocking_comments_open: 422,
+  staff_link_required: 422,
+  intake_step_invalid: 422,
+  sync_cursor_conflict: 409,
+} as const
+
+export type DeliveryFlowErrorCode = keyof typeof deliveryFlowErrorCodes
+
+export const deliveryAllErrorCodes = { ...deliveryErrorCodes, ...deliveryFlowErrorCodes } as const
+export type DeliveryAnyErrorCode = keyof typeof deliveryAllErrorCodes
+
+const deliveryAllErrorCodeList = Object.keys(deliveryAllErrorCodes) as [DeliveryAnyErrorCode, ...DeliveryAnyErrorCode[]]
+
+export const deliveryFlowErrorBodySchema = z.object({
+  error: z.string().min(1),
+  code: z.enum(deliveryAllErrorCodeList),
+  details: z.array(deliveryErrorDetailSchema),
+})
+export type DeliveryFlowErrorBody = z.infer<typeof deliveryFlowErrorBodySchema>
+
+export type DeliveryFlowErrorResult = { status: number; body: DeliveryFlowErrorBody }
+export type DeliveryFlowCheckResult = { ok: true } | ({ ok: false } & DeliveryFlowErrorResult)
+
+export function buildDeliveryFlowError(
+  code: DeliveryAnyErrorCode,
+  error: string,
+  details: DeliveryErrorDetail[] = [],
+): DeliveryFlowErrorResult {
+  return { status: deliveryAllErrorCodes[code], body: { error, code, details } }
+}
+
+function isDeliveryAnyErrorCode(value: unknown): value is DeliveryAnyErrorCode {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(deliveryAllErrorCodes, value)
+}
+
+export function addDeliveryFlowIssue(
+  ctx: z.RefinementCtx,
+  deliveryCode: DeliveryAnyErrorCode,
+  path: PropertyKey[],
+  message: string,
+): void {
+  ctx.addIssue({ code: 'custom', message, path, params: { deliveryCode } })
+}
+
+function readDeliveryAnyCode(issue: z.core.$ZodIssue): DeliveryAnyErrorCode | null {
+  if (issue.code !== 'custom') return null
+  const candidate = issue.params?.deliveryCode
+  return isDeliveryAnyErrorCode(candidate) ? candidate : null
+}
+
+export function deliveryFlowErrorFromZod(error: z.ZodError): DeliveryFlowErrorResult {
+  const details = error.issues.map((issue) => {
+    const path = issue.path.map((segment) => String(segment)).join('.')
+    const detail: DeliveryErrorDetail = { code: readDeliveryAnyCode(issue) ?? issue.code, message: issue.message }
+    return path.length > 0 ? { path, ...detail } : detail
+  })
+  const hasShapeIssue = error.issues.some((issue) => readDeliveryAnyCode(issue) === null)
+  const firstIssue = error.issues[0]
+  const firstCode = firstIssue ? readDeliveryAnyCode(firstIssue) : null
+  if (hasShapeIssue || !firstIssue || !firstCode) {
+    return buildDeliveryFlowError('validation_failed', 'Validation failed', details)
+  }
+  return buildDeliveryFlowError(firstCode, firstIssue.message, details)
+}
+
+export type ParseFlowVersionedFailure = { ok: false } & DeliveryFlowErrorResult
+
+export function parseFlowVersioned<TMap extends VersionedSchemaMap>(
+  schemaMap: TMap,
+  input: unknown,
+): ParseVersionedSuccess<TMap> | ParseFlowVersionedFailure {
+  const schemaVersion = readSchemaVersion(input)
+  if (typeof schemaVersion !== 'string' || !Object.prototype.hasOwnProperty.call(schemaMap, schemaVersion)) {
+    const supported = Object.keys(schemaMap).join(', ')
+    const received = typeof schemaVersion === 'string' ? schemaVersion.slice(0, 100) : typeof schemaVersion
+    return {
+      ok: false,
+      ...buildDeliveryFlowError('unsupported_schema_version', 'Unsupported schema version', [
+        { path: 'schemaVersion', code: 'unsupported_schema_version', message: `Received ${received}; supported: ${supported}` },
+      ]),
+    }
+  }
+  if (exceedsDepth(input, MAX_CANONICAL_DEPTH)) {
+    return { ok: false, ...buildDeliveryFlowError('payload_too_large', 'Document is nested too deeply') }
+  }
+  const parsed = schemaMap[schemaVersion].safeParse(input)
+  if (!parsed.success) return { ok: false, ...deliveryFlowErrorFromZod(parsed.error) }
+  return { ok: true, schemaVersion, data: parsed.data } as ParseVersionedSuccess<TMap>
+}
+
+// --- Stages and templates ---------------------------------------------------
+
+export const FLOW_APPROVAL_STAGE_ORDER = ['scope', 'ux', 'key_visual', 'design_system_ui'] as const
+export const flowStageIdSchema = z.enum(FLOW_APPROVAL_STAGE_ORDER)
+export type FlowStageId = z.infer<typeof flowStageIdSchema>
+
+export const flowTemplateStageKindSchema = z.enum([
+  ...FLOW_APPROVAL_STAGE_ORDER,
+  'implementation',
+  'qa',
+  'deploy',
+  'release',
+])
+export type FlowTemplateStageKind = z.infer<typeof flowTemplateStageKindSchema>
+
+export const flowTemplateExecutorSchema = z.object({
+  kind: z.enum(['human', 'agent', 'adapter']),
+  ref: stableIdSchema.nullable(),
+})
+
+export const flowTemplateConditionSchema = z.object({
+  key: stableIdSchema,
+  operator: z.enum(['equals', 'exists']),
+  value: z.json().optional(),
+})
+
+export const flowTemplateStageSchema = z.object({
+  stageId: stableIdSchema,
+  kind: flowTemplateStageKindSchema,
+  title: shortTextSchema,
+  executor: flowTemplateExecutorSchema,
+  approverFeatures: z.array(z.string().min(1).max(200)).max(20),
+  requiresClientApproval: z.boolean(),
+  dependsOn: z.array(stableIdSchema).max(20),
+  conditions: z.array(flowTemplateConditionSchema).max(20),
+})
+export type FlowTemplateStage = z.infer<typeof flowTemplateStageSchema>
+
+function findStageCycle(stages: readonly FlowTemplateStage[]): string[] | null {
+  const edges = new Map(stages.map((stage) => [stage.stageId, stage.dependsOn]))
+  const state = new Map<string, 'visiting' | 'done'>()
+  const stack: string[] = []
+  const visit = (stageId: string): string[] | null => {
+    const current = state.get(stageId)
+    if (current === 'done') return null
+    if (current === 'visiting') return [...stack.slice(stack.indexOf(stageId)), stageId]
+    state.set(stageId, 'visiting')
+    stack.push(stageId)
+    for (const dependency of edges.get(stageId) ?? []) {
+      const cycle = visit(dependency)
+      if (cycle) return cycle
+    }
+    stack.pop()
+    state.set(stageId, 'done')
+    return null
+  }
+  for (const stage of stages) {
+    const cycle = visit(stage.stageId)
+    if (cycle) return cycle
+  }
+  return null
+}
+
+export const flowTemplateV1Schema = z
+  .object({
+    schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.flowTemplate),
+    templateId: stableIdSchema,
+    version: z.number().int().positive(),
+    title: shortTextSchema,
+    stages: z.array(flowTemplateStageSchema).min(1).max(30),
+    approvalPolicy: z.object({
+      rejectionReturnsTo: z.literal('stage_owner'),
+      staleApprovalRequiresReapproval: z.literal(true),
+    }),
+  })
+  .superRefine((template, ctx) => {
+    checkUniqueIds(ctx, template.stages.map((stage) => stage.stageId), 'stages', 'stageId')
+    const known = new Set(template.stages.map((stage) => stage.stageId))
+    template.stages.forEach((stage, stageIndex) => {
+      stage.dependsOn.forEach((dependency, dependencyIndex) => {
+        if (!known.has(dependency)) {
+          addDeliveryIssue(ctx, 'foreign_dependency', ['stages', stageIndex, 'dependsOn', dependencyIndex], `Unknown stage ${dependency}`)
+        }
+      })
+    })
+    const cycle = findStageCycle(template.stages)
+    if (cycle) addDeliveryIssue(ctx, 'cycle', ['stages'], `Stage dependency cycle: ${cycle.join(' -> ')}`)
+    for (const stageId of FLOW_APPROVAL_STAGE_ORDER) {
+      const matching = template.stages.filter((stage) => stage.kind === stageId)
+      if (matching.length !== 1) {
+        addDeliveryFlowIssue(ctx, 'stage_unknown', ['stages'], `Template must have exactly one ${stageId} stage`)
+      }
+    }
+    const approvalOrder = FLOW_APPROVAL_STAGE_ORDER as readonly string[]
+    template.stages.forEach((stage, stageIndex) => {
+      const isApprovalStage = approvalOrder.includes(stage.kind)
+      if (isApprovalStage && stage.stageId !== stage.kind) {
+        addDeliveryFlowIssue(ctx, 'stage_unknown', ['stages', stageIndex, 'stageId'], `Approval stage ${stage.kind} must use stageId ${stage.kind}`)
+      }
+      if (!isApprovalStage) return
+      stage.dependsOn.forEach((dependency, dependencyIndex) => {
+        if (approvalOrder.includes(dependency) && approvalOrder.indexOf(dependency) >= approvalOrder.indexOf(stage.kind)) {
+          addDeliveryIssue(ctx, 'foreign_dependency', ['stages', stageIndex, 'dependsOn', dependencyIndex], `${dependency} is not upstream of ${stage.kind} in the approval order`)
+        }
+      })
+    })
+  })
+export type FlowTemplateV1 = z.infer<typeof flowTemplateV1Schema>
+
+export const flowTemplateRefSchema = z.object({
+  templateId: stableIdSchema,
+  version: z.number().int().positive(),
+  hash: sha256Schema,
+})
+export type FlowTemplateRef = z.infer<typeof flowTemplateRefSchema>
+
+export const flowPinRequestSchema = z.object({
+  templateId: stableIdSchema,
+  templateVersion: z.number().int().positive(),
+})
+export type FlowPinRequest = z.infer<typeof flowPinRequestSchema>
+
+export const flowPinResponseSchema = z.object({
+  projectId: uuidSchema,
+  template: flowTemplateRefSchema,
+  pinnedAt: isoDateTimeSchema,
+  projectUpdatedAt: isoDateTimeSchema,
+})
+export type FlowPinResponse = z.infer<typeof flowPinResponseSchema>
+
+export const flowInstanceLinkSchema = z.object({
+  projectId: uuidSchema,
+  workflowInstanceId: uuidSchema,
+  definitionId: uuidSchema,
+  workflowId: z.string().min(1).max(100),
+  version: z.number().int().positive(),
+})
+export type FlowInstanceLink = z.infer<typeof flowInstanceLinkSchema>
+
+// --- Intake (brief wizard + scoping) ----------------------------------------
+
+export const intakeStepSchema = z.enum(['brief', 'scoping', 'platform', 'review', 'submitted'])
+export type IntakeStep = z.infer<typeof intakeStepSchema>
+
+const stringListSchema = z.array(shortTextSchema).max(100)
+
+export const briefV1Schema = z.object({
+  businessGoal: longTextSchema.nullable(),
+  audience: longTextSchema.nullable(),
+  problem: longTextSchema.nullable(),
+  content: longTextSchema.nullable(),
+  features: stringListSchema,
+  integrations: stringListSchema,
+  constraints: stringListSchema,
+  inspirations: z.array(z.string().min(1).max(500)).max(50),
+  materials: z.array(attachmentRefSchema).max(50),
+  unknowns: stringListSchema,
+})
+export type BriefV1 = z.infer<typeof briefV1Schema>
+
+export const intakeQuestionSchema = z.object({
+  id: stableIdSchema,
+  text: z.string().min(1).max(4000),
+  askedBy: z.enum(['agent', 'human']),
+  blocking: z.boolean(),
+  answer: z.object({ text: z.string().min(1).max(8000), answeredAt: isoDateTimeSchema }).nullable(),
+})
+export type IntakeQuestion = z.infer<typeof intakeQuestionSchema>
+
+export const platformProfileRefSchema = z.object({
+  profileId: stableIdSchema,
+  profileVersion: z.number().int().positive(),
+})
+
+export const platformRecommendationSchema = platformProfileRefSchema.extend({
+  rationale: longTextSchema,
+  alternatives: z.array(platformProfileRefSchema.extend({ reason: longTextSchema })).max(10),
+})
+export type PlatformRecommendation = z.infer<typeof platformRecommendationSchema>
+
+export const platformChoiceSchema = platformProfileRefSchema.extend({
+  chosenBy: uuidSchema,
+  chosenAt: isoDateTimeSchema,
+})
+export type PlatformChoice = z.infer<typeof platformChoiceSchema>
+
+export const toolChoiceSchema = z.object({
+  stageId: stableIdSchema,
+  kind: z.enum(['platform', 'design', 'execution', 'deploy']),
+  ref: stableIdSchema,
+  rationale: longTextSchema.nullable(),
+})
+export type ToolChoice = z.infer<typeof toolChoiceSchema>
+
+export const intakeProposalRefSchema = z.object({
+  proposalId: manifestIdSchema,
+  kind: z.enum(['scope', 'platform']),
+  contentHash: sha256Schema,
+  proposedAt: isoDateTimeSchema,
+  status: z.enum(['proposed', 'accepted', 'discarded']),
+})
+
+const intakeShape = {
+  schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.intake),
+  projectId: uuidSchema,
+  step: intakeStepSchema,
+  brief: briefV1Schema,
+  questions: z.array(intakeQuestionSchema).max(200),
+  proposals: z.array(intakeProposalRefSchema).max(50),
+  platform: z.object({
+    recommendation: platformRecommendationSchema.nullable(),
+    chosen: platformChoiceSchema.nullable(),
+  }),
+  tools: z.array(toolChoiceSchema).max(20),
+}
+
+type IntakeShapeInput = {
+  questions: readonly IntakeQuestion[]
+  proposals: readonly { proposalId: string }[]
+  tools: readonly ToolChoice[]
+}
+
+function refineIntake(intake: IntakeShapeInput, ctx: z.RefinementCtx): void {
+  checkUniqueIds(ctx, intake.questions.map((question) => question.id), 'questions', 'id')
+  checkUniqueIds(ctx, intake.proposals.map((proposal) => proposal.proposalId), 'proposals', 'proposalId')
+  checkUniqueIds(ctx, intake.tools.map((tool) => `${tool.stageId}:${tool.kind}`), 'tools', 'stageId')
+}
+
+export const intakeV1Schema = z.object(intakeShape).superRefine(refineIntake)
+export type IntakeV1 = z.infer<typeof intakeV1Schema>
+
+const { projectId: _intakeProjectId, proposals: _intakeProposals, ...intakeUpdateShape } = intakeShape
+export const intakeUpdateRequestSchema = z
+  .object(intakeUpdateShape)
+  .superRefine((intake, ctx) => refineIntake({ ...intake, proposals: [] }, ctx))
+export type IntakeUpdateRequest = z.infer<typeof intakeUpdateRequestSchema>
+
+export const intakeResponseSchema = z.object({
+  intake: intakeV1Schema,
+  targetProfile: platformProfileRefSchema,
+  updatedAt: isoDateTimeSchema,
+})
+export type IntakeResponse = z.infer<typeof intakeResponseSchema>
+
+export const scopePageSchema = z.object({ id: stableIdSchema, title: shortTextSchema, purpose: longTextSchema.nullable() })
+export const scopeKeyFlowSchema = z.object({ id: stableIdSchema, title: shortTextSchema, steps: z.array(shortTextSchema).max(30) })
+
+export const scopeContentSchema = z
+  .object({
+    summary: longTextSchema,
+    inScope: z.array(shortTextSchema).max(200),
+    outOfScope: z.array(shortTextSchema).max(200),
+    pages: z.array(scopePageSchema).max(100),
+    keyFlows: z.array(scopeKeyFlowSchema).max(50),
+    requirements: z.array(requirementSchema).max(200),
+    acceptanceCriteria: z.array(acceptanceCriterionSchema).min(1).max(500),
+    risks: z.array(proposalRiskSchema).max(100),
+    assumptions: z.array(shortTextSchema).max(100),
+    openQuestionIds: z.array(stableIdSchema).max(200),
+    platform: platformProfileRefSchema.extend({ rationale: longTextSchema }),
+    tools: z.array(toolChoiceSchema).max(20),
+  })
+  .superRefine((scope, ctx) => {
+    checkRequirementsAndCriteria(ctx, scope.requirements, scope.acceptanceCriteria)
+    checkUniqueIds(ctx, scope.pages.map((page) => page.id), 'pages', 'id')
+    checkUniqueIds(ctx, scope.keyFlows.map((flow) => flow.id), 'keyFlows', 'id')
+    checkUniqueIds(ctx, scope.risks.map((risk) => risk.id), 'risks', 'id')
+  })
+export type ScopeContent = z.infer<typeof scopeContentSchema>
+
+export const scopingProposalV1Schema = z
+  .object({
+    schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.scopingProposal),
+    projectId: uuidSchema,
+    manifestId: manifestIdSchema,
+    kind: z.enum(['scope', 'platform']),
+    questions: z.array(intakeQuestionSchema).max(100),
+    scope: scopeContentSchema.nullable(),
+    platform: platformRecommendationSchema.nullable(),
+    producedBy: z.object({ tool: shortTextSchema, sessionRef: z.string().max(300).nullable() }),
+  })
+  .superRefine((proposal, ctx) => {
+    checkUniqueIds(ctx, proposal.questions.map((question) => question.id), 'questions', 'id')
+    if (proposal.kind === 'scope' && !proposal.scope) {
+      addDeliveryIssue(ctx, 'manifest_required', ['scope'], 'A scope proposal must carry scope content')
+    }
+    if (proposal.kind === 'platform' && !proposal.platform) {
+      addDeliveryIssue(ctx, 'manifest_required', ['platform'], 'A platform proposal must carry a recommendation')
+    }
+  })
+export type ScopingProposalV1 = z.infer<typeof scopingProposalV1Schema>
+
+export const scopingProposalImportResponseSchema = z.object({
+  projectId: uuidSchema,
+  manifestId: manifestIdSchema,
+  manifestHash: sha256Schema,
+  duplicate: z.boolean(),
+  intakeUpdatedAt: isoDateTimeSchema,
+})
+
+// --- Stage artifacts and decisions -----------------------------------------
+
+export const figmaRefSchema = z.object({
+  fileKey: z.string().min(1).max(200),
+  nodeId: z.string().min(1).max(200).nullable(),
+  name: shortTextSchema,
+  figmaVersion: z.string().min(1).max(200).nullable(),
+  url: z.url().max(2000).nullable(),
+})
+export type FigmaRef = z.infer<typeof figmaRefSchema>
+
+export const designStageContentSchema = z.object({
+  summary: longTextSchema,
+  figmaRefs: z.array(figmaRefSchema).max(100),
+  screens: z.array(designScreenSchema).max(100),
+  tokens: designTokensSchema.optional(),
+  notes: longTextSchema.nullable(),
+  resolvedThreadKeys: z.array(z.string().min(1).max(200)).max(500),
+})
+export type DesignStageContent = z.infer<typeof designStageContentSchema>
+
+export const stageArtifactDependencySchema = z.object({
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+})
+export type StageArtifactDependency = z.infer<typeof stageArtifactDependencySchema>
+
+export const stageArtifactSourceSchema = z.enum(['manual', 'intake', 'agent', 'figma'])
+
+const stageArtifactBaseShape = {
+  schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.stageArtifact),
+  projectId: uuidSchema,
+  source: stageArtifactSourceSchema,
+  dependsOn: z.array(stageArtifactDependencySchema).max(3),
+  attachments: z.array(attachmentRefSchema).max(100),
+  producedBy: z.object({ tool: shortTextSchema, sessionRef: z.string().max(300).nullable() }).nullable(),
+}
+
+function checkStageDependencies(
+  ctx: z.RefinementCtx,
+  stageId: FlowStageId,
+  dependsOn: readonly StageArtifactDependency[],
+): void {
+  const ownIndex = FLOW_APPROVAL_STAGE_ORDER.indexOf(stageId)
+  checkUniqueIds(ctx, dependsOn.map((dependency) => dependency.stageId), 'dependsOn', 'stageId')
+  dependsOn.forEach((dependency, index) => {
+    if (FLOW_APPROVAL_STAGE_ORDER.indexOf(dependency.stageId) >= ownIndex) {
+      addDeliveryIssue(ctx, 'foreign_dependency', ['dependsOn', index, 'stageId'], `${dependency.stageId} is not upstream of ${stageId}`)
+    }
+  })
+}
+
+export const stageArtifactV1Schema = z
+  .discriminatedUnion('stageId', [
+    z.object({ ...stageArtifactBaseShape, stageId: z.literal('scope'), content: scopeContentSchema }),
+    z.object({ ...stageArtifactBaseShape, stageId: z.literal('ux'), content: designStageContentSchema }),
+    z.object({ ...stageArtifactBaseShape, stageId: z.literal('key_visual'), content: designStageContentSchema }),
+    z.object({ ...stageArtifactBaseShape, stageId: z.literal('design_system_ui'), content: designStageContentSchema }),
+  ])
+  .superRefine((artifact, ctx) => checkStageDependencies(ctx, artifact.stageId, artifact.dependsOn))
+export type StageArtifactV1 = z.infer<typeof stageArtifactV1Schema>
+
+export const stageArtifactRefSchema = z.object({
+  artifactId: uuidSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+})
+export type StageArtifactRef = z.infer<typeof stageArtifactRefSchema>
+
+export const stageArtifactCreateResponseSchema = z.object({
+  artifactId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+  duplicate: z.boolean(),
+  downstreamNowStale: z.array(flowStageIdSchema).max(4),
+  projectUpdatedAt: isoDateTimeSchema,
+})
+export type StageArtifactCreateResponse = z.infer<typeof stageArtifactCreateResponseSchema>
+
+export const clientApprovalEvidenceSchema = z.object({
+  kind: z.enum(['email', 'meeting', 'signed_document', 'other']),
+  reference: z.string().min(1).max(1000),
+  attachment: attachmentRefSchema.nullable(),
+  recordedAt: isoDateTimeSchema,
+})
+
+export const clientApprovalSchema = z.object({
+  approverName: z.string().trim().min(1).max(300),
+  approverRole: z.string().max(200).nullable(),
+  evidence: clientApprovalEvidenceSchema,
+})
+export type ClientApproval = z.infer<typeof clientApprovalSchema>
+
+export const stageDecisionVerdictSchema = z.enum(['approved', 'rejected'])
+export type StageDecisionVerdict = z.infer<typeof stageDecisionVerdictSchema>
+
+export const stageDecisionRequestSchema = z
+  .object({
+    artifactId: uuidSchema,
+    subjectHash: sha256Schema,
+    subjectVersion: z.number().int().positive(),
+    verdict: stageDecisionVerdictSchema,
+    reason: z.string().min(1).max(4000).nullable().optional(),
+    clientApproval: clientApprovalSchema.nullable().optional(),
+    deferredThreadKeys: z.array(z.string().min(1).max(200)).max(200).optional(),
+  })
+  .superRefine((decision, ctx) => {
+    if (decision.verdict === 'rejected' && !decision.reason) {
+      addDeliveryIssue(ctx, 'reason_required', ['reason'], 'A rejection needs a reason')
+    }
+  })
+export type StageDecisionRequest = z.infer<typeof stageDecisionRequestSchema>
+
+export const stageCurrencySchema = z.enum(['approved', 'stale', 'pending', 'rejected', 'missing'])
+export type StageCurrency = z.infer<typeof stageCurrencySchema>
+
+export const FLOW_GATE_DETAIL_CODES = ['stage_not_approved', 'stage_dependency_stale'] as const
+export type FlowGateDetailCode = (typeof FLOW_GATE_DETAIL_CODES)[number]
+
+export const stageDecisionResponseSchema = z.object({
+  decisionId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema,
+  subjectHash: sha256Schema,
+  subjectVersion: z.number().int().positive(),
+  verdict: stageDecisionVerdictSchema,
+  clientApproved: z.boolean(),
+  currency: stageCurrencySchema,
+  duplicate: z.boolean(),
+  projectUpdatedAt: isoDateTimeSchema,
+})
+export type StageDecisionResponse = z.infer<typeof stageDecisionResponseSchema>
+
+// --- Flow status (read model) ----------------------------------------------
+
+export const flowBlockerKindSchema = z.enum([
+  'template_not_pinned',
+  'intake_incomplete',
+  'artifact_missing',
+  'decision_pending',
+  'rejected',
+  'upstream_not_approved',
+  'upstream_stale',
+  'open_comments',
+  'attempt_active',
+])
+export type FlowBlockerKind = z.infer<typeof flowBlockerKindSchema>
+
+export const flowBlockerSchema = z.object({
+  kind: flowBlockerKindSchema,
+  stageId: stableIdSchema.nullable(),
+  ref: z.string().max(200).nullable(),
+})
+export type FlowBlocker = z.infer<typeof flowBlockerSchema>
+
+export const flowGateSchema = z.object({ ok: z.boolean(), blocking: z.array(flowBlockerSchema).max(200) })
+export type FlowGate = z.infer<typeof flowGateSchema>
+
+export const flowPendingApprovalSchema = z.object({
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema,
+  contentHash: sha256Schema,
+  version: z.number().int().positive(),
+  approverFeatures: z.array(z.string().min(1).max(200)).max(20),
+  clientApprovalRequired: z.boolean(),
+})
+export type FlowPendingApproval = z.infer<typeof flowPendingApprovalSchema>
+
+export const flowStageStatusSchema = z.object({
+  stageId: stableIdSchema,
+  kind: flowTemplateStageKindSchema,
+  title: shortTextSchema,
+  currency: stageCurrencySchema.nullable(),
+  currentArtifact: stageArtifactRefSchema.nullable(),
+  approvedArtifact: stageArtifactRefSchema.nullable(),
+  latestDecision: z
+    .object({ decisionId: uuidSchema, verdict: stageDecisionVerdictSchema, decidedAt: isoDateTimeSchema, clientApproved: z.boolean() })
+    .nullable(),
+  pendingApproval: flowPendingApprovalSchema.nullable(),
+  blockers: z.array(flowBlockerSchema).max(50),
+  openThreads: z.number().int().min(0),
+})
+export type FlowStageStatus = z.infer<typeof flowStageStatusSchema>
+
+export const flowNextActionSchema = z.object({
+  kind: z.enum([
+    'pin_template',
+    'complete_intake',
+    'create_artifact',
+    'approve_stage',
+    'resolve_comments',
+    'fix_rejection',
+    'dispatch',
+    'publish',
+    'release',
+    'none',
+  ]),
+  stageId: stableIdSchema.nullable(),
+})
+
+export const flowStatusV1Schema = z.object({
+  schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.flowStatus),
+  projectId: uuidSchema,
+  template: flowTemplateRefSchema.nullable(),
+  workflowInstanceId: uuidSchema.nullable(),
+  intakeStep: intakeStepSchema.nullable(),
+  currentStageId: stableIdSchema.nullable(),
+  stages: z.array(flowStageStatusSchema).max(30),
+  pendingApprovals: z.array(flowPendingApprovalSchema).max(4),
+  blockers: z.array(flowBlockerSchema).max(200),
+  gates: z.object({ dispatchable: flowGateSchema, publishable: flowGateSchema }),
+  nextAction: flowNextActionSchema,
+  updatedAt: isoDateTimeSchema,
+})
+export type FlowStatusV1 = z.infer<typeof flowStatusV1Schema>
+
+export const deliveryReportFlowSectionSchema = z.object({
+  template: flowTemplateRefSchema.nullable(),
+  stages: z
+    .array(
+      z.object({
+        stageId: flowStageIdSchema,
+        currency: stageCurrencySchema,
+        approvedArtifact: stageArtifactRefSchema.nullable(),
+        decisionId: uuidSchema.nullable(),
+        clientApproved: z.boolean(),
+      }),
+    )
+    .max(4),
+  gate: flowGateSchema,
+})
+export type DeliveryReportFlowSection = z.infer<typeof deliveryReportFlowSectionSchema>
+
+// --- Staff Kanban link and comment import ----------------------------------
+
+const externalKeySchema = z.string().min(1).max(200)
+
+export const staffLinkRequestSchema = z.object({ staffProjectId: uuidSchema })
+export type StaffLinkRequest = z.infer<typeof staffLinkRequestSchema>
+
+export const staffSyncCursorSchema = z.object({
+  cursor: z.string().max(500).nullable(),
+  lastSyncAt: isoDateTimeSchema.nullable(),
+  lastError: z.string().max(1000).nullable(),
+})
+
+export const staffLinkSchema = z.object({
+  projectId: uuidSchema,
+  staffProjectId: uuidSchema,
+  linkedBy: uuidSchema,
+  linkedAt: isoDateTimeSchema,
+  syncCursors: z.record(z.string().min(1).max(200), staffSyncCursorSchema),
+  updatedAt: isoDateTimeSchema,
+})
+export type StaffLink = z.infer<typeof staffLinkSchema>
+
+export const commentAuthorSchema = z.object({
+  name: z.string().trim().min(1).max(300),
+  externalId: z.string().max(200).nullable(),
+  email: z.string().max(320).nullable(),
+})
+export type CommentAuthor = z.infer<typeof commentAuthorSchema>
+
+export const commentReplySchema = z.object({
+  commentKey: externalKeySchema,
+  author: commentAuthorSchema,
+  body: z.string().min(1).max(20000),
+  createdAt: isoDateTimeSchema,
+  editedAt: isoDateTimeSchema.nullable(),
+  deleted: z.boolean(),
+})
+export type CommentReply = z.infer<typeof commentReplySchema>
+
+export const commentThreadSchema = z
+  .object({
+    threadKey: externalKeySchema,
+    nodeId: z.string().min(1).max(200).nullable(),
+    sourceUrl: z.url().max(2000),
+    author: commentAuthorSchema,
+    body: z.string().min(1).max(20000),
+    createdAt: isoDateTimeSchema,
+    updatedAt: isoDateTimeSchema.nullable(),
+    status: z.enum(['open', 'resolved', 'deleted']),
+    figmaVersion: z.string().min(1).max(200).nullable(),
+    replies: z.array(commentReplySchema).max(500),
+  })
+  .superRefine((thread, ctx) => {
+    checkUniqueIds(ctx, thread.replies.map((reply) => reply.commentKey), 'replies', 'commentKey')
+  })
+export type CommentThread = z.infer<typeof commentThreadSchema>
+
+export const commentImportBatchV1Schema = z
+  .object({
+    schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.commentImport),
+    projectId: uuidSchema,
+    source: z.literal('figma'),
+    fileKey: z.string().min(1).max(200),
+    stageId: flowStageIdSchema,
+    artifactId: uuidSchema.nullable(),
+    fetchedAt: isoDateTimeSchema,
+    cursor: z.object({ after: z.string().max(500).nullable(), next: z.string().max(500).nullable() }),
+    threads: z.array(commentThreadSchema).max(200),
+  })
+  .superRefine((batch, ctx) => {
+    checkUniqueIds(ctx, batch.threads.map((thread) => thread.threadKey), 'threads', 'threadKey')
+  })
+export type CommentImportBatchV1 = z.infer<typeof commentImportBatchV1Schema>
+
+export const commentImportOutcomeSchema = z.enum(['created', 'updated', 'unchanged', 'skipped'])
+
+export const commentImportResultSchema = z.object({
+  projectId: uuidSchema,
+  fileKey: z.string().min(1).max(200),
+  stageId: flowStageIdSchema,
+  cursor: z.object({ after: z.string().max(500).nullable(), next: z.string().max(500).nullable() }),
+  counts: z.object({
+    threadsCreated: z.number().int().min(0),
+    threadsUpdated: z.number().int().min(0),
+    repliesCreated: z.number().int().min(0),
+    repliesUpdated: z.number().int().min(0),
+    skipped: z.number().int().min(0),
+  }),
+  threads: z
+    .array(
+      z.object({
+        threadKey: externalKeySchema,
+        threadId: uuidSchema,
+        staffTaskId: uuidSchema,
+        versionConfirmed: z.boolean(),
+        outcome: commentImportOutcomeSchema,
+        replies: z
+          .array(z.object({ commentKey: externalKeySchema, staffCommentId: uuidSchema.nullable(), outcome: commentImportOutcomeSchema }))
+          .max(500),
+      }),
+    )
+    .max(200),
+  replayed: z.boolean(),
+})
+export type CommentImportResult = z.infer<typeof commentImportResultSchema>
+
+export const commentThreadTriageStatusSchema = z.enum(['new', 'triaged', 'deferred', 'resolved'])
+
+export const commentThreadTriageRequestSchema = z
+  .object({
+    triageStatus: commentThreadTriageStatusSchema,
+    deferral: z
+      .object({ artifactId: uuidSchema, contentHash: sha256Schema, reason: z.string().min(1).max(4000) })
+      .nullable()
+      .optional(),
+    linkedDeliveryTaskId: uuidSchema.nullable().optional(),
+  })
+  .superRefine((triage, ctx) => {
+    if (triage.triageStatus === 'deferred' && !triage.deferral) {
+      addDeliveryIssue(ctx, 'reason_required', ['deferral'], 'A deferral must name the artifact version and a reason')
+    }
+  })
+export type CommentThreadTriageRequest = z.infer<typeof commentThreadTriageRequestSchema>
+
+// --- Publication result ----------------------------------------------------
+
+export const publicationTargetSchema = z.object({
+  kind: z.enum(['wordpress', 'static', 'preview']),
+  environment: z.string().min(1).max(100),
+  ref: z.string().min(1).max(500),
+})
+
+export const publicationVerificationSchema = z
+  .object({
+    status: z.enum(['verified', 'unverified']),
+    method: z.enum(['http', 'browser', 'manual']).nullable(),
+    checkedAt: isoDateTimeSchema.nullable(),
+    httpStatus: z.number().int().min(100).max(599).nullable(),
+    evidenceId: uuidSchema.nullable(),
+  })
+  .superRefine((verification, ctx) => {
+    if (verification.status !== 'verified') return
+    if (!verification.checkedAt || !verification.evidenceId || !verification.method) {
+      addDeliveryIssue(ctx, 'deployment_unverified', ['verification'], 'A verified publication needs method, checkedAt and evidenceId')
+    }
+  })
+
+export const publicationResultV1Schema = z.object({
+  schemaVersion: z.literal(DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult),
+  projectId: uuidSchema,
+  baselineId: uuidSchema,
+  sourceRevision: sourceRevisionSchema,
+  snapshotRef: attachmentRefSchema.nullable(),
+  target: publicationTargetSchema,
+  url: z.url().max(2000),
+  deployDecisionId: uuidSchema,
+  publishedAt: isoDateTimeSchema,
+  publishedBy: uuidSchema.nullable(),
+  verification: publicationVerificationSchema,
+  releaseDecisionId: uuidSchema.nullable(),
+})
+export type PublicationResultV1 = z.infer<typeof publicationResultV1Schema>
+
+export const publicationRecordResponseSchema = z.object({
+  publicationId: uuidSchema,
+  deploymentEvidenceId: uuidSchema,
+  duplicate: z.boolean(),
+})
+
+export const deliveryFlowDocumentSchemas = {
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.intake]: intakeV1Schema,
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.scopingProposal]: scopingProposalV1Schema,
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.flowTemplate]: flowTemplateV1Schema,
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.stageArtifact]: stageArtifactV1Schema,
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.commentImport]: commentImportBatchV1Schema,
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.flowStatus]: flowStatusV1Schema,
+  [DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult]: publicationResultV1Schema,
+} as const

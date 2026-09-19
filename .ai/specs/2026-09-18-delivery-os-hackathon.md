@@ -379,6 +379,197 @@ QA owns the Playwright specs (`packages/core/src/modules/delivery_os/__integrati
 
 Enterprise flows (`/api/delivery_agents/*`, worker delivery, workflow resume) are covered by `TC-DELIVERY-EXEC-*` in the enterprise spec.
 
+## Flow delta v1 (FLOW-F0)
+
+**Status: contract published, nothing implemented.** This section is the versioned delta the
+[project-flow addendum](2026-09-19-delivery-project-flow-addendum.md) requires (F0 deliverable). It is strictly
+additive on top of the frozen v1 contract above. Executable schemas: `lib/contracts.ts` (block "Flow delta v1"),
+pure rules: `lib/flowRules.ts`, built-in default template: `lib/flowTemplates.ts`, fixtures: `lib/fixtures/flow/`
+(import `@open-mercato/core/modules/delivery_os/lib/fixtures/flow/index`). Hand-over for the other owners:
+`context/changes/delivery-os-oss-domain/handover/FLOW-F0-contracts.md`. Routes, commands, entities, migrations,
+ACL features and events named below land in F1–F4; until then the routes answer 404.
+
+### v1 boundary (what stays frozen)
+
+- `DELIVERY_CONTRACT_VERSION = 1`, `DELIVERY_SCHEMA_VERSIONS`, `deliveryDocumentSchemas`, `deliveryErrorCodes`
+  (54 codes, pinned by `lib/__tests__/contracts.test.ts`), routes R1–R22 and their bodies, decision kinds
+  `requirements | design | deploy | release` with subject types `baseline | deployment_evidence`, the five v1 tables,
+  event ids, ACL feature ids, DI keys, the spot id and the widget context — unchanged, byte for byte.
+- The legacy `design` decision keeps its meaning (screens + tokens of a v1 baseline). UX / Key Visual / DS-UI are
+  **new** stage decisions in a **new** table; nothing folds three client consents into one row.
+- For a flow-pinned project the v1 baseline decisions are still required for dispatch (`baseline_not_approved`,
+  `baseline_not_active` at `commands/tasks.ts`, `commands/attempts.ts`). The flow gate is layered on top, never
+  instead. Legacy projects (no pinned template) keep exactly the v1 behaviour (FLOW-08).
+- The target profile stays immutable after creation (v1). Scope may only confirm it (`422 target_profile_frozen`).
+- Flow codes live in `deliveryFlowErrorCodes` (+ `deliveryAllErrorCodes`, `deliveryFlowErrorBodySchema`,
+  `buildDeliveryFlowError`, `deliveryFlowErrorFromZod`, `parseFlowVersioned`) so the v1 error enum is untouched.
+  A flow route answers the v1 body shape `{ error, code, details[] }` with a code from either table.
+
+### Flow contracts (`DELIVERY_FLOW_CONTRACT_VERSION = 1`)
+
+| Contract | `schemaVersion` | Key fields (schema export) |
+|---|---|---|
+| `FlowTemplate v1` | `delivery.flow-template/v1` | `templateId, version, title, stages[{ stageId, kind: scope\|ux\|key_visual\|design_system_ui\|implementation\|qa\|deploy\|release, title, executor { kind: human\|agent\|adapter, ref }, approverFeatures[], requiresClientApproval, dependsOn[], conditions[] }], approvalPolicy` — unique stage ids, known dependencies, acyclic, exactly one stage per approval kind whose `stageId` equals its `kind`, and an approval stage may depend only on approval stages upstream of it in the fixed order (`422 foreign_dependency`) (`flowTemplateV1Schema`); `hashFlowTemplate()` = sha256 of canonical JSON, so any config change (conditions, approvers, client flag, executor) changes the hash |
+| `Intake v1` | `delivery.intake/v1` | `projectId, step: brief\|scoping\|platform\|review\|submitted, brief { businessGoal, audience, problem, content, features[], integrations[], constraints[], inspirations[], materials[AttachmentRef], unknowns[] }, questions[{ id, text, askedBy: agent\|human, blocking, answer { text, answeredAt } \| null }], proposals[{ proposalId, kind: scope\|platform, contentHash, proposedAt, status }], platform { recommendation { profileId, profileVersion, rationale, alternatives[] } \| null, chosen { profileId, profileVersion, chosenBy, chosenAt } \| null }, tools[{ stageId, kind: platform\|design\|execution\|deploy, ref, rationale }]` (`intakeV1Schema`; PUT body = `intakeUpdateRequestSchema` without `projectId` and without the server-owned `proposals`; response `intakeResponseSchema { intake, targetProfile, updatedAt }`) |
+| `ScopingProposal v1` | `delivery.scoping-proposal/v1` | `projectId, manifestId, kind: scope\|platform, questions[], scope: ScopeContent \| null, platform: recommendation \| null, producedBy { tool, sessionRef }`; `kind` demands its content (`422 manifest_required`) (`scopingProposalV1Schema`) |
+| `ScopeContent` | — | `summary, inScope[], outOfScope[], pages[{ id, title, purpose }], keyFlows[{ id, title, steps[] }], requirements[] (v1 `Requirement`), acceptanceCriteria[] (v1 `AcceptanceCriterion`, ≥ 1, ids resolve), risks[] (v1 `ProposalRisk`), assumptions[], openQuestionIds[], platform { profileId, profileVersion, rationale }, tools[]` (`scopeContentSchema`) |
+| `StageArtifact v1` | `delivery.stage-artifact/v1` | discriminated on `stageId`: `scope` → `content: ScopeContent`; `ux \| key_visual \| design_system_ui` → `content: DesignStageContent { summary, figmaRefs[{ fileKey, nodeId, name, figmaVersion, url }], screens[] (v1 `DesignScreen`), tokens?, notes, resolvedThreadKeys[] }`; common `projectId, source: manual\|intake\|agent\|figma, dependsOn[{ stageId, artifactId, version, contentHash }] (≤ 3, unique, strictly upstream in the fixed order scope → ux → key_visual → design_system_ui, else `422 foreign_dependency`), attachments[], producedBy` (`stageArtifactV1Schema`); response `stageArtifactCreateResponseSchema { artifactId, projectId, stageId, version, contentHash, duplicate, downstreamNowStale[], projectUpdatedAt }` |
+| `StageDecisionRequest` | — | `{ artifactId, subjectHash, subjectVersion, verdict: approved\|rejected, reason? (required on reject → `422 reason_required`), clientApproval? { approverName, approverRole, evidence { kind: email\|meeting\|signed_document\|other, reference, attachment, recordedAt } }, deferredThreadKeys?[] }` (`stageDecisionRequestSchema`); response `stageDecisionResponseSchema { decisionId, projectId, stageId, artifactId, subjectHash, subjectVersion, verdict, clientApproved, currency, duplicate, projectUpdatedAt }` |
+| `FlowStatus v1` | `delivery.flow-status/v1` | `projectId, template { templateId, version, hash } \| null, workflowInstanceId, intakeStep, currentStageId, stages[{ stageId, kind, title, currency: approved\|stale\|pending\|rejected\|missing \| null, currentArtifact, approvedArtifact, latestDecision, pendingApproval { artifactId, contentHash, version, approverFeatures[], clientApprovalRequired } \| null, blockers[], openThreads }], pendingApprovals[], blockers[{ kind: template_not_pinned\|intake_incomplete\|artifact_missing\|decision_pending\|rejected\|upstream_not_approved\|upstream_stale\|open_comments\|attempt_active, stageId, ref }], gates { dispatchable, publishable } (`flowGateSchema { ok, blocking[] }`), nextAction { kind, stageId }, updatedAt` (`flowStatusV1Schema`) |
+| `StaffLink` | — | request `{ staffProjectId }` (`staffLinkRequestSchema`); response `staffLinkSchema { projectId, staffProjectId, linkedBy, linkedAt, syncCursors { [fileKey]: { cursor, lastSyncAt, lastError } }, updatedAt }` |
+| `CommentImportBatch v1` | `delivery.comment-import/v1` | `projectId, source: 'figma', fileKey, stageId, artifactId \| null, fetchedAt, cursor { after, next }, threads[{ threadKey, nodeId, sourceUrl, author { name, externalId, email }, body (≤ 20000), createdAt, updatedAt, status: open\|resolved\|deleted, figmaVersion \| null, replies[{ commentKey, author, body, createdAt, editedAt, deleted }] }]` — unique `threadKey` per batch and `commentKey` per thread (`422 duplicate_stable_id`) (`commentImportBatchV1Schema`); result `commentImportResultSchema { projectId, fileKey, stageId, cursor, counts { threadsCreated, threadsUpdated, repliesCreated, repliesUpdated, skipped }, threads[{ threadKey, threadId, staffTaskId, versionConfirmed, outcome, replies[{ commentKey, staffCommentId, outcome }] }], replayed }` |
+| `CommentThreadTriageRequest` | — | `{ triageStatus: new\|triaged\|deferred\|resolved, deferral { artifactId, contentHash, reason } (required when deferred), linkedDeliveryTaskId }` (`commentThreadTriageRequestSchema`) |
+| `PublicationResult v1` | `delivery.publication-result/v1` | `projectId, baselineId, sourceRevision (v1), snapshotRef (AttachmentRef \| null), target { kind: wordpress\|static\|preview, environment, ref }, url, deployDecisionId, publishedAt, publishedBy, verification { status: verified\|unverified, method: http\|browser\|manual, checkedAt, httpStatus, evidenceId }, releaseDecisionId`; `verified` needs method + checkedAt + evidenceId (`422 deployment_unverified`) (`publicationResultV1Schema`); response `publicationRecordResponseSchema { publicationId, deploymentEvidenceId, duplicate }` |
+| `DeliveryReportFlowSection` | — (optional `flow` key of the R22 answer from F3) | `{ template, stages[{ stageId, currency, approvedArtifact, decisionId, clientApproved }], gate }` (`deliveryReportFlowSectionSchema`); `deliveryReportV1Schema` itself is untouched — the route spreads `.extend({ flow: … .optional() })` |
+| `FlowPinRequest` / `FlowPinResponse` / `FlowInstanceLink` | — | `{ templateId, templateVersion }` → `{ projectId, template { templateId, version, hash }, pinnedAt, projectUpdatedAt }`; internal link `{ projectId, workflowInstanceId, definitionId, workflowId, version }` |
+
+Additive error codes (`deliveryFlowErrorCodes`): `target_profile_frozen 422`, `flow_already_pinned 409`,
+`flow_not_pinned 422`, `unknown_flow_template 422`, `flow_template_hash_mismatch 422`, `stage_unknown 422`,
+`stage_not_approved 422`, `stage_dependency_stale 422`, `stage_artifact_stale 409`, `client_approval_required 422`,
+`blocking_comments_open 422`, `staff_link_required 422`, `intake_step_invalid 422`, `sync_cursor_conflict 409`.
+v1 codes reused: `not_found` (foreign or missing, no oracle), `optimistic_lock_required/conflict`,
+`idempotency_key_required/conflict`, `validation_failed`, `unsupported_schema_version`, `foreign_reference`,
+`foreign_dependency`, `duplicate_stable_id`, `cycle`, `reason_required`, `manifest_required`, `subject_hash_mismatch`,
+`attempt_active`, `reconciliation_required`, `deployment_unverified`, `deploy_decision_missing`, `revision_mismatch`.
+
+### Additive data models
+
+Common columns as in v1 (`id`, `tenant_id`, `organization_id`, `created_at`); every read/write filters by both
+scope columns from the session; FK ids only, no ORM relations (staff and workflows are linked by id + snapshot).
+
+| Table / columns | Kind | Notes |
+|---|---|---|
+| `delivery_projects` + `flow_template_id text null`, `flow_template_version int null`, `flow_template_hash text null`, `flow_template_snapshot jsonb null` (`FlowTemplate v1`), `flow_pinned_at timestamptz null`, `flow_workflow_instance_id uuid null`, `flow_workflow_definition_id uuid null` | additive columns | all nullable; `NULL` = legacy project (not gated). Pin is write-once. Index `(tenant_id, organization_id, flow_template_id, flow_template_version)` |
+| `delivery_intakes` — `project_id`, `schema_version`, `step`, `brief jsonb` **(PII, encrypted)**, `questions jsonb` **(PII: free-text answers, encrypted)**, `proposals jsonb`, `platform jsonb`, `tools jsonb`, `imported_manifests jsonb` (`[{ manifestId, manifestHash }]`), `updated_at`, `created_by` | editable, optimistic lock on **its own** `updated_at` | unique `(tenant_id, organization_id, project_id)`; created lazily on first PUT / first proposal import |
+| `delivery_flow_stage_artifacts` — `project_id`, `stage_id`, `version`, `content_hash`, `source`, `content jsonb`, `depends_on jsonb`, `attachment_ids jsonb`, `template_hash` (hash pinned at creation), `created_by` | append-only | unique `(tenant_id, organization_id, project_id, stage_id, version)` and `(…, project_id, stage_id, content_hash)` (identical content → existing row, `duplicate: true`); attachments verified like v1 baselines |
+| `delivery_flow_stage_decisions` — `project_id`, `stage_id`, `artifact_id`, `subject_hash`, `subject_version`, `verdict`, `reason`, `actor_user_id`, `decided_at`, `client_approver_name text null` **(PII, encrypted)**, `client_approver_role`, `client_approval_evidence jsonb null` **(PII, encrypted)**, `deferred_thread_keys jsonb`, `template_hash`, `idempotency_key text`, `request_hash text` | append-only | index `(tenant_id, organization_id, project_id, stage_id, decided_at)`; unique `(tenant_id, organization_id, project_id, idempotency_key)` — the row stores the caller's `Idempotency-Key` and the sha256 of the canonical request body, so a replay is found by key (same hash → `duplicate`, other hash → `409 idempotency_conflict`) and a genuine new decision by the same actor (approve → reject → approve) is a new row |
+| `delivery_staff_links` — `project_id`, `staff_project_id`, `linked_by`, `linked_at`, `sync_cursors jsonb`, `updated_at` | editable, optimistic lock (project) | unique `(tenant_id, organization_id, project_id)` and `(tenant_id, organization_id, staff_project_id)` |
+| `delivery_comment_threads` — `project_id`, `source`, `file_key`, `thread_key`, `stage_id`, `artifact_id uuid null`, `node_id`, `source_url`, `author jsonb` **(PII, encrypted)**, `body text` **(PII, encrypted)**, `source_created_at`, `source_updated_at`, `source_status`, `figma_version text null`, `version_confirmed bool`, `fetched_at`, `staff_task_id uuid`, `triage_status`, `deferral jsonb null` (`{ artifactId, contentHash, reason, decidedBy, decidedAt }`), `linked_delivery_task_id uuid null`, `updated_at` | editable (sync + triage state; content is versioned by `revision` rows below) | unique `(tenant_id, organization_id, project_id, source, file_key, thread_key)`; index `(tenant_id, organization_id, staff_task_id)` |
+| `delivery_comment_replies` — `thread_id`, `comment_key`, `revision int`, `author jsonb` **(PII, encrypted)**, `body text` **(PII, encrypted)**, `source_created_at`, `edited_at`, `deleted bool`, `staff_comment_id uuid null`, `fetched_at` | append-only (an edit is a new `revision`) | unique `(tenant_id, organization_id, thread_id, comment_key, revision)` |
+| `delivery_publications` — `project_id`, `baseline_id`, `source_revision jsonb`, `snapshot_ref jsonb`, `target jsonb`, `url`, `deploy_decision_id`, `deployment_evidence_id`, `verification jsonb`, `published_at`, `published_by`, `payload_hash` | append-only | unique `(tenant_id, organization_id, project_id, payload_hash)` |
+
+**Encryption map** (`delivery_os/encryption.ts`, `defaultEncryptionMaps`, read through `findWithDecryption` /
+`findOneWithDecryption`): `delivery_os:delivery_intake` → `brief`, `questions`; `delivery_os:delivery_flow_stage_decision`
+→ `client_approver_name`, `client_approval_evidence`; `delivery_os:delivery_comment_thread` → `author`, `body`;
+`delivery_os:delivery_comment_reply` → `author`, `body`. Hashes (`content_hash`, `payload_hash`) are computed over the
+plaintext canonical JSON before encryption, so they stay comparable. Broadcast event payloads carry ids only, never a
+brief, a comment body or an approver name.
+
+**Migration plan (F1/F2, additive):** one migration per phase generated with `yarn db:generate`, keeping only the
+`delivery_*` DDL and the module snapshot; F1 = project columns + `delivery_intakes` + the two stage tables; F2 =
+`delivery_staff_links`, `delivery_comment_threads`, `delivery_comment_replies`; F4 = `delivery_publications`.
+Existing rows are untouched; no backfill; local apply needs the usual consent.
+
+### Operations (F1 … F15)
+
+Base path `/api/delivery_os`. Every route: `requireAuth` + the feature below, `openApi` export, mutation guard on
+writes, tenant/org from the session only (a body value is ignored), foreign or missing record → `404 not_found`.
+**Lock** = `x-om-ext-optimistic-lock-expected-updated-at` of the named record (`428`/`409` as in v1). **Replay before
+lock** for idempotent operations. Routes with a `:stageId` path segment check it against the pinned template **before**
+parsing the body (`422 stage_unknown`); an unknown `stageId` inside a body is a shape error (`400 validation_failed`,
+fixture `negative/stage-artifact.unknown-stage`). New ACL features (additive, `dependsOn: ['delivery_os.projects.view']`):
+`delivery_os.flow.manage` (pin, link instance, staff link), `delivery_os.stages.approve` (stage decisions),
+`delivery_os.comments.import` (comment import, triage). `admin` → all; `employee` → `comments.import`.
+
+| # | Method + path / command id | Feature | Request → success | Lock | Idempotency | Errors (beyond 400/403/404) | OpenAPI |
+|---|---|---|---|---|---|---|---|
+| F1 | `GET /projects/:id/intake` | projects.view | → `200 IntakeResponse` (empty default intake with `step: 'brief'` when none exists; `updatedAt` = intake row or project `createdAt`) | — | read | — | `intakeResponseSchema` |
+| F2 | `PUT /projects/:id/intake` · `delivery_os.intake.update` | projects.manage | `IntakeUpdateRequest` (the whole draft **without** `proposals` — proposal references are server-owned, written only by F3 and kept from the stored row; a `proposals` key in the body is stripped) → `200 IntakeResponse` | **intake** `updatedAt`, required (first write: header = the `updatedAt` from F1) | lock only; body is the whole draft (wizard autosave) | 409 `optimistic_lock_conflict`; 422 `target_profile_frozen` (`platform.chosen` ≠ project profile), `intake_step_invalid` (`submitted` while blocking questions unanswered or no `chosen`), `duplicate_stable_id`, `attachment_scope_mismatch` | `intakeUpdateRequestSchema` |
+| F3 | `POST /projects/:id/intake/proposals` · `delivery_os.intake.import_proposal` | results.import | `ScopingProposal v1` → `201 { projectId, manifestId, manifestHash, duplicate: false, intakeUpdatedAt }`; same `manifestId` + same hash → `200 duplicate: true` (resume never duplicates questions/proposals) | intake, required (checked after replay) | `manifestId` + manifest hash | 409 `idempotency_conflict` (same id, other hash); 422 `unsupported_schema_version`, `foreign_reference` (`projectId` ≠ path), `manifest_required`, `target_profile_frozen` (platform recommendation may differ — it is stored; only `chosen` is checked) | `scopingProposalV1Schema` / `scopingProposalImportResponseSchema` |
+| F4 | `POST /projects/:id/flow/pin` · `delivery_os.flow.pin` | flow.manage | `FlowPinRequest` → `201 FlowPinResponse`; template resolved through DI `deliveryFlowTemplateProvider` (OSS default: built-in `delivery-default@1`; Marcin's workflows-backed provider overrides it), snapshot + hash stored on the project | project, required | write-once: same template again → `200` same body; another → `409 flow_already_pinned` | 422 `unknown_flow_template`, `flow_template_hash_mismatch` (provider hash ≠ computed) | `flowPinRequestSchema` / `flowPinResponseSchema` |
+| F5 | `delivery_os.flow.link_instance` (internal command, trusted execution like `attempts.link_workflow`) | — (issued `trustedExecution`) | `FlowInstanceLink` → `{ projectId, workflowInstanceId }` | project row lock in tx | same instance id → no-op; different → `409 flow_already_pinned` | 422 `flow_not_pinned` | not exposed over HTTP |
+| F6 | `GET /projects/:id/flow` | projects.view | → `200 FlowStatus v1` computed by `computeStageCurrency` + `checkFlowGate` + open-thread counts; legacy project → `template: null`, top-level `blockers: [template_not_pinned]` (informational), both gates `{ ok: true, blocking: [] }` because v1 gates still apply through R22 (`flowGateBlockers(null)` feeds the top-level list, `checkFlowGate(null)` the gates) | — | read | — | `flowStatusV1Schema` |
+| F7 | `POST /projects/:id/stages/:stageId/artifacts` · `delivery_os.stages.create_artifact` | `source: manual\|intake` → projects.manage; `agent\|figma` → results.import | `StageArtifact v1` (path `stageId` must equal body) → `201 StageArtifactCreateResponse`; identical content → `200 duplicate: true` | project, required (after replay) | content hash per stage | 409 `attempt_active` (active or reconciliation-required attempt on the project — stop/reconcile first), `stage_artifact_stale` (`If-Match`-style: body `dependsOn` names an upstream artifact that is not the upstream stage's **current** artifact); 422 `stage_unknown`, `flow_not_pinned`, `foreign_reference` (artifact of another project), `foreign_dependency`, `stage_not_approved` (upstream not approved/current), `stage_dependency_stale`, `target_profile_frozen` (scope `platform` ≠ project), `unknown_ac`, `attachment_*` | `stageArtifactV1Schema` / `stageArtifactCreateResponseSchema` |
+| F8 | `POST /projects/:id/stages/:stageId/decisions` · `delivery_os.stages.decide` | stages.approve (+ the stage's `approverFeatures` from the pinned snapshot) | `StageDecisionRequest` + header `Idempotency-Key` → `201 StageDecisionResponse`; replay of the same key + same body hash → `200 duplicate: true` (no row) | project, required (after replay) | `Idempotency-Key` + request-body hash, exactly as F11; a new key always writes a new row (latest decision wins, so approve → reject → approve works) | 400 `idempotency_key_required`; 409 `idempotency_conflict` (same key, other body), `subject_hash_mismatch` (hash/version ≠ artifact), `stage_artifact_stale` (artifact is no longer the stage's current version); 422 `stage_not_approved` (upstream), `stage_dependency_stale`, `client_approval_required` (template `requiresClientApproval` and verdict `approved` without `clientApproval`), `blocking_comments_open` (open, un-triaged thread on this artifact not listed in `deferredThreadKeys`), `reason_required` | `stageDecisionRequestSchema` / `stageDecisionResponseSchema` |
+| F9 | `GET /projects/:id/stages/:stageId/artifacts`, `GET …/decisions` | projects.view | → `200 { items, total }` newest first (history is never deleted) | — | read | 422 `stage_unknown` | list schemas exported in F1 (`stageArtifactListResponseSchema`, `stageDecisionListResponseSchema`) |
+| F10 | `PUT /projects/:id/staff-link` · `delivery_os.staff.link` | flow.manage | `StaffLinkRequest` → `200 StaffLink`; server resolves the caller's staff access through DI `timeTrackingAccessResolver.resolveProjectAccess` and accepts the id only when `canManageAll` or `projectIds` contains it (no staff import) | project, required | same `staffProjectId` → `200` unchanged | 404 `not_found` (staff project foreign or inaccessible — no oracle), 409 `optimistic_lock_conflict`; `GET /projects/:id/staff-link` reads | `staffLinkRequestSchema` / `staffLinkSchema` |
+| F11 | `POST /projects/:id/comment-imports` · `delivery_os.comments.import` | comments.import | `CommentImportBatch v1` + header `Idempotency-Key` → `201 CommentImportResult`; replay of the same key + same batch hash → `200 replayed: true` | — (per-thread row locks inside the tx) | batch key + per-thread unique keys (see rules below) | 400 `idempotency_key_required`; 409 `idempotency_conflict`, `sync_cursor_conflict` (`cursor.after` ≠ stored cursor for the file — a parallel import already advanced it; caller refetches); 422 `staff_link_required`, `stage_unknown`, `foreign_reference` (`artifactId`/`projectId`), `duplicate_stable_id`, `payload_too_large` | `commentImportBatchV1Schema` / `commentImportResultSchema` |
+| F12 | `GET /projects/:id/comment-threads?stageId=&status=&triage=` | projects.view | → `200 { items[{ threadId, threadKey, stageId, artifactId, sourceUrl, author, body, sourceStatus, triageStatus, deferral, staffTaskId, linkedDeliveryTaskId, versionConfirmed, figmaVersion, fetchedAt, replies[], updatedAt }], total }` | — | read | — | `commentThreadListResponseSchema` exported in F2 |
+| F13 | `POST /projects/:id/comment-threads/:threadId/triage` · `delivery_os.comments.triage` | comments.import | `CommentThreadTriageRequest` → `200 { threadId, triageStatus, updatedAt }` | **thread** `updatedAt`, required | lock only | 409 `optimistic_lock_conflict`; 422 `foreign_reference` (`deferral.artifactId` / `linkedDeliveryTaskId` of another project), `hash_mismatch` (`deferral.contentHash` ≠ artifact), `reason_required` | `commentThreadTriageRequestSchema` |
+| F14 | `POST /projects/:id/publications` · `delivery_os.publications.record` | results.import | `PublicationResult v1` → `201 PublicationRecordResponse`; the command records a v1 `deployment` evidence row from the same payload (so R22 and R21 keep working unchanged) | project, required (after replay) | payload hash | 422 `deploy_decision_missing` (no approved deploy decision for `baselineId` + `sourceRevision`), `revision_mismatch` (`deployDecisionId` bound to another revision), `stage_not_approved` (flow gate, pinned projects), `deployment_unverified` (schema), `foreign_reference`; `GET /projects/:id/publications` lists | `publicationResultV1Schema` / `publicationRecordResponseSchema` |
+| F15 | R22 `GET /projects/:id/report` (existing) | projects.view | answer gains optional `flow: DeliveryReportFlowSection` for pinned projects; absent for legacy projects | — | read | — | `deliveryReportV1Schema.extend({ flow: deliveryReportFlowSectionSchema.optional() })` |
+
+**Server-side gate (D5).** `lib/flowRules.ts#checkFlowGate(computeStageCurrency(...))` runs inside the existing
+commands for a pinned project: `delivery_os.tasks.update` → `ready` (`commands/tasks.ts`, next to
+`baseline_not_approved`), `delivery_os.attempts.reserve` in **both** modes (`commands/attempts.ts`, before the
+attempt register is touched), `delivery_os.decisions.record` kind `deploy` (`commands/decisions.ts`, next to
+`checkDeployConsent`) and F14. On the **v1 routes** (R10/R12 `ready`, R14 reserve, R20 deploy) the refusal keeps the frozen
+v1 code `422 baseline_not_approved` (`checkFlowGate(states, stages, { v1Compatible: true })`) so v1 clients that
+validate error bodies with `deliveryErrorBodySchema` keep parsing; the stage detail lives in `details[]` with one entry
+per stage (`path: stages.<id>`, `code: stage_not_approved | stage_dependency_stale` — the two `FLOW_GATE_DETAIL_CODES`,
+`message` carries the currency). The **new flow routes** (F14, and F6/F8 when they refuse for upstream reasons) answer
+`422 stage_not_approved` with the same `details[]`. Old endpoints therefore cannot bypass the new approvals. The v1
+report gates `publishable` / `releasable` and their `reportGateBlockerSchema.kind` enum stay untouched; stage blockers
+appear only inside the optional `flow.gate` section (`deliveryReportFlowSectionSchema`) that F15 adds for pinned
+projects, so an R22 answer still parses for every v1 client.
+
+**Currency (D6, executable now).** Per approval stage, from the pinned template + artifact rows + decision rows:
+`missing` (no artifact) → `pending` (current artifact has no decision, or the stage needs client approval and the
+approval carries none) → `rejected` (latest decision on the current artifact is a rejection) → `approved` only when
+every template upstream is itself `approved` **and** the artifact's `dependsOn` binds that upstream's **current**
+hash; otherwise `stale` (`upstream_not_approved` / `upstream_stale` blockers). A new upstream version therefore
+downgrades every dependant to `stale` without touching any row; re-approval requires a new dependant artifact bound to
+the new hash. Fixture proof: `lib/__tests__/flowContracts.test.ts`.
+
+**Comment import rules (D8–D10, FLOW-03/04).**
+- Identity: `(tenant, organization, project, source, fileKey, threadKey)` for a thread, `(thread, commentKey, revision)`
+  for a reply. One thread = one staff task (`staff.timesheets.tasks.create` on the linked staff project with the
+  project's default status column; `title` = first line of the body ≤ 255 chars, `description` = source link + author
+  + date + stage + artifact/snapshot reference + body ≤ 8000 chars, truncated with a marker when longer — the full text
+  stays on the delivery row). Each reply = one `staff.timesheets.task_comments.create` (`body` ≤ 5000, same marker
+  rule). Edits → new reply `revision` + `staff.timesheets.task_comments.update`; a deleted source comment keeps the
+  delivery row (`deleted: true`) and the staff comment (audit), never a hard delete.
+- Unit of work: one DB transaction per thread (delivery thread row + staff task + comments, through the staff public
+  commands on the same `em`), so a crash leaves no orphan; the batch continues with the next thread and reports
+  per-thread `outcome`. A unique-violation on the thread or reply key is recovered as `unchanged`/`updated` (parallel
+  imports of the same page never duplicate a card). The batch `Idempotency-Key` is stored with the batch hash; the
+  cursor of the file advances only when every thread of the batch succeeded.
+- Version marker: `figmaVersion` present → `versionConfirmed: true` and the thread binds to the artifact whose
+  `figmaRefs` carries that version; absent → `versionConfirmed: false`, `artifactId` as sent (may be `null`), `fetchedAt`
+  recorded, **never** auto-bound to the latest approved snapshot.
+- Approval interaction: a thread with `sourceStatus: open` and `triageStatus ∉ { resolved, deferred }` on the stage's
+  current artifact blocks F8 `approved` (`blocking_comments_open`) unless listed in `deferredThreadKeys` (which records
+  a deferral bound to that artifact hash); a new artifact version clears deferrals (they are hash-bound). A thread
+  reopened or replied to at the source returns to `triageStatus: new`.
+- Staff status is never authority: closing the thread in Figma or moving the card to Done changes nothing in
+  delivery; no subscriber of `staff.timesheets.time_task.status_changed` mutates a `DeliveryTask`; `linkedDeliveryTaskId`
+  is a display link; `verified` still comes only from review evidence (v1).
+
+**Template pinning (D7).** F4 stores the full `FlowTemplate v1` snapshot and its hash on the project; F6/F8 read the
+snapshot, never the live template. Publishing template v2 in Workflows Studio affects new projects only; an existing
+project stays on its snapshot (also after restart — the snapshot is a column, not a cache). Re-pinning is not a demo
+operation (`flow_already_pinned`).
+
+**Events (additive, F1/F2):** `delivery_os.flow.pinned { projectId, templateId, templateVersion, templateHash }`,
+`delivery_os.stage.artifact_created { projectId, stageId, artifactId, version, contentHash, downstreamNowStale[] }`
+(`clientBroadcast`), `delivery_os.stage.decided { projectId, stageId, artifactId, decisionId, verdict, currency }`
+(`clientBroadcast`), `delivery_os.comment_thread.imported { projectId, threadId, staffTaskId, outcome }`. Ids only.
+
+**DI (additive):** `deliveryFlowTemplateProvider` (`{ getTemplate(templateId, version): Promise<FlowTemplateV1 | null> }`,
+OSS default = built-in) and `deliveryOsFlowQueries` (`flowStatus(projectId)` for enterprise/workflow steps).
+
+### Integration coverage (delta)
+
+| ID | Spec file (`packages/core/src/modules/delivery_os/__integration__/`) | Paths | Proves |
+|---|---|---|---|
+| FLOW-01 | `TC-DELIVERY-FLOW-01-intake.spec.ts` | F1, F2, F3 | save/resume keeps step + answers; proposal replay is `duplicate`; `chosen` ≠ frozen profile → 422; stale intake lock → 409 |
+| FLOW-02 | `TC-DELIVERY-FLOW-02-stage-approvals.spec.ts` | F4, F6, F7, F8, R10/R12 `ready`, R14 | four separate decisions; rejection stops; missing feature 403; old hash 409; replay duplicate; dispatch through the old routes refused until all four are approved and current |
+| FLOW-03 | `TC-DELIVERY-FLOW-03-comment-import.spec.ts` | F10, F11, F12, staff `/tasks`, `/tasks/[id]/comments` | one thread → one card, reply → comment, retry and two parallel imports → no duplicates, `versionConfirmed` marker, cursor conflict |
+| FLOW-04 | `TC-DELIVERY-FLOW-04-kanban-approval.spec.ts` | F8, F13, staff `/tasks/[id]/status` | Done/resolve does not approve; open thread blocks approval; deferral bound to hash; foreign task/project/file id → 404/422; stale triage lock 409 |
+| FLOW-08 | `TC-DELIVERY-FLOW-08-v1-regression.spec.ts` | R1–R22 | legacy project without pin runs the whole v1 manual flow unchanged; second tenant/org sees nothing; OSS-only |
+| FLOW-09 | `TC-DELIVERY-FLOW-09-upstream-change.spec.ts` | F7, F8, F6, R14, R18 | new scope version → downstream `stale`, dispatch refused, active attempt must be cancelled/reconciled before a new artifact |
+
+FLOW-05/06/07 belong to Marcin, Michał and the shared demo; their domain seams are F4/F5 (pin, instance link) and F14
+(publication). Live Figma/WP never run in CI; deterministic fake adapters call F3/F7/F11/F14 with the fixtures.
+
+### Estimate and blockers (F0 hand-over)
+
+Domain work: F1 intake + pin + artifacts + decisions + gate ≈ 10 h; F2 staff link + import + triage ≈ 8 h;
+F3 flow status + report section + provider seam ≈ 4 h; F4 publications + FLOW-08/09 regression ≈ 4 h (≈ 26 h, on
+top of the original 23 h OSS estimate — reported, not absorbed). Blockers for live runs, not for the domain: Figma
+comment read access and `figmaVersion` availability (Adam's probe), the workflows-backed template provider (Marcin),
+a publication target with verification access (Michał). None of them blocks F1–F4 against the fixtures.
+
 ## Migration & Backward Compatibility
 
 - **Additive only.** New module, new tables `delivery_projects`, `delivery_baselines`, `delivery_tasks`, `delivery_evidence`, `delivery_decisions`, new routes under `/api/delivery_os/*`, new ACL features, event ids, spot id and DI key. No existing table, route, event, feature, DI key, widget spot or generated contract changes (`BACKWARD_COMPATIBILITY.md` categories: all additions).
@@ -418,6 +609,7 @@ Enterprise flows (`/api/delivery_agents/*`, worker delivery, workflow resume) ar
 
 ## Changelog
 
+- 2026-09-19 — Flow delta v1 contract published (FLOW-F0, T040): new section *Flow delta v1 (FLOW-F0)* with the v1 boundary, seven new `schemaVersion` documents (`delivery.intake/v1`, `delivery.scoping-proposal/v1`, `delivery.flow-template/v1`, `delivery.stage-artifact/v1`, `delivery.comment-import/v1`, `delivery.flow-status/v1`, `delivery.publication-result/v1`), request/response schemas for the operations F1–F15, `deliveryFlowErrorCodes`, the additive tables/columns, PII + encryption map and the FLOW-01/02/03/04/08/09 coverage. Executable: `lib/contracts.ts` (append-only, 837 lines), `lib/flowRules.ts` (`computeStageCurrency`, `checkFlowGate`, `checkPlatformChoiceFrozen`, `hashFlowTemplate`), `lib/flowTemplates.ts` (`DEFAULT_FLOW_TEMPLATE` = `delivery-default@1`), fixtures `lib/fixtures/flow/` (11 positive, 15 negative, all schema-stage) and `lib/__tests__/flow{Contracts,Fixtures}.test.ts`. No route, command, entity, migration, ACL feature or event implemented; v1 files untouched. Hand-over: `context/changes/delivery-os-oss-domain/handover/FLOW-F0-contracts.md`.
 - 2026-09-19 — Final-commit regression suite (OSS-06, T036): `api/__tests__/finalRegression.route.test.ts` re-runs the five row-6.2 scenarios (cross-tenant x two orgs, stale approval, duplicate callback, restart/unknown, OSS-only manual_handoff) through the real route handlers; shared test helpers `api/__tests__/flowHelpers.ts` and `__tests__/enterpriseBoundary.ts` (the decoupling pattern moved out of `module-registration.test.ts`, assertions unchanged). Observed contract, recorded for UI/QA: a foreign-scope write with an optimistic-lock header on R3/R4/R12/R13 answers the platform "record gone" `409 optimistic_lock_conflict` echoing the caller's own token — identical to a never-existing id, so existence is not revealed; without the header it is 404. No production code or contract change.
 - 2026-09-19 — Publication chain proof and OSS-05 H26 hand-over (T035): new route-level test `commands/__tests__/publicationFlow.test.ts` drives only the real handlers (project → manual baseline → requirements + design decisions → ready → reserve → package → result on revision A → R22 → unverified deployment → R21 `422 deployment_unverified` → R20 `201` → verified deployment → R21 `422 report_not_green` while `AC-003` is `manual_pending` → human review `MC-visual-001` → R21 `201` → agent `changes_requested` → second attempt → result on revision B with the `dependency-audit` check `not_run`) and asserts that on B the A deploy and release decisions have `appliesToRevision: false`, both gates are blocked (`scan:dependency-audit=missing`), R20 on B is `422 report_not_green`, R21 on a verified B deployment is `422 revision_mismatch` until a new consent on B, then `201`. Live smoke of the same chain on the local instance and the hand-over `context/changes/delivery-os-oss-domain/handover/OSS-05-H26.md` (DTOs, R20/R21 error table, QA-05 recipes for TC-DELIVERY-009, limitations, i18n key request). No domain, contract, route, migration, event, ACL feature or error code change.
 - 2026-09-19 — Release decision (final acceptance) and route R21 (OSS-05 L9d, T034): `delivery_os.decisions.record` now accepts kind `release` (input `{ kind: 'release', projectId, deploymentEvidenceId, verdict, reason? }` = frozen `releaseDecisionSchema` + path `projectId`); the `unsupported_evidence_kind` stub for `release` is gone (a body `kind: 'release'` without the release fields is `400 validation_failed`). New route `POST /api/delivery_os/projects/:id/release-decisions` (`api/projects/[id]/release-decisions/route.ts`, `delivery_os.release.approve` — `deploy.approve` alone is refused by the metadata guard, mutation guards, `openApi`) forces `kind: 'release'` and `projectId` from the path and answers `201 { decisionId, projectUpdatedAt }` (new `releaseDecisionCreateResponseSchema` = the deploy response shape). Order: `400 validation_failed` / `422 reason_required` → `428 optimistic_lock_required` → `403 actor_required` → `404 not_found` (project) → inside the transaction under the project row lock: `409 optimistic_lock_conflict` (forced on) → the evidence row by `{ id, projectId, tenantId, organizationId }` (`404 not_found`, path `deploymentEvidenceId`) → kind must be `deployment` (`422 unsupported_evidence_kind` / `not_deployment_evidence`) → `baselineId` must be `project.activeBaselineId` (`422 baseline_not_active`, both verdicts) → stored `sourceRevision` (`422 deployment_incomplete` / `deployment_revision_missing`) → `422 unknown_target_profile` / `invalid_revision` → for `approved` only: the deployment must be verified by the new `lib/deliveryReport.ts#isVerifiedDeploymentPayload` (the report's own payload parser + `deriveDeploymentVerificationStatus`: `payload.verification.status = verified`, `observedBuildId = buildId`, `uploadStatus = succeeded`; a payload that does not parse counts as unverified) else `422 deployment_unverified` → publish consent (`checkDeployConsent`, exported): among `deploy` decisions with `subjectHash = baseline.contentHash` (read ordered by `decidedAt`, `id` like the report), the latest on the deployment revision must be `approved` (latest rejected → `422 deploy_decision_missing` / `deploy_decision_rejected`); none on that revision but the latest one elsewhere approved → `422 revision_mismatch` / `deploy_revision_mismatch` (message names both revisions); none → `422 deploy_decision_missing` → `deliveryOsReportQueries.buildReport(scope, projectId, { baselineId, revision: evidence.sourceRevision })` and `!gates.releasable.ok` → `422 report_not_green` with one detail per release blocker (`ac:AC-003=manual_pending`, `deployment:<id>=unverified` when a newer deployment on the same revision is not verified, …). A reject is never gate-checked (reason required). The row is append-only: `kind release`, `subjectType deployment_evidence`, `subjectId = deploymentEvidenceId`, `subjectHash` / `subjectVersion` of the active baseline, `sourceRevision` copied from the evidence, `actorUserId`, strictly increasing `decidedAt`; `project.updatedAt = decidedAt`. R22 lists it with `appliesToRevision: true` only on the deployment's revision. Audit label key `delivery_os.audit.decisions.release` (parent resource = project). The route self-documents through its `openApi` export (no central `api/openapi.ts` entry, as for every delivery_os route). No migration, event, ACL feature, error code or DTO change.

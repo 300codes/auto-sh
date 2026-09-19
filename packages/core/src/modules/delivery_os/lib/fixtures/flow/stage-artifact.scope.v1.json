@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "delivery.stage-artifact/v1",
+  "projectId": "11111111-1111-4111-8111-111111111111",
+  "stageId": "scope",
+  "source": "intake",
+  "dependsOn": [],
+  "attachments": [],
+  "producedBy": {
+    "tool": "delivery.scoping",
+    "sessionRef": null
+  },
+  "content": {
+    "summary": "Marketing site with an online booking form for a dog grooming salon.",
+    "inScope": [
+      "Service list",
+      "Booking form",
+      "Contact page"
+    ],
+    "outOfScope": [
+      "Online payments",
+      "Customer accounts"
+    ],
+    "pages": [
+      {
+        "id": "P-home",
+        "title": "Home",
+        "purpose": "Present services and the booking call to action."
+      },
+      {
+        "id": "P-booking",
+        "title": "Booking",
+        "purpose": null
+      }
+    ],
+    "keyFlows": [
+      {
+        "id": "F-book",
+        "title": "Book an appointment",
+        "steps": [
+          "Pick a service",
+          "Pick a slot",
+          "Confirm"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "id": "REQ-001",
+        "title": "Service list",
+        "description": "Show services with prices."
+      },
+      {
+        "id": "REQ-002",
+        "title": "Booking form"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "AC-001",
+        "requirementId": "REQ-001",
+        "description": "Every seeded service renders with name and price."
+      },
+      {
+        "id": "AC-002",
+        "requirementId": "REQ-002",
+        "description": "A submitted booking sends a confirmation email."
+      }
+    ],
+    "risks": [
+      {
+        "id": "R-001",
+        "text": "Client must provide SMTP access before QA.",
+        "mitigation": "Ask for credentials at Scope approval."
+      }
+    ],
+    "assumptions": [
+      "Client provides photos"
+    ],
+    "openQuestionIds": [],
+    "platform": {
+      "profileId": "wordpress-theme",
+      "profileVersion": 1,
+      "rationale": "Editable content site."
+    },
+    "tools": [
+      {
+        "stageId": "implementation",
+        "kind": "execution",
+        "ref": "wordpress",
+        "rationale": null
+      }
+    ]
+  }
+}

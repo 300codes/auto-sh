@@ -1,0 +1,101 @@
+{
+  "description": "step is not one of the wizard steps.",
+  "expected": {
+    "stage": "schema",
+    "code": "validation_failed",
+    "status": 400
+  },
+  "documentType": "versioned",
+  "document": {
+    "schemaVersion": "delivery.intake/v1",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "step": "done",
+    "brief": {
+      "businessGoal": "Sell more grooming appointments online.",
+      "audience": "Dog owners in Krakow.",
+      "problem": "Bookings arrive by phone and get lost.",
+      "content": "Services, prices, team, contact.",
+      "features": [
+        "Service list with prices",
+        "Online booking form",
+        "Contact page with map"
+      ],
+      "integrations": [
+        "SMTP confirmation emails"
+      ],
+      "constraints": [
+        "Polish language only",
+        "Launch before 2026-11-01"
+      ],
+      "inspirations": [
+        "https://example.com/inspiration"
+      ],
+      "materials": [
+        {
+          "attachmentId": "55555555-5555-4555-8555-555555555555",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "sizeBytes": 1024,
+          "mimeType": "application/pdf"
+        }
+      ],
+      "unknowns": [
+        "Payment provider not decided"
+      ]
+    },
+    "questions": [
+      {
+        "id": "Q-001",
+        "text": "Should the booking form send confirmation emails?",
+        "askedBy": "agent",
+        "blocking": true,
+        "answer": {
+          "text": "Yes, via the existing SMTP account.",
+          "answeredAt": "2026-09-19T10:00:00.000Z"
+        }
+      }
+    ],
+    "proposals": [
+      {
+        "proposalId": "scope-2026-09-19-001",
+        "kind": "scope",
+        "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+        "proposedAt": "2026-09-19T10:00:00.000Z",
+        "status": "proposed"
+      }
+    ],
+    "platform": {
+      "recommendation": {
+        "profileId": "wordpress-theme",
+        "profileVersion": 1,
+        "rationale": "Content site with booking, editable by the client.",
+        "alternatives": [
+          {
+            "profileId": "react-vite",
+            "profileVersion": 1,
+            "reason": "Heavier for a content site."
+          }
+        ]
+      },
+      "chosen": {
+        "profileId": "wordpress-theme",
+        "profileVersion": 1,
+        "chosenBy": "66666666-6666-4666-8666-666666666666",
+        "chosenAt": "2026-09-19T10:00:00.000Z"
+      }
+    },
+    "tools": [
+      {
+        "stageId": "ux",
+        "kind": "design",
+        "ref": "figma",
+        "rationale": null
+      },
+      {
+        "stageId": "implementation",
+        "kind": "execution",
+        "ref": "wordpress",
+        "rationale": "Preselected for the demo"
+      }
+    ]
+  }
+}
