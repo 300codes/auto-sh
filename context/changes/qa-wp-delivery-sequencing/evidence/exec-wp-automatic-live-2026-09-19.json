@@ -1,0 +1,55 @@
+{
+  "check": "TC-DELIVERY-EXEC-WP-001 live automatic WordPress execution (offline-handoff step 7, first flow)",
+  "date": "2026-09-19",
+  "codeRevision": "5e61a61a4 (dev-mateusz)",
+  "environment": "local next dev :3100 with OM_ENABLE_ENTERPRISE_MODULES(+_AGENTS), DELIVERY_WP_HOST_CONFIG, auto-spawned queue workers; Studio CLI 1.19.0; cezar-cli 0.11.0 driving the logged-in claude CLI; RATE_LIMIT_ENABLED=false for the QA process only",
+  "result": "passed (1/1, 1.6m, retries 0)",
+  "flow": "execute 202 -> execute-task claims -> WordPress host: trusted base receipt, Cezar autonomous run in a private git copy, updateOwnedTheme, owned result capture, playwright smoke + composer lint on frozen bytes, mapWordpressResult -> results.accept (awaiting_review) -> review approved (verified) -> resume worker signal -> completionDelivery delivered",
+  "outcome": {
+    "status": "passed",
+    "projectId": "1ad57721-2d8c-4dc8-b475-69f3b18fe708",
+    "taskId": "546eb7ea-73cd-4995-b814-1404996104f6",
+    "attemptId": "9d55edc5-8d70-4a1d-ad94-4cc13a44b913",
+    "completionDelivery": "delivered",
+    "proofScope": "automatic Cezar execution on an owned Studio theme with frozen-byte checks; no visual acceptance, Preview or release"
+  },
+  "attemptAfterExecution": {
+    "state": "result_received",
+    "mode": "automatic",
+    "completionDelivery": "delivered"
+  },
+  "taskStatusAfterExecution": "awaiting_review",
+  "evidenceHashes": {
+    "outcome.json": "b2e9d2bb43ed6c0e1caec4fe467f846b522cd2e3c64127babd7f9ea7389a5f6a",
+    "ledger.json": "689e32315a3bb10c23c27cc99767aa124ebe3273b742f7176814945ee56e1007",
+    "cleanup.json": "7a8bbfae05ed803e133efb517f98b1ba42684856680eb378e9d131b97cc86a92",
+    "execution.json": "535359aace7994cd2b2755256395e7344054958afd8591c968141b75e0ca6781",
+    "result-evidence.json": "acc613e51d5597939841a4d4aa8dc654da7f2512a86dff4a4493547e2136e812",
+    "base-receipt.json": "75c9b9792d451408bacd97eb48004ac6353efa43001a63a265f98b321d67db6f"
+  },
+  "cleanup": {
+    "failures": [],
+    "resources": [
+      {
+        "resource": "9d4710c3393be4300fabc84798697bec762d9fc8d2d9f04ba5d398ac605b4576",
+        "state": "stopped_retained_for_explicit_disposal"
+      },
+      {
+        "resource": "1ad57721-2d8c-4dc8-b475-69f3b18fe708",
+        "state": "owned_domain_rows_removed_audit_history_retained"
+      },
+      {
+        "resource": "414a29c4-5715-4178-9943-7bd85a105f11",
+        "state": "deleted"
+      }
+    ]
+  },
+  "defectsFoundByLiveRuns": [
+    "workflow definition missing for organizations that enabled delivery_agents after seed (3e0d82155)",
+    "attempt workflow transitions lacked trigger:'auto' -> never parked (committed with test)",
+    "resume worker issued trusted execution for a non-UUID actor -> mark_delivery rejected (cfd05b684)",
+    "agent tool byproducts (test-results) collected as theme changes -> invalid_input (5e61a61a4)"
+  ],
+  "notProven": "REC01-10 live recovery matrix, two concurrent runs, visual/design acceptance, Preview upload, release",
+  "rawEvidence": "kept privately on the operator machine"
+}
