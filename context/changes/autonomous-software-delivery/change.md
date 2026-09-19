@@ -14,6 +14,7 @@ Zoptymalizowane wdrożenie dla czterech developerów w 36 godzin, na podstawie s
 - [Plan wdrożenia](plan.md)
 - [Równoległe plany i harmonogram](workstreams/README.md)
 - [UI-01 — plan wdrożenia](workstreams/ui-01/plan.md) ([brief](workstreams/ui-01/plan-brief.md), [review planu](workstreams/ui-01/reviews/plan-review.md), [review wdrożenia](workstreams/ui-01/reviews/impl-review.md))
+- [UI-02 — plan wdrożenia](workstreams/ui-02/plan.md) ([brief](workstreams/ui-02/plan-brief.md), [review planu](workstreams/ui-02/reviews/plan-review.md))
 - [Zadania WP wymagające Michała](workstreams/05-wordpress-michal.md)
 - [Review i rozstrzygnięcia](reviews/plan-review.md)
 - [Uzupełnienie analizy i decyzje](research.md)
