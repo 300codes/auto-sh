@@ -7,6 +7,7 @@ import { RequirementsSection } from '../RequirementsSection'
 import { DesignSection } from '../DesignSection'
 import { TasksSection } from '../TasksSection'
 import { EvidenceSection } from '../EvidenceSection'
+import { EvidenceSources } from '../../report/EvidenceSources'
 import { resolveActiveBaseline } from '../baselineContent'
 import type { SectionSource } from '../useProjectSections'
 
@@ -306,9 +307,10 @@ describe('evidence section', () => {
     expect(screen.getByText('delivery_os.project.sections.evidence.declaredTests')).toBeTruthy()
   })
 
-  it('names the missing read endpoint rather than implying there is no evidence', () => {
+  it('links the project summary to its report', () => {
     render(
       <EvidenceSection
+        projectId="project-report"
         progress={progressWithoutCriteria}
         taskCounts={{}}
         attention={noAttention}
@@ -316,8 +318,7 @@ describe('evidence section', () => {
         onRetry={() => undefined}
       />,
     )
-    const notice = screen.getByTestId('delivery-evidence-list-unavailable')
-    expect(notice.textContent).toContain('delivery_os.project.sections.evidence.listUnavailableDescription')
+    expect(screen.getByTestId('delivery-report-link').getAttribute('href')).toBe('/backend/delivery/projects/project-report/report')
   })
 })
 
@@ -339,19 +340,11 @@ describe('three empty states stay disjoint', () => {
         onRetry={() => undefined}
       />,
     ).getByTestId('delivery-tasks-empty').textContent ?? ''
-    const noEvidenceEndpoint = render(
-      <EvidenceSection
-        progress={{ proven: 0, total: 0, unit: 'ac', percent: null }}
-        taskCounts={{}}
-        attention={noAttention}
-        baselines={ready([baseline()])}
-        onRetry={() => undefined}
-      />,
-    ).getByTestId('delivery-evidence-list-unavailable').textContent ?? ''
+    const noEvidenceEndpoint = render(<EvidenceSources />).getByTestId('report-evidence-unavailable').textContent ?? ''
 
     expect(noBaseline).toContain('delivery_os.project.sections.baselines.none.title')
     expect(noTasks).toContain('delivery_os.project.sections.tasks.empty.baselineWithoutTasks')
-    expect(noEvidenceEndpoint).toContain('delivery_os.project.sections.evidence.listUnavailable')
+    expect(noEvidenceEndpoint).toContain('delivery_os.report.evidence.apiUnavailable')
     for (const text of [noBaseline, noTasks, noEvidenceEndpoint]) expect(text.length).toBeGreaterThan(0)
     expect(noBaseline).not.toBe(noTasks)
     expect(noTasks).not.toBe(noEvidenceEndpoint)

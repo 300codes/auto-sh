@@ -334,6 +334,8 @@ Nie pozostają otwarte wybory produktowe. D1/D2/D3 są nazwanymi zależnościami
 
 ## Progress — odwołanie do rejestru kanonicznego
 
+2026-09-19: wykonano dostępny zakres UI; [handoff](handoff.md) opisuje kod, nowe testy i ograniczenia. Użytkownik potwierdził zachowanie zakresu UI z jawnymi blokadami D1/D2/D3. Integracja źródłowych dowodów i zapis decyzji pozostają zablokowane do dostawy OSS. Pełne testy/build pominięto na polecenie użytkownika; manualnego odbioru nie potwierdzono. Poniższe kryteria główne nie zostały zaliczone.
+
 Zgodnie z README nie powstaje druga checklista. Niniejszy plan i jego review nie zaliczają żadnego kryterium implementacji.
 
 | Kryterium nadrzędne | Wkład UI-05 | Pozostały współodbiór |
