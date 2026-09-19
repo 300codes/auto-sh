@@ -2,18 +2,11 @@
 
 import * as React from 'react'
 import type { InjectionWidgetComponentProps } from '@open-mercato/shared/modules/widgets/injection'
+import type { ExecutionWidgetContextV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { useAppEvent } from '@open-mercato/ui/backend/injection/useAppEvent'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
-
-type DeliveryProjectExecutionContext = {
-  projectId: string
-  taskId?: string
-  baselineId?: string
-  updatedAt?: string
-  retryLastMutation?: () => void
-}
 
 type AttemptState = {
   attemptId: string | null
@@ -25,7 +18,7 @@ const INITIAL_ATTEMPT_STATE: AttemptState = { attemptId: null, state: null, stop
 
 export default function ProjectExecutionActionWidget({
   context,
-}: InjectionWidgetComponentProps<DeliveryProjectExecutionContext, undefined>) {
+}: InjectionWidgetComponentProps<ExecutionWidgetContextV1, undefined>) {
   const { taskId } = context
   const [attempt, setAttempt] = React.useState<AttemptState>(INITIAL_ATTEMPT_STATE)
   const [busy, setBusy] = React.useState(false)
@@ -53,6 +46,7 @@ export default function ProjectExecutionActionWidget({
       const data = res.result
       setAttempt({ attemptId: data?.attemptId ?? null, state: data?.state ?? 'reserved', stopConfirmation: null })
       flash('Execution started', 'success')
+      await context.refresh()
     } finally {
       setBusy(false)
     }
@@ -72,6 +66,7 @@ export default function ProjectExecutionActionWidget({
       }
       setAttempt((prev) => ({ ...prev, stopConfirmation: 'stop_unconfirmed' }))
       flash('Cancellation requested', 'success')
+      await context.refresh()
     } finally {
       setBusy(false)
     }
