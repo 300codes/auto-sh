@@ -20,7 +20,9 @@ jest.mock('../../events', () => ({
 
 import '@open-mercato/core/modules/delivery_os/commands'
 import { LockMode } from '@mikro-orm/core'
+import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
+import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { DeliveryBaseline, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../../data/entities'
 import { reconcileAttempt, requestCancellation, reserveAttempt } from '../../lib/attempts'
 import { hashBaseline } from '../../lib/baseline'
@@ -37,6 +39,9 @@ import {
   loadTaskPackageFixture,
 } from '../../lib/fixtures'
 import { hashCanonical } from '../../lib/hash'
+import { issueTrustedExecution } from '../../lib/trustedExecution'
+import { createDeliveryOsAttemptQueries } from '../attemptQueries'
+import type { AttemptInternalCommandResult, AttemptReserveResult } from '../attempts'
 import type { ResultAcceptCommandResult } from '../evidence'
 import {
   ACTOR_ID,
@@ -58,6 +63,7 @@ import {
 const NOW = '2026-09-19T10:00:00.000Z'
 const EVIDENCE_EVENT = 'delivery_os.evidence.recorded'
 const TASK_EVENT = 'delivery_os.task.updated'
+const trustedExecution = issueTrustedExecution(ACTOR_ID)
 
 type Store = {
   projects: DeliveryProject[]
@@ -270,7 +276,9 @@ describe('delivery_os.results.accept', () => {
       resultEvidenceId: evidence.id,
       completionDelivery: null,
       externalRunId: loadResultManifestFixture('git').externalRunId,
+      outcome: 'result_accepted',
     })
+    expect(Date.parse(task.executionAttempts[0].closedAt ?? '')).not.toBeNaN()
     expect(emitted(EVIDENCE_EVENT)).toEqual([
       expect.objectContaining({ evidenceId: evidence.id, duplicate: false, completionDelivery: null, tenantId: TENANT_ID, organizationId: ORG_ID }),
     ])
@@ -293,8 +301,9 @@ describe('delivery_os.results.accept', () => {
 
   it('sets the pending delivery only when the attempt is linked to a workflow', async () => {
     const taskPackage = seedGit({ attempt: { workflowRef: 'wf-instance-1', workflowStepId: 'wait-for-result' } })
-    await accept(input(taskPackage, { source: 'adapter' }), { inProcess: true })
-    expect(store.tasks[0].executionAttempts[0].completionDelivery).toBe('pending')
+    await accept(input(taskPackage, { source: 'adapter', trustedExecution }), { inProcess: true })
+    expect(store.tasks[0].executionAttempts[0]).toMatchObject({ completionDelivery: 'pending', outcome: 'result_accepted' })
+    expect(store.tasks[0].executionAttempts[0].closedAt).not.toBeNull()
     expect(store.evidence[0].source).toBe('adapter')
     expect(emitted(EVIDENCE_EVENT)[0]).toMatchObject({ duplicate: false, completionDelivery: 'pending' })
   })
@@ -317,6 +326,114 @@ describe('delivery_os.results.accept', () => {
     expect(emitted(TASK_EVENT)).toEqual([])
     const log = await handler().buildLog?.({ input: input(taskPackage), result: replay, ctx, snapshots: {} } as never)
     expect(log).toBeNull()
+  })
+
+  describe('execution bridge flow with a fake executor', () => {
+    const WORKFLOW_REF = 'wf-instance-1'
+    const internal = (id: string) => getHandler<AttemptInternalCommandResult>(`delivery_os.attempts.${id}`)
+
+    function makeBridge(taskPackage: TaskPackageV1, executor: jest.Mock, options: { workflowRef: string | null }) {
+      const ids = { taskId: taskPackage.taskId, attemptId: taskPackage.attemptId }
+      return async function handleJob(): Promise<'executed' | 'skipped'> {
+        const { ctx } = makeHarness({ inProcess: true })
+        const reservation = await getHandler<AttemptReserveResult>('delivery_os.attempts.reserve').execute(
+          { taskId: ids.taskId, idempotencyKey: taskPackage.idempotencyKey, mode: 'manual_handoff', baseRevision: taskPackage.baseRevision },
+          ctx,
+        )
+        expect(reservation).toMatchObject({ created: false, attemptId: ids.attemptId })
+        const claim = await Promise.resolve(internal('claim').execute({ ...ids, workerRef: 'worker-1', trustedExecution }, ctx)).catch(
+          (error: unknown) => error,
+        )
+        if (claim instanceof CrudHttpError) {
+          expectFrozenBody(claim, 409, 'attempt_closed')
+          return 'skipped'
+        }
+        if (claim instanceof Error) throw claim
+        if (options.workflowRef) {
+          await internal('link_workflow').execute(
+            { ...ids, workflowRef: options.workflowRef, workflowStepId: 'wait-for-result', dispatched: true, trustedExecution },
+            ctx,
+          )
+        }
+        const manifest = executor()
+        await handler().execute({ ...ids, manifest, source: 'adapter', trustedExecution }, ctx)
+        return 'executed'
+      }
+    }
+
+    function pendingDeliveries() {
+      const { em } = makeHarness({ inProcess: true })
+      return createDeliveryOsAttemptQueries(em as unknown as EntityManager).listPendingDeliveries({
+        tenantId: TENANT_ID,
+        organizationId: ORG_ID,
+      })
+    }
+
+    it('runs the executor once across reserve, claim, a redelivered job and a duplicate accept, then delivers', async () => {
+      const taskPackage = seedGit()
+      const executor = jest.fn(() => loadResultManifestFixture('git'))
+      const handleJob = makeBridge(taskPackage, executor, { workflowRef: WORKFLOW_REF })
+
+      expect(await handleJob()).toBe('executed')
+      expect(await handleJob()).toBe('skipped')
+      expect(executor).toHaveBeenCalledTimes(1)
+      expect(store.evidence).toHaveLength(1)
+      expect(store.tasks[0].executionAttempts[0]).toMatchObject({
+        state: 'result_received',
+        workerRef: 'worker-1',
+        workflowRef: WORKFLOW_REF,
+        completionDelivery: 'pending',
+        outcome: 'result_accepted',
+      })
+      const expectedPending = {
+        taskId: taskPackage.taskId,
+        attemptId: taskPackage.attemptId,
+        evidenceId: store.evidence[0].id,
+        workflowRef: WORKFLOW_REF,
+        workflowStepId: 'wait-for-result',
+      }
+      expect(await pendingDeliveries()).toEqual([expectedPending])
+
+      mockEmitDeliveryOsEvent.mockClear()
+      const beforeReplay = JSON.stringify(store)
+      const replay = await accept(input(taskPackage, { source: 'adapter', trustedExecution }), { inProcess: true })
+      expect(replay.duplicate).toBe(true)
+      expect(JSON.stringify(store)).toBe(beforeReplay)
+      expect(emitted(EVIDENCE_EVENT)).toEqual([
+        expect.objectContaining({ attemptId: taskPackage.attemptId, evidenceId: store.evidence[0].id, duplicate: true, completionDelivery: 'pending' }),
+      ])
+      expect(executor).toHaveBeenCalledTimes(1)
+
+      const { ctx } = makeHarness({ inProcess: true })
+      const ids = { taskId: taskPackage.taskId, attemptId: taskPackage.attemptId, trustedExecution }
+      await internal('mark_delivery').execute({ ...ids, outcome: 'failed', error: 'step not waiting yet' }, ctx)
+      expect(await pendingDeliveries()).toEqual([expectedPending])
+      await internal('mark_delivery').execute({ ...ids, outcome: 'delivered' }, ctx)
+      expect(await pendingDeliveries()).toEqual([])
+
+      mockEmitDeliveryOsEvent.mockClear()
+      await accept(input(taskPackage, { source: 'adapter', trustedExecution }), { inProcess: true })
+      expect(emitted(EVIDENCE_EVENT)).toEqual([expect.objectContaining({ duplicate: true, completionDelivery: 'delivered' })])
+      expect(store.evidence).toHaveLength(1)
+      expect(executor).toHaveBeenCalledTimes(1)
+    })
+
+    it('needs no delivery for an OSS-only attempt', async () => {
+      const taskPackage = seedGit()
+      const executor = jest.fn(() => loadResultManifestFixture('git'))
+      expect(await makeBridge(taskPackage, executor, { workflowRef: null })()).toBe('executed')
+      expect(store.tasks[0].executionAttempts[0]).toMatchObject({ completionDelivery: null, outcome: 'result_accepted' })
+      expect(await pendingDeliveries()).toEqual([])
+      const { ctx } = makeHarness({ inProcess: true })
+      const error = await catchHttpError(() =>
+        internal('mark_delivery').execute(
+          { taskId: taskPackage.taskId, attemptId: taskPackage.attemptId, outcome: 'delivered', trustedExecution },
+          ctx,
+        ),
+      )
+      expectFrozenBody(error, 409, 'attempt_not_active')
+      expect(detailCodes(error)).toEqual(['no_pending_delivery'])
+    })
   })
 
   it('writes an audit entry for an accepted result', async () => {
@@ -448,6 +565,21 @@ describe('delivery_os.results.accept', () => {
     expectFrozenBody(forbidden, 403, 'forbidden')
     expect(detailCodes(forbidden)).toEqual(['trusted_execution_required'])
     expectFrozenBody(await catchHttpError(() => accept(input(taskPackage, { source: 'agent' }))), 400, 'validation_failed')
+    const overHttp = await catchHttpError(() => accept(input(taskPackage, { source: 'adapter', trustedExecution })))
+    expectFrozenBody(overHttp, 403, 'forbidden')
+  })
+
+  it('rejects source adapter in-process without an issued trusted option, as a generic command dispatcher would call it', async () => {
+    const taskPackage = seedGit()
+    const forged = JSON.parse(JSON.stringify(trustedExecution))
+    for (const option of [undefined, forged]) {
+      const error = await catchHttpError(() =>
+        accept(input(taskPackage, { source: 'adapter', trustedExecution: option }), { inProcess: true }),
+      )
+      expectFrozenBody(error, 403, 'forbidden')
+      expect(detailCodes(error)).toEqual(['trusted_execution_required'])
+    }
+    expect(store.evidence).toHaveLength(0)
   })
 
   it('stores no recordedBy for a caller without a user id', async () => {

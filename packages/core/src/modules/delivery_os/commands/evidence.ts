@@ -11,10 +11,11 @@ import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { E } from '#generated/entities.ids.generated'
 import { DeliveryEvidence, type DeliveryTask } from '../data/entities'
 import { acceptResultCommandSchema, type AcceptResultCommandInput } from '../data/validators'
-import { findAttempt, parseAttemptRegister, recordAttemptResult } from '../lib/attempts'
+import { closeAttempt, findAttempt, parseAttemptRegister, recordAttemptResult } from '../lib/attempts'
 import { buildDeliveryError, uuidSchema, type ExecutionAttempt, type TaskStatus } from '../lib/contracts'
 import { evaluateResultAcceptance } from '../lib/resultAcceptance'
 import { canTransition } from '../lib/taskLifecycle'
+import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/trustedExecution'
 import { emitDeliveryOsEvent } from '../events'
 import { loadTaskPackage } from './attemptQueries'
 import {
@@ -54,8 +55,9 @@ const evidenceCrudIndexer: CrudIndexerConfig<DeliveryEvidence> = {
   entityType: E.delivery_os.delivery_evidence,
 }
 
-function assertSourceAllowed(parsed: AcceptResultCommandInput, ctx: CommandRuntimeContext): void {
-  if (parsed.source === 'manual' || !ctx.request) return
+function assertSourceAllowed(parsed: AcceptResultCommandInput, rawInput: unknown, ctx: CommandRuntimeContext): void {
+  if (parsed.source === 'manual') return
+  if (!ctx.request && isIssuedTrustedExecution(readTrustedExecutionOption(rawInput))) return
   throw deliveryHttpError(
     buildDeliveryError('forbidden', 'Adapter results are accepted only from the trusted in-process executor', [
       { path: 'source', code: 'trusted_execution_required' },
@@ -102,7 +104,7 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
   async execute(rawInput, ctx) {
     const scope = resolveDeliveryScope(ctx)
     const parsed = parseDeliveryInput(acceptResultCommandSchema, rawInput)
-    assertSourceAllowed(parsed, ctx)
+    assertSourceAllowed(parsed, rawInput, ctx)
     const recordedBy = uuidSchema.safeParse(ctx.auth?.sub)
 
     const evaluated = { manifestHash: null as string | null }
@@ -140,6 +142,8 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
           externalRunId: evaluation.manifest.externalRunId,
         })
         if (!recorded.ok) throw deliveryHttpError(recorded)
+        const closed = closeAttempt(recorded.register, { attemptId: parsed.attemptId, now: new Date().toISOString() })
+        if (!closed.ok) throw deliveryHttpError(closed)
 
         const evidence = tx.create(DeliveryEvidence, {
           id: evidenceId,
@@ -159,10 +163,10 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
           recordedBy: recordedBy.success ? recordedBy.data : null,
         })
         tx.persist(evidence)
-        task.executionAttempts = recorded.register
+        task.executionAttempts = closed.register
         task.status = 'awaiting_review'
         task.statusReason = null
-        return { task, evidenceId, evidence, completionDelivery: recorded.attempt.completionDelivery }
+        return { task, evidenceId, evidence, completionDelivery: closed.attempt.completionDelivery }
       })
     } catch (error) {
       if (!evaluated.manifestHash || !isUniqueViolation(error, RESULT_MANIFEST_UNIQUE_INDEX)) throw error

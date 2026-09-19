@@ -258,6 +258,9 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       .filter((id) => id.startsWith('delivery_os.'))
       .sort()
     expect(ids).toEqual([
+      'delivery_os.attempts.claim',
+      'delivery_os.attempts.link_workflow',
+      'delivery_os.attempts.mark_delivery',
       'delivery_os.attempts.reserve',
       'delivery_os.baselines.create',
       'delivery_os.baselines.import_requirements',
@@ -291,6 +294,19 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       expect({ path, writes: [...methods].filter((method) => WRITE_METHODS.includes(method)) }).toEqual({ path, writes: [] })
       expect(methods.has('POST')).toBe(true)
     }
+  })
+
+  it('keeps the internal attempt commands off every route and off the workflow-safe command list', () => {
+    const internalIds = ['delivery_os.attempts.claim', 'delivery_os.attempts.link_workflow', 'delivery_os.attempts.mark_delivery']
+    const sources = listFiles(MODULE_ROOT, (path) => /\.tsx?$/.test(path))
+    expect(sources.some((path) => path.endsWith(join('commands', 'attempts.ts')))).toBe(true)
+    const callers = sources.filter((path) => {
+      if (path.endsWith(join('commands', 'attempts.ts'))) return false
+      const source = readFileSync(path, 'utf8')
+      return internalIds.some((id) => source.includes(id))
+    })
+    expect(callers).toEqual([])
+    expect(sources.filter((path) => readFileSync(path, 'utf8').includes('registerWorkflowSafeCommands'))).toEqual([])
   })
 
   it('has no method-folder routes that could bypass the route scan', () => {

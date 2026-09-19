@@ -8,9 +8,12 @@ import {
 import {
   checkAttemptOpen,
   claimAttempt,
+  closeAttempt,
   findAttempt,
   isArchiveBlocked,
   isAttemptActive,
+  linkAttemptWorkflow,
+  markAttemptDelivery,
   parseAttemptRegister,
   reconcileAttempt,
   recordAttemptResult,
@@ -395,5 +398,174 @@ describe('recordAttemptResult', () => {
     expect(failureCode(recordAttemptResult([buildAttempt(1, 'closed', { outcome: 'cancelled' })], input))).toBe('attempt_cancelled')
     expect(failureCode(recordAttemptResult([buildAttempt(1, 'result_received')], input))).toBe('attempt_closed')
     expect(failureCode(recordAttemptResult([], input))).toBe('attempt_not_found')
+  })
+})
+
+function detailCode(result: { ok: boolean; body?: { details: { code: string }[] } }): string | null {
+  return result.ok ? null : (result.body?.details[0]?.code ?? null)
+}
+
+describe('linkAttemptWorkflow', () => {
+  const link = { attemptId: attemptId(1), workflowRef: 'wf-instance-1', workflowStepId: 'wait-result', now: LATER }
+
+  it('links a reserved or claimed attempt without marking it dispatched', () => {
+    for (const state of ['reserved', 'claimed'] as const) {
+      const register = [buildAttempt(1, state)]
+      const linked = linkAttemptWorkflow(register, link)
+      if (!linked.ok) throw new Error('[internal] expected a linked attempt')
+      expect(linked.changed).toBe(true)
+      expect(linked.attempt).toMatchObject({ state, workflowRef: 'wf-instance-1', workflowStepId: 'wait-result', dispatchedAt: null })
+      expect(register[0].workflowRef).toBeNull()
+      expectValidRegister(linked.register)
+    }
+  })
+
+  it('sets the dispatch marker once, in the same or in a later call', () => {
+    const inOne = linkAttemptWorkflow([buildAttempt(1, 'claimed')], { ...link, dispatched: true })
+    expect(inOne.ok && inOne.attempt.dispatchedAt).toBe(LATER)
+
+    const linked = linkAttemptWorkflow([buildAttempt(1, 'claimed')], link)
+    if (!linked.ok) throw new Error('[internal] expected a linked attempt')
+    const dispatched = linkAttemptWorkflow(linked.register, { ...link, dispatched: true, now: '2026-09-19T12:00:00.000Z' })
+    if (!dispatched.ok) throw new Error('[internal] expected a dispatched attempt')
+    expect(dispatched.changed).toBe(true)
+    expect(dispatched.attempt.dispatchedAt).toBe('2026-09-19T12:00:00.000Z')
+
+    const replay = linkAttemptWorkflow(dispatched.register, { ...link, dispatched: true, now: '2026-09-19T13:00:00.000Z' })
+    expect(replay.ok && replay.changed).toBe(false)
+    expect(replay.ok && replay.attempt.dispatchedAt).toBe('2026-09-19T12:00:00.000Z')
+  })
+
+  it('is idempotent for the same link and never clears a stored step', () => {
+    const linked = linkAttemptWorkflow([buildAttempt(1, 'claimed')], link)
+    if (!linked.ok) throw new Error('[internal] expected a linked attempt')
+    const withoutStep = linkAttemptWorkflow(linked.register, { attemptId: attemptId(1), workflowRef: 'wf-instance-1', now: LATER })
+    expect(withoutStep.ok && withoutStep.changed).toBe(false)
+    expect(withoutStep.ok && withoutStep.attempt.workflowStepId).toBe('wait-result')
+  })
+
+  it('fills a missing step later but refuses another workflow or another step', () => {
+    const noStep = linkAttemptWorkflow([buildAttempt(1, 'claimed')], { attemptId: attemptId(1), workflowRef: 'wf-instance-1', now: LATER })
+    if (!noStep.ok) throw new Error('[internal] expected a linked attempt')
+    expect(noStep.attempt.workflowStepId).toBeNull()
+    const filled = linkAttemptWorkflow(noStep.register, link)
+    if (!filled.ok) throw new Error('[internal] expected the step to be filled')
+    expect(filled.attempt.workflowStepId).toBe('wait-result')
+
+    const otherRef = linkAttemptWorkflow(filled.register, { ...link, workflowRef: 'wf-instance-2' })
+    expect(failureCode(otherRef)).toBe('attempt_active')
+    expect(detailCode(otherRef)).toBe('workflow_link_conflict')
+    const otherStep = linkAttemptWorkflow(filled.register, { ...link, workflowStepId: 'other-step' })
+    expect(detailCode(otherStep)).toBe('workflow_link_conflict')
+  })
+
+  it.each<[AttemptState, Partial<ExecutionAttempt>, string]>([
+    ['cancel_requested', {}, 'attempt_cancelled'],
+    ['closed', { outcome: 'cancelled' }, 'attempt_cancelled'],
+    ['closed', {}, 'attempt_closed'],
+    ['result_received', {}, 'attempt_closed'],
+    ['reconciliation_required', {}, 'reconciliation_required'],
+  ])('rejects a link on a %s attempt', (state, overrides, code) => {
+    expect(failureCode(linkAttemptWorkflow([buildAttempt(1, state, overrides)], link))).toBe(code)
+  })
+
+  it('rejects an empty workflowRef and a foreign attempt id', () => {
+    expect(failureCode(linkAttemptWorkflow([buildAttempt(1, 'claimed')], { ...link, workflowRef: '' }))).toBe('validation_failed')
+    expect(failureCode(linkAttemptWorkflow([buildAttempt(1, 'claimed')], { ...link, attemptId: attemptId(9) }))).toBe('attempt_not_found')
+  })
+})
+
+describe('markAttemptDelivery', () => {
+  const EVIDENCE_ID = '6b6b6b6b-6666-4666-8666-666666666666'
+  const pending = () =>
+    buildAttempt(1, 'result_received', {
+      workflowRef: 'wf-instance-1',
+      resultEvidenceId: EVIDENCE_ID,
+      completionDelivery: 'pending',
+      closedAt: NOW,
+      outcome: 'result_accepted',
+    })
+
+  it('marks a pending delivery delivered, clears the last error and counts the try', () => {
+    const register = [{ ...pending(), lastDeliveryError: 'signal timed out', deliveryAttempts: 2 }]
+    const delivered = markAttemptDelivery(register, { attemptId: attemptId(1), outcome: 'delivered', now: LATER })
+    if (!delivered.ok) throw new Error('[internal] expected a delivered attempt')
+    expect(delivered.changed).toBe(true)
+    expect(delivered.attempt).toMatchObject({ completionDelivery: 'delivered', lastDeliveryError: null, deliveryAttempts: 3 })
+    expect(register[0].completionDelivery).toBe('pending')
+    expectValidRegister(delivered.register)
+  })
+
+  it('keeps a failed delivery pending, stores a bounded error and counts every try', () => {
+    const first = markAttemptDelivery([pending()], { attemptId: attemptId(1), outcome: 'failed', error: 'x'.repeat(5000), now: LATER })
+    if (!first.ok) throw new Error('[internal] expected a recorded failure')
+    expect(first.attempt).toMatchObject({ completionDelivery: 'pending', deliveryAttempts: 1 })
+    expect(first.attempt.lastDeliveryError).toHaveLength(2000)
+    const second = markAttemptDelivery(first.register, { attemptId: attemptId(1), outcome: 'failed', now: LATER })
+    expect(second.ok && second.attempt.deliveryAttempts).toBe(2)
+    expect(second.ok && second.attempt.lastDeliveryError).toBe('Delivery failed')
+    expectValidRegister(second.ok ? second.register : [])
+  })
+
+  it('never regresses a delivered attempt', () => {
+    const delivered = { ...pending(), completionDelivery: 'delivered' as const, deliveryAttempts: 1 }
+    for (const outcome of ['delivered', 'failed'] as const) {
+      const replay = markAttemptDelivery([delivered], { attemptId: attemptId(1), outcome, error: 'late failure', now: LATER })
+      expect(replay.ok && replay.changed).toBe(false)
+      expect(replay.ok && replay.attempt).toEqual(delivered)
+    }
+  })
+
+  it('refuses an attempt without a completion delivery and a foreign attempt id', () => {
+    const ossOnly = buildAttempt(1, 'result_received', { resultEvidenceId: EVIDENCE_ID })
+    const refused = markAttemptDelivery([ossOnly], { attemptId: attemptId(1), outcome: 'delivered', now: LATER })
+    expect(failureCode(refused)).toBe('attempt_not_active')
+    expect(detailCode(refused)).toBe('no_pending_delivery')
+    expect(failureCode(markAttemptDelivery([buildAttempt(1, 'claimed')], { attemptId: attemptId(1), outcome: 'delivered', now: LATER }))).toBe(
+      'attempt_not_active',
+    )
+    expect(failureCode(markAttemptDelivery([], { attemptId: attemptId(1), outcome: 'delivered', now: LATER }))).toBe('attempt_not_found')
+  })
+
+  it('reads a stored attempt without the counter as zero tries', () => {
+    const parsed = parseAttemptRegister([pending()])
+    expect(parsed.ok && parsed.register[0].deliveryAttempts).toBeUndefined()
+    const negative = parseAttemptRegister([{ ...pending(), deliveryAttempts: -1 }])
+    expect(negative.ok).toBe(false)
+  })
+})
+
+describe('closeAttempt', () => {
+  const EVIDENCE_ID = '6b6b6b6b-6666-4666-8666-666666666666'
+
+  it('closes an attempt that holds a result, keeping its state and pending delivery', () => {
+    const received = buildAttempt(1, 'result_received', { resultEvidenceId: EVIDENCE_ID, workflowRef: 'wf-instance-1', completionDelivery: 'pending' })
+    const closed = closeAttempt([received], { attemptId: attemptId(1), now: LATER })
+    if (!closed.ok) throw new Error('[internal] expected a closed attempt')
+    expect(closed.changed).toBe(true)
+    expect(closed.attempt).toMatchObject({ state: 'result_received', closedAt: LATER, outcome: 'result_accepted', completionDelivery: 'pending' })
+    expect(received.closedAt).toBeNull()
+    expectValidRegister(closed.register)
+
+    const again = closeAttempt(closed.register, { attemptId: attemptId(1), now: '2026-09-19T12:00:00.000Z' })
+    expect(again.ok && again.changed).toBe(false)
+    expect(again.ok && again.attempt.closedAt).toBe(LATER)
+  })
+
+  it('chains after recordAttemptResult', () => {
+    const recorded = recordAttemptResult([buildAttempt(1, 'claimed')], { attemptId: attemptId(1), evidenceId: EVIDENCE_ID, externalRunId: 'run-1' })
+    if (!recorded.ok) throw new Error('[internal] expected a recorded result')
+    const closed = closeAttempt(recorded.register, { attemptId: attemptId(1), now: LATER })
+    expect(closed.ok && closed.attempt.outcome).toBe('result_accepted')
+    expect(closed.ok && isAttemptActive(closed.attempt)).toBe(false)
+  })
+
+  it('refuses attempts without an accepted result and a foreign attempt id', () => {
+    expect(failureCode(closeAttempt([buildAttempt(1, 'claimed')], { attemptId: attemptId(1), now: LATER }))).toBe('attempt_not_active')
+    expect(failureCode(closeAttempt([buildAttempt(1, 'closed', { outcome: 'cancelled' })], { attemptId: attemptId(1), now: LATER }))).toBe(
+      'attempt_not_active',
+    )
+    expect(failureCode(closeAttempt([buildAttempt(1, 'result_received')], { attemptId: attemptId(1), now: LATER }))).toBe('attempt_not_active')
+    expect(failureCode(closeAttempt([], { attemptId: attemptId(1), now: LATER }))).toBe('attempt_not_found')
   })
 })

@@ -42,6 +42,30 @@ export type ClaimAttemptResult =
   | { ok: true; attempt: ExecutionAttempt; register: ExecutionAttempt[]; alreadyClaimed: boolean }
   | AttemptFailure
 
+export type LinkAttemptWorkflowInput = {
+  attemptId: string
+  workflowRef: string
+  workflowStepId?: string | null
+  dispatched?: boolean
+  now: string
+}
+
+export type MarkAttemptDeliveryInput = {
+  attemptId: string
+  outcome: 'delivered' | 'failed'
+  error?: string | null
+  now: string
+}
+
+export type CloseAttemptInput = { attemptId: string; now: string }
+
+export type AttemptChangeResult =
+  | { ok: true; attempt: ExecutionAttempt; register: ExecutionAttempt[]; changed: boolean }
+  | AttemptFailure
+
+const MAX_DELIVERY_ERROR_LENGTH = 2000
+const UNKNOWN_DELIVERY_ERROR = 'Delivery failed'
+
 export type RequestCancellationInput = { attemptId: string; now: string }
 
 export type RequestCancellationResult =
@@ -207,6 +231,80 @@ export function claimAttempt(register: AttemptRegister, input: ClaimAttemptInput
   const validated = validateAttempt({ ...attempt, state: 'claimed', claimedAt: input.now, workerRef: input.workerRef })
   if (!validated.ok) return validated
   return { ok: true, attempt: validated.attempt, register: replaceAttempt(register, validated.attempt), alreadyClaimed: false }
+}
+
+export function linkAttemptWorkflow(register: AttemptRegister, input: LinkAttemptWorkflowInput): AttemptChangeResult {
+  const attempt = findAttempt(register, input.attemptId)
+  if (!attempt) return attemptNotFound(input.attemptId)
+  const open = checkAttemptOpen(attempt)
+  if (!open.ok) return open
+  const requestedStepId = input.workflowStepId ?? null
+  const hasOtherRef = attempt.workflowRef !== null && attempt.workflowRef !== input.workflowRef
+  const hasOtherStep = attempt.workflowStepId !== null && requestedStepId !== null && attempt.workflowStepId !== requestedStepId
+  if (hasOtherRef || hasOtherStep) {
+    return {
+      ok: false,
+      ...buildDeliveryError('attempt_active', 'Attempt is already linked to another workflow', [
+        {
+          path: hasOtherRef ? 'workflowRef' : 'workflowStepId',
+          code: 'workflow_link_conflict',
+          message: 'A workflow link is immutable once set',
+        },
+      ]),
+    }
+  }
+  const next: ExecutionAttempt = {
+    ...attempt,
+    workflowRef: input.workflowRef,
+    workflowStepId: attempt.workflowStepId ?? requestedStepId,
+    dispatchedAt: attempt.dispatchedAt ?? (input.dispatched ? input.now : null),
+  }
+  const changed =
+    next.workflowRef !== attempt.workflowRef ||
+    next.workflowStepId !== attempt.workflowStepId ||
+    next.dispatchedAt !== attempt.dispatchedAt
+  if (!changed) return { ok: true, attempt, register: [...register], changed: false }
+  const validated = validateAttempt(next)
+  if (!validated.ok) return validated
+  return { ok: true, attempt: validated.attempt, register: replaceAttempt(register, validated.attempt), changed: true }
+}
+
+export function markAttemptDelivery(register: AttemptRegister, input: MarkAttemptDeliveryInput): AttemptChangeResult {
+  const attempt = findAttempt(register, input.attemptId)
+  if (!attempt) return attemptNotFound(input.attemptId)
+  if (attempt.completionDelivery === 'delivered') return { ok: true, attempt, register: [...register], changed: false }
+  if (attempt.completionDelivery !== 'pending') {
+    return {
+      ok: false,
+      ...buildDeliveryError('attempt_not_active', 'Attempt has no completion delivery to mark', [
+        { path: 'attemptId', code: 'no_pending_delivery', message: 'Only an accepted result of a workflow-linked attempt is delivered' },
+      ]),
+    }
+  }
+  const deliveryAttempts = (attempt.deliveryAttempts ?? 0) + 1
+  const validated = validateAttempt(
+    input.outcome === 'delivered'
+      ? { ...attempt, completionDelivery: 'delivered', lastDeliveryError: null, deliveryAttempts }
+      : {
+          ...attempt,
+          lastDeliveryError: (input.error || UNKNOWN_DELIVERY_ERROR).slice(0, MAX_DELIVERY_ERROR_LENGTH),
+          deliveryAttempts,
+        },
+  )
+  if (!validated.ok) return validated
+  return { ok: true, attempt: validated.attempt, register: replaceAttempt(register, validated.attempt), changed: true }
+}
+
+export function closeAttempt(register: AttemptRegister, input: CloseAttemptInput): AttemptChangeResult {
+  const attempt = findAttempt(register, input.attemptId)
+  if (!attempt) return attemptNotFound(input.attemptId)
+  if (attempt.outcome === 'result_accepted') return { ok: true, attempt, register: [...register], changed: false }
+  if (attempt.state !== 'result_received' || attempt.resultEvidenceId === null) {
+    return fail('attempt_not_active', 'Attempt has no accepted result to close', 'attemptId', `Attempt is ${attempt.state}`)
+  }
+  const validated = validateAttempt({ ...attempt, closedAt: input.now, outcome: 'result_accepted' })
+  if (!validated.ok) return validated
+  return { ok: true, attempt: validated.attempt, register: replaceAttempt(register, validated.attempt), changed: true }
 }
 
 export function requestCancellation(register: AttemptRegister, input: RequestCancellationInput): RequestCancellationResult {

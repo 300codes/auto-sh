@@ -641,6 +641,7 @@ export const executionAttemptSchema = z
     resultEvidenceId: uuidSchema.nullable(),
     completionDelivery: z.enum(['pending', 'delivered']).nullable(),
     lastDeliveryError: z.string().max(2000).nullable(),
+    deliveryAttempts: z.number().int().min(0).optional(),
     closedAt: isoDateTimeSchema.nullable(),
     outcome: z.enum(['result_accepted', 'cancelled', 'not_started', 'stopped']).nullable(),
   })

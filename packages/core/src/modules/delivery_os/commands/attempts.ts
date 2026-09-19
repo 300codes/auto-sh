@@ -1,12 +1,28 @@
 import { randomUUID } from 'node:crypto'
+import type { z } from 'zod'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { enforceCommandOptimisticLockWithGuards } from '@open-mercato/shared/lib/crud/optimistic-lock-command'
 import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { DeliveryTask } from '../data/entities'
-import { reserveAttemptCommandSchema, type ReserveAttemptCommandInput } from '../data/validators'
-import { parseAttemptRegister, reserveAttempt } from '../lib/attempts'
+import {
+  claimAttemptCommandSchema,
+  linkAttemptWorkflowCommandSchema,
+  markAttemptDeliveryCommandSchema,
+  reserveAttemptCommandSchema,
+  type ReserveAttemptCommandInput,
+  type TrustedExecution,
+} from '../data/validators'
+import {
+  claimAttempt,
+  linkAttemptWorkflow,
+  markAttemptDelivery,
+  parseAttemptRegister,
+  reserveAttempt,
+  type AttemptChangeResult,
+  type AttemptRegister,
+} from '../lib/attempts'
 import {
   buildDeliveryError,
   buildPackageUrl,
@@ -18,6 +34,7 @@ import {
 } from '../lib/contracts'
 import { canTransition } from '../lib/taskLifecycle'
 import { assertRevisionKind, getTargetProfile } from '../lib/targetProfiles'
+import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/trustedExecution'
 import {
   assertDeliveryCheck,
   DELIVERY_TASK_RESOURCE_KIND,
@@ -58,8 +75,8 @@ function requireIdempotencyKey(rawInput: unknown): void {
   )
 }
 
-function assertExecutionModeAllowed(parsed: ReserveAttemptCommandInput, ctx: CommandRuntimeContext): void {
-  const isTrusted = !ctx.request && parsed.trustedExecution !== undefined
+function assertExecutionModeAllowed(parsed: ReserveAttemptCommandInput, rawInput: unknown, ctx: CommandRuntimeContext): void {
+  const isTrusted = !ctx.request && isIssuedTrustedExecution(readTrustedExecutionOption(rawInput))
   const isAllowed = parsed.mode === 'automatic' ? isTrusted : parsed.trustedExecution === undefined
   if (isAllowed) return
   throw deliveryHttpError(
@@ -113,7 +130,7 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
     const scope = resolveDeliveryScope(ctx)
     requireIdempotencyKey(rawInput)
     const parsed = parseDeliveryInput(reserveAttemptCommandSchema, rawInput)
-    assertExecutionModeAllowed(parsed, ctx)
+    assertExecutionModeAllowed(parsed, rawInput, ctx)
 
     const em = resolveDeliveryEm(ctx)
     const outcome = await em.transactional(async (tx) => {
@@ -244,3 +261,124 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
 }
 
 registerCommand(reserveAttemptCommand)
+
+export type AttemptInternalCommandResult = {
+  taskId: string
+  attemptId: string
+  changed: boolean
+  attempt: ExecutionAttempt
+  taskUpdatedAt: string
+}
+
+type InternalAttemptInput = { taskId: string; attemptId: string; trustedExecution?: TrustedExecution }
+
+type InternalAttemptCommandConfig<TInput extends InternalAttemptInput> = {
+  id: string
+  schema: z.ZodType<TInput>
+  auditKey: string
+  auditLabel: string
+  apply: (register: AttemptRegister, input: TInput, now: string) => AttemptChangeResult
+}
+
+function trustedExecutionRequired(): ReturnType<typeof deliveryHttpError> {
+  return deliveryHttpError(
+    buildDeliveryError('forbidden', 'This command is reserved for the trusted in-process executor', [
+      { path: 'trustedExecution', code: 'trusted_execution_required' },
+    ]),
+  )
+}
+
+function registerInternalAttemptCommand<TInput extends InternalAttemptInput>(config: InternalAttemptCommandConfig<TInput>): void {
+  const command: CommandHandler<unknown, AttemptInternalCommandResult> = {
+    id: config.id,
+    async execute(rawInput, ctx) {
+      if (ctx.request || !isIssuedTrustedExecution(readTrustedExecutionOption(rawInput))) throw trustedExecutionRequired()
+      const scope = resolveDeliveryScope(ctx)
+      const parsed = parseDeliveryInput(config.schema, rawInput)
+
+      const em = resolveDeliveryEm(ctx)
+      const outcome = await em.transactional(async (tx) => {
+        const task = await lockScopedTask(tx, parsed.taskId, scope)
+        const register = parseAttemptRegister(task.executionAttempts)
+        if (!register.ok) {
+          throw deliveryHttpError(
+            buildDeliveryError('reconciliation_required', 'Reconcile the unknown attempt before continuing', [
+              { path: 'executionAttempts', code: 'unreadable_attempt_register' },
+            ]),
+          )
+        }
+        const applied = config.apply(register.register, parsed, new Date().toISOString())
+        if (!applied.ok) throw deliveryHttpError(applied)
+        if (applied.changed) task.executionAttempts = applied.register
+        return { task, attempt: applied.attempt, changed: applied.changed }
+      })
+
+      if (outcome.changed) await emitTaskSideEffects(ctx, 'updated', outcome.task)
+      return {
+        taskId: outcome.task.id,
+        attemptId: outcome.attempt.attemptId,
+        changed: outcome.changed,
+        attempt: outcome.attempt,
+        taskUpdatedAt: (outcome.task.updatedAt ?? new Date()).toISOString(),
+      }
+    },
+    buildLog: async ({ input, result, ctx }) => {
+      if (!result.changed) return null
+      const scope = resolveDeliveryScope(ctx)
+      const parsed = config.schema.safeParse(input)
+      const trustedActorId = parsed.success ? parsed.data.trustedExecution?.actorUserId : undefined
+      const { translate } = await resolveTranslations()
+      return {
+        actionLabel: translate(config.auditKey, config.auditLabel),
+        resourceKind: DELIVERY_TASK_RESOURCE_KIND,
+        resourceId: result.taskId,
+        tenantId: scope.tenantId,
+        organizationId: scope.organizationId,
+        ...(trustedActorId ? { actorUserId: trustedActorId } : {}),
+        snapshotAfter: result,
+      }
+    },
+  }
+  registerCommand(command)
+}
+
+registerInternalAttemptCommand({
+  id: 'delivery_os.attempts.claim',
+  schema: claimAttemptCommandSchema,
+  auditKey: 'delivery_os.audit.attempts.claim',
+  auditLabel: 'Claim execution attempt',
+  apply: (register, input, now) => {
+    const claimed = claimAttempt(register, { attemptId: input.attemptId, workerRef: input.workerRef, now })
+    if (!claimed.ok) return claimed
+    return { ok: true, attempt: claimed.attempt, register: claimed.register, changed: !claimed.alreadyClaimed }
+  },
+})
+
+registerInternalAttemptCommand({
+  id: 'delivery_os.attempts.link_workflow',
+  schema: linkAttemptWorkflowCommandSchema,
+  auditKey: 'delivery_os.audit.attempts.link_workflow',
+  auditLabel: 'Link execution attempt to a workflow',
+  apply: (register, input, now) =>
+    linkAttemptWorkflow(register, {
+      attemptId: input.attemptId,
+      workflowRef: input.workflowRef,
+      workflowStepId: input.workflowStepId,
+      dispatched: input.dispatched,
+      now,
+    }),
+})
+
+registerInternalAttemptCommand({
+  id: 'delivery_os.attempts.mark_delivery',
+  schema: markAttemptDeliveryCommandSchema,
+  auditKey: 'delivery_os.audit.attempts.mark_delivery',
+  auditLabel: 'Mark completion delivery',
+  apply: (register, input, now) =>
+    markAttemptDelivery(register, {
+      attemptId: input.attemptId,
+      outcome: input.outcome,
+      error: input.outcome === 'failed' ? input.error : null,
+      now,
+    }),
+})

@@ -23,7 +23,7 @@ import { LockMode } from '@mikro-orm/core'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
 import { DeliveryBaseline, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../../data/entities'
-import { reconcileAttempt, reserveAttempt } from '../../lib/attempts'
+import { closeAttempt, reconcileAttempt, recordAttemptResult, reserveAttempt } from '../../lib/attempts'
 import {
   MAX_EXECUTION_ATTEMPTS,
   reserveAttemptResponseSchema,
@@ -31,7 +31,8 @@ import {
   type SourceRevision,
 } from '../../lib/contracts'
 import { loadNegativeDeliveryFixtures } from '../../lib/fixtures'
-import { checkTaskReservable, type AttemptReserveResult } from '../attempts'
+import { issueTrustedExecution } from '../../lib/trustedExecution'
+import { checkTaskReservable, type AttemptInternalCommandResult, type AttemptReserveResult } from '../attempts'
 import {
   ACTOR_ID,
   BASELINE_ID,
@@ -432,7 +433,7 @@ describe('delivery_os.attempts.reserve', () => {
   })
 
   describe('execution mode', () => {
-    const trustedExecution = { source: 'delivery_agents', actorUserId: ACTOR_ID }
+    const trustedExecution = issueTrustedExecution(ACTOR_ID)
 
     it('rejects automatic mode when a request is present, even with the trusted option', async () => {
       seed([makeTask()])
@@ -470,6 +471,15 @@ describe('delivery_os.attempts.reserve', () => {
       expectFrozenBody(error, 400, 'validation_failed')
     })
 
+    it('rejects a trusted option that was not issued in-process, as a generic command dispatcher would forward it', async () => {
+      seed([makeTask()])
+      const forged = JSON.parse(JSON.stringify(trustedExecution))
+      const error = await catchHttpError(() => reserve({ inProcess: true }, body({ mode: 'automatic', trustedExecution: forged })))
+      expectFrozenBody(error, 403, 'forbidden')
+      expect(detailCodes(error)).toEqual(['trusted_execution_required'])
+      expect(store.tasks[0].executionAttempts).toHaveLength(0)
+    })
+
     it('accepts automatic mode from the trusted in-process executor and stamps the actor', async () => {
       seed([makeTask()])
       const { ctx } = makeHarness({ inProcess: true })
@@ -499,6 +509,210 @@ describe('delivery_os.attempts.reserve', () => {
     seed([makeTask()])
     store.projects[0].deletedAt = UPDATED_AT
     expectFrozenBody(await catchHttpError(() => reserve({ headers: FRESH_HEADERS })), 404, 'not_found')
+  })
+})
+
+describe('internal attempt commands', () => {
+  const trustedExecution = issueTrustedExecution(ACTOR_ID)
+  const EVIDENCE_ID = '6b6b6b6b-6666-4666-8666-666666666666'
+  const CLAIM = 'delivery_os.attempts.claim'
+  const LINK = 'delivery_os.attempts.link_workflow'
+  const MARK = 'delivery_os.attempts.mark_delivery'
+  const internal = (id: string) => getHandler<AttemptInternalCommandResult>(id)
+
+  function seedReserved(): string {
+    seed([makeTask()])
+    const register = registerWith(1, 'reserved')
+    store.tasks[0] = makeTask({ status: 'executing', attemptNumber: 1, executionAttempts: register })
+    return register[0].attemptId
+  }
+
+  function acceptedRegister(attemptId: string, workflowRef: string | null): ExecutionAttempt[] {
+    const linked = store.tasks[0].executionAttempts.map((attempt) => ({ ...attempt, workflowRef }))
+    const recorded = recordAttemptResult(linked, { attemptId, evidenceId: EVIDENCE_ID, externalRunId: 'run-1' })
+    if (!recorded.ok) throw new Error('[internal] fixture result failed')
+    const closed = closeAttempt(recorded.register, { attemptId, now: NOW })
+    if (!closed.ok) throw new Error('[internal] fixture close failed')
+    return closed.register
+  }
+
+  function run(id: string, input: Row, options: Parameters<typeof makeHarness>[0] = { inProcess: true }) {
+    const { ctx } = makeHarness(options)
+    return internal(id).execute({ taskId: TASK_A, trustedExecution, ...input }, ctx)
+  }
+
+  describe.each([
+    [CLAIM, { workerRef: 'worker-1' }],
+    [LINK, { workflowRef: 'wf-instance-1' }],
+    [MARK, { outcome: 'delivered' }],
+  ])('%s trusted context', (id, extra) => {
+    it('answers 403 whenever a request is present, before any validation or read', async () => {
+      const attemptId = seedReserved()
+      const before = JSON.stringify(store.tasks)
+      for (const input of [{ attemptId, ...extra }, { attemptId: 'not-a-uuid' }, {}]) {
+        const error = await catchHttpError(() => run(id, input, { headers: FRESH_HEADERS }))
+        expectFrozenBody(error, 403, 'forbidden')
+        expect(detailCodes(error)).toEqual(['trusted_execution_required'])
+      }
+      expect(mockFindOneWithDecryption).not.toHaveBeenCalled()
+      expect(JSON.stringify(store.tasks)).toBe(before)
+    })
+
+    it('answers 403 in-process without an issued trusted option, also for a forged copy of a real one', async () => {
+      const attemptId = seedReserved()
+      const forged = JSON.parse(JSON.stringify(trustedExecution))
+      for (const option of [undefined, forged, { ...trustedExecution }, { ...trustedExecution, source: 'route' }, 'delivery_agents']) {
+        const error = await catchHttpError(() => run(id, { attemptId, ...extra, trustedExecution: option }))
+        expectFrozenBody(error, 403, 'forbidden')
+        expect(detailCodes(error)).toEqual(['trusted_execution_required'])
+      }
+      expect(mockFindOneWithDecryption).not.toHaveBeenCalled()
+    })
+
+    it('answers 400 for a malformed input from the trusted executor', async () => {
+      seedReserved()
+      expectFrozenBody(await catchHttpError(() => run(id, { attemptId: 'not-a-uuid', ...extra })), 400, 'validation_failed')
+    })
+
+    it('takes the scope from the caller, never from the input', async () => {
+      const attemptId = seedReserved()
+      const smuggled = { attemptId, ...extra, tenantId: TENANT_ID, organizationId: ORG_ID }
+      const error = await catchHttpError(() => run(id, smuggled, { inProcess: true, orgId: FOREIGN_ORG_ID }))
+      expectFrozenBody(error, 404, 'not_found')
+    })
+
+    it('answers 404 for an attempt that is not on the task and fails closed on an unreadable register', async () => {
+      seedReserved()
+      const unknown = await catchHttpError(() => run(id, { attemptId: '77777777-7777-4777-8777-999999999999', ...extra }))
+      expectFrozenBody(unknown, 404, 'attempt_not_found')
+      store.tasks[0].executionAttempts = [{ attemptId: 'broken' }] as unknown as ExecutionAttempt[]
+      const unreadable = await catchHttpError(() => run(id, { attemptId: '77777777-7777-4777-8777-999999999999', ...extra }))
+      expectFrozenBody(unreadable, 409, 'reconciliation_required')
+    })
+  })
+
+  describe(CLAIM, () => {
+    it('claims once under the task row lock, refreshes the index and emits no domain event', async () => {
+      const attemptId = seedReserved()
+      const { ctx, em } = makeHarness({ inProcess: true })
+      const input = { taskId: TASK_A, attemptId, workerRef: 'worker-1', trustedExecution }
+      const result = await internal(CLAIM).execute(input, ctx)
+
+      expect(result).toMatchObject({ taskId: TASK_A, attemptId, changed: true, taskUpdatedAt: UPDATED_AT.toISOString() })
+      expect(result.attempt).toMatchObject({ state: 'claimed', workerRef: 'worker-1' })
+      expect(store.tasks[0].executionAttempts[0]).toEqual(result.attempt)
+      expect(store.tasks[0].status).toBe('executing')
+      expect(em.transactional).toHaveBeenCalledTimes(1)
+      const lockedReads = mockFindOneWithDecryption.mock.calls
+        .filter(([, , , options]) => options?.lockMode === LockMode.PESSIMISTIC_WRITE)
+        .map(([, entity]) => entity)
+      expect(lockedReads).toEqual([DeliveryTask])
+      const dataEngine = ctx.container.resolve('dataEngine') as { markOrmEntityChange: jest.Mock }
+      expect(dataEngine.markOrmEntityChange).toHaveBeenCalledTimes(1)
+      expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+      const log = await internal(CLAIM).buildLog?.({ input, result, ctx, snapshots: {} })
+      expect(log).toMatchObject({ actorUserId: ACTOR_ID, resourceKind: 'delivery_os.task', resourceId: TASK_A, tenantId: TENANT_ID })
+    })
+
+    it('lets exactly one of two racing workers win; the winner may repeat its claim', async () => {
+      const attemptId = seedReserved()
+      const outcomes = await Promise.allSettled([
+        run(CLAIM, { attemptId, workerRef: 'worker-1' }),
+        run(CLAIM, { attemptId, workerRef: 'worker-2' }),
+      ])
+      expect(outcomes.map((outcome) => outcome.status)).toEqual(['fulfilled', 'rejected'])
+      const loser = await catchHttpError(() => run(CLAIM, { attemptId, workerRef: 'worker-2' }))
+      expectFrozenBody(loser, 409, 'attempt_active')
+      expect(store.tasks[0].executionAttempts[0].workerRef).toBe('worker-1')
+
+      const before = JSON.stringify(store.tasks)
+      const { ctx } = makeHarness({ inProcess: true })
+      const input = { taskId: TASK_A, attemptId, workerRef: 'worker-1', trustedExecution }
+      const replay = await internal(CLAIM).execute(input, ctx)
+      expect(replay.changed).toBe(false)
+      expect(JSON.stringify(store.tasks)).toBe(before)
+      expect((ctx.container.resolve('dataEngine') as { markOrmEntityChange: jest.Mock }).markOrmEntityChange).not.toHaveBeenCalled()
+      expect(await internal(CLAIM).buildLog?.({ input, result: replay, ctx, snapshots: {} })).toBeNull()
+    })
+
+    it('refuses a closed attempt, so a redelivered job never starts the executor again', async () => {
+      const attemptId = seedReserved()
+      store.tasks[0].executionAttempts = acceptedRegister(attemptId, null)
+      const error = await catchHttpError(() => run(CLAIM, { attemptId, workerRef: 'worker-1' }))
+      expectFrozenBody(error, 409, 'attempt_closed')
+    })
+  })
+
+  describe(LINK, () => {
+    it('links the workflow, marks the dispatch once and keeps the link immutable', async () => {
+      const attemptId = seedReserved()
+      const linked = await run(LINK, { attemptId, workflowRef: 'wf-instance-1', workflowStepId: 'wait-for-result' })
+      expect(linked.attempt).toMatchObject({ workflowRef: 'wf-instance-1', workflowStepId: 'wait-for-result', dispatchedAt: null })
+      const dispatched = await run(LINK, { attemptId, workflowRef: 'wf-instance-1', dispatched: true })
+      expect(dispatched.changed).toBe(true)
+      expect(dispatched.attempt.dispatchedAt).not.toBeNull()
+      const replay = await run(LINK, { attemptId, workflowRef: 'wf-instance-1', workflowStepId: 'wait-for-result', dispatched: true })
+      expect(replay.changed).toBe(false)
+      expect(replay.attempt).toEqual(dispatched.attempt)
+
+      const other = await catchHttpError(() => run(LINK, { attemptId, workflowRef: 'wf-instance-2' }))
+      expectFrozenBody(other, 409, 'attempt_active')
+      expect(detailCodes(other)).toEqual(['workflow_link_conflict'])
+      expect(store.tasks[0].executionAttempts[0].workflowRef).toBe('wf-instance-1')
+    })
+
+    it('refuses a cancelled attempt', async () => {
+      const attemptId = seedReserved()
+      store.tasks[0].executionAttempts = store.tasks[0].executionAttempts.map((attempt) => ({
+        ...attempt,
+        state: 'cancel_requested' as const,
+        cancellationRequestedAt: NOW,
+        stopConfirmation: 'stop_unconfirmed' as const,
+      }))
+      expectFrozenBody(await catchHttpError(() => run(LINK, { attemptId, workflowRef: 'wf-instance-1' })), 409, 'attempt_cancelled')
+    })
+  })
+
+  describe(MARK, () => {
+    it('records failures and the delivery one after another and is idempotent once delivered', async () => {
+      const attemptId = seedReserved()
+      store.tasks[0].executionAttempts = acceptedRegister(attemptId, 'wf-instance-1')
+      const outcomes = await Promise.all([
+        run(MARK, { attemptId, outcome: 'failed', error: 'workflow signal timed out' }),
+        run(MARK, { attemptId, outcome: 'failed', error: 'workflow signal timed out again' }),
+      ])
+      expect(outcomes.map((outcome) => outcome.attempt.deliveryAttempts)).toEqual([1, 2])
+      expect(store.tasks[0].executionAttempts[0]).toMatchObject({
+        completionDelivery: 'pending',
+        lastDeliveryError: 'workflow signal timed out again',
+      })
+
+      const delivered = await run(MARK, { attemptId, outcome: 'delivered' })
+      expect(delivered.attempt).toMatchObject({ completionDelivery: 'delivered', lastDeliveryError: null, deliveryAttempts: 3 })
+      const before = JSON.stringify(store.tasks)
+      for (const input of [{ outcome: 'delivered' }, { outcome: 'failed', error: 'late failure' }]) {
+        expect((await run(MARK, { attemptId, ...input })).changed).toBe(false)
+      }
+      expect(JSON.stringify(store.tasks)).toBe(before)
+      expect(store.tasks[0].status).toBe('executing')
+      expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+    })
+
+    it('answers 409 no_pending_delivery for an OSS-only result and for an attempt without a result', async () => {
+      const attemptId = seedReserved()
+      const open = await catchHttpError(() => run(MARK, { attemptId, outcome: 'delivered' }))
+      expectFrozenBody(open, 409, 'attempt_not_active')
+      expect(detailCodes(open)).toEqual(['no_pending_delivery'])
+      store.tasks[0].executionAttempts = acceptedRegister(attemptId, null)
+      const ossOnly = await catchHttpError(() => run(MARK, { attemptId, outcome: 'delivered' }))
+      expect(detailCodes(ossOnly)).toEqual(['no_pending_delivery'])
+    })
+
+    it('requires an error text for a failed delivery', async () => {
+      const attemptId = seedReserved()
+      expectFrozenBody(await catchHttpError(() => run(MARK, { attemptId, outcome: 'failed' })), 400, 'validation_failed')
+      expectFrozenBody(await catchHttpError(() => run(MARK, { attemptId, outcome: 'retry' })), 400, 'validation_failed')
+    })
   })
 })
 

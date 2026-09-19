@@ -246,6 +246,33 @@ export const reserveAttemptCommandSchema = z.object({
 })
 export type ReserveAttemptCommandInput = z.infer<typeof reserveAttemptCommandSchema>
 
+const internalAttemptShape = {
+  taskId: uuidSchema,
+  attemptId: uuidSchema,
+  trustedExecution: trustedExecutionSchema.optional(),
+}
+const attemptRefSchema = z.string().min(1).max(200)
+
+export const claimAttemptCommandSchema = z.object({
+  ...internalAttemptShape,
+  workerRef: attemptRefSchema,
+})
+export type ClaimAttemptCommandInput = z.infer<typeof claimAttemptCommandSchema>
+
+export const linkAttemptWorkflowCommandSchema = z.object({
+  ...internalAttemptShape,
+  workflowRef: attemptRefSchema,
+  workflowStepId: attemptRefSchema.nullable().optional(),
+  dispatched: z.boolean().optional(),
+})
+export type LinkAttemptWorkflowCommandInput = z.infer<typeof linkAttemptWorkflowCommandSchema>
+
+export const markAttemptDeliveryCommandSchema = z.discriminatedUnion('outcome', [
+  z.object({ ...internalAttemptShape, outcome: z.literal('delivered') }),
+  z.object({ ...internalAttemptShape, outcome: z.literal('failed'), error: z.string().min(1).max(8000) }),
+])
+export type MarkAttemptDeliveryCommandInput = z.infer<typeof markAttemptDeliveryCommandSchema>
+
 export const packageQuerySchema = z.object({ attemptId: uuidSchema })
 export type PackageQuery = z.infer<typeof packageQuerySchema>
 
@@ -258,6 +285,7 @@ export type ResultsImportInput = z.infer<typeof resultsImportSchema>
 export const acceptResultCommandSchema = resultsImportSchema.extend({
   taskId: uuidSchema,
   source: z.enum(['manual', 'adapter']),
+  trustedExecution: trustedExecutionSchema.optional(),
 })
 export type AcceptResultCommandInput = z.infer<typeof acceptResultCommandSchema>
 
