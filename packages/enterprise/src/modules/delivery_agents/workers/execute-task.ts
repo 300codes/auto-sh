@@ -6,6 +6,8 @@ import { createLogger } from '@open-mercato/shared/lib/logger'
 import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { mapCezarRunToResultManifest } from '@open-mercato/delivery-cezar/lib/resultManifest'
 import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
+import { DELIVERY_SCHEMA_VERSIONS, taskPackageV1Schema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { tryResolveExecutionHost } from '../lib/executionHost'
 import type { ITaskExecutor } from '../lib/fakeExecutor'
 import { acceptResult } from '../lib/resultAcceptance'
 import { DELIVERY_EXECUTE_QUEUE, type ExecuteTaskJobPayload } from '../lib/queue'
@@ -64,6 +66,43 @@ async function claimAttempt(
   }
 }
 
+const INCOMPATIBLE_HOST_MESSAGE = '[internal] No compatible execution host is installed for delivery task-package.v1'
+
+type ProducedManifest = { manifest: unknown; executor: 'host' | 'legacy' }
+
+async function produceManifest(
+  container: { resolve: (name: string) => unknown },
+  taskExecutor: ITaskExecutor,
+  taskPackage: unknown,
+  run: { scope: DeliveryScope; actorUserId: string; baseDir: string },
+): Promise<ProducedManifest | null> {
+  const schemaVersion = typeof taskPackage === 'object' && taskPackage !== null ? (taskPackage as { schemaVersion?: unknown }).schemaVersion : undefined
+  if (schemaVersion === DELIVERY_SCHEMA_VERSIONS.taskPackage) {
+    const canonical = taskPackageV1Schema.parse(taskPackage)
+    const host = tryResolveExecutionHost(container)
+    if (!host || !host.supports(canonical.targetProfileId, canonical.targetProfileVersion)) throw new Error(INCOMPATIBLE_HOST_MESSAGE)
+    try {
+      return { manifest: await host.execute({ taskPackage: canonical, ...run }), executor: 'host' }
+    } catch (error) {
+      logger.error('execution host failed', {
+        taskId: canonical.taskId,
+        attemptId: canonical.attemptId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return null
+    }
+  }
+  if (schemaVersion !== '1') throw new Error(INCOMPATIBLE_HOST_MESSAGE)
+  try {
+    const legacyPackage = taskPackage as Parameters<ITaskExecutor['run']>[0]
+    const runResult = await taskExecutor.run(legacyPackage, run.baseDir)
+    return { manifest: mapCezarRunToResultManifest({ pkg: legacyPackage, runResult }), executor: 'legacy' }
+  } catch (error) {
+    logger.error('task executor failed', { error: error instanceof Error ? error.message : String(error) })
+    return null
+  }
+}
+
 export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx: JobContext): Promise<void> {
   const payload = job.payload
   if (!payload?.attemptId || !payload?.taskId || !payload?.tenantId || !payload?.organizationId) {
@@ -103,23 +142,10 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
     return
   }
 
-  // Run Cezar task via executor (fake in tests, real in production)
   const baseDir = process.env.DELIVERY_CEZAR_BASE_DIR ?? process.cwd()
-  let runResult
   await queries.assertExecutionReady(scope, taskId, attemptId)
-  if (typeof taskPackage !== 'object' || taskPackage === null || (taskPackage as { schemaVersion?: unknown }).schemaVersion !== '1') {
-    throw new Error('[internal] No compatible execution host is installed for delivery task-package.v1')
-  }
-  try {
-    runResult = await taskExecutor.run(taskPackage as Parameters<ITaskExecutor['run']>[0], baseDir)
-  } catch (error) {
-    logger.error('task executor failed', {
-      taskId,
-      attemptId,
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return
-  }
+  const produced = await produceManifest(container, taskExecutor, taskPackage, { scope, actorUserId: userId, baseDir })
+  if (!produced) return
 
   // Re-read attempt to check for cancel_requested
   const latestAttempt = await queries.getAttempt(scope, taskId, attemptId)
@@ -148,16 +174,11 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
       })
     }
   } else {
-    const manifest = mapCezarRunToResultManifest({
-      pkg: taskPackage as Parameters<typeof mapCezarRunToResultManifest>[0]['pkg'],
-      runResult,
-    })
-
     try {
       await acceptResult({
         taskId,
         attemptId,
-        manifest,
+        manifest: produced.manifest,
         userId,
         scope,
         container: container as Parameters<typeof acceptResult>[0]['container'],
@@ -171,10 +192,5 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
     }
   }
 
-  logger.info('execute-task complete', {
-    taskId,
-    attemptId,
-    exitCode: runResult.exitCode,
-    durationMs: runResult.durationMs,
-  })
+  logger.info('execute-task complete', { taskId, attemptId, executor: produced.executor })
 }
