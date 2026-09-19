@@ -2,7 +2,7 @@
 
 Data: 2026-09-19. Skill: `10x-plan`. Ocena HIGH potwierdzona przez użytkownika.
 Źródło: [research](research.md), dodatek procesu i osiem odpowiedzi użytkownika.
-Status: decyzje potwierdzone; podział faz i szczegółowy plan w przygotowaniu.
+Status: decyzje i osiem faz potwierdzone; szczegółowy [plan](plan.md) oraz [brief](plan-brief.md) przygotowane. Implementacja i odbiór pozostają do wykonania.
 
 ## Decyzje użytkownika
 
@@ -26,7 +26,7 @@ Status: decyzje potwierdzone; podział faz i szczegółowy plan w przygotowaniu.
 - UI-06 określa nowy fikcyjny projekt demonstracyjny i odrębny FROM_DESIGN do zatwierdzonego baseline. Próba i prezentacja mają osobne dowody; replay nie zalicza live.
 - Stan implementacji, wykonane testy i odbiór człowieka to osobne fakty. Dokumentacja nie zalicza żadnego kryterium wykonania.
 
-## Roboczy podział faz
+## Potwierdzony podział faz
 
 1. Uzgodnienie bieżących dostaw i readiness — porównanie branchy, potwierdzenie kontraktów i środowiska.
 2. Stabilizacja istniejącego UI — prawdziwy widget EXEC, trwały odczyt prób/wyników, metadane evidence i nawigacja blockerów.
