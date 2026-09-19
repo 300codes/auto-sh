@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server'
 import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
 import { z } from 'zod'
 import type { DecisionCommandResult } from '@open-mercato/core/modules/delivery_os/commands/decisions'
-import { DELIVERY_BASELINE_RESOURCE_KIND, resolveDeliveryScope } from '@open-mercato/core/modules/delivery_os/commands/shared'
+import {
+  DELIVERY_BASELINE_RESOURCE_KIND,
+  deliveryHttpError,
+  resolveDeliveryScope,
+} from '@open-mercato/core/modules/delivery_os/commands/shared'
 import { baselineDecisionSchema } from '@open-mercato/core/modules/delivery_os/data/validators'
-import { uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { buildDeliveryError, uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { DELIVERY_OS_OPENAPI_TAG } from '@open-mercato/core/modules/delivery_os/api/openapi'
 import {
   deliveryErrorResponse,
@@ -26,6 +30,13 @@ export async function POST(request: Request, context: DeliveryRouteContext): Pro
     const scope = resolveDeliveryScope(ctx)
     const baselineId = await readRouteId(context)
     const body = await readRouteBody(request)
+    if (body.kind === 'deploy' || body.kind === 'release') {
+      throw deliveryHttpError(
+        buildDeliveryError('unsupported_evidence_kind', 'Deploy and release decisions have their own project routes', [
+          { path: 'kind', code: 'decision_kind_not_supported' },
+        ]),
+      )
+    }
     const outcome = await executeDeliveryCommand<DecisionCommandResult>(ctx, scope, {
       commandId: 'delivery_os.decisions.record',
       body,

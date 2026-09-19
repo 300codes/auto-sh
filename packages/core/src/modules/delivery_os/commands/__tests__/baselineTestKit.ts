@@ -71,7 +71,7 @@ export function getHandler<TResult>(id: string): CommandHandler<unknown, TResult
 
 export function makeHarness(
   store: Store,
-  options: { headers?: Record<string, string>; orgId?: string; sub?: string } = {},
+  options: { headers?: Record<string, string>; orgId?: string; sub?: string; services?: Record<string, unknown> } = {},
 ): { ctx: CommandRuntimeContext; em: EmMock } {
   const em: EmMock = {
     fork: jest.fn(),
@@ -90,6 +90,7 @@ export function makeHarness(
     em,
     dataEngine: { markOrmEntityChange: jest.fn() },
     deliveryOsAttachmentInspector: makeAttachmentInspector(() => store.attachments),
+    ...options.services,
   }
   const container = {
     resolve: jest.fn((name: string) => {
