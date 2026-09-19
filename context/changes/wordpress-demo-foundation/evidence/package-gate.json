@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-19T12:03:46.318677+00:00",
+  "baseRevision": "5d485ae5e713ba9c5c6f69809b4fba5b6b2f87c0",
+  "workingTree": "uncommitted_source_hashes_authoritative",
+  "runner": "local_host",
+  "toolchain": {
+    "node": "24.13.1",
+    "typescript": "5.9.3",
+    "zod": "4.4.3",
+    "nodeTypes": "25.9.2"
+  },
+  "declaredWorkspaceToolchainFullyInstalled": false,
+  "commands": [
+    {
+      "command": "npm test --prefix packages/delivery-wordpress",
+      "status": "passed",
+      "tests": 65,
+      "passed": 65,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run typecheck --prefix packages/delivery-wordpress",
+      "status": "passed"
+    },
+    {
+      "command": "npm run build --prefix packages/delivery-wordpress",
+      "status": "passed"
+    },
+    {
+      "command": "node packages/create-app/agentic/shared/scripts/check-lessons.mjs --root .",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "fullMonorepoGate": "not_run",
+  "sourceSha256": {
+    "packages/delivery-wordpress/src/__tests__/cli.test.ts": "0c65f6531a1873958afdd45a4fc1efb22e3f1e18c37f8d7bd9a3e6d4381d837e",
+    "packages/delivery-wordpress/src/__tests__/contracts.test.ts": "f8927ab162ac994ae1a07ca85dbb72c47e0411c9d4e0a630dec6a026abe97793",
+    "packages/delivery-wordpress/src/__tests__/demo-native.test.ts": "b3f401918cc9e0eb0f6803cad8f8a2beeb6000379df00338ffd3f9f2faeaa1ce",
+    "packages/delivery-wordpress/src/__tests__/demo-plugins.test.ts": "95430115fb7c1629f033bedfcdf431a1d6cc68efafc7ca9117747a4a5655b092",
+    "packages/delivery-wordpress/src/__tests__/demo-probe.test.ts": "9fac7cf99ed3982f68e4f6fd2d1329fa32e9ca122b6db87bbe806c8edc65cb0a",
+    "packages/delivery-wordpress/src/__tests__/paths.test.ts": "12baae3dfa88a75c60b71b7d8f391a20f9c61f303d9e0715229e6cc4be1fbd54",
+    "packages/delivery-wordpress/src/__tests__/runner.test.ts": "6071928acd31bb9e5a3ddd34695aec3226f93e094b770dd6943eefee5f75a09f",
+    "packages/delivery-wordpress/src/__tests__/scaffold.test.ts": "afa772fe78ebe68083c26f453a6679df18c82332ea56c702cc7b1de5f199cb20",
+    "packages/delivery-wordpress/src/__tests__/snapshot.test.ts": "17edf01ae08d3a4d339bed0a5c4696305ac6118b03ddecdd853eefb07b43c21b",
+    "packages/delivery-wordpress/src/__tests__/tools.test.ts": "4a18fdf6203afa8777c8bd2c273b7c4effcfbfcb3c9106132a0dd304abba2a83",
+    "packages/delivery-wordpress/src/cli-support.ts": "16bcf3412ed81eeeb92ca62efea0312cc2e8c1b99bffb2078e8f9e3990747b77",
+    "packages/delivery-wordpress/src/cli.ts": "3bf7cc51d1e5435db38968395d2989058ce5df4c26e708be934111b2dec829ca",
+    "packages/delivery-wordpress/src/contracts.ts": "9667cc5c4eb37ba92b65f955726673dad39a3ce28c5fcce4e554f462e2c6d5c6",
+    "packages/delivery-wordpress/src/demo-native.ts": "6aa88a841f9f871f699100386d95a62c042df7bca73d4e2e389451063c801655",
+    "packages/delivery-wordpress/src/demo-plugins.ts": "3c74e8dfab2ae425a901e3d52bd440c5782bf78f9412e19508f1fa1972e8fa1f",
+    "packages/delivery-wordpress/src/demo-probe.ts": "2b7e836f510b75eb901e5f53ad225112148d2c6132297191a60d72c13fb9f9b3",
+    "packages/delivery-wordpress/src/index.ts": "d6cf6c9be1efe02f874cd01f46b8208750a92d7dda3104ca142155798c971eae",
+    "packages/delivery-wordpress/src/ownership.ts": "6d3c4fc013968e4a89f05603770e8347587010e761b5eb981af2612f1970c793",
+    "packages/delivery-wordpress/src/paths.ts": "29078f65c411edf628ecd33721e8b0828edfab46371243142b15835caf39074d",
+    "packages/delivery-wordpress/src/runner.ts": "9ab4f6af135e3a18ce4125a82db20b3e9c9d1db66f9643706bf4b07d03f4b7ea",
+    "packages/delivery-wordpress/src/scaffold.ts": "c06e40d3a196946773d6557cdc9633f7b2452257952877eaf59778a86bd4e8e6",
+    "packages/delivery-wordpress/src/snapshot.ts": "a553c51ce84337f36b8a2107c41035783b68076b72440f09fc864d9a1414d519",
+    "packages/delivery-wordpress/src/tools.ts": "e08433f2e90a50d049052b86a11cc08463d147b864137a4a1be4ba24d8addf18",
+    "packages/delivery-wordpress/tsconfig.json": "e7880fde7edbf0a330cee38d7f80cc32c055b36c5b7c558d71e96dbe0155a691",
+    "packages/delivery-wordpress/tsconfig.build.json": "3276249004106f210c9b762523ffdbe2a876b99dde4cf03d5311ba354a231613",
+    "packages/delivery-wordpress/package.json": "4fa1d5a1ecda121929cdfa37169c2251179c11e9bb85fa487b853cd577e24287"
+  }
+}

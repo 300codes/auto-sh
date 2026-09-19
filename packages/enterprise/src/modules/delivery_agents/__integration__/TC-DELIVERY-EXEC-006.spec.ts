@@ -14,8 +14,7 @@ import { type BaselineContentV1 } from '@open-mercato/core/modules/delivery_os/l
  *
  * Owner: EXEC stream. Verifies the database-level reservation guard (OSS-04
  * `delivery_os.attempts.reserve` command) when two callers race to execute the same task at the
- * same moment. Exactly one must succeed with 202; the other must be rejected (409 or 202 with a
- * stale idempotency replay that the second caller's different key makes non-idempotent).
+ * same moment. Exactly one must succeed with 202; the other must be rejected with 409.
  *
  * ENVIRONMENT: same requirements as TC-DELIVERY-OSS-001 — app + fixtures on one Postgres database.
  * Requires `OM_ENABLE_ENTERPRISE_MODULES` (see meta.ts).
@@ -28,9 +27,7 @@ import { type BaselineContentV1 } from '@open-mercato/core/modules/delivery_os/l
  *   `--workers=1` so the two concurrent requests hit the same process sequentially enough for the
  *   lock to serialize them.
  *
- * TC-DELIVERY-EXEC-003 idempotency note:
- *   Same-idempotencyKey behaviour (idempotent 202) is already covered by TC-DELIVERY-EXEC-003
- *   and is not repeated here.
+ * Also verifies that replaying an idempotency key returns the same attempt without reserving another.
  */
 
 const baselineContent = JSON.parse(
@@ -240,24 +237,11 @@ test.describe('TC-DELIVERY-EXEC-006: concurrent execute → one winner, one conf
       const bodyA = (await readJsonSafe<Json>(resA)) ?? {}
       const bodyB = (await readJsonSafe<Json>(resB)) ?? {}
 
-      // Acceptable outcomes:
-      //   202 + 409: one won, one lost (expected for the concurrent conflict case)
-      //   202 + 202: both could succeed only if the task was put back to ready between them
-      //              (not expected here, but accepted defensively)
-      //   409 + 409: both lost (task not in a ready state the execute route accepts — treat as
-      //              test infrastructure issue, skip rather than fail)
       const successStatuses = [202]
-      const conflictStatuses = [409, 400, 422]
+      const conflictStatuses = [409]
 
       const winners = [statusA, statusB].filter((s) => successStatuses.includes(s))
       const losers = [statusA, statusB].filter((s) => conflictStatuses.includes(s))
-
-      if (winners.length === 0 && losers.length === 2) {
-        // Both were rejected — this happens when the task fixture isn't in a state the execute
-        // route accepts (e.g. the execution bridge requires additional setup). Skip gracefully.
-        test.skip()
-        return
-      }
 
       expect(winners.length, `expected exactly one 202 winner; statuses: ${statusA}, ${statusB}; bodies: ${JSON.stringify({ bodyA, bodyB })}`).toBe(1)
       expect(losers.length, 'expected exactly one loser').toBe(1)
@@ -314,34 +298,28 @@ test.describe('TC-DELIVERY-EXEC-006: concurrent execute → one winner, one conf
       ])
 
       const firstStatuses = [firstA.status(), firstB.status()]
-      const firstWinnerResponse = firstA.status() === 202 ? firstA : firstB.status() === 202 ? firstB : null
-
-      if (!firstWinnerResponse) {
-        // Neither won — the execute bridge is not available in this environment.
-        test.skip()
-        return
-      }
+      expect(firstStatuses.filter((status) => status === 202), `round 1: expected one 202; statuses ${firstStatuses.join(', ')}`).toHaveLength(1)
+      expect(firstStatuses.filter((status) => status === 409), 'round 1: expected one 409 loser').toHaveLength(1)
+      const firstWinnerResponse = firstA.status() === 202 ? firstA : firstB
 
       const firstBody = (await readJsonSafe<Json>(firstWinnerResponse)) ?? {}
       const firstAttemptId = firstBody.attemptId as string | undefined
       expect(firstAttemptId, 'winner body must contain attemptId').toBeTruthy()
 
       // ── Cancel the winning attempt ────────────────────────────────────────────
+      const currentTask = await call('GET', `${OSS_API}/tasks/${taskId}`)
+      expect(currentTask.status, 'read task version before cancel').toBe(200)
+      expect(currentTask.body.updatedAt).toEqual(expect.any(String))
       const cancelRes = await apiRequest(request, 'POST', CANCEL_PATH, {
         token,
         data: { attemptId: firstAttemptId, reason: 'TC-DELIVERY-EXEC-006 cancel before round 2' },
+        headers: { [LOCK_HEADER]: String(currentTask.body.updatedAt) },
       })
-      // 200 = cancel accepted; 409 = attempt not in a cancellable state (already closed etc.)
-      expect([200, 409], `cancel answered ${cancelRes.status()}`).toContain(cancelRes.status())
-
-      if (cancelRes.status() !== 200) {
-        // Attempt was already in a terminal state — skip round 2.
-        test.skip()
-        return
-      }
+      expect(cancelRes.status(), 'cancel accepted').toBe(200)
 
       const cancelBody = (await readJsonSafe<Json>(cancelRes)) ?? {}
-      const taskUpdatedAfterCancel = cancelBody.taskUpdatedAt as string | undefined
+      expect(cancelBody.result).toEqual(expect.objectContaining({ taskUpdatedAt: expect.any(String) }))
+      const taskUpdatedAfterCancel = (cancelBody.result as { taskUpdatedAt: string }).taskUpdatedAt
       expect(taskUpdatedAfterCancel).toBeTruthy()
 
       // Reconcile the cancelled attempt so the task returns to `ready`.
@@ -366,17 +344,10 @@ test.describe('TC-DELIVERY-EXEC-006: concurrent execute → one winner, one conf
 
       const round2Statuses = [secondA.status(), secondB.status()]
       const round2Winners = round2Statuses.filter((s) => s === 202)
-      const round2Losers = round2Statuses.filter((s) => [409, 400, 422].includes(s))
-
-      if (round2Winners.length === 0) {
-        // Both requests were rejected — acceptable if the execute bridge requires
-        // environment-specific setup not available in this test harness. Skip.
-        test.skip()
-        return
-      }
+      const round2Losers = round2Statuses.filter((status) => status === 409)
 
       expect(round2Winners.length, `round 2: expected one 202; statuses ${round2Statuses.join(', ')}`).toBe(1)
-      expect(round2Losers.length, 'round 2: expected one non-2xx loser').toBe(1)
+      expect(round2Losers.length, 'round 2: expected one 409 loser').toBe(1)
 
       // Verify DB: exactly one active attempt total (the round-2 winner).
       const attempts = await dbAttempts(taskId)
@@ -395,13 +366,27 @@ test.describe('TC-DELIVERY-EXEC-006: concurrent execute → one winner, one conf
     }
   })
 
-  test('same idempotencyKey is idempotent — see TC-DELIVERY-EXEC-003', async () => {
-    /**
-     * Sending the same idempotencyKey twice returns 202 on both calls without conflict.
-     * This behaviour is fully covered by TC-DELIVERY-EXEC-003, so we reference it here
-     * rather than duplicate the test logic.
-     */
-    // No assertions — this is a reference marker only.
-    expect(true).toBe(true)
+  test('same idempotencyKey replays the existing attempt', async ({ request }) => {
+    test.slow()
+    let token: string | null = null
+    let seed: SeededTask | null = null
+    try {
+      token = await getAuthToken(request, 'admin')
+      const call = caller(request, token)
+      seed = await seedReadyTask(request, token, call, 'same-key-replay')
+      const idempotencyKey = `exec-006-replay-${randomUUID()}`
+      const executePath = `${AGENTS_API}/tasks/${seed.taskId}/execute`
+      const first = await call('POST', executePath, { body: { idempotencyKey } })
+      expect(first.status, `first execution: ${JSON.stringify(first.body)}`).toBe(202)
+      expect(first.body.attemptId).toEqual(expect.any(String))
+      const replay = await call('POST', executePath, { body: { idempotencyKey } })
+      expect(replay.status, `replayed execution: ${JSON.stringify(replay.body)}`).toBe(202)
+      expect(replay.body.attemptId).toBe(first.body.attemptId)
+      const attempts = await dbAttempts(seed.taskId)
+      expect(attempts).toHaveLength(1)
+      expect(attempts[0].attemptId).toBe(first.body.attemptId)
+    } finally {
+      await cleanupSeed(request, token, seed)
+    }
   })
 })

@@ -1,0 +1,24 @@
+{
+  "projectId": "6cc91892-6dab-41eb-84ed-f78d75395d87",
+  "staleVersion": "2026-09-19T11:07:57.330Z",
+  "currentVersion": "2026-09-19T11:07:57.460Z",
+  "archivedAt": "2026-09-19T11:07:57.677Z",
+  "beforeCounts": {
+    "projects": 1,
+    "baselines": 0,
+    "tasks": 0,
+    "decisions": 0,
+    "evidence": 0,
+    "attempts": 0,
+    "resultManifests": 0
+  },
+  "afterCounts": {
+    "projects": 1,
+    "baselines": 0,
+    "tasks": 0,
+    "decisions": 0,
+    "evidence": 0,
+    "attempts": 0,
+    "resultManifests": 0
+  }
+}

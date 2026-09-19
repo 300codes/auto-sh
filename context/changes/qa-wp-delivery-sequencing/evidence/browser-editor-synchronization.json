@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "status": "passed_run8",
+  "sourceHash": "79b846a489d39955f03d4cbeffa8544947fb538d08fce888e85aa015f6cefe99",
+  "specHash": "9de9939b737ce11b9c65ee96c0f3cefecdc50c6f27eb2178e2a15c8ef7e21b9b",
+  "facts": [
+    {
+      "source": "wp-includes/js/dist/editor.js:100997-101030",
+      "fact": "Current entity loads by postType/postId; ExperimentalEditorProvider explicitly uses useSubRegistry:false, so read-only global core/editor selectors reflect selected entity."
+    },
+    {
+      "source": "wp-includes/js/dist/editor.js:6898-6907",
+      "fact": "isEditedPostDirty checks hasEditsForEntityRecord for current postType and id."
+    },
+    {
+      "source": "wp-includes/js/dist/editor.js:7141-7163",
+      "fact": "isSavingPost reads saving.pending; didPostSaveRequestSucceed checks current entity last save error."
+    },
+    {
+      "source": "wp-includes/js/dist/editor.js:78853-78946",
+      "fact": "savePost awaits saveEntityRecord and save hooks before REQUEST_POST_UPDATE_FINISH."
+    }
+  ],
+  "waits": [
+    "Lazy FrameLocator resolves iframe after each editor transition.",
+    "Exact original part text and owned Template Part title required before keyboard input.",
+    "Before Save: current type wp_template_part, exact owned slug, dirty true, saving false.",
+    "After Save: same owned type/slug, dirty false, saving false, saveSucceeded true; then Back.",
+    "Final server-side native readback remains mandatory."
+  ],
+  "mutationMechanism": "Real UI keyboard/click only; wp.data.select is read-only, no dispatch.",
+  "validation": {
+    "narrowTypeScript": "passed",
+    "nextLiveRun": "completed_run8_passed",
+    "run6": "Owned header identity/dirty transition/save success checks passed; separate redundant disabled-button assumption failed.",
+    "run7": "interrupted_host_failure_during_native_prepare; scoped_reconciliation_and_cleanup_passed",
+    "run8": "full_repository_native_browser_test_passed_with_native_retention_and_cleanup"
+  }
+}

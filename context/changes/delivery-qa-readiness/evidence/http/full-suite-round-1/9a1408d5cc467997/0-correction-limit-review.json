@@ -1,0 +1,9 @@
+{
+  "status": 201,
+  "body": {
+    "evidenceId": "7e5a9066-e642-41d3-a970-ae8575a12193",
+    "duplicate": false,
+    "taskStatus": "blocked",
+    "taskUpdatedAt": "2026-09-19T11:09:29.990Z"
+  }
+}

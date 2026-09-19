@@ -1,0 +1,19 @@
+{
+  "projectId": "ba39836e-c180-43cc-abcf-86d799032e7d",
+  "foreignProjectId": "1c895fac-2d0f-475d-9111-c26a6c71360c",
+  "rawReportHash": "b84e78ec02857e91d58fc772ec90564841829dc57d68e9de2c654895abb0c4bd",
+  "evidenceId": "19bb6088-d4b0-4764-8a5d-a1f017979b1d",
+  "afterControl": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "provenance": "http-fixture-not-run-scan"
+}

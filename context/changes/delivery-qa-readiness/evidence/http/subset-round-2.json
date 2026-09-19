@@ -1,0 +1,230 @@
+{
+  "stats": {
+    "startTime": "2026-09-19T11:11:50.634Z",
+    "duration": 37726.683999999994,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "rawReportSha256": "eadc2ce2ab0e0b9579c1fba4c23eb35e1e3269d34f3705028fc838b75b96d379",
+  "rows": [
+    {
+      "id": "ea0e070197aa4a3b",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts",
+      "title": "TC-DELIVERY-001: R1\u2013R19 enforce authentication, features and tenant/organization scope without writes",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 14450,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "acl-scope-matrix.json",
+          "path": "http/subset-round-2/ea0e070197aa4a3b/0-acl-scope-matrix.json",
+          "sha256": "46092359d33da5baec64a78654a46c6e3400f9c8d856a6de943778f1983d0925"
+        },
+        {
+          "name": "scan-control-report.json",
+          "path": "http/subset-round-2/ea0e070197aa4a3b/2-scan-control-report.json",
+          "sha256": "dc3a207416f9d23f35807ae2f6673c36825636bdd8bc8214ede4ec9e07581aba"
+        },
+        {
+          "name": "scope-spoof-and-evidence-control.json",
+          "path": "http/subset-round-2/ea0e070197aa4a3b/4-scope-spoof-and-evidence-control.json",
+          "sha256": "f8c4f166cb0ffc8025589bd30ec2bfdabbb870280fbf5d0c6b44b857dd332127"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/ea0e070197aa4a3b/6-delivery-case.json",
+          "sha256": "0c1af03ffa533bf5c42e116bd8e17cd0ec4302d429de80b3770d835fae3a03ab"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    },
+    {
+      "id": "1f307bb45e8fca59",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve failed evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3123,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/subset-round-2/1f307bb45e8fca59/0-review-input.json",
+          "sha256": "94432c901235618477a46b04a7924d5a8f4d12d0218b9d227240e179be5baf08"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/subset-round-2/1f307bb45e8fca59/2-refused-review.json",
+          "sha256": "53e83a58c1064991458d14df99f71554f7a3cebe140d10816a339e8a86c88385"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/1f307bb45e8fca59/4-delivery-case.json",
+          "sha256": "3e7e1cf652e97cd3e5bba2c161948fffbabdcad887a4ffad525bc7db056be8b4"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    },
+    {
+      "id": "54a547780715be4f",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve not_run evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2957,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/subset-round-2/54a547780715be4f/0-review-input.json",
+          "sha256": "3b94ca725a327ed8550cd1b96cb1a25ba0f73662304f0c621637cf06e132bbea"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/subset-round-2/54a547780715be4f/2-refused-review.json",
+          "sha256": "6f0a1f49d69adaaf7c31d0faaf99e8112bb818f9d1f6d5f47e5e58993271916a"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/54a547780715be4f/4-delivery-case.json",
+          "sha256": "5765d34aed40d078c99f80f8123a4b35cf6f8dd1e086f228eca1926d267250a0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    },
+    {
+      "id": "80ea9e9152bb41f4",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve missing evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2912,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/subset-round-2/80ea9e9152bb41f4/0-review-input.json",
+          "sha256": "06189a28bbc52420533aca170e9ba0273ddc9214745fdde61aab77ad32d51211"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/subset-round-2/80ea9e9152bb41f4/2-refused-review.json",
+          "sha256": "f62d93e4cb0a45a7cfd4e85afdd62f4f3b752bacf53d888771828196afe08e6e"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/80ea9e9152bb41f4/4-delivery-case.json",
+          "sha256": "6cbaad359b6ac60a38931f9519bffda4cb8eabc0f3cd51ae65202f5c79d3cbb9"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    },
+    {
+      "id": "80218010ca7f5a56",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve wrong_revision evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3064,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/subset-round-2/80218010ca7f5a56/0-review-input.json",
+          "sha256": "28c608b5931cba9859104ad53b09155f3de163231af8d3420a4ead7ebc7b500a"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/subset-round-2/80218010ca7f5a56/2-refused-review.json",
+          "sha256": "976e6e328a413bac1cc85213d3568b019bc2bf03b17b6ae085b912239da898af"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/80218010ca7f5a56/4-delivery-case.json",
+          "sha256": "e9318bbc7ed18831c0349a01a014b35203ae99bf8ce855f14938284a290e7bab"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    },
+    {
+      "id": "6f2c11ea6aadc4f7",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "cannot approve manual_agent evidence",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3021,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "review-input.json",
+          "path": "http/subset-round-2/6f2c11ea6aadc4f7/0-review-input.json",
+          "sha256": "7f7488ecfbc46515b18d8d8e6428228fe40da9e4c649522e6d14920b463d13df"
+        },
+        {
+          "name": "refused-review.json",
+          "path": "http/subset-round-2/6f2c11ea6aadc4f7/2-refused-review.json",
+          "sha256": "458f38a191e8a02644d961f7b42fe8e927c290af1adb0c5759a8f64a820d81bd"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/6f2c11ea6aadc4f7/4-delivery-case.json",
+          "sha256": "310a6365311f8d21bdeda01fb8d0e8984d9fd5459c4f6a87a4c1066e39b7c1b3"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    },
+    {
+      "id": "9a1408d5cc467997",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "title": "exhausted correction budget blocks another execution",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 3041,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "correction-limit-review.json",
+          "path": "http/subset-round-2/9a1408d5cc467997/0-correction-limit-review.json",
+          "sha256": "8310d88094e7a9628ae211ef3c92c6a60f87c31d6772f88b6e706db703f388fc"
+        },
+        {
+          "name": "delivery-case.json",
+          "path": "http/subset-round-2/9a1408d5cc467997/2-delivery-case.json",
+          "sha256": "bfdecd9469ec165b9179ea6f1747671d20f3bfb75b9c872d86e5562ac7edc537"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0,
+      "runtimeCodeRevision": "sha256:659f41ecedf11c8eb463e1bcfeb70e20422b0e5ed2e9936ac477780ad9cf6d00",
+      "runtimeAppRevision": "sha256:b45441939dc174f6af95391617ea65c7573f58bcc83639fa330e7b4bb983c2ac"
+    }
+  ]
+}

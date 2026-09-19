@@ -1,0 +1,49 @@
+Listing tests:
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:22:1 › TC-DELIVERY-001: R1–R19 enforce authentication, features and tenant/organization scope without writes
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:12:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: immutable snapshot, replay and both current decisions gate execution
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:74:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: invalid render bytes hash, foreign attachment and missing content cannot freeze
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:107:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: verified old baseline does not prove the new approved snapshot
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:136:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_brief: concurrent contradictory decisions accept one current version
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:12:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: immutable snapshot, replay and both current decisions gate execution
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:74:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: invalid render bytes hash, foreign attachment and missing content cannot freeze
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:107:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: verified old baseline does not prove the new approved snapshot
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts:136:5 › TC-DELIVERY-002: manual baseline integrity and decisions › from_design: concurrent contradictory decisions accept one current version
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts:13:5 › TC-DELIVERY-003: requirements and plan proposals › from_brief: proposals replay without duplication and merged baseline requires new decisions
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts:115:5 › TC-DELIVERY-003: requirements and plan proposals › from_brief: invalid requirements and plan manifests leave no new baselines or tasks
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts:13:5 › TC-DELIVERY-003: requirements and plan proposals › from_design: proposals replay without duplication and merged baseline requires new decisions
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-003.spec.ts:115:5 › TC-DELIVERY-003: requirements and plan proposals › from_design: invalid requirements and plan manifests leave no new baselines or tasks
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts:37:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › project updates and archive reject stale versions and accept the current version
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts:67:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › task CRUD preserves state on stale versions, invalid paths, foreign references and invalid transitions
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts:118:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › baseline, decision, reserve, cancel and reconcile enforce their parent or task version
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts:157:3 › TC-DELIVERY-004: existing v1 optimistic locks and task guards › a new unapproved baseline cannot ready or reserve a task using previous approvals
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-005.spec.ts:11:3 › TC-DELIVERY-005: reservation concurrency and replay › concurrent identical keys persist one attempt; replay ignores the stale lock
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-005.spec.ts:85:3 › TC-DELIVERY-005: reservation concurrency and replay › public reservation rejects automatic mode and missing keys without creating attempts
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-005.spec.ts:110:3 › TC-DELIVERY-005: reservation concurrency and replay › sixteen closed attempts preserve history and reject the seventeenth reservation
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects malformed manifest without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects oversized body without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects unknown version without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign project without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign task without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign attempt without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects foreign baseline without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects wrong baseline hash without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects wrong base revision without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects outside paths without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects unknown test without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:27:5 › TC-DELIVERY-006: result validation and durable replay › rejects too many paths without persisting evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts:51:3 › TC-DELIVERY-006: result validation and durable replay › concurrent identical results create one evidence; a changed replay conflicts
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › cancel preserves the execution and review gates
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › unknown preserves the execution and review gates
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › stopped preserves the execution and review gates
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts:12:5 › TC-DELIVERY-007: cancel and reconciliation › completed preserves the execution and review gates
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve failed evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve not_run evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve missing evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve wrong_revision evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve manual_agent evidence
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:46:3 › TC-DELIVERY-008: review requires current complete proof › exhausted correction budget blocks another execution
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-010.spec.ts:10:5 › TC-DELIVERY-010: OSS manual lifecycle › only reviewed proof unlocks the dependent task
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-010.spec.ts:10:5 › TC-DELIVERY-010: OSS manual lifecycle › keeps correction history and reviews the new result
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts:61:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › scopes real actors and cleans a reserved manual attempt without changing another fixture
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts:141:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › cleans every registered resource after setup fails midway
+Total: 47 tests in 10 files

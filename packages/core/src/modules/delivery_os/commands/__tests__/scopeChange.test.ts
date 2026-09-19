@@ -275,6 +275,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.projects.create',
       'delivery_os.projects.delete',
       'delivery_os.projects.update',
+      'delivery_os.release_candidates.nominate',
       'delivery_os.results.accept',
       'delivery_os.stages.create_artifact',
       'delivery_os.stages.decide',
@@ -301,6 +302,8 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
     expect(appendOnlyRoutes.sort()).toEqual([
       'baselines/[id]/decisions/route.ts',
       'projects/[id]/baselines/route.ts',
+      'projects/[id]/evidence/[evidenceId]/attachments/[attachmentId]/route.ts',
+      'projects/[id]/evidence/[evidenceId]/route.ts',
       'projects/[id]/evidence/route.ts',
       'projects/[id]/stages/[stageId]/artifacts/route.ts',
       'projects/[id]/stages/[stageId]/decisions/route.ts',
@@ -309,7 +312,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
     for (const path of appendOnlyRoutes) {
       const methods = routes.get(path) ?? new Set<string>()
       expect({ path, writes: [...methods].filter((method) => WRITE_METHODS.includes(method)) }).toEqual({ path, writes: [] })
-      expect(methods.has('POST')).toBe(true)
+      expect(methods.has(path.includes('[evidenceId]') ? 'GET' : 'POST')).toBe(true)
     }
   })
 

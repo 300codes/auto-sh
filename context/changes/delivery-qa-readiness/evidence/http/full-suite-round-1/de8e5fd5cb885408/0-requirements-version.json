@@ -1,0 +1,15 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Unsupported schema version",
+    "code": "unsupported_schema_version",
+    "details": [
+      {
+        "path": "schemaVersion",
+        "code": "unsupported_schema_version",
+        "message": "Received delivery.requirements-proposal/v99; supported: delivery.requirements-proposal/v1"
+      }
+    ]
+  },
+  "projectId": "a602653c-994b-426d-89bf-6c701209d769"
+}

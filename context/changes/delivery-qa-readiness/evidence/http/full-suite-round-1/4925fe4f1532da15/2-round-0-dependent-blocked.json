@@ -1,0 +1,14 @@
+{
+  "status": 409,
+  "body": {
+    "error": "Every dependency must be verified first",
+    "code": "dependency_not_verified",
+    "details": [
+      {
+        "path": "dependsOnTaskIds.5b14701c-d040-4f5d-8122-f7bfad20efeb",
+        "code": "dependency_not_verified",
+        "message": "Dependency is awaiting_review"
+      }
+    ]
+  }
+}

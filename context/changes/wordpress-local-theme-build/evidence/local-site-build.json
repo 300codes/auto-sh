@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "provenance": "local",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "scope": {
+    "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+    "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+    "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+  },
+  "compilation": "real_local_tailwind",
+  "sourceHash": "6c92aa8f93a74d6b24c1426c993a9323607f257e48f67ed804c127d0135c5061",
+  "sources": [
+    {
+      "path": "functions.php",
+      "sha256": "eec7de66e121a90a3eb46565bed11eace0527c77c61701425ac5cda937b77014"
+    },
+    {
+      "path": "inc/setup.php",
+      "sha256": "28be3ef8711d8b3397e0fe258ecbbe12c1b3972defc3a08e5d5d17efa4c1b003"
+    },
+    {
+      "path": "parts/footer.html",
+      "sha256": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1"
+    },
+    {
+      "path": "parts/header.html",
+      "sha256": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e"
+    },
+    {
+      "path": "templates/front-page.html",
+      "sha256": "b5f598e6dbee2cfc130da82fa1d7bdf08a2ba944304d0e2018f1fdc2b927c587"
+    },
+    {
+      "path": "templates/index.html",
+      "sha256": "01c7d43bd1ffeb0d8a02d56dd6c88371f8bb6e93fe07e108762800f2d04dde8d"
+    }
+  ],
+  "output": {
+    "path": "assets/dist/tailwind.css",
+    "sha256": "06c83183e6ef46d7f0f40f8272a57350096eed574a75eed6ac6f79da5b68a1ab",
+    "sizeBytes": 92
+  },
+  "toolchain": {
+    "compiler": {
+      "version": "4.3.3",
+      "entryHash": "8ebfd51c44d6cca0ef675007e97e6aa918944df2b662c2d7bfa50fdfaa98bb64"
+    },
+    "scanner": {
+      "version": "4.3.3",
+      "entryHash": "311f226094e81c0e8d85c6ec02b453b1c0e1239999ae65e78a0d5e02bc005db5"
+    },
+    "defaultThemeHash": "443d7af364200f8ec8352dc78e39485a118a1840d498c97967bf0ae402b39167"
+  },
+  "candidateCount": 71,
+  "preflight": "excluded",
+  "enqueue": "not_run",
+  "browserEditor": "not_run",
+  "preview": "not_published",
+  "database": "not_modified"
+}

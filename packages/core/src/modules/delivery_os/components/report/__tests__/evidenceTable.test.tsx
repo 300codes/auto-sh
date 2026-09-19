@@ -7,7 +7,15 @@ import { EvidenceTable } from '../EvidenceTable'
 import { EvidenceSources } from '../EvidenceSources'
 import { EvidenceDetailDialog } from '../EvidenceDetailDialog'
 
-jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => (key: string) => key }))
+const mockEvidenceList = jest.fn()
+const mockEvidenceDetail = jest.fn()
+jest.mock('../useEvidenceRead', () => ({ useEvidenceList: (...args: unknown[]) => mockEvidenceList(...args), useEvidenceDetail: (...args: unknown[]) => mockEvidenceDetail(...args) }))
+beforeEach(() => {
+  mockEvidenceList.mockReset().mockReturnValue({ status: 'error', data: null, reload: jest.fn() })
+  mockEvidenceDetail.mockReset().mockReturnValue({ status: 'notFound', data: null, reload: jest.fn() })
+})
+
+jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => (key: string) => key === 'delivery_os.report.evidence.error' ? 'Evidence read failed' : key }))
 jest.mock('@open-mercato/ui/backend/DataTable', () => ({
   DataTable: ({ data, pagination }: { data: { id: string; acId: string | null }[]; pagination: { page: number; total: number; onPageChange: (page: number) => void } }) => <div>
     <span data-testid="page">{pagination.page}</span><span data-testid="total">{pagination.total}</span>
@@ -31,17 +39,20 @@ describe('report evidence UI', () => {
     expect(screen.getByText('AC-59')).toBeTruthy()
   })
 
-  it('describes the absent read API rather than claiming no evidence or missing files', () => {
-    render(<EvidenceSources />)
-    expect(screen.getByText('delivery_os.report.evidence.apiUnavailable')).toBeTruthy()
-    expect(screen.queryByText('delivery_os.report.evidence.empty')).toBeNull()
+  it('distinguishes a failed evidence read from an empty list or missing files', () => {
+    render(<EvidenceSources projectId={fixture.projectId} baselineId={fixture.baselineId} revision={null} onEvidenceSelect={jest.fn()} />)
+    expect(screen.getByText('Evidence read failed')).toBeTruthy()
+    expect(screen.queryByText('delivery_os.report.evidence.sourcesEmpty')).toBeNull()
+    expect(mockEvidenceList).toHaveBeenCalledWith(fixture.projectId, fixture.baselineId, null, 'baseline', 0)
+    fireEvent.click(screen.getByRole('button', { name: 'delivery_os.report.evidence.retry' }))
+    expect(mockEvidenceList.mock.results[0].value.reload).toHaveBeenCalledTimes(1)
   })
 
   it('shows the selected ID, never a fabricated payload, and closes on Escape', () => {
     const onOpenChange = jest.fn()
-    render(<EvidenceDetailDialog evidenceId={fixture.rows[0].evidenceId} onOpenChange={onOpenChange} />)
+    render(<EvidenceDetailDialog projectId={fixture.projectId} evidenceId={fixture.rows[0].evidenceId} onOpenChange={onOpenChange} />)
     expect(screen.getByText(fixture.rows[0].evidenceId)).toBeTruthy()
-    expect(screen.getByText('delivery_os.report.evidence.detailUnavailable')).toBeTruthy()
+    expect(screen.getByText('delivery_os.report.evidence.notFound')).toBeTruthy()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
@@ -51,7 +62,7 @@ describe('report evidence UI', () => {
       const [evidenceId, setEvidenceId] = React.useState<string | null>(null)
       return <>
         <button type="button" onClick={() => setEvidenceId(fixture.rows[0].evidenceId)}>Open evidence</button>
-        <EvidenceDetailDialog evidenceId={evidenceId} onOpenChange={(open) => { if (!open) setEvidenceId(null) }} />
+        <EvidenceDetailDialog projectId={fixture.projectId} evidenceId={evidenceId} onOpenChange={(open) => { if (!open) setEvidenceId(null) }} />
       </>
     }
     render(<Harness />)

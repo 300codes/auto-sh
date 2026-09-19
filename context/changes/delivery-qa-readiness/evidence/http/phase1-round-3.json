@@ -1,0 +1,209 @@
+{
+  "stats": {
+    "startTime": "2026-09-19T11:10:37.147Z",
+    "duration": 36579.793,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "rawReportSha256": "9fae453ceb4b78f4888171df3977a88e3102d99b5570112330b7c58ef187ac1f",
+  "rows": [
+    {
+      "id": "fcb722ae8f439e33",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "scopes real actors and cleans a reserved manual attempt without changing another fixture",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 12745,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reserved-attempt-cleanup.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/0-reserved-attempt-cleanup.json",
+          "sha256": "35d58eee068a6575fa8374dbac63c087d2af761d64f3513e704d323a765ffa36"
+        },
+        {
+          "name": "reserved-attempt-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/1-reserved-attempt-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "reserved-attempt-cleanup-repeated.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/2-reserved-attempt-cleanup-repeated.json",
+          "sha256": "35d58eee068a6575fa8374dbac63c087d2af761d64f3513e704d323a765ffa36"
+        },
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/3-teardown-0-cleanup.json",
+          "sha256": "35d58eee068a6575fa8374dbac63c087d2af761d64f3513e704d323a765ffa36"
+        },
+        {
+          "name": "teardown-0-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/4-teardown-0-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/5-teardown-0-cleanup-repeated.json",
+          "sha256": "35d58eee068a6575fa8374dbac63c087d2af761d64f3513e704d323a765ffa36"
+        },
+        {
+          "name": "teardown-1-cleanup.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/6-teardown-1-cleanup.json",
+          "sha256": "286cf98bf40fac5dd6e27297cf7c994fa93e8a4d07e376dfbe5866dc85dcfdcd"
+        },
+        {
+          "name": "teardown-1-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/7-teardown-1-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "teardown-1-cleanup-repeated.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/8-teardown-1-cleanup-repeated.json",
+          "sha256": "286cf98bf40fac5dd6e27297cf7c994fa93e8a4d07e376dfbe5866dc85dcfdcd"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-3/fcb722ae8f439e33/9-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    },
+    {
+      "id": "f5792b3fdad18971",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "scopes real actors and cleans a reserved manual attempt without changing another fixture",
+      "repeatOrdinal": 1,
+      "status": "passed",
+      "durationMs": 12553,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reserved-attempt-cleanup.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/0-reserved-attempt-cleanup.json",
+          "sha256": "5ad484bb9f76589986d396a8e2222b4ec0ce22d9d3c29cb834fbc80608a68c63"
+        },
+        {
+          "name": "reserved-attempt-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/1-reserved-attempt-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "reserved-attempt-cleanup-repeated.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/2-reserved-attempt-cleanup-repeated.json",
+          "sha256": "5ad484bb9f76589986d396a8e2222b4ec0ce22d9d3c29cb834fbc80608a68c63"
+        },
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/3-teardown-0-cleanup.json",
+          "sha256": "5ad484bb9f76589986d396a8e2222b4ec0ce22d9d3c29cb834fbc80608a68c63"
+        },
+        {
+          "name": "teardown-0-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/4-teardown-0-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/5-teardown-0-cleanup-repeated.json",
+          "sha256": "5ad484bb9f76589986d396a8e2222b4ec0ce22d9d3c29cb834fbc80608a68c63"
+        },
+        {
+          "name": "teardown-1-cleanup.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/6-teardown-1-cleanup.json",
+          "sha256": "c11210f5fdef992796cf730d124a86eb09002c2977e932fc7136de23fa0fbe85"
+        },
+        {
+          "name": "teardown-1-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/7-teardown-1-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "teardown-1-cleanup-repeated.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/8-teardown-1-cleanup-repeated.json",
+          "sha256": "c11210f5fdef992796cf730d124a86eb09002c2977e932fc7136de23fa0fbe85"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-3/f5792b3fdad18971/9-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    },
+    {
+      "id": "edae1ad4c277575e",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "cleans every registered resource after setup fails midway",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2176,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-3/edae1ad4c277575e/0-teardown-0-cleanup.json",
+          "sha256": "cf273535b5ab9415738e75b5c7e1ecbfa71b4f913307331b13149b6e17b8d0ef"
+        },
+        {
+          "name": "teardown-0-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/edae1ad4c277575e/1-teardown-0-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-3/edae1ad4c277575e/2-teardown-0-cleanup-repeated.json",
+          "sha256": "cf273535b5ab9415738e75b5c7e1ecbfa71b4f913307331b13149b6e17b8d0ef"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-3/edae1ad4c277575e/3-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    },
+    {
+      "id": "f3eaec2aedfa5d2a",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "cleans every registered resource after setup fails midway",
+      "repeatOrdinal": 1,
+      "status": "passed",
+      "durationMs": 2863,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-3/f3eaec2aedfa5d2a/0-teardown-0-cleanup.json",
+          "sha256": "dc5db7eb4ba71d3c59c563ebf6e8b9cdef1449b02b88d51dff769a523c05e4b1"
+        },
+        {
+          "name": "teardown-0-unmanaged-mutations.json",
+          "path": "http/phase1-round-3/f3eaec2aedfa5d2a/1-teardown-0-unmanaged-mutations.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-3/f3eaec2aedfa5d2a/2-teardown-0-cleanup-repeated.json",
+          "sha256": "dc5db7eb4ba71d3c59c563ebf6e8b9cdef1449b02b88d51dff769a523c05e4b1"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-3/f3eaec2aedfa5d2a/3-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    }
+  ]
+}

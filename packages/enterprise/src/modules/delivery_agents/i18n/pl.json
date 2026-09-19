@@ -1,0 +1,12 @@
+{
+  "delivery_agents.widget.cancel.ariaLabel": "Anuluj próbę wykonania",
+  "delivery_agents.widget.cancel.cancelling": "Anulowanie…",
+  "delivery_agents.widget.cancel.failed": "Nie udało się anulować",
+  "delivery_agents.widget.cancel.label": "Anuluj",
+  "delivery_agents.widget.cancel.requested": "Wysłano żądanie anulowania",
+  "delivery_agents.widget.execute.ariaLabel": "Wykonaj zadanie dostarczenia za pomocą Cezara",
+  "delivery_agents.widget.execute.failed": "Wykonanie nie powiodło się",
+  "delivery_agents.widget.execute.label": "Wykonaj",
+  "delivery_agents.widget.execute.started": "Rozpoczęto wykonanie",
+  "delivery_agents.widget.execute.starting": "Uruchamianie…"
+}

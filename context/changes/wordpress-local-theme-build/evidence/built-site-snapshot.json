@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "provenance": "live",
+  "status": "passed",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "siteStoppedBefore": true,
+  "siteStoppedAfter": true,
+  "generatedCssIncluded": true,
+  "snapshot": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "toolExecutionId": "80c62015-09e6-44f5-8f53-bbb07a010898",
+    "creationAttemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+    "sourceRevision": {
+      "kind": "snapshot",
+      "contentHash": "710ea22e1bedb881eb28d3dae75eca3c578c355c9d3084c539d20892ee439b4a",
+      "externalWorkspaceId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8"
+    },
+    "themeFiles": {
+      "assets/css/base.css": "1694366ce9e16a1ffbdeafe3089a0fac2b141631b08b3856fe6b17c04cbad252",
+      "assets/css/layout.css": "69b2645603f0d4b5da7848d6032ba18f339fa6ead396e984652d01e682976990",
+      "assets/dist/tailwind.css": "06c83183e6ef46d7f0f40f8272a57350096eed574a75eed6ac6f79da5b68a1ab",
+      "functions.php": "eec7de66e121a90a3eb46565bed11eace0527c77c61701425ac5cda937b77014",
+      "inc/setup.php": "28be3ef8711d8b3397e0fe258ecbbe12c1b3972defc3a08e5d5d17efa4c1b003",
+      "parts/footer.html": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1",
+      "parts/header.html": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e",
+      "style.css": "4dcc056cd393895a9ab583b2d6b8746a64cd4466cac5502d33837ff603085703",
+      "templates/front-page.html": "b5f598e6dbee2cfc130da82fa1d7bdf08a2ba944304d0e2018f1fdc2b927c587",
+      "templates/index.html": "01c7d43bd1ffeb0d8a02d56dd6c88371f8bb6e93fe07e108762800f2d04dde8d",
+      "theme.json": "ce90b7c9fefc81fbe2016373abca036b9b756cb8be592148b72ca17c8f68ef62"
+    },
+    "databaseHash": "1bc37b1d6f898585db6308d24fb2565faa16ade875274f7fa681ccd9f3ab5f91",
+    "capturedAt": "2026-09-19T12:12:39.209Z"
+  },
+  "preview": "not_published",
+  "enqueue": "not_run"
+}

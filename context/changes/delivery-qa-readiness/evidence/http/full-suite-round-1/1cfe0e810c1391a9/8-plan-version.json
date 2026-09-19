@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Unsupported schema version",
+    "code": "unsupported_schema_version",
+    "details": [
+      {
+        "path": "schemaVersion",
+        "code": "unsupported_schema_version",
+        "message": "Received delivery.plan-proposal/v99; supported: delivery.plan-proposal/v1"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "d4c92a2a-6870-4998-ac3e-68436cf33b38"
+}

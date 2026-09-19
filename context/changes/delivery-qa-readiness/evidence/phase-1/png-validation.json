@@ -1,0 +1,12 @@
+{
+  "provenance": "fixture-bytes",
+  "sha256": "5e3d382db4dd83d59aa5742793ad6b7903409e865c83bcbc54835049f043bc15",
+  "bytes": 68,
+  "validSignature": true,
+  "validChunkCrc": [
+    "IHDR",
+    "IDAT",
+    "IEND"
+  ],
+  "inflatedPixelBytes": 3
+}

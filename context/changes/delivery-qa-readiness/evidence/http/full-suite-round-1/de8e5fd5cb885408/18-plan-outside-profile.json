@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Path is not allowed for the target profile",
+    "code": "path_not_allowed",
+    "details": [
+      {
+        "path": "tasks.0.allowedPaths.0",
+        "code": "outside_profile_roots",
+        "message": "Path is outside the react-vite@1 roots (src/**, public/**, tests/**, index.html)"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "3b51c919-2f43-4894-b2da-be17e74fe255"
+}

@@ -1,0 +1,169 @@
+{
+  "stats": {
+    "startTime": "2026-09-19T11:05:58.270Z",
+    "duration": 38057.788,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "rawReportSha256": "f96ebc429949d72bdbc832b144bace2b9e14e66d216f75621de24733e65af433",
+  "rows": [
+    {
+      "id": "fcb722ae8f439e33",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "scopes real actors and cleans a reserved manual attempt without changing another fixture",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 14152,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reserved-attempt-cleanup.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/0-reserved-attempt-cleanup.json",
+          "sha256": "296f5220c48789e1a464010a5665af84a30bd2f830054d06c8af2781e5b4bb5a"
+        },
+        {
+          "name": "reserved-attempt-cleanup-repeated.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/1-reserved-attempt-cleanup-repeated.json",
+          "sha256": "296f5220c48789e1a464010a5665af84a30bd2f830054d06c8af2781e5b4bb5a"
+        },
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/2-teardown-0-cleanup.json",
+          "sha256": "296f5220c48789e1a464010a5665af84a30bd2f830054d06c8af2781e5b4bb5a"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/3-teardown-0-cleanup-repeated.json",
+          "sha256": "296f5220c48789e1a464010a5665af84a30bd2f830054d06c8af2781e5b4bb5a"
+        },
+        {
+          "name": "teardown-1-cleanup.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/4-teardown-1-cleanup.json",
+          "sha256": "319933b525a754fdd65b9eb128f8b87a7b5f95fa009cb61e4d79c627c289d146"
+        },
+        {
+          "name": "teardown-1-cleanup-repeated.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/5-teardown-1-cleanup-repeated.json",
+          "sha256": "319933b525a754fdd65b9eb128f8b87a7b5f95fa009cb61e4d79c627c289d146"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-2/fcb722ae8f439e33/6-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    },
+    {
+      "id": "f5792b3fdad18971",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "scopes real actors and cleans a reserved manual attempt without changing another fixture",
+      "repeatOrdinal": 1,
+      "status": "passed",
+      "durationMs": 13199,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "reserved-attempt-cleanup.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/0-reserved-attempt-cleanup.json",
+          "sha256": "79865dc4bf71f18fdfe196bf8a843da3ff7b9466dbfbdb1f8ca68569379601a4"
+        },
+        {
+          "name": "reserved-attempt-cleanup-repeated.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/1-reserved-attempt-cleanup-repeated.json",
+          "sha256": "79865dc4bf71f18fdfe196bf8a843da3ff7b9466dbfbdb1f8ca68569379601a4"
+        },
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/2-teardown-0-cleanup.json",
+          "sha256": "79865dc4bf71f18fdfe196bf8a843da3ff7b9466dbfbdb1f8ca68569379601a4"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/3-teardown-0-cleanup-repeated.json",
+          "sha256": "79865dc4bf71f18fdfe196bf8a843da3ff7b9466dbfbdb1f8ca68569379601a4"
+        },
+        {
+          "name": "teardown-1-cleanup.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/4-teardown-1-cleanup.json",
+          "sha256": "6d5860390a6eb335ddb3196b7570d54ffde883d319fce6610d6665ec87fb8732"
+        },
+        {
+          "name": "teardown-1-cleanup-repeated.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/5-teardown-1-cleanup-repeated.json",
+          "sha256": "6d5860390a6eb335ddb3196b7570d54ffde883d319fce6610d6665ec87fb8732"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-2/f5792b3fdad18971/6-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    },
+    {
+      "id": "edae1ad4c277575e",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "cleans every registered resource after setup fails midway",
+      "repeatOrdinal": 0,
+      "status": "passed",
+      "durationMs": 2230,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-2/edae1ad4c277575e/0-teardown-0-cleanup.json",
+          "sha256": "62596c46a844680a4608237ba0394d9276e55614f4c8bc24fc2f345b8de4706b"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-2/edae1ad4c277575e/1-teardown-0-cleanup-repeated.json",
+          "sha256": "62596c46a844680a4608237ba0394d9276e55614f4c8bc24fc2f345b8de4706b"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-2/edae1ad4c277575e/2-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    },
+    {
+      "id": "f3eaec2aedfa5d2a",
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts",
+      "title": "cleans every registered resource after setup fails midway",
+      "repeatOrdinal": 1,
+      "status": "passed",
+      "durationMs": 2176,
+      "timeoutMs": 20000,
+      "retry": 0,
+      "attachments": [
+        {
+          "name": "teardown-0-cleanup.json",
+          "path": "http/phase1-round-2/f3eaec2aedfa5d2a/0-teardown-0-cleanup.json",
+          "sha256": "dbff968408478bbd8acc812e0e8bc0295fecdb766c8887bd8a01a9eb61db6787"
+        },
+        {
+          "name": "teardown-0-cleanup-repeated.json",
+          "path": "http/phase1-round-2/f3eaec2aedfa5d2a/1-teardown-0-cleanup-repeated.json",
+          "sha256": "dbff968408478bbd8acc812e0e8bc0295fecdb766c8887bd8a01a9eb61db6787"
+        },
+        {
+          "name": "fixture-teardown-status.json",
+          "path": "http/phase1-round-2/f3eaec2aedfa5d2a/2-fixture-teardown-status.json",
+          "sha256": "796c4c14e96a550c0a864f3ea98bceabdd5dec430e60f965354d02a6da03fcd0"
+        }
+      ],
+      "cleanupFailures": 0,
+      "unmanagedMutations": 0
+    }
+  ]
+}

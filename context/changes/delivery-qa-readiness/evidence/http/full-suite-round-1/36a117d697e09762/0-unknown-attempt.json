@@ -1,0 +1,13 @@
+{
+  "status": 404,
+  "body": {
+    "error": "Attempt not found",
+    "code": "attempt_not_found",
+    "details": [
+      {
+        "path": "attemptId",
+        "code": "attempt_not_found"
+      }
+    ]
+  }
+}

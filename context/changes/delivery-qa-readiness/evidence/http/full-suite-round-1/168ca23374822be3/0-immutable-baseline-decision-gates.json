@@ -1,0 +1,40 @@
+{
+  "inputMode": "from_brief",
+  "projectId": "c36940ee-b13a-4837-9e16-558c31b9ac36",
+  "baselineId": "cd197378-0913-4bae-9e47-83cf0eebf972",
+  "contentHash": "03db4555069d355bd48ffaebc49d0b0dcfbbfea0206c7e27ee90a2badb41fc44",
+  "decisions": [
+    {
+      "id": "902df714-e684-46b4-89b1-d67ea5161b09",
+      "kind": "requirements",
+      "verdict": "approved",
+      "subjectHash": "03db4555069d355bd48ffaebc49d0b0dcfbbfea0206c7e27ee90a2badb41fc44",
+      "subjectVersion": 1,
+      "reason": null,
+      "actorUserId": "f5597c9d-e9d0-4a49-950a-a6345a644c17",
+      "decidedAt": "2026-09-19T11:07:02.203Z"
+    },
+    {
+      "id": "a787ff3c-8420-49e3-bf59-cae625b33527",
+      "kind": "design",
+      "verdict": "rejected",
+      "subjectHash": "03db4555069d355bd48ffaebc49d0b0dcfbbfea0206c7e27ee90a2badb41fc44",
+      "subjectVersion": 1,
+      "reason": "Fixture decision explicitly rejects this baseline",
+      "actorUserId": "f5597c9d-e9d0-4a49-950a-a6345a644c17",
+      "decidedAt": "2026-09-19T11:07:02.408Z"
+    },
+    {
+      "id": "092bf85c-c0c3-49d6-bc59-41275d30adc1",
+      "kind": "design",
+      "verdict": "approved",
+      "subjectHash": "03db4555069d355bd48ffaebc49d0b0dcfbbfea0206c7e27ee90a2badb41fc44",
+      "subjectVersion": 1,
+      "reason": null,
+      "actorUserId": "f5597c9d-e9d0-4a49-950a-a6345a644c17",
+      "decidedAt": "2026-09-19T11:07:02.686Z"
+    }
+  ],
+  "attemptId": "a91491bf-5630-4b33-8213-a249e06c321b",
+  "provenance": "http-fixture"
+}

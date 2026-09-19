@@ -85,8 +85,8 @@ function rowsFor(entity: unknown): Row[] {
   throw new Error('[internal] unexpected entity in route test store')
 }
 
-/** Only the stage history entities honour `orderBy`; the v1 suites rely on insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision])
+/** Stage histories and candidate selection honour `orderBy`; legacy v1 suites retain insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryReleaseCandidate])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()

@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 428,
+    "code": "optimistic_lock_required"
+  },
+  "actual": {
+    "status": 428,
+    "body": {
+      "code": "optimistic_lock_required",
+      "details": [
+        {
+          "path": "headers",
+          "code": "optimistic_lock_required"
+        }
+      ]
+    }
+  }
+}

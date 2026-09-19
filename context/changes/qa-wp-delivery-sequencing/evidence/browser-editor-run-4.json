@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "reason": "Topbar Save unavailable on draft page even before metabox save. Focused published-editor probe required before next full regression.",
+  "nativeFixtureCleanup": {
+    "nativeFixtureCleanup": "cleaned",
+    "browserCloseFailed": false,
+    "cleanupDiagnosticFailed": false,
+    "themeUpdate": "retained_intentionally"
+  },
+  "firstBuild": {
+    "status": "passed",
+    "action": "updated",
+    "cssHash": "6dbfb0fcad9a319ca54480b688764c628a6c9c8d67a410a56cd195ece50b76f7",
+    "files": [
+      {
+        "path": "templates/page.html",
+        "sha256": "7923c2c60f66c944107aa1ef5ea761db94dd8929d8794b3a9aca9bc00f56bce9"
+      }
+    ]
+  },
+  "sourceHashes": {
+    "packages/core/src/helpers/integration/wordpressBrowserFixtures.ts": "b509257f777d8b2e52b0777d6272fc67500a2dcb87c99d80b65663d4245cd87c",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress/TC-DELIVERY-WP-EDITOR-001.spec.ts": "0d2bf0fe9e7e758b1fe02cbcc50441b5714dfb9e6fe56abf988b6c2ffc7fb6aa",
+    "/tmp/auto-sh-wp-foundation-20260919/playwright.wp.config.ts": "5bd0689ef866d440728c360b7fb38d805e46d100dc09b22892ed0f557fbd32e0"
+  },
+  "rawReportHash": "8d611164702eeb1dbb98711e06ed230d01c27124418a3c789fb234942e6f97b0",
+  "effectiveConfiguration": {
+    "base": "Repository .ai/qa/tests/playwright.config.ts",
+    "privateWrapperOverrides": {
+      "use.actionTimeout": 20000,
+      "use.navigationTimeout": 60000
+    },
+    "cli": {
+      "timeout": 900000,
+      "retries": 0,
+      "workers": 1
+    }
+  }
+}

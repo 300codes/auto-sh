@@ -1,0 +1,44 @@
+{
+  "case": "too many paths",
+  "status": 413,
+  "body": {
+    "error": "The result is too large",
+    "code": "payload_too_large",
+    "details": [
+      {
+        "path": "changedPaths",
+        "code": "too_many_changed_paths",
+        "message": "At most 500 entries are accepted, received 501"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "ded4750b-b3f3-45a0-8c04-df2087d3e147",
+  "taskId": "b18b8804-6220-43f1-a8cf-9f76ba07a12f",
+  "attemptId": "1254276b-8559-48cf-9bdc-3e9e6fa52d14",
+  "baselineId": "d207fb28-c764-4108-8b3b-c8da3018744f",
+  "baselineHash": "fb636faef7b82d7d8f749e984f35962a3cfc8074f00384828d359ec7b7aa35a4"
+}

@@ -1,0 +1,16 @@
+{
+  "inputMode": "from_brief",
+  "status": 422,
+  "body": {
+    "error": "A baseline needs a stored design render",
+    "code": "missing_render",
+    "details": [
+      {
+        "path": "screens",
+        "code": "missing_render",
+        "message": "Attach at least one stored render or snapshot"
+      }
+    ]
+  },
+  "baselineCount": 0
+}

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "run": 8,
+  "result": "passed",
+  "stats": {
+    "startTime": "2026-09-19T15:17:36.607Z",
+    "duration": 335255.605,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "sourceHashes": {
+    "packages/core/src/helpers/integration/wordpressBrowserFixtures.ts": "b509257f777d8b2e52b0777d6272fc67500a2dcb87c99d80b65663d4245cd87c",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress/TC-DELIVERY-WP-EDITOR-001.spec.ts": "9de9939b737ce11b9c65ee96c0f3cefecdc50c6f27eb2178e2a15c8ef7e21b9b",
+    ".ai/qa/tests/playwright.config.ts": "ce143289137fe713ade9b2e676ce255f88d98a1ce47c1c7191bc52e607a3891d",
+    "packages/delivery-wordpress/src/editor-fixtures.ts": "8e38ec2193f63d102f9278ef35bd88ae3596c38b2b457950f04abfa75b6635af",
+    "packages/delivery-wordpress/src/theme-update.ts": "9aac27ba579b3e7870f4dace9df903c0c51ade1751670e062b9b4460fc2b837f",
+    "packages/delivery-wordpress/dist/editor-fixtures.js": "3a80a1d8194a66c8b33e0329c968e9f29ebb52bdb859b904087b412de155ac7e",
+    "packages/delivery-wordpress/dist/theme-update.js": "13caf50defaa9df7df9bb5adf1af9142ef53442570e000219135b6a9f639b374",
+    "gitHead": "68361d16342074eb5b3a1c57f86187f428509aca",
+    "privateWrapper": "5bd0689ef866d440728c360b7fb38d805e46d100dc09b22892ed0f557fbd32e0"
+  },
+  "runtimeConfiguration": {
+    "actionTimeout": 20000,
+    "navigationTimeout": 60000,
+    "testTimeout": 900000,
+    "retries": 0,
+    "workers": 1
+  },
+  "runner": "repository-native Playwright; shared config plus private action/navigation timeout wrapper",
+  "privateReportHash": "7ef427fe3ce343b671e697d11bfc40b50b2717f619feaeafebd33cfe29a0ab9c",
+  "retention": {
+    "schemaVersion": 1,
+    "provenance": "live_browser_fixture_design",
+    "fixtureId": "46e70a07-75b0-4a96-b044-0993cdf08d4d",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "runtimeIdentity": "observed_owned_local_site",
+    "beforeHash": "3db72dd7feeb403e68612f91f434183646b05e5115c09b4e112ae17fe3e55f33",
+    "afterHash": "3db72dd7feeb403e68612f91f434183646b05e5115c09b4e112ae17fe3e55f33",
+    "firstBuild": {
+      "status": "passed",
+      "action": "updated",
+      "cssHash": "6dbfb0fcad9a319ca54480b688764c628a6c9c8d67a410a56cd195ece50b76f7",
+      "files": [
+        {
+          "path": "templates/page.html",
+          "sha256": "52d32bfbd51cab32b642ce43831f2667a8a1ca64f9360a88d755f249ff3cb3ef"
+        }
+      ]
+    },
+    "secondBuild": {
+      "status": "passed",
+      "action": "updated",
+      "cssHash": "44bca6bb2b5daccbbb9f1db36edb261b89c6829abe9804d081effa55d4004629",
+      "files": [
+        {
+          "path": "templates/page.html",
+          "sha256": "bc471128dd6b65df10e9aa51cbd8049db5212acc4117c7a8592e365ee1315d50"
+        }
+      ]
+    },
+    "iframePadding": "32px",
+    "frontPadding": "32px",
+    "iframeStylesheet": {
+      "path": "assets/dist/tailwind.css",
+      "version": "44bca6bb2b5daccbbb9f1db36edb261b89c6829abe9804d081effa55d4004629"
+    },
+    "frontendStylesheet": {
+      "path": "assets/dist/tailwind.css",
+      "version": "44bca6bb2b5daccbbb9f1db36edb261b89c6829abe9804d081effa55d4004629"
+    },
+    "seoOutput": {
+      "title": "Browser-edited SEO title",
+      "description": "Browser-edited SEO description",
+      "robots": [
+        "noindex, nofollow"
+      ],
+      "canonical": null
+    },
+    "sitemapChildren": [
+      {
+        "path": "/post-sitemap.xml",
+        "status": 200,
+        "containsFixture": false
+      },
+      {
+        "path": "/page-sitemap.xml",
+        "status": 200,
+        "containsFixture": true
+      },
+      {
+        "path": "/category-sitemap.xml",
+        "status": 200,
+        "containsFixture": false
+      },
+      {
+        "path": "/author-sitemap.xml",
+        "status": 200,
+        "containsFixture": false
+      }
+    ],
+    "canonicalPolicy": "suppressed_by_observed_Yoast_noindex_guard",
+    "media": "owned_replacement_alt_and_rendering",
+    "mediaReplacement": "passed",
+    "sectionAddReorderDelete": "passed",
+    "adminPagesDenied": "passed",
+    "sitemapPrivacy": "not_provided_by_noindex",
+    "designApproval": "not_evaluated",
+    "nativeFixtureCleanup": "cleaned",
+    "themeUpdate": "retained_intentionally"
+  },
+  "cleanup": {
+    "nativeFixtureCleanup": "cleaned",
+    "browserCloseFailed": false,
+    "cleanupDiagnosticFailed": false,
+    "themeUpdate": "retained_intentionally"
+  },
+  "postRun": {
+    "journalStatus": "cleaned",
+    "remainingResources": 0,
+    "operationLockAbsent": true,
+    "ownedDependencySymlinkRemoved": true,
+    "ownedSiteRunning": false
+  },
+  "limitations": {
+    "approvedDesign": "not_evaluated",
+    "humanAcceptance": "not_run",
+    "translations": "deferred_by_user"
+  }
+}

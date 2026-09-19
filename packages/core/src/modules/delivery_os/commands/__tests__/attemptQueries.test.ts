@@ -78,6 +78,7 @@ describe('deliveryOsAttemptQueries', () => {
     const registrations: Record<string, { resolve: (container: { resolve: (name: string) => unknown }) => unknown }> = {}
     register({ register: (entries: typeof registrations) => Object.assign(registrations, entries) } as never)
     expect(Object.keys(registrations)).toEqual([
+      'deliveryOsEvidenceQueries',
       'deliveryOsAttemptQueries',
       'deliveryOsReportQueries',
       'deliveryOsFlowQueries',

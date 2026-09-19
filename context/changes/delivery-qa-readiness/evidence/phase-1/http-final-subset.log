@@ -1,0 +1,12 @@
+
+Running 7 tests using 1 worker
+
+  ✓  1 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-001.spec.ts:22:1 › TC-DELIVERY-001: R1–R19 enforce authentication, features and tenant/organization scope without writes (14.4s)
+  ✓  2 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve failed evidence (3.1s)
+  ✓  3 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve not_run evidence (3.0s)
+  ✓  4 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve missing evidence (2.9s)
+  ✓  5 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve wrong_revision evidence (3.1s)
+  ✓  6 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:10:5 › TC-DELIVERY-008: review requires current complete proof › cannot approve manual_agent evidence (3.0s)
+  ✓  7 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts:46:3 › TC-DELIVERY-008: review requires current complete proof › exhausted correction budget blocks another execution (3.0s)
+
+  7 passed (37.7s)

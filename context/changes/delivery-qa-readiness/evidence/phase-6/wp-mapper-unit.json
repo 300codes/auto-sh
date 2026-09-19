@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "command": "node node_modules/jest/bin/jest.js --config packages/core/jest.config.cjs --runInBand --runTestsByPath packages/core/src/modules/delivery_os/lib/__tests__/wordpressStudioContract.test.ts",
+  "runner": "current immutable deps isolated Docker6144MiB/2CPU",
+  "provenance": "synthetic byte-backed fixture and domain units; no live Studio/tools/preview",
+  "passed": 36,
+  "failed": 0,
+  "suites": 1,
+  "durationSeconds": 1.766,
+  "sourceHashes": {
+    "packages/core/src/modules/delivery_os/lib/__tests__/wordpressStudioContract.test.ts": "4d38d882a0d41c1aa04bbb75f883b605a2cc59af01c9c2156f6bf6a00dd56b9e",
+    "packages/core/src/modules/delivery_os/lib/__tests__/wordpressMappingFixture.ts": "1588aa45a3d42c02c0bcf0c2be27205edc2912e604b690f6fff648e809af833c",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/base-snapshot.fixture.json": "c69eebfebb3c238982942e062a355e7ef3005f281f36b5545c0429a3fcdfa3d1",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/result-snapshot.fixture.json": "58c8968fb235d323d6f920336cc0860155f9a42f1a0426f68364f53a49e5f3f4",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/README.md": "dee5d474e51670b832b5bebf58d93e4e2f6275ea932b4c1a38cf793ecd3b15f0",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/checks.fixture.json": "3175358c232bc722247224b31907a475b6de23d4bd7f87633c779b337895ba5f",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/checks/lint.report.json": "ad0ec237f1b85ef21f4f85ada1cc54ddae41ce98cf9c7ce2651d714c6cee2a1c",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/checks/smoke-tests-1.definition.txt": "2bcf8e1ada7dc6622172c112259663eed468dfc355cf373721a5d98952c23a09",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/checks/lint.definition.txt": "2561c640c8e73a13a2115e64116f6a8da472ae9927bbaf726fda7527481976d1",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/checks/smoke-tests-1.report.json": "adfc6fdd0c0445994ff52c731b6c1a640177d2363ce08264ecc945261cd0bb2f",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/base/database-surrogate.txt": "f29c7fe28128a77b786cc75e73886ddd228653d2242fe91ab25c967b360da8e4",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/base/patterns/shared.php": "7337105c364840892fa27d1f21265d27d487e7dc53abbb3d6c17758293072650",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/base/parts/old-services.html": "1e7e7f26d668a5234a5931a42bd4fe0160738a00002721b75377ad378c2ebbef",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/base/templates/front-page.html": "bec8c1e307d506a5b28d8a632d85041cd7d8c74557e7d1dcb042ab81b44c842b",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/result/database-surrogate.txt": "c346e391bd0605160c7100771e2427e013524ad32761bedb78aa7249f9f8479b",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/result/patterns/shared.php": "7337105c364840892fa27d1f21265d27d487e7dc53abbb3d6c17758293072650",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/result/parts/services.html": "51eabd6a9f607151698434668b18c0f76d08fc135432d3d0d9abd340f6d41016",
+    "hackathon/delivery-demo/adapters/wordpress/fixtures/oss-mapping/artifacts/result/templates/front-page.html": "8d272341a3f29a951f1fe28d0c0663c495ce48ab6d50d21073bd340037c8b53d"
+  }
+}

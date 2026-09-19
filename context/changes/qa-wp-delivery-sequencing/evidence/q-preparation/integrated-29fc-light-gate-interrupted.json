@@ -1,0 +1,62 @@
+{
+  "at": "2026-09-19T16:43:01.410295+00:00",
+  "sourceFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+  "steps": [
+    {
+      "at": "2026-09-19T16:37:06.360687+00:00",
+      "step": 1,
+      "command": "yarn build:packages",
+      "exitCode": 0,
+      "seconds": 15.832702689000143,
+      "sourceFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "afterFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:37:39.767231+00:00",
+      "step": 2,
+      "command": "yarn generate",
+      "exitCode": 0,
+      "seconds": 32.930361128000186,
+      "sourceFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "afterFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:37:42.521356+00:00",
+      "step": 3,
+      "command": "yarn build:packages",
+      "exitCode": 0,
+      "seconds": 2.2333426499999405,
+      "sourceFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "afterFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:37:45.072786+00:00",
+      "step": 4,
+      "command": "yarn i18n:check-sync",
+      "exitCode": 0,
+      "seconds": 2.0924655139997412,
+      "sourceFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "afterFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "status": "passed"
+    },
+    {
+      "at": "2026-09-19T16:42:32.840453+00:00",
+      "step": 5,
+      "command": "yarn i18n:check-usage",
+      "exitCode": 137,
+      "seconds": 287.3092775140003,
+      "sourceFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "afterFingerprint": "29fc1a50facdf338b09cc324038bf224986fef1c962de6f810d513b5edd20228",
+      "status": "failed"
+    }
+  ],
+  "step5Classification": "interrupted_for_reviewed_scanner_performance_fix",
+  "functionalUsageCheckResult": "not_completed",
+  "fullOrderedGate": "not_passed",
+  "heavySteps6through8": "not_run",
+  "migration": "previously_applied_verified_not_repeated",
+  "databasePreserved": true
+}

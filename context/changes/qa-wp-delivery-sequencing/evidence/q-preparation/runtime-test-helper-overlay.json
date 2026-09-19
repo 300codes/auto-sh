@@ -1,0 +1,14 @@
+{
+  "beforeFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+  "afterFingerprint": "d6e130235a138a8eaa20d79b26481b0230cbf8dbf20724174fe03d353c29f3d0",
+  "reviewedSourceSha256": {
+    "packages/core/src/helpers/integration/auth.ts": "02867f165ce3b60abe064a637e77603171828e3a83d0a2887ef2a69fb431a1e6",
+    "packages/core/src/helpers/integration/__tests__/authCredentials.test.ts": "3954c392cd504f8c6c50439cf280a932ae061dc1393999c3d44b6cb133c87550"
+  },
+  "productionBuildUnchanged": true,
+  "scope": "test-helper credentials environment support only",
+  "appRebuilt": false,
+  "distHelperCompile": "esbuild transforms only integration/auth.ts to dist/helpers/integration/auth.js",
+  "regressionTestsPassed": 3,
+  "actualAccountConfigCorrection": "CLI completion footer email differed from auth setup Created user email. Private email reconciled; random password unchanged; direct admin login200 confirmed."
+}

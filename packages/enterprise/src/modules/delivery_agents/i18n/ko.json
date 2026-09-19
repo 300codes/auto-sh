@@ -1,0 +1,12 @@
+{
+  "delivery_agents.widget.cancel.ariaLabel": "실행 시도 취소",
+  "delivery_agents.widget.cancel.cancelling": "취소 중…",
+  "delivery_agents.widget.cancel.failed": "취소 실패",
+  "delivery_agents.widget.cancel.label": "취소",
+  "delivery_agents.widget.cancel.requested": "취소 요청됨",
+  "delivery_agents.widget.execute.ariaLabel": "Cezar를 통해 납품 작업 실행",
+  "delivery_agents.widget.execute.failed": "실행 실패",
+  "delivery_agents.widget.execute.label": "실행",
+  "delivery_agents.widget.execute.started": "실행 시작됨",
+  "delivery_agents.widget.execute.starting": "시작 중…"
+}

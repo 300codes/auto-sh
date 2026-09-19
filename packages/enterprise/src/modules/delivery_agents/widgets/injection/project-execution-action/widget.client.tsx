@@ -21,7 +21,7 @@ export default function ProjectExecutionActionWidget({
   context,
 }: InjectionWidgetComponentProps<ExecutionWidgetContextV1, undefined>) {
   const { taskId } = context
-  const { t } = useT('delivery_agents')
+  const t = useT()
   const [attempt, setAttempt] = React.useState<AttemptState>(INITIAL_ATTEMPT_STATE)
   const [busy, setBusy] = React.useState(false)
 

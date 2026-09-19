@@ -1,0 +1,17 @@
+{
+  "expected": {
+    "status": 422,
+    "code": "cycle"
+  },
+  "actual": {
+    "status": 422,
+    "body": {
+      "code": "cycle",
+      "details": [
+        {
+          "code": "cycle"
+        }
+      ]
+    }
+  }
+}

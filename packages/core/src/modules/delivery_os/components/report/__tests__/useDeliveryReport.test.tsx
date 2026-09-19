@@ -1,7 +1,8 @@
 /** @jest-environment jsdom */
 import { act, renderHook } from '@testing-library/react'
 import { projectDetailSchema } from '../../../api/schemas'
-import { DEFAULT_DELIVERY_LIMITS, deliveryReportV1Schema } from '../../../lib/contracts'
+import { DEFAULT_DELIVERY_LIMITS } from '../../../lib/contracts'
+import { deliveryReportResponseSchema } from '../../../lib/reportContracts'
 import fixture from '../../../lib/fixtures/delivery-report.v1.json'
 import { useDeliveryReport } from '../useDeliveryReport'
 
@@ -22,7 +23,7 @@ const project = projectDetailSchema.parse({
 })
 
 function report() {
-  const value = deliveryReportV1Schema.parse(fixture)
+  const value = deliveryReportResponseSchema.parse({ ...fixture, mode: 'legacy', flow: null, currentCandidate: null, projectUpdatedAt: project.updatedAt, decisionContextHash: 'a'.repeat(64), candidateDecisions: { deployDecisionId: null, releaseDecisionId: null } })
   value.decisions = [{ ...value.decisions[1], sourceRevision: value.revision, appliesToRevision: true }]
   return value
 }

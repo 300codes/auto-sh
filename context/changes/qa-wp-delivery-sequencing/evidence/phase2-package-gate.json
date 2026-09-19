@@ -1,0 +1,31 @@
+{
+  "recordedAt": "2026-09-19T12:34:21.543593+00:00",
+  "runner": "local Node24, host subprocesses for compiler fixture",
+  "tests": {
+    "passed": 135,
+    "failed": 0,
+    "skipped": 0,
+    "command": "WP_TAILWIND_TOOLCHAIN_ROOT=<private-4.3.3> npm test --prefix packages/delivery-wordpress"
+  },
+  "typecheck": "passed",
+  "build": "passed",
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/theme-assets.ts": "ab3ea1f061d3793e4c68b8894aa51c818ad093b686055417bb35460a58c7c1ac",
+    "packages/delivery-wordpress/src/__tests__/theme-assets.test.ts": "389093c6a1facbbdd286694609e6b5bec8221033e05534708c5e4ff2c2d3a7c3",
+    "packages/delivery-wordpress/src/theme-design-apply.ts": "d15078d1890a927d2711ab8eb618d08ce826c8b210eddaef0a817bc886387852",
+    "packages/delivery-wordpress/src/__tests__/theme-design-apply.test.ts": "3de3e2f71b1288536947ca0de40cb5a897d0e6a2616c625b19692b2a8abea18d",
+    "packages/delivery-wordpress/src/theme-build.ts": "1d044e0bd11c61b3b92084bb1ce0287da4737c889a8faca3bbfee2d371b319ab",
+    "packages/delivery-wordpress/src/__tests__/theme-build.test.ts": "c53eaf35a077dd3b9194f06008573505dd0a4bc486499a6bfc114e1d92ec5f06",
+    "packages/delivery-wordpress/src/prepare-theme.ts": "bf32c189011c708fa624ebd9fecbcdf610df589677d0629cb577caf334dcd28f",
+    "packages/delivery-wordpress/src/__tests__/prepare-theme.test.ts": "4cdc91bbe160e8006cee229859d692fed8bf9097b2cdfc8e04d0d17339594a0c",
+    "packages/delivery-wordpress/src/preview.ts": "21400a3e3994619902cc25654f367cc9cbcfb2861528d53a26665d810759096a",
+    "packages/delivery-wordpress/src/__tests__/preview.test.ts": "edf1f1c917d8d2154d2d264417d5af27c1a70062da5da09379dce4a68ea3b2f9"
+  },
+  "browser": "not_run",
+  "compiledOwnedSite": "not_run",
+  "preview": "not_published",
+  "limitations": [
+    "Not the full ordered OM system gate",
+    "Design inputs remain fixtures unless actually approved"
+  ]
+}

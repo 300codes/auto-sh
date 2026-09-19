@@ -6,7 +6,7 @@ import { readJsonSafe } from '@open-mercato/core/helpers/integration/generalFixt
 import { evidenceRecordResponseSchema } from '../api/schemas'
 import { evidenceDetailResponseSchema, evidenceListResponseSchema } from '../lib/evidenceReadContracts'
 import { setupReportFixture, cleanupReportFixture, reportFixtureHash, reportFixturePng, type ReportFixtureResources } from './helpers/reportReadiness'
-import en from '../i18n/en.json'
+import en from '../i18n/en.json' with { type: 'json' }
 const labels: Record<string, string> = en
 
 test.describe('TC-DELIVERY-UI-007: scoped source evidence and screenshot bytes', () => {

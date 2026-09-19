@@ -15,7 +15,7 @@ import type { BaselineContentV1 } from '../lib/contracts'
  *
  * Covers: FROM_BRIEF (source: 'manual') and FROM_DESIGN (source: 'requirements_proposal') baseline
  * creation; missing acceptanceCriteria 422; attachment round-trip; duplicate content-hash idempotency;
- * unknown targetProfileId; cross-tenant 404; approved baseline marks the project isActive.
+ * unknown targetProfileId; cross-organization 404; approved baseline marks the project isActive.
  *
  * Each test is self-contained: it seeds its own project+baseline fixture in beforeAll/try and
  * hard-deletes in afterAll/finally. The suite tracks all created project IDs and attachment IDs
@@ -441,7 +441,7 @@ test.describe('TC-DELIVERY-002: baseline input modes on the real database', () =
     }
   })
 
-  test('cross-tenant: org B token gets 404 on a project created by org A', async ({ request }) => {
+  test('cross-organization: org B token gets 404 on a project created by org A', async ({ request }) => {
     test.slow()
     let token: string | null = null
     const localProjectIds: string[] = []
@@ -493,7 +493,7 @@ test.describe('TC-DELIVERY-002: baseline input modes on the real database', () =
       // Baseline POST by org B against org A's project must return 404
       const foreignBaseline = await foreignCall('POST', `${API}/projects/${projectId}/baselines`, {
         body: { source: 'manual' },
-        lock: new Date().toISOString(),
+        lock: await projectVersion(call, projectId),
       })
       expect(foreignBaseline.status, `org B baseline POST: ${JSON.stringify(foreignBaseline.body)}`).toBe(404)
       expect(JSON.stringify(foreignBaseline.body)).not.toContain(projectId)

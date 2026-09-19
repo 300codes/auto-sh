@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "command": "node node_modules/jest/bin/jest.js --config packages/core/jest.config.cjs --runInBand --runTestsByPath packages/core/src/modules/delivery_os/commands/__tests__/evidence.test.ts packages/core/src/modules/delivery_os/api/__tests__/evidence.route.test.ts",
+  "before": {
+    "failed": 4,
+    "passed": 50,
+    "reason": "stale review was accepted"
+  },
+  "after": {
+    "passed": 64,
+    "failed": 0,
+    "suites": 2
+  },
+  "provenance": "unit mock + mocked API route; no live HTTP",
+  "note": "Initial409 run excluded because two reserved attempts were invalid fixture; corrected fixture uses result_received attempts.",
+  "finalAfterConcurrentReplayFix": {
+    "passed": 66,
+    "failed": 0,
+    "suites": 2,
+    "durationSeconds": 4.274
+  }
+}

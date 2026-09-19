@@ -26,6 +26,7 @@ import {
   DeliveryFlowStageArtifact,
   DeliveryFlowStageDecision,
   DeliveryProject,
+  DeliveryReleaseCandidate,
   DeliveryTask,
 } from '../../data/entities'
 import { reserveAttempt } from '../../lib/attempts'
@@ -43,7 +44,6 @@ import { TARGET_PROFILES } from '../../lib/targetProfiles'
 import { issueTrustedExecution } from '../../lib/trustedExecution'
 import type { AttemptReconcileResult, AttemptReserveResult } from '../attempts'
 import type { DecisionCommandResult } from '../decisions'
-import { createDeliveryOsReportQueries } from '../reportQueries'
 import type { TaskCommandResult } from '../tasks'
 import {
   ACTOR_ID,
@@ -65,7 +65,7 @@ import {
   type Store,
 } from './baselineTestKit'
 
-type GateStore = Store & { stageArtifacts: Row[]; stageDecisions: Row[]; evidence: Row[] }
+type GateStore = Store & { stageArtifacts: Row[]; stageDecisions: Row[]; evidence: Row[]; candidates: Row[] }
 
 const DRAFT_TASK_ID = '66666666-6666-4666-8666-6666666666a1'
 const READY_TASK_ID = '66666666-6666-4666-8666-6666666666b2'
@@ -90,6 +90,7 @@ function rows(entity: unknown): Row[] {
   if (entity === DeliveryFlowStageArtifact) return store.stageArtifacts
   if (entity === DeliveryFlowStageDecision) return store.stageDecisions
   if (entity === DeliveryEvidence) return store.evidence
+  if (entity === DeliveryReleaseCandidate) return store.candidates
   return rowsFor(store, entity)
 }
 
@@ -183,6 +184,7 @@ function artifactRow(stageId: FlowStageId, version: number, upstream: { stageId:
     organizationId: ORG_ID,
     projectId: PROJECT_ID,
     stageId,
+    templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE),
     version,
     contentHash,
     dependsOn: upstream ? [{ stageId: upstream.stageId, ...upstream.ref }] : [],
@@ -199,12 +201,14 @@ function approvalRow(stageId: FlowStageId, ref: StageRef, clientApproverName: st
     organizationId: ORG_ID,
     projectId: PROJECT_ID,
     stageId,
+    templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE),
     artifactId: ref.artifactId,
     subjectHash: ref.contentHash,
     subjectVersion: ref.version,
     verdict: 'approved',
     decidedAt: new Date(Date.UTC(2026, 8, 19, 9, 30, stageSeq)),
     clientApproverName,
+    clientApprovalEvidence: clientApproverName ? { kind: 'meeting', reference: 'Client approved this fixture stage', attachment: null, recordedAt: NOW } : null,
   })
 }
 
@@ -248,8 +252,7 @@ function runAutomaticReserve(idempotencyKey = 'automatic-key'): Promise<AttemptR
 }
 
 function runDeploy(overrides: Row = {}): Promise<DecisionCommandResult> {
-  const reportQueries = createDeliveryOsReportQueries(makeHarness(store).em as never)
-  const { ctx } = makeHarness(store, { headers: projectLock(), services: { deliveryOsReportQueries: reportQueries } })
+  const { ctx } = makeHarness(store, { headers: projectLock() })
   return Promise.resolve(
     record.execute({ kind: 'deploy', projectId: PROJECT_ID, baselineId: BASELINE_ID, sourceRevision: REVISION, verdict: 'approved', ...overrides }, ctx),
   )
@@ -285,11 +288,17 @@ function expectGateRefusal(error: CrudHttpError, expected: Partial<Record<FlowSt
   expect(byStage).toEqual(expected)
 }
 
-async function expectAllFourRefused(expected: Partial<Record<FlowStageId, string>>): Promise<void> {
+async function expectAllFourRefused(
+  expected: Partial<Record<FlowStageId, string>>,
+  expectedPublishBlockers: Array<{ path: FlowStageId; code: string }>,
+): Promise<void> {
   expectGateRefusal(await catchHttpError(runReady), expected)
   expectGateRefusal(await catchHttpError(() => runManualReserve()), expected)
   expectGateRefusal(await catchHttpError(() => runAutomaticReserve()), expected)
-  expectGateRefusal(await catchHttpError(() => runDeploy()), expected)
+  const deployError = await catchHttpError(() => runDeploy())
+  expect(deployError.status).toBe(422)
+  expect(deployError.body.code).toBe('flow_not_publishable')
+  expect(stageDetails(deployError).map(({ path, code }) => ({ path, code }))).toEqual(expectedPublishBlockers)
   expect(store.tasks[0].status).toBe('draft')
   expect(store.tasks[1].status).toBe('ready')
   expect(store.tasks[1].executionAttempts).toHaveLength(0)
@@ -319,14 +328,34 @@ beforeEach(() => {
     stageArtifacts: [],
     stageDecisions: [],
     evidence: [],
+    candidates: [],
   }
   store.evidence = greenEvidence()
+  store.candidates = [{
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    tenantId: TENANT_ID,
+    organizationId: ORG_ID,
+    projectId: PROJECT_ID,
+    baselineId: BASELINE_ID,
+    baselineHash: baseline.contentHash,
+    version: 1,
+    sourceRevision: REVISION,
+    evidenceIds: store.evidence.map((evidence) => evidence.id),
+    createdAt: UPDATED_AT,
+  }]
 })
 
 describe('flow gate on the v1 dispatch and publish paths (C21, UA-48)', () => {
   it('refuses ready, manual reserve, automatic reserve and deploy while UX is pending and later stages are missing', async () => {
     seedStages('ux')
-    await expectAllFourRefused({ ux: 'stage_not_approved', key_visual: 'stage_not_approved', design_system_ui: 'stage_not_approved' })
+    await expectAllFourRefused(
+      { ux: 'stage_not_approved', key_visual: 'stage_not_approved', design_system_ui: 'stage_not_approved' },
+      [
+        { path: 'ux', code: 'decision_pending' },
+        { path: 'key_visual', code: 'artifact_missing' },
+        { path: 'design_system_ui', code: 'artifact_missing' },
+      ],
+    )
   })
 
   it('lets the v1 flow proceed once all four stages are approved and current', async () => {
@@ -348,17 +377,30 @@ describe('flow gate on the v1 dispatch and publish paths (C21, UA-48)', () => {
     const deploy = await runDeploy()
     expect(deploy).toMatchObject({ kind: 'deploy', verdict: 'approved', baselineId: BASELINE_ID })
     expect(store.decisions.filter((decision) => decision.kind === 'deploy')).toHaveLength(1)
+    expect(store.decisions.find((decision) => decision.kind === 'deploy')).toMatchObject({
+      releaseCandidateId: store.candidates[0].id,
+      releaseCandidateVersion: 1,
+      candidateContextHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    })
   })
 
   it('refuses again after a new Scope version: scope pending, every dependant stale', async () => {
     seedStages('none')
     artifactRow('scope', 2, null)
-    await expectAllFourRefused({
-      scope: 'stage_not_approved',
-      ux: 'stage_dependency_stale',
-      key_visual: 'stage_dependency_stale',
-      design_system_ui: 'stage_dependency_stale',
-    })
+    await expectAllFourRefused(
+      {
+        scope: 'stage_not_approved',
+        ux: 'stage_dependency_stale',
+        key_visual: 'stage_dependency_stale',
+        design_system_ui: 'stage_dependency_stale',
+      },
+      [
+        { path: 'scope', code: 'decision_pending' },
+        { path: 'ux', code: 'upstream_not_approved' },
+        { path: 'key_visual', code: 'upstream_not_approved' },
+        { path: 'design_system_ui', code: 'upstream_not_approved' },
+      ],
+    )
   })
 
   it('reconciles a not-started attempt on a gated project into blocked instead of ready', async () => {

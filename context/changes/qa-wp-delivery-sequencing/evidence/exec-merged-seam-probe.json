@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "scope": "Read-only post-merge EXEC/Cezar/WP seam assessment; no services, processes, database or executor started",
+  "head": "67aa2d1f87f3d203eadc590ffb1dfade1f375201",
+  "workingTree": "local source hashes below are authoritative",
+  "status": "blocked_contract_mismatch_reproduced_without_runtime",
+  "sourceSha256": {
+    "packages/core/src/modules/delivery_os/lib/contracts.ts": "28b1c405450d70a3e3e0f2f93f8b8695c5664be3efe0189e5320b7c365ab7b44",
+    "packages/core/src/modules/delivery_os/lib/fixtures/task-package.snapshot.v1.json": "46a4f3a5f99593cb8c078b81a486876094ea8f762452918fcfbd77b519aa23c9",
+    "packages/core/src/modules/delivery_os/lib/wordpressResultMapper.ts": "8552ef144a49ea677a3f10975c9ec9f21ac08ac3b496bb599af7b139141ad2a4",
+    "packages/core/src/modules/delivery_os/lib/attempts.ts": "44ff11ee892981393edafdd6296d5ac096d0400a5f9a007e6ea018ddb74cc580",
+    "packages/core/src/modules/workflows/lib/signal-handler.ts": "c94392858699efa6147814630971b74a3bffe4bfce84fc27216fea3c31156b4a",
+    "packages/delivery-cezar/src/lib/contracts.ts": "c6d05407c61a7378b90201479d7c6988047b5f239b50cdbbc829770e2eeb8dce",
+    "packages/delivery-cezar/src/lib/resultManifest.ts": "7bbb0ae242be796b2a7f35caf701f7589c5fc543ce27cdd511001c1f9d876533",
+    "packages/enterprise/src/modules/delivery_agents/lib/cezarExecutor.ts": "8eb0ad418b7a1e7a88243dc0cf2fda3fd92636cfcffccfc6c8b860e4ff4b1a35",
+    "packages/enterprise/src/modules/delivery_agents/lib/executionBridge.ts": "87027eb9a1dc1af0b6c544f4d6c5ad4b17a03653c1032507b02d23f5c8f5aedc",
+    "packages/enterprise/src/modules/delivery_agents/workers/execute-task.ts": "fe332cede88dda53835bbb75b59a96093484aee95baad8ab3b214ca56da4db7c",
+    "packages/enterprise/src/modules/delivery_agents/workers/resume-attempt.ts": "74e3880b6869bb5bad410d531358bee343909bae81d6422a35efcb0e6a13ee12",
+    "packages/enterprise/src/modules/delivery_agents/api/tasks/[id]/execute/route.ts": "0786aaf12c3be52440d75a1f8ab04e239a7a5efc14a70e62bc49abd6b65a36f2",
+    "packages/delivery-wordpress/src/tools.ts": "e08433f2e90a50d049052b86a11cc08463d147b864137a4a1be4ba24d8addf18"
+  },
+  "reproducer": {
+    "cwd": "repository root",
+    "command": "NODE_PATH=/tmp/auto-sh-q-current-hz1_odcn/node_modules node -",
+    "stdin": "const ts=require('typescript-js'),fs=require('fs');\nrequire.extensions['.ts']=(module,path)=>module._compile(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,path);\nconst root=process.cwd();\nconst oss=require(root+'/packages/core/src/modules/delivery_os/lib/contracts.ts');\nconst cezar=require(root+'/packages/delivery-cezar/src/lib/contracts.ts');\nconst mapper=require(root+'/packages/delivery-cezar/src/lib/resultManifest.ts');\nconst pkg=oss.taskPackageV1Schema.parse(JSON.parse(fs.readFileSync(root+'/packages/core/src/modules/delivery_os/lib/fixtures/task-package.snapshot.v1.json','utf8')));\nconst parsed=cezar.taskPackageSchema.safeParse(pkg);\nprocess.stdout.write(JSON.stringify({case:'canonical OSS snapshot package vs Cezar task validator',success:parsed.success,invalidPaths:parsed.success?[]:parsed.error.issues.map(issue=>issue.path.join('.'))})+'\\n');\ntry{const mapped=mapper.mapCezarRunToResultManifest({pkg,runResult:{exitCode:0,stdout:'runner: fixture',stderr:'',runId:'review-only',durationMs:1}});process.stdout.write(JSON.stringify({case:'Cezar mapped manifest vs canonical OSS validator',success:oss.resultManifestV1Schema.safeParse(mapped).success})+'\\n')}\ncatch(error){process.stdout.write(JSON.stringify({case:'actual worker mapper with canonical OSS snapshot input',throws:true,invalidPaths:error.issues?.map(issue=>issue.path.join('.'))})+'\\n')}\n",
+    "exitCode": 0,
+    "stdout": "{\"case\":\"canonical OSS snapshot package vs Cezar task validator\",\"success\":false,\"invalidPaths\":[\"schemaVersion\",\"baselineHash\",\"targetProfileVersion\",\"requirements.0.id\",\"ac\",\"designArtifactRefs.0.kind\",\"designArtifactRefs.0.ref\",\"repositoryRef\",\"validationProfile.id\",\"validationProfile.version\",\"validationProfile.checks.0.command\",\"validationProfile.checks.0.testIds\",\"validationProfile.checks.1.command\",\"validationProfile.checks.1.testIds\",\"limits.maxDurationMs\"]}\n{\"case\":\"actual worker mapper with canonical OSS snapshot input\",\"throws\":true,\"invalidPaths\":[\"baselineHash\"]}\n",
+    "stderr": "",
+    "runtimeDependency": "existing cached typescript-js and zod; no install"
+  },
+  "findings": [
+    {
+      "id": "G3-DTO",
+      "severity": "blocking",
+      "locations": [
+        "packages/delivery-cezar/src/lib/contracts.ts:69",
+        "packages/delivery-cezar/src/lib/contracts.ts:74",
+        "packages/enterprise/src/modules/delivery_agents/workers/execute-task.ts:126"
+      ],
+      "evidence": "Canonical OSS snapshot package is valid under OSS validator, rejected by Cezar task validator; worker mapper throws on bare baselineHash before acceptance. Mapper call lies outside acceptance catch.",
+      "owner": "EXEC/Cezar",
+      "nextAction": "Adapt authoritative OSS package/result contracts at the existing executor boundary; do not rewrite public OSS DTO or merely prefix one hash."
+    },
+    {
+      "id": "G3-WORKSPACE",
+      "severity": "blocking",
+      "locations": [
+        "packages/enterprise/src/modules/delivery_agents/lib/cezarExecutor.ts:8",
+        "packages/enterprise/src/modules/delivery_agents/workers/execute-task.ts:86",
+        "packages/enterprise/src/modules/delivery_agents/lib/executionBridge.ts:133",
+        "packages/enterprise/src/modules/delivery_agents/api/tasks/[id]/execute/route.ts:23"
+      ],
+      "evidence": "Executor forwards taskId only and shared baseDir. Bridge fallback uses baselineHash/taskId for snapshot rather than actual owned WP site. HTTP schema lacks baseRevision and profile ID is UUID.",
+      "owner": "EXEC/Cezar",
+      "nextAction": "Bind real authoritative task package and owned workspace/base snapshot before dispatch; owner must resolve HTTP contract deliberately."
+    },
+    {
+      "id": "G3-WP-CALLER",
+      "severity": "blocking",
+      "locations": [
+        "packages/core/src/modules/delivery_os/lib/wordpressResultMapper.ts:57",
+        "packages/delivery-wordpress/src/tools.ts:165"
+      ],
+      "evidence": "Internal mapper exists but has no non-test caller. Snapshot wrapper discards private artifactDirectory and generates toolExecutionId without exposing persisted binding to that folder.",
+      "owner": "QA/WP integration",
+      "nextAction": "Add scoped private frozen-artifact binding and a real manual_handoff/package/local WP/result/review integration test through existing OSS APIs; do not count this as automatic EXEC proof."
+    },
+    {
+      "id": "REC-02",
+      "severity": "high",
+      "verification": "source reasoning; no crash/restart reproduction",
+      "locations": [
+        "packages/enterprise/src/modules/delivery_agents/workers/execute-task.ts:67",
+        "packages/enterprise/src/modules/delivery_agents/workers/execute-task.ts:89",
+        "packages/core/src/modules/delivery_os/lib/attempts.ts:239"
+      ],
+      "evidence": "Same workerRef claim can succeed with alreadyClaimed; worker ignores claim result and invokes executor again.",
+      "reproduction": "In an isolated owned queue, interrupt after first spawn and before result acceptance, then redeliver same job.id; measure actual delta-spawn. Required result is zero new spawn and reconciliation for uncertain execution."
+    },
+    {
+      "id": "REC-04",
+      "severity": "high",
+      "verification": "source reasoning; no crash/restart reproduction",
+      "locations": [
+        "packages/enterprise/src/modules/delivery_agents/workers/resume-attempt.ts:65",
+        "packages/enterprise/src/modules/delivery_agents/workers/resume-attempt.ts:117",
+        "packages/enterprise/src/modules/delivery_agents/workers/resume-attempt.ts:143",
+        "packages/core/src/modules/workflows/lib/signal-handler.ts:471"
+      ],
+      "evidence": "Resume only accepts signal count greater than zero; correlation lookup selects PAUSED instances. Redelivery after successful signal but before delivered write can receive zero and mark failure.",
+      "reproduction": "Interrupt isolated owned resume worker after workflow resumes and before mark_delivery; redeliver same job and record workflow state, completionDelivery and effective-resume count. Required final state is delivered with exactly one effective resume."
+    },
+    {
+      "id": "REC-01-REPLAY",
+      "severity": "high",
+      "verification": "source reasoning",
+      "locations": [
+        "packages/enterprise/src/modules/delivery_agents/lib/executionBridge.ts:157"
+      ],
+      "evidence": "Existing reservation replay returns immediately without recovering failed park/enqueue. Park failure can leave a reservation that a same-key retry does not resume.",
+      "owner": "EXEC"
+    }
+  ],
+  "boundaries": {
+    "liveExecution": "not_run",
+    "restartRecovery": "not_run",
+    "automaticOmWpOm": "not_ready",
+    "manualOmWpOm": "existing APIs and mapper are available; owned-artifact host and live test remain required",
+    "productionChanges": false,
+    "secretsRecorded": false
+  }
+}

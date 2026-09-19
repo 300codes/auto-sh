@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-19T15:23:52.443Z",
+  "scope": "Hook API correction and EXEC006 test repair",
+  "files": [
+    {
+      "path": "packages/enterprise/src/modules/delivery_agents/__integration__/TC-DELIVERY-EXEC-006.spec.ts",
+      "sha256": "a89070d037936b85f57b3f55f3c6f4199dcce54b1856fa4216cd975d01ecc6a4",
+      "transpilation": "passed"
+    },
+    {
+      "path": "packages/enterprise/src/modules/delivery_agents/widgets/injection/project-execution-action/widget.client.tsx",
+      "sha256": "40d85b8115b7514ea73dbf714decec5e802482cb83f04657ca5c19ff5bf045b7",
+      "transpilation": "passed"
+    }
+  ],
+  "verification": "TypeScript transpilation and independent source review only; not semantic typecheck or live HTTP",
+  "live": "not_run"
+}

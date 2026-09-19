@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "provenance": "fixture",
+  "approvalVerification": "not_evaluated",
+  "source": {
+    "designRef": "fixture:wp02:not-figma",
+    "revision": "fixture-v1"
+  },
+  "inputHash": "1f516cce3858d4ac117d6fd796bc3bb27962d1bb49d4ac314c768107cb479125",
+  "themeJsonFragment": {
+    "version": 3,
+    "settings": {
+      "color": {
+        "palette": [
+          {
+            "slug": "design-ink",
+            "name": "Ink",
+            "color": "#172d2b"
+          },
+          {
+            "slug": "design-paper",
+            "name": "Paper",
+            "color": "#f5f3eb"
+          }
+        ]
+      },
+      "typography": {
+        "fontFamilies": [
+          {
+            "slug": "design-body",
+            "name": "Body",
+            "fontFamily": "\"Example Sans\", system-ui, sans-serif"
+          }
+        ],
+        "fontSizes": [
+          {
+            "slug": "design-reading",
+            "name": "Reading",
+            "size": "1rem"
+          }
+        ]
+      },
+      "spacing": {
+        "spacingSizes": [
+          {
+            "slug": "design-none",
+            "name": "None",
+            "size": "0px"
+          },
+          {
+            "slug": "design-section",
+            "name": "Section",
+            "size": "2rem"
+          }
+        ]
+      }
+    }
+  },
+  "tailwindCss": "@theme inline {\n  --color-design-ink: var(--wp--preset--color--design-ink, #172d2b);\n  --color-design-paper: var(--wp--preset--color--design-paper, #f5f3eb);\n  --font-design-body: var(--wp--preset--font-family--design-body, \"Example Sans\", system-ui, sans-serif);\n  --text-design-reading: var(--wp--preset--font-size--design-reading, 1rem);\n  --spacing-design-none: var(--wp--preset--spacing--design-none, 0px);\n  --spacing-design-section: var(--wp--preset--spacing--design-section, 2rem);\n}\n",
+  "artifactsHash": "673e3dc57443f6503ad3abe8fe49b689fba7c41401a938a6f4d933c9ec385d82"
+}

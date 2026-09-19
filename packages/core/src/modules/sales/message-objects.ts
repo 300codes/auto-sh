@@ -31,9 +31,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
           title: 'Sales order',
           subtitle: entityId,
         }
+      } else {
+        const { loadSalesOrderPreview } = await import('./lib/messageObjectPreviews')
+        return loadSalesOrderPreview(entityId, ctx)
       }
-      const { loadSalesOrderPreview } = await import('./lib/messageObjectPreviews')
-      return loadSalesOrderPreview(entityId, ctx)
     },
   },
   {
@@ -61,9 +62,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
           title: 'Sales quote',
           subtitle: entityId,
         }
+      } else {
+        const { loadSalesQuotePreview } = await import('./lib/messageObjectPreviews')
+        return loadSalesQuotePreview(entityId, ctx)
       }
-      const { loadSalesQuotePreview } = await import('./lib/messageObjectPreviews')
-      return loadSalesQuotePreview(entityId, ctx)
     },
   },
   {
@@ -88,9 +90,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Sales channel', subtitle: entityId }
+      } else {
+        const { loadSalesChannelPreview } = await import('./lib/messageObjectPreviews')
+        return loadSalesChannelPreview(entityId, ctx)
       }
-      const { loadSalesChannelPreview } = await import('./lib/messageObjectPreviews')
-      return loadSalesChannelPreview(entityId, ctx)
     },
   },
 ]

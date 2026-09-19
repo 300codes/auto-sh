@@ -45,9 +45,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
           title: 'Leave request',
           subtitle: entityId,
         }
+      } else {
+        const { loadLeaveRequestPreview } = await import('./lib/messageObjectPreviews')
+        return loadLeaveRequestPreview(entityId, ctx)
       }
-      const { loadLeaveRequestPreview } = await import('./lib/messageObjectPreviews')
-      return loadLeaveRequestPreview(entityId, ctx)
     },
   },
   {
@@ -77,9 +78,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
           title: 'Team',
           subtitle: entityId,
         }
+      } else {
+        const { loadTeamPreview } = await import('./lib/messageObjectPreviews')
+        return loadTeamPreview(entityId, ctx)
       }
-      const { loadTeamPreview } = await import('./lib/messageObjectPreviews')
-      return loadTeamPreview(entityId, ctx)
     },
   },
   {
@@ -109,9 +111,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
           title: 'Team member',
           subtitle: entityId,
         }
+      } else {
+        const { loadTeamMemberPreview } = await import('./lib/messageObjectPreviews')
+        return loadTeamMemberPreview(entityId, ctx)
       }
-      const { loadTeamMemberPreview } = await import('./lib/messageObjectPreviews')
-      return loadTeamMemberPreview(entityId, ctx)
     },
   },
   {
@@ -136,9 +139,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Team role', subtitle: entityId }
+      } else {
+        const { loadStaffTeamRolePreview } = await import('./lib/messageObjectPreviews')
+        return loadStaffTeamRolePreview(entityId, ctx)
       }
-      const { loadStaffTeamRolePreview } = await import('./lib/messageObjectPreviews')
-      return loadStaffTeamRolePreview(entityId, ctx)
     },
   },
   {
@@ -163,9 +167,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'My availability', subtitle: entityId }
+      } else {
+        const { loadStaffAvailabilityPreview } = await import('./lib/messageObjectPreviews')
+        return loadStaffAvailabilityPreview(entityId, ctx)
       }
-      const { loadStaffAvailabilityPreview } = await import('./lib/messageObjectPreviews')
-      return loadStaffAvailabilityPreview(entityId, ctx)
     },
   },
 ]

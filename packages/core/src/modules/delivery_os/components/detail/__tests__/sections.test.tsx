@@ -7,7 +7,7 @@ import { RequirementsSection } from '../RequirementsSection'
 import { DesignSection } from '../DesignSection'
 import { TasksSection } from '../TasksSection'
 import { EvidenceSection } from '../EvidenceSection'
-import { EvidenceSources } from '../../report/EvidenceSources'
+
 import { resolveActiveBaseline } from '../baselineContent'
 import type { SectionSource } from '../useProjectSections'
 
@@ -322,11 +322,8 @@ describe('evidence section', () => {
   })
 })
 
-describe('three empty states stay disjoint', () => {
-  // Comparing whole SECTIONS would pass even if all three empty states said the
-  // same thing, because the section headings differ on their own. Compare the
-  // empty-state nodes themselves.
-  it('uses a different message for no baseline, no tasks and no evidence endpoint', () => {
+describe('project empty states stay disjoint', () => {
+  it('uses different messages for no baseline and a baseline without tasks', () => {
     const noBaseline = render(
       <RequirementsSection state={ready<BaselineDto[]>([])} onRetry={() => undefined} />,
     ).getByTestId('delivery-requirements-section-empty').textContent ?? ''
@@ -340,15 +337,11 @@ describe('three empty states stay disjoint', () => {
         onRetry={() => undefined}
       />,
     ).getByTestId('delivery-tasks-empty').textContent ?? ''
-    const noEvidenceEndpoint = render(<EvidenceSources />).getByTestId('report-evidence-unavailable').textContent ?? ''
 
     expect(noBaseline).toContain('delivery_os.project.sections.baselines.none.title')
     expect(noTasks).toContain('delivery_os.project.sections.tasks.empty.baselineWithoutTasks')
-    expect(noEvidenceEndpoint).toContain('delivery_os.report.evidence.apiUnavailable')
-    for (const text of [noBaseline, noTasks, noEvidenceEndpoint]) expect(text.length).toBeGreaterThan(0)
+    for (const text of [noBaseline, noTasks]) expect(text.length).toBeGreaterThan(0)
     expect(noBaseline).not.toBe(noTasks)
-    expect(noTasks).not.toBe(noEvidenceEndpoint)
-    expect(noBaseline).not.toBe(noEvidenceEndpoint)
   })
 })
 

@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Plan does not belong to this project baseline",
+    "code": "foreign_reference",
+    "details": [
+      {
+        "path": "baselineHash",
+        "code": "baseline_hash_mismatch",
+        "message": "The plan was prepared for another version of the baseline content"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "d4c92a2a-6870-4998-ac3e-68436cf33b38"
+}

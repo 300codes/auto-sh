@@ -1,0 +1,39 @@
+{
+  "scenario": "not_run",
+  "status": 422,
+  "body": {
+    "error": "Some acceptance criteria are not proven",
+    "code": "missing_required_tests",
+    "details": [
+      {
+        "path": "acIds.AC-001",
+        "code": "ac_unproven",
+        "message": "AC-001 is not proven on the result revision"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  }
+}

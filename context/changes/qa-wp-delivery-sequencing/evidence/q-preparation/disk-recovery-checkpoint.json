@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-09-19T15:11:45.926691+00:00",
+  "status": "partial_copy_invalid_do_not_use",
+  "sourceFilesVerified": 17005,
+  "sourceMismatches": 0,
+  "dependencyCopyMismatches": 43883,
+  "lockSha256": "b0b9521d8d4562a3edaa9413d4a9fc500c8fc37478652a2a9b2bf22cfa289441",
+  "cacheLockMatches": true,
+  "replacementStrategy": "bind existing intact dependency directories over invalid partial copy; no duplicate install/copy",
+  "newContainerCreated": false,
+  "servicesStarted": false,
+  "buildPerformed": false,
+  "next": "Root-approved final source sync, read-only cache identity validation, own container+fresh DB; native full package/generate/app build after runtime slot"
+}

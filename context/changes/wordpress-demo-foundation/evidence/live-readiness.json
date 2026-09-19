@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "provenance": "live",
+  "status": "passed",
+  "executionMode": "standalone_tools",
+  "omIntegration": "not_connected",
+  "baselineId": null,
+  "scope": {
+    "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+    "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+    "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+  },
+  "attemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "site": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "scope": {
+      "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+      "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+      "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+    },
+    "attemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+    "toolExecutionId": "a431b204-8f77-4e8d-b04a-3cbd888109cb",
+    "studioSiteId": "2b27bf16-b421-4968-b915-ef5a472c5345",
+    "localUrl": "http://localhost:8885",
+    "themeSlug": "delivery-demo-foundation",
+    "themeCommit": "4b23a871fb055ea0e18aed0b5df54ac1872e01c8",
+    "createdAt": "2026-09-19T11:55:25.657Z",
+    "checks": [
+      {
+        "checkId": "studio.create",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      },
+      {
+        "checkId": "theme.scaffold",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      },
+      {
+        "checkId": "theme.git",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      },
+      {
+        "checkId": "theme.activate",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      }
+    ]
+  },
+  "plugins": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "plugins": [
+      {
+        "slug": "advanced-custom-fields-pro",
+        "version": "6.8.9",
+        "sha256": "597c72a559a2dbc51161f261bc6165eb8144a7f4077428bd0e0162198225917f",
+        "status": "active",
+        "action": "installed"
+      },
+      {
+        "slug": "polylang",
+        "version": "3.8.9",
+        "sha256": "de5fae3d399e34c2db496a02b7cff4e4ca79723c418c8542b82bb7c030204a60",
+        "status": "active",
+        "action": "installed"
+      },
+      {
+        "slug": "wordpress-seo",
+        "version": "28.5",
+        "sha256": "da297cf7f0a9fdb4c7a605e1d8896552fc97360f6b0f55eaa318fe8f8a1b829c",
+        "status": "active",
+        "action": "installed"
+      }
+    ],
+    "noindex": true,
+    "noindexChanged": true
+  },
+  "replay": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "plugins": [
+      {
+        "slug": "advanced-custom-fields-pro",
+        "version": "6.8.9",
+        "sha256": "597c72a559a2dbc51161f261bc6165eb8144a7f4077428bd0e0162198225917f",
+        "status": "active",
+        "action": "unchanged"
+      },
+      {
+        "slug": "polylang",
+        "version": "3.8.9",
+        "sha256": "de5fae3d399e34c2db496a02b7cff4e4ca79723c418c8542b82bb7c030204a60",
+        "status": "active",
+        "action": "unchanged"
+      },
+      {
+        "slug": "wordpress-seo",
+        "version": "28.5",
+        "sha256": "da297cf7f0a9fdb4c7a605e1d8896552fc97360f6b0f55eaa318fe8f8a1b829c",
+        "status": "active",
+        "action": "unchanged"
+      }
+    ],
+    "noindex": true,
+    "noindexChanged": false
+  },
+  "nativeProbe": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "status": "passed",
+    "versions": {
+      "wordpress": "7.1.1",
+      "php": "8.4.23"
+    },
+    "checks": {
+      "noindex": "passed",
+      "content": "passed",
+      "meta": "passed",
+      "pluginReplayPersistence": "passed"
+    },
+    "cleanup": {
+      "status": "passed"
+    },
+    "redeploy": {
+      "status": "not_run",
+      "code": "native_probe_not_redeploy"
+    }
+  },
+  "snapshot": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "toolExecutionId": "fb24850c-1f28-4d2c-9428-a436d72ddd96",
+    "creationAttemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+    "sourceRevision": {
+      "kind": "snapshot",
+      "contentHash": "bdbc884d44832e6656e822c1c65e4ca90a2030c111e73fc6ef3c74f0f42d2fdd",
+      "externalWorkspaceId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8"
+    },
+    "themeFiles": {
+      "assets/css/base.css": "1694366ce9e16a1ffbdeafe3089a0fac2b141631b08b3856fe6b17c04cbad252",
+      "assets/css/layout.css": "69b2645603f0d4b5da7848d6032ba18f339fa6ead396e984652d01e682976990",
+      "functions.php": "eec7de66e121a90a3eb46565bed11eace0527c77c61701425ac5cda937b77014",
+      "inc/setup.php": "28be3ef8711d8b3397e0fe258ecbbe12c1b3972defc3a08e5d5d17efa4c1b003",
+      "parts/footer.html": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1",
+      "parts/header.html": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e",
+      "style.css": "4dcc056cd393895a9ab583b2d6b8746a64cd4466cac5502d33837ff603085703",
+      "templates/front-page.html": "b5f598e6dbee2cfc130da82fa1d7bdf08a2ba944304d0e2018f1fdc2b927c587",
+      "templates/index.html": "01c7d43bd1ffeb0d8a02d56dd6c88371f8bb6e93fe07e108762800f2d04dde8d",
+      "theme.json": "ce90b7c9fefc81fbe2016373abca036b9b756cb8be592148b72ca17c8f68ef62"
+    },
+    "databaseHash": "8ef35379f003f3187b65bf0078e1f3400dc875b89fbc7b1e2532a17ed56adf31",
+    "capturedAt": "2026-09-19T12:05:59.266Z"
+  },
+  "httpCheck": {
+    "statusCode": 200,
+    "bytes": 30787
+  },
+  "checks": [
+    {
+      "checkId": "site.create",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:02:03.528Z"
+    },
+    {
+      "checkId": "site.start",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:02:15.436Z"
+    },
+    {
+      "checkId": "plugins.prepare",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:04:09.213Z"
+    },
+    {
+      "checkId": "native.edit_and_replay",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:05:46.380Z"
+    },
+    {
+      "checkId": "snapshot.capture",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:06:10.373Z"
+    },
+    {
+      "checkId": "http.local",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:06:11.755Z"
+    },
+    {
+      "checkId": "site.stop",
+      "status": "passed",
+      "checkedAt": "2026-09-19T12:06:24.182Z"
+    }
+  ],
+  "acceptanceCriteria": "not_evaluated",
+  "preview": {
+    "status": "not_published",
+    "verified": false
+  },
+  "remaining": [
+    "approved_design",
+    "tailwind_theme",
+    "browser_editor",
+    "redeploy_persistence",
+    "om_roundtrip",
+    "studio_preview"
+  ],
+  "translations": "deferred_by_user",
+  "reconciliationRequired": false
+}

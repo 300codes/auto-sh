@@ -1,0 +1,12 @@
+{
+  "delivery_agents.widget.cancel.ariaLabel": "Ausführungsversuch abbrechen",
+  "delivery_agents.widget.cancel.cancelling": "Wird abgebrochen…",
+  "delivery_agents.widget.cancel.failed": "Abbruch fehlgeschlagen",
+  "delivery_agents.widget.cancel.label": "Abbrechen",
+  "delivery_agents.widget.cancel.requested": "Abbruch angefordert",
+  "delivery_agents.widget.execute.ariaLabel": "Bereitstellungsaufgabe über Cezar ausführen",
+  "delivery_agents.widget.execute.failed": "Ausführung fehlgeschlagen",
+  "delivery_agents.widget.execute.label": "Ausführen",
+  "delivery_agents.widget.execute.started": "Ausführung gestartet",
+  "delivery_agents.widget.execute.starting": "Wird gestartet…"
+}

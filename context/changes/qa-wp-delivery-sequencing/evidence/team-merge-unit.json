@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-19",
+  "head": "67aa2d1f87f3d203eadc590ffb1dfade1f375201",
+  "sources": {
+    "main": "d403ca1f927d42ec1144052aa5a19f5dfdcb97ff",
+    "dev-mateusz": "a74cfe8fff86cb3c2b8fc31d00dec3b6c8a367f5",
+    "feature/design-ui": "0b1cce2847d73ac8280a1c1de25c06ebe0c3af62"
+  },
+  "scope": "merged sources plus restored local QA/WP work and reviewed integration fixes",
+  "runner": "local cached Jest, serial, heap1536MiB",
+  "result": {
+    "suitesPassed": 120,
+    "testsPassed": 2044,
+    "testsFailed": 0,
+    "seconds": 31.901
+  },
+  "beforeFix": {
+    "suites": 119,
+    "testsPassed": 2012,
+    "testsFailed": 31
+  },
+  "logSha256": "ff16c018664e421589f2604dcbad90d1114120e27acea41946eea84c4139f8c9",
+  "limitations": [
+    "ts-jest diagnostics disabled; not semantic typecheck",
+    "generation/build/migration/new HTTP/E2E not run",
+    "service remains old68361 build"
+  ],
+  "uncommittedTrackedDiffSha256": "34e1d389718d167bf48d1357436281fd683b907938d8496d7657f5947eb4e463"
+}

@@ -61,6 +61,40 @@ describe('command registry registration', () => {
     expect(loggerDebug).toHaveBeenCalledWith('Commands re-registered (this may occur during HMR)')
   })
 
+  it.each(['exact', 'fallback'] as const)('reuses the identical %s loader across API and full bootstrap', async (kind) => {
+    process.env.NODE_ENV = 'production'
+    const load = jest.fn(async () => {
+      registerCommand({ id: 'test.command.shared', execute: async () => ({ ok: true }) })
+    })
+    const loader = {
+      moduleId: 'test',
+      key: 'test:commands:shared',
+      ...(kind === 'exact' ? { id: 'test.command.shared' } : {}),
+      load,
+    }
+
+    registerCommandLoaders([loader])
+    await commandRegistry.load('test.command.shared')
+    expect(() => registerCommandLoaders([loader])).not.toThrow()
+    await commandRegistry.load('test.command.shared')
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(commandRegistry.listLoaders()).toHaveLength(1)
+  })
+
+  it.each(['exact', 'fallback'] as const)('rejects a distinct %s loader even with the same key', (kind) => {
+    process.env.NODE_ENV = 'production'
+    const loader = {
+      moduleId: 'test',
+      key: 'test:commands:shared',
+      ...(kind === 'exact' ? { id: 'test.command.shared' } : {}),
+      load: async () => {},
+    }
+
+    registerCommandLoaders([loader])
+    expect(() => registerCommandLoaders([{ ...loader }])).toThrow('Duplicate command loader registration')
+    expect(() => registerCommandLoaders([{ ...loader, load: async () => {} }])).toThrow('Duplicate command loader registration')
+  })
+
   it('loads a command handler on demand from a registered loader', async () => {
     const execute = jest.fn(async () => ({ ok: true }))
     registerCommandLoaders([

@@ -1,0 +1,111 @@
+{
+  "status": "blocked_environment",
+  "runner": "Dedicated Docker toolchain copied from current checkout, immutable locked dependencies; no sibling or developer environment writes",
+  "versions": {
+    "node": "24.14.1",
+    "typescript": "7.0.2",
+    "typescriptJs": "6.0.3",
+    "next": "16.3.3"
+  },
+  "validation": {
+    "jest": {
+      "status": "passed",
+      "tests": 4,
+      "command": "node node_modules/jest/bin/jest.js --config packages/core/jest.config.cjs --runInBand --runTestsByPath packages/core/src/helpers/integration/__tests__/deliveryFixtureLedger.test.ts"
+    },
+    "typecheck": {
+      "status": "passed",
+      "command": "node node_modules/typescript/bin/tsc -p qa-fixture-tsconfig.json",
+      "configEvidence": "native-fixture-tsconfig.json",
+      "scope": "four phase-1 files and their transitive source imports; final helper includes corrected PNG and BASE_URL guard"
+    },
+    "packageBuild": {
+      "status": "passed",
+      "tasks": 39,
+      "command": "yarn build:packages --concurrency=1"
+    },
+    "generate": {
+      "status": "passed_with_warning",
+      "warning": "OpenAPI generator used static extraction fallback after ERR_IMPORT_ATTRIBUTE_MISSING"
+    },
+    "discovery": {
+      "status": "not_completed",
+      "reason": "Auxiliary --list stayed busy without output; explicitly stopped before cleanup"
+    },
+    "live": {
+      "status": "not_run/environment",
+      "executed": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "requestedRuns": 4,
+      "command": "node packages/cli/dist/bin.js test:integration TC-DELIVERY-FIXTURE-001 --no-reuse-env",
+      "nativePlaywrightInvocation": "yarn run test:integration TC-DELIVERY-FIXTURE-001 --workers=1 --repeat-each=2 --retries=0",
+      "timeoutMs": 20000
+    }
+  },
+  "limits": {
+    "appMemoryMiB": 6144,
+    "appSwapAdditionalMiB": 0,
+    "appCpus": 2,
+    "databaseMemoryMiB": 512,
+    "databaseSwapAdditionalMiB": 0,
+    "databaseCpus": 1
+  },
+  "attempts": [
+    {
+      "stage": "toolchain",
+      "failure": "Docker Desktop CLI incompatible with Alpine; fixed with isolated official static Docker 27.5.1; no DB created"
+    },
+    {
+      "stage": "native_bootstrap",
+      "session": "bdb9fa366389",
+      "initSeconds": 89,
+      "packageBuildSeconds": 186,
+      "generateSeconds": 28,
+      "secondPackageBuildSeconds": 1,
+      "failure": "cross-env missing from wrapper PATH; corrected locally"
+    },
+    {
+      "stage": "native_turbopack",
+      "session": "895dfd8b814e",
+      "initSeconds": 87,
+      "packageBuildSeconds": 1,
+      "generateSeconds": 28,
+      "secondPackageBuildSeconds": 1,
+      "failure": "Docker OOM event during Next compile under 6GiB cap",
+      "observedPeakBeforeFailureBytes": 5164892160
+    },
+    {
+      "stage": "bounded_webpack_recovery",
+      "session": "e4678ef434b9",
+      "initSeconds": 85,
+      "packageBuildSeconds": 1,
+      "generateSeconds": 30,
+      "secondPackageBuildSeconds": 1,
+      "buildElapsedSecondsApprox": 112,
+      "failure": "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory; worker SIGABRT",
+      "deviations": [
+        "Webpack instead of standard Turbopack",
+        "actual JS heap3072MiB",
+        "experimental.cpus=1",
+        "experimental.webpackMemoryOptimizations=true",
+        "RAYON_NUM_THREADS=1"
+      ],
+      "standardProductionBuildGate": false
+    }
+  ],
+  "database": "Fresh disposable pgvector PostgreSQL17 for each bootstrap; PostgreSQL16 default differs; no existing database migrated",
+  "cleanup": {
+    "containers": "verified_absent",
+    "sessions": [
+      "bdb9fa366389",
+      "895dfd8b814e",
+      "e4678ef434b9"
+    ],
+    "physicalCleanup": "completed",
+    "scope": "entire owned machine-local isolated copy including generated env, attachments, cache, queues, DB descriptors, raw logs, toolchain and build artifacts; shared image and sibling checkout preserved",
+    "machineLocalCopyExists": false
+  },
+  "interpretation": "Environment provisioning failure, not failed product HTTP assertions. Fixture behavior still requires live execution."
+}
