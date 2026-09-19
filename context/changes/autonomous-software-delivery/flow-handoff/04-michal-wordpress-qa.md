@@ -22,6 +22,14 @@ Scenariusz w README jest obowiązkowy, włącznie z klientowskim KV/UI approval 
 
 Runner walidacji wybierz raz na gate zgodnie z `.ai/docs/agent-instructions.md`: Docker app jeśli działa, inaczej local. Zapisz runner i wynik; wybierz kontrole adekwatne do zmian, pełny końcowy gate według `.ai/agentic.config.json`. Nie aplikuj migracji/resetów ani nie publikuj na produkcję bez odpowiedniej zgody.
 
+## Obowiązkowy standard WordPressa — rozszerzenie F0/F4
+
+W F0 przygotuj macierz wersji WP/PHP/Tailwind i wtyczek oraz dostęp do ACF Pro i zgodnej edycji Polylang. Każda witryna otrzymuje aktywne, skonfigurowane Yoast SEO, Advanced Custom Fields Pro i Polylang. Licencje/paczki są warunkiem gotowości; nie kupuj ich automatycznie i nie pomijaj brakującej wtyczki.
+
+Scaffold motywu: `theme.json`, natywne bloki/patterns/parts, Tailwind build, krótki `functions.php`, małe `inc/*.php` ładowane stałymi ścieżkami, małe moduły CSS (BEM dla własnych klas) i JS. Używaj natywnych API WP, oddziel prezentację od danych. Wspólne tokeny `theme.json`/Tailwind pochodzą z wersjonowanego eksportu Figmy Adama. Definicje ACF wersjonuj bez treści i sekretów. Czytaj pełny standard w dodatku produktowym.
+
+Do wyniku F4 dołącz WP-01…05: build/clean code, mapowanie tokenów, aktywne wtyczki/idempotencja, pełna edycja bez kodu i builda, dwa języki oraz zachowanie treści i Global Styles po redeploy. Uzupełnij spec narzędzi i ograniczone operacje hosta z Marcinem; dotychczasowe create/snapshot nie dowodzą spełnienia nowego standardu.
+
 ## Wspólne warunki
 
 Czytaj [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) oraz [README](README.md). Kierunek z dodatku ma pierwszeństwo nad wcześniejszym React-first/WP-PoC. To zadania do wykonania, nie raport ukończenia. Zachowaj istniejące zmiany innych osób. Nie zmieniaj samodzielnie zamrożonych DTO v1 ani kontraktów innego właściciela.

@@ -1,5 +1,7 @@
 # WordPress Studio tools — plan wykonania
 
+> **Rozszerzenie wymagań 2026-09-19:** dalsze wdrożenie stron obejmuje [obowiązkowy standard Tailwind, modułowego CSS/PHP, theme.json z Figmy, wtyczek i pełnej edytowalności](../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md#standard-wykonania-stron--tailwind-i-natywny-wordpress). Właściciele i testy WP-01…05 są w [nowym pakiecie zespołu](../autonomous-software-delivery/flow-handoff/README.md). Poniższy plan opisuje wcześniejszy zakres niezależnych narzędzi; jego odbiór nie zalicza nowych wymagań.
+
 ## Overview
 
 Zrealizować autoryzowane rozwinięcie WP-M01: samodzielne narzędzia Studio oraz

@@ -26,6 +26,12 @@ Używaj CrudForm/DataTable tam, gdzie pasują, apiCall, guarded mutations, optim
 
 FLOW-01…05/07/09: wznowienie wizarda, oddzielne zgody/odrzucenia, realny komentarz i odpowiedź, błędy sync, keyboard/loading/conflict, wersje flow. Artefakty Figmy są rzeczywiste i różnią się po poprawce. Frontend korzysta z fixture F0, a odbiór wymaga prawdziwych API i zgód — nigdy tylko klikalnego mocka.
 
+## Dodatkowy handoff designu do WordPressa
+
+W F2 dostarcz do Michała zatwierdzony snapshot Figmy oraz mapę semantycznych tokenów (kolory, typografia, spacing, layout, promienie, warianty) do `theme.json` i Tailwinda. Zapisz source file/node/version/hash, brakujące wartości i ich zatwierdzenie. Nie przekazuj wyłącznie renderów.
+
+Każdy ekran/sekcja ma mapowanie na edytowalny blok/pole WP, miejsce edycji i sposób tłumaczenia; obejmuje także header/footer, menu, CTA, media i SEO. Uzgodnij zgodność projektu z natywnymi blokami/patterns i ACF Pro oraz czytelne stany responsywne. Standard klienta opisuje sekcja „Standard wykonania stron” dodatku; nie zmieniaj DS platformy OM. Współodbierz WP-02/04/05.
+
 ## Wspólne warunki
 
 Czytaj [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) oraz [README](README.md). Kierunek z dodatku ma pierwszeństwo nad wcześniejszym React-first/WP-PoC. To zadania do wykonania, nie raport ukończenia. Zachowaj istniejące zmiany innych osób. Nie zmieniaj samodzielnie zamrożonych DTO v1 ani kontraktów innego właściciela.

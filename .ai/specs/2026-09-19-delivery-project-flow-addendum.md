@@ -100,6 +100,75 @@ Builder może zmienić proces biznesowy, ale nie usuwa autoryzacji, tenant scope
 - OSS pozostaje używalne bez enterprise: projekty, etapy, decyzje i ręczne przekazanie pakietów. Automatyczne agenty/worker są kontynuacją istniejącej specyfikacji enterprise i nie stają się zależnością OSS.
 - Design System generowany w tym procesie jest DS witryny klienta. Nie nadpisuje tokenów ani governance DS platformy OM.
 
+## Standard wykonania stron — Tailwind i natywny WordPress
+
+**Obowiązkowe wymagania użytkownika z 2026-09-19, do wdrożenia.** Dotyczą generowanych stron klienta; nie oznaczają przebudowy backendu OM na PHP. Standard frontendowy Tailwind i małych, czytelnych plików obowiązuje także pozostałe targety stron. W ścieżce WordPress dochodzą poniższe reguły motywu, PHP, edycji i wtyczek. Zmiana flow ani wybór agenta nie wyłącza tych kryteriów jakości.
+
+### Frontend i własny CSS
+
+- Tailwind jest obowiązkową podstawą stylowania. Klasy utilities i wspólne tokeny mają pierwszeństwo; własny CSS uzupełnia zachowania, których nie warto powielać w markupie. Nie tworzyć równoległego, pełnego frameworka CSS ani zastępować Tailwinda innym frameworkiem.
+- Źródłowy CSS dzielić według odpowiedzialności: foundations, konkretne komponenty/bloki oraz zgodność edytora. Stosować małe pliki z jednoznacznymi nazwami; jedna odpowiedzialność na plik. Dla własnych klas przyjmujemy BEM, niską specyficzność i brak głębokiego zagnieżdżania. Unikać globalnych nadpisań i `!important`; wyjątek wymaga uzasadnienia w review.
+- Zasady clean code: opisowe nazwy, małe funkcje/komponenty, oddzielenie danych od prezentacji, współdzielone powtarzalne fragmenty i brak monolitycznych plików. Review ocenia spójność odpowiedzialności, nie sztuczne dzielenie co określoną liczbę linii.
+- Małe pliki to organizacja źródeł, nie nakaz osobnego requestu HTTP dla każdego pliku. Build kompiluje zoptymalizowane assety, ładowane przez natywne enqueue WP. Bez produkcyjnego Tailwind CDN i bez ręcznej edycji wygenerowanego CSS.
+- Build wykrywa klasy w PHP, szablonach, blokach i JS. Warianty wybierane z CMS mapować na skończony zestaw pełnych nazw klas, uwzględnionych w buildzie; nie składać dynamicznie fragmentów klas. Treści wprowadzane po buildzie muszą nadal mieć poprawne style.
+- Tailwind, WordPress Global Styles i edytor używają zgodnych tokenów. Zweryfikować wpływ resetu/Preflight na core blocks, edytor i wtyczki; ładować style tylko w odpowiednim kontekście. Własne utilities nie mogą blokować wspieranych zmian stylów w edytorze.
+
+### Motyw, PHP i natywne funkcje WordPressa
+
+- Motyw korzysta z `theme.json`, natywnego edytora blokowego, bloków core, patterns i części szablonów. Preferowany szkielet to motyw blokowy; specjalne sekcje mogą używać własnych bloków/ACF, jeśli natywne nie wystarczają. Nie zastępować edytora statycznym HTML całej strony ani zewnętrznym page builderem.
+- `functions.php` pozostaje krótkim bootstrapem. Kod PHP dzielić na małe pliki `inc/` według odpowiedzialności: setup, assets, blocks, ACF i integracje. Ładować je przez jawne, stałe ścieżki `require_once`; bez include zależnego od parametrów żądania lub treści CMS. Widoki współdzielić przez natywne template parts i renderery bloków, bez kopiowania logiki.
+- Korzystać z natywnych API WP: hooks, capabilities, nonce, walidacja/sanityzacja wejścia i escaping wyjścia, media, menu/nawigacja, revisions oraz API treści. Nie pisać własnego CMS, autoryzacji ani bezpośrednich zapytań SQL zastępujących dostępne API.
+- Funkcjonalność biznesowa i rejestracje danych, które muszą przetrwać zmianę motywu, należą do małej wtyczki projektu; motyw odpowiada za prezentację. Własne rejestracje i funkcje mają unikalny prefix/namespace.
+
+Przykładowy podział źródeł (nie wymaga pustych plików):
+
+```text
+theme/
+  style.css                 # metadane motywu
+  theme.json                # ustawienia i style WP z zaakceptowanego DS
+  functions.php             # bootstrap
+  inc/{setup,assets,blocks,acf,integration-polylang}.php
+  templates/                # szablony blokowe
+  parts/                    # header, footer i inne części
+  patterns/                 # edytowalne układy sekcji
+  blocks/<block-name>/      # metadane i mały renderer konkretnego bloku
+  acf-json/                 # wersjonowane definicje pól, bez treści/sekretów
+  assets/src/css/{app.css,foundations/,components/,editor/}
+  assets/src/js/             # małe moduły zachowań
+  assets/dist/              # wynik powtarzalnego builda
+```
+
+### Figma → tokeny → theme.json i Tailwind
+
+Adam przekazuje zatwierdzony snapshot designu: file/node/version (lub hash snapshotu), semantyczne nazwy tokenów, kolory, typografię, odstępy, szerokości layoutu, promienie i warianty komponentów. Każdy token ma źródło i docelowe mapowanie. Brakujące dane są jawnie uzupełniane i zatwierdzane; agent nie wymyśla nieoznaczonych wartości „z Figmy”.
+
+Michał wdraża deterministyczne mapowanie snapshotu na `theme.json` zgodny ze schematem wybranej wersji WP oraz konfigurację/tokeny Tailwinda. Używać natywnych presets/settings/styles tam, gdzie WP je wspiera; pozostałe tokeny mają jawne mapowanie do custom properties. Tailwind odwołuje się do tych samych wartości/presetów, bez drugiej ręcznie utrzymywanej palety. Eksport Figmy nie jest gotowym `theme.json` ani źródłem treści CMS.
+
+Wersja eksportu, mapowania i wyników trafia do artefaktów projektu. Ponowna generacja tej samej wersji daje ten sam wynik. Regeneracja designu lub redeploy nie nadpisuje po cichu treści klienta, jego zmian Global Styles, szablonów zapisanych w bazie ani pól ACF; konflikt pokazuje diff i wymaga decyzji. QA sprawdza zarówno frontend, jak i edytor po zmianach redaktora.
+
+### Obowiązkowy zestaw wtyczek
+
+Każda nowa witryna WordPress ma zainstalowane, aktywne i skonfigurowane **Yoast SEO, Advanced Custom Fields Pro oraz Polylang**. Używamy natywnych możliwości WP w pierwszej kolejności; ACF Pro służy modelowaniu dodatkowych pól/bloków. Instalacja jest idempotentna: retry nie reinstaluje wtyczek ani nie zeruje ich ustawień.
+
+F0 zapisuje macierz zgodności WP/PHP/Tailwind/wtyczek, źródła paczek, wersje oraz dostęp/licencję ACF Pro. Wymagania integracji ACF–Polylang trzeba zweryfikować dla wybranych edycji; nie zakładać, że opis funkcji Polylang Pro dotyczy bezpłatnej edycji. Brak wymaganej paczki/licencji lub kompatybilności jest blockerem gotowości, nie zgodą na pominięcie wtyczki. Wymóg instalacji nie upoważnia do automatycznego zakupu licencji.
+
+Konfiguracja obejmuje Yoast (metadane SEO, canonical/sitemap i politykę indeksowania dla środowiska), Polylang (języki, powiązania tłumaczeń, nawigację i przełącznik języka) oraz ACF (wersjonowane definicje pól, reguły translate/copy dla pól). Nie generować konkurencyjnych metatagów ani map witryny w motywie. Środowisko demo/staging pozostaje nieindeksowane; produkcja otrzymuje jawną konfigurację publikacji. Klucze/licencje i płatne archiwa pozostają poza repo oraz publicznymi dowodami.
+
+### Pełna edytowalność — warunek odbioru
+
+Każdy element treści klienta ma wskazane miejsce edycji w WP: teksty, nagłówki, CTA/linki, obrazy/alt, sekcje (dodanie/usunięcie/kolejność), header/footer, nawigacja i dane kontaktowe. Dla stron dochodzą SEO oraz wersje językowe. Nie przechowywać właściwej treści strony w PHP, CSS, grafice zastępującej tekst ani w niedostępnych dla redaktora danych.
+
+Do design handoff dołączyć macierz `ekran/sekcja → blok/pole WP → miejsce edycji → tłumaczenie → test`. Blokady struktury mogą chronić komponent, ale nie blokować uzgodnionych operacji na treści i sekcjach. Role i capabilities dobrać tak, aby wskazana rola redaktora wykonywała te operacje bez dostępu do kodu i administracji wtyczkami.
+
+QA na reprezentatywnych stronach wykonuje zmianę treści, obrazu, CTA, kolejności i dodanie sekcji, nawigacji/header/footer, danych ACF i SEO oraz utworzenie/edycję tłumaczenia w co najmniej dwóch językach. Zapis, preview i publikacja mają działać bez edycji plików lub ponownego builda. Sprawdzić zachowanie tych zmian po redeploy/regeneracji oraz zgodność edytora z frontendem na desktop/mobile.
+
+### Źródła techniczne
+
+- [WordPress: theme.json](https://developer.wordpress.org/themes/global-settings-and-styles/introduction-to-theme-json/) i [struktura motywu](https://developer.wordpress.org/themes/core-concepts/theme-structure/).
+- [Tailwind: wykrywanie klas](https://tailwindcss.com/docs/detecting-classes-in-source-files).
+- [ACF: Local JSON](https://www.advancedcustomfields.com/resources/local-json/).
+- [Polylang: integracja ACF Pro i wymagania edycji](https://polylang.pro/documentation/support/guides/working-with-acf-pro/).
+
 ## Data Models & API Contracts — delta do zaprojektowania przed kodowaniem
 
 To kontrakt produktu, a nie twierdzenie, że nowe endpointy już istnieją. **Pierwszy deliverable Mateusza to konkretna, wersjonowana delta modeli/API, przyjęta przez pozostałe strumienie przed ich integracją.**
@@ -156,6 +225,11 @@ Testy funkcji muszą trafić w tej samej zmianie co funkcja; fixture self-contai
 | FLOW-07 | Deploy/release/report | Zgoda rewizji → publikacja → URL verify → odbiór, stara rewizja i brak zgody odrzucone |
 | FLOW-08 | Regresje v1, OSS-only, izolacja | Stare fixture/klienci nadal działają; brak enterprise nie psuje domeny; tenant/org/ACL zachowane |
 | FLOW-09 | Zmiana Scope/UX/KV/UI | Zależne zgody tracą aktualność; stary wynik nie daje PASS; aktywna próba reconcile |
+| WP-01 | Scaffold/build motywu | Tailwind compile z PHP/HTML/JS, małe pliki CSS/PHP, natywne API; brak runtime CDN; review clean code |
+| WP-02 | Figma → theme.json/Tailwind | Traceability tokenów, walidacja schematu, deterministyczny eksport; frontend i edytor zgodne z zaakceptowanym DS |
+| WP-03 | Instalacja/konfiguracja wtyczek | Aktywne Yoast SEO, ACF Pro, Polylang; zgodne wersje/edycje, retry bez resetu, brak licencji daje blocker |
+| WP-04 | Edycja strony jako redaktor | Teksty, media, CTA, sekcje, header/footer/menu, ACF i SEO bez kodu/builda; zapis i preview/publikacja |
+| WP-05 | Tłumaczenia i redeploy | Dwa języki, pola ACF i nawigacja; zmiany treści/Global Styles przetrwają redeploy, konflikt designu jest jawny |
 
 Live Figma/WP to jawna próba na uprawnionym stanowisku, nie warunek zwykłych testów CI wymagający cudzych sekretów. CI używa deterministycznych adapterów i pokrywa wszystkie operacje także negatywnie. Fixture nigdy nie zalicza live FLOW-03/06/07.
 
@@ -165,7 +239,7 @@ Live Figma/WP to jawna próba na uprawnionym stanowisku, nie warunek zwykłych t
 2. **F1 — projekt i decyzje:** portfolio, wizard, agentowy Scope i wybór platformy, wersje artefaktów i wszystkie osobne zgody. FLOW-01/02/09 oraz testy regresji v1.
 3. **F2 — design i feedback:** realny UX→KV→DS/UI, synchronizacja do staff Kanban i review. FLOW-03/04. UI i sync można budować na zatwierdzonych fixture z F0.
 4. **F3 — konfigurowalny proces:** domyślny template, ustawienia, edycja/publikacja w istniejącym builderze, przypięcie wersji. FLOW-05/08. Mechanizm bramek backendu z F1 jest warunkiem integracji.
-5. **F4 — WP i odbiór:** implementacja zatwierdzonego UI, poprawka, QA, publikacja i końcowa próba FLOW-01…09. Narzędzia WP rozwijać równolegle od F0; integracja wymaga poprzednich bramek.
+5. **F4 — WP i odbiór:** implementacja zatwierdzonego UI według obowiązkowego standardu Tailwind/theme.json/PHP, trzy wtyczki, pełna edytowalność, poprawka, QA, publikacja i końcowa próba FLOW-01…09 oraz WP-01…05. Narzędzia WP rozwijać równolegle od F0; integracja wymaga poprzednich bramek.
 
 Każdy etap pozostawia działające poprzednie ścieżki; nowe funkcje niegotowe do odbioru nie podszywają się pod ukończone. Szczegóły odpowiedzialności, plików, zależności i przekazania są w [README zespołu](../../context/changes/autonomous-software-delivery/flow-handoff/README.md).
 
@@ -176,5 +250,7 @@ Przegląd dokumentacyjny: root AGENTS, specs AGENTS, zasady core/UI, staff, work
 **Granica gotowości:** komplet kierunku i pakietów wdrożenia; szczegółowa delta API/migracji oraz frontend ledger są pierwszym obowiązkowym rezultatem F0, nie już zatwierdzonym projektem technicznym. Implementerzy muszą doczytać lokalne AGENTS i uzupełnić istniejące specyfikacje modułowe. Pełny compliance kodu, integracje i live demo nie były wykonywane podczas tego przeglądu.
 
 ## Changelog
+
+- 2026-09-19 — Dodano obowiązkowy standard Tailwind/clean code, modułowy CSS/PHP, natywny WP z Yoast SEO/ACF Pro/Polylang, mapowanie Figma → theme.json i testy pełnej edytowalności WP-01…05. Wymagania pozostają do implementacji.
 
 - 2026-09-19 — Porównano wcześniejszy plan z korektą użytkownika; dodano obowiązkowy WordPress E2E, osobne UX/KV/DS/UI approvals, import komentarzy do staff Kanban, wersjonowany szablon procesu i cztery pakiety wdrożenia. Nie zaliczono żadnej implementacji.

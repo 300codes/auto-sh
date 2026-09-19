@@ -20,6 +20,10 @@ Główna własność: `packages/core/src/modules/delivery_os/{data,lib,commands,
 
 FLOW-01/02/03/04/08/09: API integration dla każdej dodanej operacji, 403/404 scoping, 409 lock/stale, retry po crash, równoległe importy oraz regresja kontraktów v1 i OSS-only. Nie czekaj na live Figma/WP, żeby przetestować domenę. Provider Adama i workflow Marcina integrują się dopiero na Twoim kontrakcie F0.
 
+## Kryteria jakości targetu WordPress
+
+Uwzględnij WP-01…05 z dodatku w planie walidacji i raporcie. Uzgodnij z Marcinem kompatybilne referencje do wersjonowanego eksportu tokenów Figmy, mapowania `theme.json`/Tailwind i macierzy edytowalności. Nie zmieniaj znaczenia istniejącego profilu `wordpress-theme@1`; jeśli rozszerzenie wymaga nowego kontraktu/profilu, zaprojektuj nową wersję. Brak dowodu wtyczek, pełnej edycji lub zgodności tokenów nie daje PASS.
+
 ## Wspólne warunki
 
 Czytaj [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) oraz [README](README.md). Kierunek z dodatku ma pierwszeństwo nad wcześniejszym React-first/WP-PoC. To zadania do wykonania, nie raport ukończenia. Zachowaj istniejące zmiany innych osób. Nie zmieniaj samodzielnie zamrożonych DTO v1 ani kontraktów innego właściciela.

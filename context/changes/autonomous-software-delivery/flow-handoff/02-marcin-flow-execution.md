@@ -20,6 +20,10 @@ Enterprise: `packages/enterprise/src/modules/delivery_agents/`, `packages/delive
 
 FLOW-02/05/06/08/09: restart podczas oczekiwania, duplicate signals, odrzucenie/stale approval, edycja flow z aktywnym projektem, brak enterprise, anulowanie i niepewny start. Integracja WP wymaga narzędzi Michała oraz kontraktów Mateusza; UX może pracować na fixture. Live automation i manual_handoff muszą być wyraźnie rozróżnione w raporcie.
 
+## Kontekst wykonawcy WordPressa
+
+Pakiet/prompt wykonania zawiera obowiązkowy standard z dodatku: Tailwind, małe pliki CSS/PHP, natywny WP, `theme.json` z zatwierdzonego eksportu Figmy, Yoast SEO/ACF Pro/Polylang i pełną edytowalność. Z Mateuszem ustal kompatybilne przekazanie referencji do tokenów i macierzy edycji; nie dopisuj ad hoc pól do zamrożonego DTO v1. Host weryfikuje WP-01…05 na rzeczywistych dowodach Michała. Brak pluginu/licencji nie może dać stanu gotowości. Nie włączaj licencji ani paczek premium do promptów lub manifestów publicznych.
+
 ## Wspólne warunki
 
 Czytaj [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) oraz [README](README.md). Kierunek z dodatku ma pierwszeństwo nad wcześniejszym React-first/WP-PoC. To zadania do wykonania, nie raport ukończenia. Zachowaj istniejące zmiany innych osób. Nie zmieniaj samodzielnie zamrożonych DTO v1 ani kontraktów innego właściciela.

@@ -70,6 +70,12 @@ Validation uses the package's `npm test`, `npm run typecheck` and `npm run build
 
 Additive private package and documentation only. No existing API, entity, ACL, event, queue or DI contract changes. No OM migrations or module discovery files; `yarn generate` and database migration are unnecessary. Node 24 and the repository's Zod are used. Publishing the package is out of scope.
 
+## Wymagany standard docelowych witryn — rozszerzenie planu
+
+Dalsza implementacja WordPressa musi spełniać [standard wykonania stron](2026-09-19-delivery-project-flow-addendum.md#standard-wykonania-stron--tailwind-i-natywny-wordpress): Tailwind jako podstawę stylowania, małe pliki własnego CSS i PHP/includes, natywne funkcje i edytor WP, `theme.json` oraz tokeny z zatwierdzonej Figmy. Każda witryna otrzymuje Yoast SEO, Advanced Custom Fields Pro i Polylang, ze zweryfikowanymi wersjami, konfiguracją i dostępem do licencji. Pełna edytowalność oraz tłumaczenia są warunkiem odbioru WP-01…05.
+
+To wymagania **do wdrożenia**, nie rozszerzenie wcześniejszego wyniku PASS narzędzi Studio. F0 potwierdza dostępność wtyczek i zgodność edycji; F2 dostarcza mapę tokenów/edycji; F4 obejmuje scaffold/build, konfigurację, testy redaktora i zachowanie treści po redeploy. Zmiany publicznych interfejsów narzędzi wymagają wersjonowanej delty kontraktu, nie cichej zmiany createSite v1.
+
 ## Implementation Plan
 
 1. Strict contracts, process execution and filesystem boundaries, with regression tests.
@@ -87,6 +93,8 @@ No blocking scope decisions remain for independent tools. Future delivery DTO ma
 **Package verification passed; see handoff for live evidence and review.** Architecture is scoped to a private provider package with no new backend/API/schema surface. 29 native tests, typecheck/build and the final live create/replay/snapshot/HTTP scenario passed; evidence, toolchain deviations and remaining risks are recorded in the handoff. Implementation review findings were fixed. Full root validation and OM→WP end-to-end acceptance are not claimed.
 
 ## Changelog
+
+- 2026-09-19: Added pending target-site requirements for Tailwind, modular CSS/PHP, Figma-driven theme.json, required plugins and editability checks WP-01…05; no implementation claimed.
 
 - 2026-09-19: Added implementing specification for independent Studio tools, new-site ownership, snapshot evidence and the boundary to future delivery integration.
 

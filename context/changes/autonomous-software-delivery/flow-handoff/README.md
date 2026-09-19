@@ -23,7 +23,7 @@ Po F0 prace backend/UI/adaptery/testy mogą iść równolegle na wspólnych fixt
 
 Z pustego portfolio tworzymy projekt → uzupełniamy i wznawiamy brief → agent doprecyzowuje Scope → wybieramy WordPress → zatwierdzamy Scope → powstaje UX w Figmie → nowy komentarz daje kartę Kanbana OM → poprawka i akceptacja UX → Key Visual i akceptacja klienta → DS/UI i akceptacja klienta → realna implementacja WP i QA → zgoda publikacji → działający URL i odbiór. Oddzielnie pokazujemy zmianę flow w ustawieniach i nowy projekt na v2 przy starym pozostającym na v1.
 
-PASS wymaga wszystkich FLOW-01…09 z dodatku. Snapshot motywu ani localhost nie zastępuje publikacji na docelowy, uzgodniony adres. Dane klienta/połączenia Figma/cel publikacji ustalamy przed próbą live; nie wpisujemy fikcyjnych dowodów.
+PASS wymaga wszystkich FLOW-01…09 oraz WP-01…05 z dodatku. Obowiązuje Tailwind, małe pliki CSS/PHP, natywny edytowalny WP, `theme.json` z Figmy oraz Yoast SEO, ACF Pro i Polylang. Adam przekazuje tokeny i macierz edycji w F2; Michał wdraża i testuje je w F4, Marcin przekazuje standard wykonawcy, Mateusz uwzględnia kryteria w raporcie. Snapshot motywu ani localhost nie zastępuje publikacji na docelowy, uzgodniony adres. Dane klienta/połączenia Figma/cel publikacji ustalamy przed próbą live; nie wpisujemy fikcyjnych dowodów.
 
 ## Budżet i zakres
 
