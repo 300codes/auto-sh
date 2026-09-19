@@ -1,4 +1,6 @@
 # Autonomous Software Delivery OS
+
+> **Korekta kierunku — 2026-09-19:** [dodatek produktowy](../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../context/changes/autonomous-software-delivery/flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
 ## Specyfikacja wdrożeniowa — Open Mercato + OM Orchestrator + Cezar + Figma
 
 **Status:** pełny scope koncepcyjny\

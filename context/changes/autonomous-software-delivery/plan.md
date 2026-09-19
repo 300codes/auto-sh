@@ -1,5 +1,7 @@
 # Autonomous Software Delivery — zoptymalizowany plan wdrożenia
 
+> **Korekta kierunku — 2026-09-19:** [dodatek produktowy](../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
+
 > Data: 2026-09-18. Zespół: 4 developerów. Horyzont: 36 godzin kalendarzowych.
 > Zakres i układ etapów zatwierdzone przez użytkownika. Dokument planuje implementację; nie potwierdza jej wykonania.
 > Skrót: [plan-brief.md](plan-brief.md). Ustalenia i uzupełniające badanie: [research.md](research.md).
