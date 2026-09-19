@@ -10,6 +10,15 @@ lista z filtrem i formularz zgłoszenia z walidacją oraz potwierdzeniem.
 Ekran wybrany na próbę: **lista usług z filtrem** — ma dość elementów, żeby poprawka była wizualnie
 odróżnialna, i jest mniejsza od formularza, co mieści się w timeboksie.
 
+## Plik próby
+
+`fileKey` **`5wOkFtN959W4MFmgRuaU8S`** — https://www.figma.com/design/5wOkFtN959W4MFmgRuaU8S
+
+Wszędzie niżej `<adres pliku próby UI-01>` oznacza ten adres. Sekwencja została na nim wykonana
+w UI-01: `create` i `update` dotyczyły węzła `3:2`, oba rendery leżą w tym katalogu. Placeholdery
+`<nodeId>` i `<adres renderu>` pozostają celowo — przy powtórce trzeba użyć wartości zwróconych
+w bieżącej sesji, nie tych z UI-01.
+
 ## Krok 1 — `create`
 
 > W pliku `<adres pliku próby UI-01>` utwórz frame desktop 1440×1024 o nazwie `UI-01 / Lista usług`.

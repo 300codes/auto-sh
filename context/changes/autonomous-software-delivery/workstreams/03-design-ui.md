@@ -28,6 +28,14 @@ H6–H10 przygotować skills, fixture, generację oraz formularze. H12–H14 dok
 
 **Odbiór:** aktualny baseline, zatwierdzone requirements/design/plan, odrzucanie starej wersji i niepoprawnego importu; realna poprawka Figmy. Progress: 3.1–3.6 z OSS/QA.
 
+**Gotowe z UI-01, do ponownego użycia:** plik próby `5wOkFtN959W4MFmgRuaU8S` z zatwierdzonym
+zapisem agenta; `evidence/figma/prompts.md` zawiera sprawdzoną sekwencję `create → read → update → read`
+w języku naturalnym, a `capture.sh`/`verify.sh` utrwalają render z bytes/hash zgodnie z wymogiem planu
+głównego. Format dowodu można zmienić, zachowując bytes/hash i powiązanie komentarza. Dwa ograniczenia
+zmierzone w UI-01: tier `starter` daje 10 wywołań odczytu na minutę (zapis jest z limitu wyłączony), co
+przy pętli poprawek na kilku ekranach jest realne do dotknięcia; autoryzacja Figma MCP wymaga
+jednorazowego logowania interaktywnego, a proces nieinteraktywny dodatkowo jawnej listy `--allowedTools`.
+
 ## UI-04 — Obsłużyć zadania, review i ręczne przekazanie
 
 **Okno/nakład:** H16–20, 4 h. **Wejście:** H16 zatwierdzony baseline, domenowe komendy OSS-04 i bridge EXEC-04 dla live.

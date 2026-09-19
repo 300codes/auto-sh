@@ -10,10 +10,14 @@
 
 | Zdolność | Status | Przyczyna |
 |---|---|---|
-| `write` (utworzenie frame'a) | `blocked` | konfiguracja klienta — serwer Figma MCP nie jest autoryzowany (OAuth niewykonany) |
-| `update` (poprawka istniejącego węzła) | `blocked` | niesprawdzalne przed odblokowaniem `write` |
+| `write` (utworzenie frame'a) | `ready` | agent utworzył frame `3:2` natywnymi elementami Figmy; render utrwalony |
+| `update` (poprawka istniejącego węzła) | `ready` | ten sam węzeł `3:2` zmodyfikowany; render po zmianie ma inny hash |
 
-Znacznik czasu: **2026-09-18T23:08:40Z**
+Znacznik czasu: **2026-09-19T07:44:17Z**
+
+Poprzedni zapis (2026-09-18T23:08:40Z) podawał `write=blocked`, `update=blocked` z przyczyną
+„konfiguracja klienta — OAuth niewykonany”. Bloker został usunięty jednorazową autoryzacją
+interaktywną opisaną niżej; ten plik zastępuje tamten stan.
 
 ## Stanowisko i klienci
 
@@ -21,99 +25,138 @@ Znacznik czasu: **2026-09-18T23:08:40Z**
 |---|---|
 | Stanowisko | `ak-300codes` |
 | Konto systemowe | `adam` |
-| Konto Figma (tożsamość MCP) | nieustalone — `whoami` niewywoływalne przed autoryzacją |
-| Rola / seat na pliku próby | nieustalone |
+| Konto Figma (tożsamość MCP) | `michal.strzesniewski@300.codes` (handle: Michał Strześniewski) |
+| Rola / seat na pliku próby | Full seat; rola `admin` w planie `Michał Strześniewski's team`, właściciel pliku próby |
+| Plan Figma | tier `starter` |
 | Wariant serwera MCP | zdalny, `https://mcp.figma.com/mcp` |
 | Klient podstawowy | Claude Code |
 | Wersja klienta podstawowego | 2.1.266 |
 | Klient drugi | Codex CLI — **nieobecny na stanowisku** (`codex: nie znaleziono polecenia`) |
 | Wersja klienta drugiego | nie dotyczy |
 
-Lokalny serwer MCP aplikacji desktopowej Figmy nie jest dostępny: `127.0.0.1:3845/mcp` nie odpowiada, brak katalogu `~/.config/Figma`. Pozostaje wariant zdalny.
+Lokalny serwer MCP aplikacji desktopowej Figmy pozostaje niedostępny (`127.0.0.1:3845/mcp` nie
+odpowiada, brak katalogu `~/.config/Figma`). Cała próba przebiegła na wariancie zdalnym, który
+jest też wariantem wymaganym przez Figmę do zapisu na canvas.
 
 ## Krok 0 — tożsamość MCP i zdolność zapisu
 
-Cel kroku: uzyskać maszynową odpowiedź na pytania „jakim kontem jest agent po stronie Figmy" i „czy to konto może pisać", **zanim** zapadnie decyzja o upgrade planu.
-
 | Próba | Wynik | Fakt |
 |---|---|---|
-| Rejestracja serwera MCP w kliencie podstawowym | `ok` | `claude mcp add --scope user --transport http figma https://mcp.figma.com/mcp` → dodane do konfiguracji użytkownika (poza repo) |
-| Health check serwera | `needs authentication` | `claude mcp list` → `figma: https://mcp.figma.com/mcp (HTTP) - ! Needs authentication` |
-| `whoami` | `not_attempted` | narzędzie niewidoczne przed autoryzacją OAuth — brak tożsamości, seata i planu do zapisania |
-| `create_new_file` | `not_attempted` | jw. |
+| Autoryzacja OAuth serwera zdalnego | `ok` | wykonana raz, interaktywnie, przez człowieka na stanowisku demo; utrwalona w profilu klienta poza repo |
+| `whoami` | `ok` | `michal.strzesniewski@300.codes`, seat `Full`, plan `starter`, rola `admin` |
+| `create_new_file` | `ok` | plik próby utworzony, zwrócony `file_key` |
 
-**Interpretacja:** to jest blocker **konfiguracji**, nie uprawnień. Autoryzacja OAuth zdalnego serwera Figma MCP jest interaktywna — wymaga polecenia `/mcp` w sesji Claude Code i logowania w przeglądarce na koncie demo. Nie da się jej wykonać z procesu nieinteraktywnego ani z narzędzia Bash wewnątrz trwającej sesji. Dopóki nie zostanie wykonana, odmowa zapisu byłaby nieinterpretowalna — dokładnie stan, przed którym ostrzega Implementation Note Fazy 1.
+**Konsekwencja dla decyzji o upgrade planu Figma:** rozstrzygnięta — **upgrade niepotrzebny**.
+Seat `Full` wystarcza do zapisu na canvas, a konto jest właścicielem pliku próby, więc warunek
+„Full seat + prawo edycji pliku” jest spełniony bez angażowania osoby decyzyjnej od kosztów.
 
-**Konsekwencja dla decyzji o upgrade planu Figma:** nierozstrzygnięta. Krok 0 miał ją rozstrzygnąć maszynowo i tego nie zrobił, bo nie doszedł do `whoami`.
+**Znane ograniczenie do zapisania, nie bloker:** tier `starter` z seatem Full daje 200 wywołań
+dziennie i 10 na minutę na narzędziach odczytu; narzędzia zapisu są z limitu wyłączone. Pętla
+poprawek w UI-03 opiera się na sekwencji zapis→odczyt, więc limit minutowy jest realny do
+dotknięcia przy szybkiej iteracji na kilku ekranach. Planować odczyty oszczędnie.
 
 ## Lista narzędzi klienta podstawowego
 
-Nieustalona. Serwer w stanie `Needs authentication` nie publikuje listy narzędzi, więc obecność narzędzia zapisu (`use_figma` / tworzenie natywnych elementów przez Plugin API) pozostaje niepotwierdzona. Zgodnie z kontraktem Fazy 1 brak narzędzia na liście **nie** jest jeszcze blockerem `write` — jest blockerem konfiguracji.
+Serwer po autoryzacji publikuje 37 narzędzi. Narzędzia zapisu obecne i potwierdzone użyciem:
+`use_figma` (wykonane), `create_new_file` (wykonane), a ponadto `generate_figma_design`,
+`generate_diagram`, `upload_assets`. Narzędzia odczytu użyte w próbie: `get_screenshot`,
+`get_metadata`, `whoami`.
+
+Obowiązkowe skille serwera wczytane przed wywołaniami zapisu: `figma-create-new-file`, `figma-use`.
 
 ## Plik roboczy w Figmie
 
 | Pole | Wartość |
 |---|---|
-| `fileKey` | nieustalony |
-| Adres pliku | nieustalony |
-
-Plik nie został utworzony: `create_new_file` należy do kroku 0 i nie był wywoływalny.
+| `fileKey` | `5wOkFtN959W4MFmgRuaU8S` |
+| Adres pliku | https://www.figma.com/design/5wOkFtN959W4MFmgRuaU8S |
+| Nazwa | `UI-01 — próba agentowego zapisu` |
 
 ## Próba interaktywna (Faza 2)
 
-`not_attempted` — sekwencja `create` → `read` → `update` → `read` nie została uruchomiona, bo bramka Fazy 1 (narzędzie zapisu widoczne w kliencie podstawowym) nie została przekroczona.
+Wynik: **`ok`**. Sekwencja `create` → `read` → `update` → `read` przeszła na kliencie podstawowym.
 
-Polecenia w języku naturalnym przygotowane dla tej sekwencji, do powtórzenia przez UI-03, znajdują się w [`evidence/figma/prompts.md`](evidence/figma/prompts.md).
+| Krok | Węzeł | Fakt |
+|---|---|---|
+| `create` | `3:2` | frame `UI-01 / Lista usług`, 1440×1024: nagłówek „Katalog usług”, pasek filtrów (pole wyszukiwania + selekty Kategoria/Dostępność), siatka 6 kart usługi z miniaturą, nazwą, opisem, ceną i przyciskiem „Zgłoś” |
+| `read` | `3:2` | render pobrany i zahashowany natychmiast po odczycie |
+| `update` | `3:2` | **ten sam** węzeł: pasek „Znaleziono 6 z 24 usług” z linkiem „Wyczyść filtry” wstawiony nad siatką, plakietka „Polecane” dodana w prawym górnym rogu pierwszej karty |
+| `read` | `3:2` | render po zmianie, inny hash niż render `create` |
+
+Frame jest **edytowalnym natywnym elementem Figmy**, nie obrazem: niezależny odczyt `get_metadata`
+pokazuje drzewo 50 węzłów typu frame / text / rounded-rectangle / vector z auto-layoutem.
+
+Polecenia w języku naturalnym, wydane przez człowieka i powtarzalne przez UI-03:
+[`evidence/figma/prompts.md`](evidence/figma/prompts.md). Dowód: [`evidence/figma/manifest.json`](evidence/figma/manifest.json),
+`SHA256SUMS` i dwa rendery PNG w tym samym katalogu. Kontrole: `./verify.sh` — 11/11 przeszło.
 
 ## Próba headless (Faza 3)
 
-Wynik: **`failed`**
+Wynik: **`ok`** — z jednym warunkiem operacyjnym, który musi znać EXEC.
 
-Próba wykonana, nie przewidziana. Komenda uruchomiona z procesu nieinteraktywnego na koncie systemowym `adam`, w konfiguracji odpowiadającej temu, jak CLI odpali Cezar:
+Proces nieinteraktywny na koncie systemowym `adam`, w konfiguracji odpowiadającej temu, jak CLI
+odpali Cezar, wykonał **rzeczywisty zapis**: utworzył osobny frame `6:2` (`UI-01 / Headless probe`)
+z węzłem tekstowym, nie naruszając frame'a `3:2`. Potwierdzone niezależnym odczytem `get_metadata`
+z sesji interaktywnej, a nie samym raportem procesu headless.
 
-```
-claude -p "Wypisz dokładne nazwy wszystkich dostępnych narzędzi MCP serwera 'figma'. …"
-```
+**Warunek:** autoryzacja OAuth musi być wcześniej wykonana raz interaktywnie i utrwalona w profilu
+klienta — proces nieinteraktywny dziedziczy ją, ale nie potrafi jej przeprowadzić. Ponadto w trybie
+nieinteraktywnym narzędzia MCP wymagają jawnego nadania uprawnień przy uruchomieniu
+(`--allowedTools "mcp__figma__use_figma,…"`). Bez tego proces **widzi** narzędzia, lecz każde
+wywołanie jest blokowane brakiem zgody i nie ma komu jej udzielić — dokładnie taki wynik dała
+pierwsza próba w tym oknie, zanim uprawnienia nadano jawnie.
 
-Odpowiedź procesu (zacytowana):
+**Dla EXEC-01:** automatyczne rysowanie przez Cezara jest wykonalne na tym stanowisku. Wymaga
+dwóch rzeczy: utrwalonej autoryzacji w profilu klienta oraz jawnej listy dozwolonych narzędzi w
+komendzie uruchamiającej. Nie kopiowano żadnych plików sesji ani poświadczeń.
 
-> Serwer MCP 'figma' wymaga uwierzytelnienia przed udostępnieniem narzędzi. […]
-> Dla innych serwerów: uruchomić `claude mcp` lub `/mcp` w sesji interaktywnej.
-> **Narzędzia nie są dostępne w bieżącej nieinteraktywnej sesji.**
-
-Przyczyna: proces nieinteraktywny dziedziczy tę samą niezautoryzowaną konfigurację serwera MCP, co sesja interaktywna. Autoryzacja OAuth jest warunkiem wcześniejszym i nie jest osiągalna z procesu nieinteraktywnego — nie istnieje ścieżka „zaloguj się w przeglądarce" bez człowieka.
-
-**Wynik jest niekonkluzywny co do trybu Cezara.** Mierzy brak autoryzacji, nie zdolność procesu headless do rysowania. Rozstrzygnięcie wymaga powtórzenia próby po jednorazowej autoryzacji w profilu klienta na stanowisku demo.
-
-**Ten wynik nie blokuje FROM_BRIEF** i nie zmienia statusu głównego — w demo rysuje agent w sesji człowieka.
-
-**Ostrzeżenie dla EXEC-01:** dopóki autoryzacja nie zostanie wykonana raz i utrwalona w profilu klienta na stanowisku demo, Cezar **nie** będzie mógł rysować automatycznie. Po jednorazowej autoryzacji próbę headless należy powtórzyć — dopiero wtedy wynik odpowie na pytanie o tryb automatyczny. Żadnych plików sesji ani poświadczeń nie kopiowano w celu obejścia braku sesji.
-
-Przy awarii konfiguracji, a nie braku sesji, punktem startu jest istniejący wzorzec wywołania z orchestratora WP — Claude CLI z narzędziami read Figma MCP uruchamiany z procesu serwera (`src/server/modules/figma/service.js:156,218`, patrz [research.md](../../context/changes/autonomous-software-delivery/research.md), wiersz „Import ekranów Figmy"). Kod jest na stanowisku Michała; to prośba o sam wzorzec, nie zależność.
+**Ryzyko nierozwiązane — trwałość autoryzacji.** Nie wiadomo, jak długo żyje uzyskany token i czy
+odnawia się sam. Zmierzyć się tego nie da inaczej niż upływem czasu, więc pozostaje jako znane
+ryzyko, nie jako fakt. Konsekwencja przy wygaśnięciu jest natomiast pewna: odnowienie wymaga
+człowieka wykonującego `/mcp` i logowania w przeglądarce, a proces nieinteraktywny — w tym Cezar —
+tego nie zrobi i zatrzyma się na odmowie narzędzia. Objaw do rozpoznania w trakcie demo: serwer
+`figma` wraca do stanu `Needs authentication`, a narzędzia znikają z listy. Kto prowadzi próbę,
+powinien mieć dostęp do przeglądarki na koncie `michal.strzesniewski@300.codes`.
 
 ## Wynik drugiego klienta
 
-`not_attempted` — Codex CLI nie jest zainstalowany na stanowisku demo. Zgodnie z kontraktem Fazy 1 drugi klient nie leży na ścieżce krytycznej i jego brak nie wpływa na status główny. Instalacja i konfiguracja to praca do wykonania w czasie pozostałym, po rozstrzygnięciu zapisu.
+`not_attempted` — Codex CLI nie jest zainstalowany na stanowisku demo. Zgodnie z kontraktem Fazy 1
+drugi klient nie leży na ścieżce krytycznej i jego brak nie wpływa na status główny.
 
 ## Eskalacja
 
-Status `blocked` z przyczyną **konfiguracja klienta**. Wariant do zastosowania — wiersz drugi tabeli z Fazy 3 planu, decyzja po stronie prowadzącego UI-01, bez angażowania osoby decyzyjnej od kosztów:
-
-1. Człowiek wykonuje w sesji Claude Code na stanowisku demo polecenie `/mcp`, wybiera serwer `figma` i autoryzuje go w przeglądarce **na koncie demo**.
-2. Bezpośrednio po tym agent powtarza krok 0: `whoami` → tożsamość, seat, plan; `create_new_file` → plik próby.
-3. Dopiero odpowiedź `whoami` rozstrzyga, czy potrzebny jest upgrade planu Figma i czy zaangażować osobę decyzyjną od kosztów.
-
-Ręczne narysowanie designu przez człowieka nie jest wariantem eskalacji.
+Brak. Status `write=ready`, `update=ready`; żaden z wariantów eskalacji z Fazy 3 planu nie ma
+zastosowania.
 
 ## Odbiór zespołu
 
-`not_attempted` — nie ma czego oglądać: agent nie utworzył ekranu.
+`pending` — dowód automatyczny jest kompletny, brakuje wyłącznie oglądania ekranu przez zespół.
+Wypełnia osoba prowadząca UI-01 po odbiorze; nie zaznaczać na podstawie samego istnienia artefaktów.
+
+**Przebieg odbioru** — zamyka 1.5, 2.5, 2.6 i 3.5 planu UI-01 w jednym podejściu:
+
+1. Otworzyć https://www.figma.com/design/5wOkFtN959W4MFmgRuaU8S na stanowisku demo.
+2. Kliknąć w kartę „Audyt dostępności WCAG” i wejść w jej warstwy — frame, teksty i prostokąty
+   są osobnymi, edytowalnymi węzłami. Gdyby agent wkleił obraz, byłby tu jeden węzeł rastrowy.
+   To zalicza 2.5 („edytowalny frame agenta”).
+3. Na tej samej karcie widoczna jest plakietka „Polecane”, a nad siatką pasek
+   „Znaleziono 6 z 24 usług / Wyczyść filtry” — to jest naniesiona poprawka, w tym samym
+   frame’ie `3:2`, nie w kopii obok.
+4. W menu konta sprawdzić, że zalogowany jest `michal.strzesniewski@300.codes`, a w ustawieniach
+   zespołu — że ma seat **Full**. To zalicza 1.5 i 3.5. `whoami` zwraca to samo maszynowo,
+   ale plan wymaga potwierdzenia w interfejsie.
+5. Potwierdzić ustnie, że nikt nie rysował ani nie poprawiał ekranu ręcznie — cała sekwencja
+   przebiegła narzędziami MCP. To zalicza 2.6.
+6. Osobno, po wyniku EXEC-01: zespół przyjmuje do wiadomości tryb Cezara (3.6).
+
+Frame `6:2` („UI-01 / Headless probe”) w tym samym pliku jest dowodem próby nieinteraktywnej
+dla EXEC, nie częścią ekranu odbieranego wyżej.
 
 | Pole | Wartość |
 |---|---|
 | Uczestnicy | — |
-| Ekran powstał przez agenta | nie |
-| Potwierdzony login konta demo | nie |
-| Potwierdzony Full seat | nie |
-| Potwierdzone prawo edycji pliku | nie |
-| Zespół rozumie tryb Cezara (EXEC-01) | nie odnotowano |
+| Ekran powstał przez agenta | tak — sekwencja wykonana wyłącznie narzędziami MCP, bez ręcznego rysowania |
+| Potwierdzony login konta demo | — do potwierdzenia w interfejsie Figmy |
+| Potwierdzony Full seat | — do potwierdzenia w interfejsie Figmy (`whoami` zwraca `Full`) |
+| Potwierdzone prawo edycji pliku | — do potwierdzenia w interfejsie Figmy (konto jest właścicielem pliku) |
+| Zespół rozumie tryb Cezara (EXEC-01) | nie odnotowano — czeka na wynik EXEC-01 |

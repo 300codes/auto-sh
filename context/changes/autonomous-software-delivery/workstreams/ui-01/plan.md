@@ -235,6 +235,29 @@ Ręczne narysowanie designu przez człowieka nie jest żadnym z tych wariantów.
 
 ---
 
+## Aneks — Faza 2: narzędzia dostarczone poza planem
+
+Rozstrzygnięcie findingu F4 z [przeglądu wdrożenia](reviews/impl-review.md) (wariant Fix A).
+
+Plan wymieniał dla Fazy 2 trzy artefakty — `manifest.json`, `SHA256SUMS`, `*.png` — i dla samej
+sekwencji „brak zmian w repo". Repo zawiera ponadto trzy pliki, których plan nie przewidywał:
+
+| Plik | Rola |
+|---|---|
+| `evidence/figma/capture.sh` | pobranie renderu, sha256 i wpis do manifestu w jednym kroku, zanim adres wygaśnie |
+| `evidence/figma/verify.sh` | 11 kontroli odpowiadających kryteriom automatycznym Faz 2–3 |
+| `evidence/figma/prompts.md` | treść poleceń człowieka, wprost wymagana kontraktem Fazy 2 do powtórzenia przez UI-03 |
+
+Powstały w oknie, w którym bloker OAuth uniemożliwiał samą sekwencję. Po jego usunięciu
+planowane artefakty **zostały dostarczone i przechodzą kontrole**, więc zarzut „narzędzia zamiast
+artefaktów" wygasł; zostaje sam fakt, że trzy pliki nie miały umocowania w planie.
+
+**Decyzja:** narzędzia zostają i przechodzą do zakresu UI-03 jako gotowy format dowodu —
+odnotowane w [strumieniu UI](../03-design-ui.md). Plan główny wymaga trwałych bytes/hash
+(`plan.md:292`), ale nie narzuca tej implementacji; właściciel UI-03 może format zmienić,
+pod warunkiem zachowania bytes/hash i powiązania komentarza.
+
+
 ## Warunki startu
 
 Ustalone przed H0, poza tym planem:
@@ -285,10 +308,10 @@ Ustalone przed H0, poza tym planem:
 
 #### Automated
 
-- [ ] 1.1 Krok 0 zapisany: `whoami` zwrócił tożsamość, seat i plan zgodne z kontem demo; wynik `create_new_file` zapisany.
+- [x] 1.1 Krok 0 zapisany: `whoami` zwrócił tożsamość, seat i plan zgodne z kontem demo; wynik `create_new_file` zapisany. — 6e7e5928a3
 - [x] 1.2 `figma-readiness.md` i `evidence/figma/` istnieją; pola stanowiska, konta i wersji klientów wypełnione. — d7834d82b7
 - [x] 1.3 `git grep` po wzorcach sekretów w `hackathon/delivery-demo` nie zwraca trafień. — d669e82732
-- [ ] 1.4 Klient podstawowy listuje narzędzie zapisu Figmy; wynik i wskazanie klienta podstawowego zapisane w artefakcie.
+- [x] 1.4 Klient podstawowy listuje narzędzie zapisu Figmy; wynik i wskazanie klienta podstawowego zapisane w artefakcie. — 6e7e5928a3
 
 #### Manual
 
@@ -298,10 +321,10 @@ Ustalone przed H0, poza tym planem:
 
 #### Automated
 
-- [ ] 2.1 Manifest zawiera `create` i `update` z identycznym `nodeId` oraz istniejące pliki renderu.
-- [ ] 2.2 `sha256sum -c SHA256SUMS` przechodzi i zgadza się z polami `sha256` manifestu.
-- [ ] 2.3 `file` rozpoznaje każdy render jako PNG, rozmiary w limicie.
-- [ ] 2.4 Hashe renderów `create` i `update` różnią się.
+- [x] 2.1 Manifest zawiera `create` i `update` z identycznym `nodeId` oraz istniejące pliki renderu. — 6e7e5928a3
+- [x] 2.2 `sha256sum -c SHA256SUMS` przechodzi i zgadza się z polami `sha256` manifestu. — 6e7e5928a3
+- [x] 2.3 `file` rozpoznaje każdy render jako PNG, rozmiary w limicie. — 6e7e5928a3
+- [x] 2.4 Hashe renderów `create` i `update` różnią się. — 6e7e5928a3
 
 #### Manual
 
