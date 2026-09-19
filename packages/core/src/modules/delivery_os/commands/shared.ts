@@ -11,12 +11,13 @@ import {
 } from '@open-mercato/shared/lib/crud/optimistic-lock-command'
 import { normalizeIsoToken } from '@open-mercato/shared/lib/crud/optimistic-lock'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
-import { DeliveryBaseline, DeliveryProject, DeliveryTask } from '../data/entities'
+import { DeliveryBaseline, DeliveryIntake, DeliveryProject, DeliveryTask } from '../data/entities'
 import {
   buildDeliveryError,
   deliveryErrorFromZod,
   type DeliveryCheckResult,
   type DeliveryErrorResult,
+  type DeliveryFlowErrorResult,
   uuidSchema,
 } from '../lib/contracts'
 
@@ -25,6 +26,7 @@ export const DELIVERY_TASK_RESOURCE_KIND = 'delivery_os.task'
 export const DELIVERY_BASELINE_RESOURCE_KIND = 'delivery_os.baseline'
 export const DELIVERY_DECISION_RESOURCE_KIND = 'delivery_os.decision'
 export const DELIVERY_EVIDENCE_RESOURCE_KIND = 'delivery_os.evidence'
+export const DELIVERY_INTAKE_RESOURCE_KIND = 'delivery_os.intake'
 
 export type DeliveryScope = {
   tenantId: string
@@ -44,6 +46,12 @@ export function deliveryHttpError(failure: DeliveryErrorResult): CrudHttpError {
 export function assertDeliveryCheck(result: DeliveryCheckResult): void {
   if (result.ok) return
   throw deliveryHttpError({ status: result.status, body: result.body })
+}
+
+export function deliveryFlowHttpError(failure: DeliveryFlowErrorResult): CrudHttpError {
+  const httpError = new CrudHttpError(failure.status, failure.body)
+  httpError.message = `[internal] delivery_os ${failure.body.code}: ${failure.body.error}`
+  return httpError
 }
 
 export function parseDeliveryInput<TSchema extends z.ZodType>(schema: TSchema, rawInput: unknown): z.infer<TSchema> {
@@ -176,6 +184,21 @@ export async function requireScopedBaseline(
   const baseline = await findScopedBaseline(em, id, scope)
   if (!baseline) throw notFoundError('baselineId')
   return baseline
+}
+
+export async function findScopedIntake(
+  em: EntityManager,
+  projectId: string,
+  scope: DeliveryScope,
+  options: ScopedLoadOptions = {},
+): Promise<DeliveryIntake | null> {
+  return findOneWithDecryption(
+    em,
+    DeliveryIntake,
+    { projectId, tenantId: scope.tenantId, organizationId: scope.organizationId },
+    lockOptions(options),
+    scope,
+  )
 }
 
 export function lockScopedProject(tx: EntityManager, id: string, scope: DeliveryScope): Promise<DeliveryProject> {

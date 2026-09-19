@@ -42,6 +42,24 @@ export const features = [
     module: 'delivery_os',
     dependsOn: ['delivery_os.projects.view'],
   },
+  {
+    id: 'delivery_os.flow.manage',
+    title: 'Pin the delivery process template and link workflow instances',
+    module: 'delivery_os',
+    dependsOn: ['delivery_os.projects.view'],
+  },
+  {
+    id: 'delivery_os.stages.approve',
+    title: 'Approve delivery stage artifacts',
+    module: 'delivery_os',
+    dependsOn: ['delivery_os.projects.view'],
+  },
+  {
+    id: 'delivery_os.comments.import',
+    title: 'Import and triage design comments',
+    module: 'delivery_os',
+    dependsOn: ['delivery_os.projects.view'],
+  },
 ]
 
 export default features

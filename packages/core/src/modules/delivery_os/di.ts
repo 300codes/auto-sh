@@ -3,6 +3,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import { createDeliveryAttachmentInspector, type StorageDriverFactoryLike } from './commands/attachments'
 import { createDeliveryOsAttemptQueries } from './commands/attemptQueries'
 import { createDeliveryOsReportQueries } from './commands/reportQueries'
+import { createBuiltInFlowTemplateProvider, DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY } from './commands/flowTemplateProvider'
 
 export function register(container: AppContainer) {
   container.register({
@@ -14,6 +15,9 @@ export function register(container: AppContainer) {
     },
     deliveryOsAttachmentInspector: {
       resolve: (c) => createDeliveryAttachmentInspector(() => c.resolve<StorageDriverFactoryLike>('storageDriverFactory')),
+    },
+    [DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY]: {
+      resolve: () => createBuiltInFlowTemplateProvider(),
     },
   })
 }

@@ -77,7 +77,12 @@ describe('deliveryOsAttemptQueries', () => {
   it('is registered in the container under the frozen DI key', () => {
     const registrations: Record<string, { resolve: (container: { resolve: (name: string) => unknown }) => unknown }> = {}
     register({ register: (entries: typeof registrations) => Object.assign(registrations, entries) } as never)
-    expect(Object.keys(registrations)).toEqual(['deliveryOsAttemptQueries', 'deliveryOsReportQueries', 'deliveryOsAttachmentInspector'])
+    expect(Object.keys(registrations)).toEqual([
+      'deliveryOsAttemptQueries',
+      'deliveryOsReportQueries',
+      'deliveryOsAttachmentInspector',
+      'deliveryFlowTemplateProvider',
+    ])
     const lazyResolve = jest.fn()
     expect(typeof registrations.deliveryOsAttachmentInspector.resolve({ resolve: lazyResolve })).toBe('function')
     expect(lazyResolve).not.toHaveBeenCalled()
