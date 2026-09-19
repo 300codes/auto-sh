@@ -2,7 +2,7 @@ import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared
 import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
-import { DeliveryBaseline, DeliveryDecision, DeliveryProject } from '../../data/entities'
+import { DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../../data/entities'
 import { draftSpecV1Schema } from '../../data/validators'
 import { hashBaseline } from '../../lib/baseline'
 import { DEFAULT_DELIVERY_LIMITS, deliveryErrorBodySchema, type BaselineContentV1 } from '../../lib/contracts'
@@ -25,6 +25,7 @@ export type Store = {
   projects: DeliveryProject[]
   baselines: DeliveryBaseline[]
   decisions: DeliveryDecision[]
+  tasks: DeliveryTask[]
   attachments: Row[]
 }
 
@@ -37,13 +38,14 @@ export type EmMock = {
 }
 
 export function emptyStore(): Store {
-  return { projects: [], baselines: [], decisions: [], attachments: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], attachments: [] }
 }
 
 export function rowsFor(store: Store, entity: unknown): Row[] {
   if (entity === DeliveryProject) return store.projects as unknown as Row[]
   if (entity === DeliveryBaseline) return store.baselines as unknown as Row[]
   if (entity === DeliveryDecision) return store.decisions as unknown as Row[]
+  if (entity === DeliveryTask) return store.tasks as unknown as Row[]
   if (entity === Attachment) return store.attachments
   throw new Error('[internal] unexpected entity in test store')
 }
@@ -75,7 +77,8 @@ export function makeHarness(
     fork: jest.fn(),
     create: jest.fn((_entity: unknown, data: Row) => ({ id: NEW_ROW_ID, ...data })),
     persist: jest.fn((row: Row) => {
-      if ('contentHash' in row) store.baselines.push(row as unknown as DeliveryBaseline)
+      if ('proposalTaskKey' in row) store.tasks.push(row as unknown as DeliveryTask)
+      else if ('contentHash' in row) store.baselines.push(row as unknown as DeliveryBaseline)
       else store.decisions.push(row as unknown as DeliveryDecision)
     }),
     flush: jest.fn(async () => undefined),
@@ -165,6 +168,23 @@ export function makeBaseline(
     createdAt: UPDATED_AT,
     ...overrides,
   } as DeliveryBaseline
+}
+
+export function makeApproval(baseline: DeliveryBaseline, kind: 'requirements' | 'design', overrides: Row = {}): DeliveryDecision {
+  return {
+    id: `dec-${kind}-${baseline.id}`,
+    tenantId: baseline.tenantId,
+    organizationId: baseline.organizationId,
+    projectId: baseline.projectId,
+    kind,
+    verdict: 'approved',
+    subjectType: 'baseline',
+    subjectId: baseline.id,
+    subjectHash: baseline.contentHash,
+    subjectVersion: baseline.version,
+    decidedAt: UPDATED_AT,
+    ...overrides,
+  } as unknown as DeliveryDecision
 }
 
 export const STORED_FILE_SIZE = 2048

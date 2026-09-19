@@ -175,7 +175,7 @@ function toLifecycleTask(task: DeliveryTask): LifecycleTask {
   return { id: task.id, status: task.status, statusReason: task.statusReason ?? null, dependsOnTaskIds: task.dependsOnTaskIds }
 }
 
-function requireTaskProfile(id: string, version: number): TargetProfile {
+export function requireTaskProfile(id: string, version: number): TargetProfile {
   const profile = getTargetProfile(id, version)
   if (profile) return profile
   throw deliveryHttpError(
@@ -200,18 +200,18 @@ export async function findProjectBaseline(
   )
 }
 
-function readBaselineContent(baseline: DeliveryBaseline): BaselineContentV1 | null {
+export function readBaselineContent(baseline: DeliveryBaseline): BaselineContentV1 | null {
   const parsed = baselineContentV1Schema.safeParse(baseline.content)
   return parsed.success ? parsed.data : null
 }
 
-function foreignBaselineError() {
+export function foreignBaselineError() {
   return buildDeliveryError('foreign_reference', 'Baseline does not belong to this project', [
     { path: 'baselineId', code: 'foreign_baseline' },
   ])
 }
 
-function unreadableBaselineError() {
+export function unreadableBaselineError() {
   return buildDeliveryError('hash_mismatch', 'Stored baseline content is not readable', [
     { path: 'content', code: 'unreadable_baseline_content' },
   ])
@@ -312,6 +312,33 @@ function readinessFailure(reasons: readonly ReadinessReason[]): DeliveryCheckRes
   return { ok: false, ...buildDeliveryError(first.code, first.error, reasons.map((entry) => entry.detail)) }
 }
 
+export async function loadBaselineDecisionRecords(
+  tx: EntityManager,
+  baseline: DeliveryBaseline,
+  scope: DeliveryScope,
+): Promise<BaselineDecisionRecord[]> {
+  const decisions = await findWithDecryption(
+    tx,
+    DeliveryDecision,
+    {
+      projectId: baseline.projectId,
+      subjectType: 'baseline',
+      subjectId: baseline.id,
+      tenantId: scope.tenantId,
+      organizationId: scope.organizationId,
+    },
+    undefined,
+    scope,
+  )
+  return decisions.map((decision) => ({
+    kind: decision.kind,
+    verdict: decision.verdict,
+    subjectHash: decision.subjectHash,
+    subjectVersion: decision.subjectVersion ?? null,
+    decidedAt: decision.decidedAt,
+  }))
+}
+
 async function checkReadyGate(
   tx: EntityManager,
   task: ReadinessTask & { baselineId: string },
@@ -322,26 +349,7 @@ async function checkReadyGate(
   if (!baseline) return { ok: false, ...foreignBaselineError() }
   const content = readBaselineContent(baseline)
   if (!content) return { ok: false, ...unreadableBaselineError() }
-  const decisions = await findWithDecryption(
-    tx,
-    DeliveryDecision,
-    {
-      projectId: project.id,
-      subjectType: 'baseline',
-      subjectId: baseline.id,
-      tenantId: scope.tenantId,
-      organizationId: scope.organizationId,
-    },
-    undefined,
-    scope,
-  )
-  const decisionRecords: BaselineDecisionRecord[] = decisions.map((decision) => ({
-    kind: decision.kind,
-    verdict: decision.verdict,
-    subjectHash: decision.subjectHash,
-    subjectVersion: decision.subjectVersion ?? null,
-    decidedAt: decision.decidedAt,
-  }))
+  const decisionRecords = await loadBaselineDecisionRecords(tx, baseline, scope)
   const reasons: ReadinessReason[] = []
   if (task.baselineId !== project.activeBaselineId) {
     reasons.push({

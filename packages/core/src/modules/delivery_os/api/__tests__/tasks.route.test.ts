@@ -20,11 +20,14 @@ import {
   PROJECT_ID,
   STALE_UPDATED_AT,
   UPDATED_AT,
+  makeApproval,
   makeBaseline,
   makeProject,
   type Row,
 } from '../../commands/__tests__/baselineTestKit'
-import { taskDtoSchema, taskListResponseSchema } from '../schemas'
+import { hashBaseline } from '../../lib/baseline'
+import { loadBaselineContentFixture, loadPlanProposalFixture } from '../../lib/fixtures/index'
+import { planImportResponseSchema, taskDtoSchema, taskListResponseSchema } from '../schemas'
 import {
   EMPLOYEE_FEATURES,
   FOREIGN_TENANT_ID,
@@ -109,8 +112,7 @@ describe('POST /api/delivery_os/projects/:id/tasks', () => {
     await expectFrozenError(await create(proposal), 403, 'forbidden')
 
     signInAs({ features: EMPLOYEE_FEATURES })
-    const unsupported = await expectFrozenError(await create(proposal), 400, 'validation_failed')
-    expect(detailCodesOf(unsupported)).toContain('unsupported_source')
+    await expectFrozenError(await create(proposal), 400, 'validation_failed')
     expect(routeState.store.tasks).toHaveLength(0)
   })
 
@@ -208,5 +210,110 @@ describe('PUT and DELETE /api/delivery_os/tasks', () => {
     expect(response.status).toBe(200)
     expect(await readBody(response)).toEqual({ ok: true })
     expect(task.deletedAt).toBeInstanceOf(Date)
+  })
+})
+
+describe('R10 POST /projects/:id/tasks — plan proposal import', () => {
+  const parentContent = { ...loadBaselineContentFixture(), planSummary: null, acTestMap: {}, manualChecks: {}, declaredTests: [] }
+
+  function plan(overrides: Row = {}): Row {
+    return {
+      ...loadPlanProposalFixture(),
+      projectId: PROJECT_ID,
+      baselineId: BASELINE_ID,
+      baselineHash: hashBaseline(parentContent),
+      ...overrides,
+    }
+  }
+
+  function importPlan(manifest: Row, lock: string | Date | null = UPDATED_AT, headers?: Record<string, string>): Promise<Response> {
+    const request = apiRequest('POST', listPath, { body: { source: 'plan_proposal', manifest }, lock, headers })
+    return POST(request, routeParams(PROJECT_ID))
+  }
+
+  function approve(baseline: Row): void {
+    routeState.store.decisions.push(
+      makeApproval(baseline as never, 'requirements') as unknown as Row,
+      makeApproval(baseline as never, 'design') as unknown as Row,
+    )
+  }
+
+  beforeEach(() => {
+    const parent = makeBaseline(parentContent)
+    routeState.store.baselines = [parent as unknown as Row]
+    approve(parent as unknown as Row)
+    routeState.writes = 0
+  })
+
+  it('answers 403 for a manage-only caller before anything is read or written', async () => {
+    signInAs({ features: ['delivery_os.projects.view', 'delivery_os.projects.manage'] })
+    await expectFrozenError(await importPlan(plan()), 403, 'forbidden')
+    expect(routeState.writes).toBe(0)
+    expect(routeState.store.baselines).toHaveLength(1)
+  })
+
+  it('imports the plan: 201 with the merged baseline and task ids, then 200 duplicate with the same ids and no new rows', async () => {
+    signInAs({ features: EMPLOYEE_FEATURES })
+    const created = await importPlan(plan())
+    expect(created.status).toBe(201)
+    const body = planImportResponseSchema.parse(await readBody(created))
+    expect(body).toMatchObject({ duplicate: false, version: 2 })
+    expect(body.tasks.map((task) => task.proposalTaskKey)).toEqual(['service-list', 'service-filter'])
+    expect(routeState.store.baselines[1]).toMatchObject({ id: body.baselineId, parentBaselineId: BASELINE_ID, source: 'plan_proposal' })
+    expect(routeState.store.projects[0].activeBaselineId).toBe(BASELINE_ID)
+    const writesAfterImport = routeState.writes
+
+    const replay = await importPlan(plan(), null)
+    expect(replay.status).toBe(200)
+    const replayBody = planImportResponseSchema.parse(await readBody(replay))
+    expect(replayBody).toMatchObject({ duplicate: true, baselineId: body.baselineId })
+    expect(replayBody.tasks.map((task) => task.id)).toEqual(body.tasks.map((task) => task.id))
+    expect(routeState.store.tasks).toHaveLength(2)
+    expect(routeState.store.baselines).toHaveLength(2)
+    expect(routeState.writes).toBe(writesAfterImport)
+
+    await expectFrozenError(await importPlan(plan({ architectureSummary: 'Changed' }), null), 409, 'idempotency_conflict')
+  })
+
+  it('keeps imported tasks out of ready until the merged baseline has both decisions and is active', async () => {
+    const body = planImportResponseSchema.parse(await readBody(await importPlan(plan())))
+    const [first] = body.tasks
+    const ready = () => PUT(apiRequest('PUT', '/tasks', { body: { id: first.id, status: 'ready' }, lock: first.updatedAt }))
+
+    const refused = await expectFrozenError(await ready(), 422, 'baseline_not_approved')
+    expect(detailCodesOf(refused)).toEqual(expect.arrayContaining(['baseline_not_active', 'requirements_decision_missing', 'design_decision_missing']))
+
+    approve(routeState.store.baselines[1])
+    const stillInactive = await expectFrozenError(await ready(), 422, 'baseline_not_approved')
+    expect(detailCodesOf(stillInactive)).toEqual(['baseline_not_active'])
+
+    routeState.store.projects[0].activeBaselineId = body.baselineId
+    expect((await ready()).status).toBe(200)
+  })
+
+  it('rejects an invalid or unapproved plan with 422 and writes nothing', async () => {
+    const valid = plan() as { tasks: Row[] }
+    const cases: Array<[Row, string]> = [
+      [plan({ baselineId: '99999999-9999-4999-8999-999999999999' }), 'foreign_reference'],
+      [plan({ tasks: [{ ...valid.tasks[0], allowedPaths: ['**'] }, valid.tasks[1]] }), 'path_not_allowed'],
+      [plan({ acTestMap: { 'AC-001': ['a test nobody declared'], 'AC-002': ['another'] } }), 'unknown_test_id'],
+      [plan({ tasks: [{ ...valid.tasks[0], acIds: ['AC-404'] }, valid.tasks[1]] }), 'unknown_ac'],
+      [plan({ tasks: [{ ...valid.tasks[0], dependsOn: ['service-filter'] }, valid.tasks[1]] }), 'cycle'],
+    ]
+    for (const [manifest, code] of cases) {
+      await expectFrozenError(await importPlan(manifest), 422, code)
+    }
+    routeState.store.decisions = []
+    await expectFrozenError(await importPlan(plan()), 422, 'baseline_not_approved')
+    expect(routeState.writes).toBe(0)
+    expect(routeState.store.baselines).toHaveLength(1)
+    expect(routeState.store.tasks).toHaveLength(0)
+  })
+
+  it('answers 428 without the project version, the platform 409 for a stale one and 413 for an oversized body', async () => {
+    await expectFrozenError(await importPlan(plan(), null), 428, 'optimistic_lock_required')
+    expect((await importPlan(plan(), STALE_UPDATED_AT)).status).toBe(409)
+    await expectFrozenError(await importPlan(plan(), UPDATED_AT, { 'content-length': '1000001' }), 413, 'payload_too_large')
+    expect(routeState.writes).toBe(0)
   })
 })

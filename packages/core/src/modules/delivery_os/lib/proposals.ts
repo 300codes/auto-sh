@@ -63,6 +63,13 @@ export type RequirementsProposalResult<TDraft extends RequirementsDraftSections>
     }
   | ProposalFailure
 
+export type PlanProposalIdentity = {
+  ok: true
+  manifest: PlanProposalV1
+  manifestId: string
+  manifestHash: string
+}
+
 export type PlanProposalContext = {
   project: { id: string; targetProfileId: string; targetProfileVersion: number }
   baseline: { id: string; projectId: string; contentHash: string; content: BaselineContentV1 }
@@ -199,6 +206,20 @@ export function validateRequirementsProposal<TDraft extends RequirementsDraftSec
     manualChecks: pickKnown(draft.manualChecks, proposedAcIds),
   }
   return { ...identity, draftSpec, prunedAcIds }
+}
+
+export function parsePlanProposal(manifest: unknown, projectId: string): PlanProposalIdentity | ProposalFailure {
+  const parsed = parseVersioned(planProposalSchemas, manifest)
+  if (!parsed.ok) return parsed
+  const proposal = parsed.data
+  if (proposal.projectId !== projectId) {
+    return failure('foreign_reference', 'Proposal belongs to another project', [
+      { path: 'projectId', code: 'foreign_project', message: 'The manifest projectId is not this project' },
+    ])
+  }
+  const manifestHash = tryHash(() => hashProposalManifest(proposal))
+  if (manifestHash === null) return notCanonical('manifest')
+  return { ok: true, manifest: proposal, manifestId: proposal.manifestId, manifestHash }
 }
 
 function checkPlanCorrelation(proposal: PlanProposalV1, context: PlanProposalContext): DeliveryErrorDetail[] {
@@ -343,6 +364,10 @@ function normalizeTasks(proposal: PlanProposalV1): PlanTaskDraft[] {
   )
 }
 
+export function planTaskKeysInOrder(proposal: PlanProposalV1): string[] {
+  return normalizeTasks(proposal).map((task) => task.proposalTaskKey)
+}
+
 export function summarizePlan(tasks: readonly PlanTaskDraft[]): string {
   const summary = tasks
     .map((task) => {
@@ -409,6 +434,10 @@ export function validatePlanProposal(manifest: unknown, context: PlanProposalCon
     acTestMap: structuredClone(mergedMap),
     declaredTests,
     importedManifestHashes: unique([...parent.importedManifestHashes, manifestHash]),
+    importedManifests: [
+      ...(parent.importedManifests ?? []).filter((entry) => entry.manifestId !== proposal.manifestId),
+      { manifestId: proposal.manifestId, manifestHash },
+    ],
   }
   const content = baselineContentV1Schema.safeParse(candidate)
   if (!content.success) return { ok: false, ...deliveryErrorFromZod(content.error) }

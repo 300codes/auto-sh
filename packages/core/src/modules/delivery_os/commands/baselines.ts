@@ -137,7 +137,7 @@ function parseProjectDraft(project: DeliveryProject): DraftSpec {
   return draft.data
 }
 
-function listProjectBaselines(tx: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryBaseline[]> {
+export function listProjectBaselines(tx: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryBaseline[]> {
   return findWithDecryption(
     tx,
     DeliveryBaseline,
@@ -147,7 +147,7 @@ function listProjectBaselines(tx: EntityManager, projectId: string, scope: Deliv
   )
 }
 
-function findImportedManifest(
+export function findImportedManifest(
   baselines: readonly DeliveryBaseline[],
   manifestId: string,
 ): { baseline: DeliveryBaseline; manifestHash: string } | null {
@@ -177,7 +177,7 @@ function toResult(
   }
 }
 
-async function emitBaselineCreated(ctx: CommandRuntimeContext, scope: DeliveryScope, baseline: DeliveryBaseline): Promise<void> {
+export async function emitBaselineCreated(ctx: CommandRuntimeContext, scope: DeliveryScope, baseline: DeliveryBaseline): Promise<void> {
   await emitCrudSideEffects({
     dataEngine: ctx.container.resolve('dataEngine') as DataEngine,
     action: 'created',

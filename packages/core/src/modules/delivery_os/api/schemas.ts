@@ -125,6 +125,14 @@ export type TaskDto = z.infer<typeof taskDtoSchema>
 
 export const taskListResponseSchema = z.object({ items: z.array(taskDtoSchema), total: z.number().int() })
 export const taskCreateResponseSchema = z.object({ id: uuidSchema, updatedAt: isoDateTimeSchema })
+export const planImportResponseSchema = z.object({
+  baselineId: uuidSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+  duplicate: z.boolean(),
+  tasks: z.array(z.object({ id: uuidSchema, proposalTaskKey: z.string().min(1), updatedAt: isoDateTimeSchema })),
+  projectUpdatedAt: isoDateTimeSchema,
+})
 export const taskUpdateResponseSchema = z.object({
   ok: z.literal(true),
   updatedAt: isoDateTimeSchema,

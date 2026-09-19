@@ -12,6 +12,7 @@ import {
   MAX_PLAN_SUMMARY_LENGTH,
   summarizePlan,
   parseRequirementsProposal,
+  parsePlanProposal,
   validatePlanProposal,
   validateRequirementsProposal,
   type PlanProposalContext,
@@ -320,6 +321,7 @@ describe('validatePlanProposal — normalized output', () => {
     expect(content.architectureSummary).toBe(loadPlanProposalFixture().architectureSummary)
     expect(content.planSummary).toBe('service-list: Service catalogue list [AC-001]\nservice-filter: Category filter [AC-002] after service-list')
     expect(content.importedManifestHashes).toEqual([result.manifestHash])
+    expect(content.importedManifests).toEqual([{ manifestId: result.manifestId, manifestHash: result.manifestHash }])
     expect(content.screens).toEqual(context.baseline.content.screens)
     expect(content.requirements).toEqual(context.baseline.content.requirements)
   })
@@ -336,6 +338,26 @@ describe('validatePlanProposal — normalized output', () => {
     expect(replay.acTestMap['AC-001']).toEqual([AC1_TEST])
     expect(replay.baselineContent.declaredTests.map((test) => test.testId)).toEqual([AC1_TEST, AC2_TEST])
     expect(replay.baselineContent.importedManifestHashes).toEqual([first.manifestHash, replay.manifestHash])
+    expect(replay.baselineContent.importedManifests).toEqual([{ manifestId: replay.manifestId, manifestHash: replay.manifestHash }])
+
+    plan.manifestId = 'plan-from-baseline-2026-09-19-002'
+    const next = validatePlanProposal(plan, mergedContext)
+    if (!next.ok) throw new Error('[internal] second plan must validate')
+    expect(next.baselineContent.importedManifests?.map((entry) => entry.manifestId)).toEqual([first.manifestId, next.manifestId])
+  })
+
+  it('reads the plan identity without a baseline: schema, project and canonical hash', () => {
+    const plan = loadPlanProposalFixture()
+    const identity = parsePlanProposal(plan, plan.projectId)
+    const validated = validatePlanProposal(plan, context)
+    if (!identity.ok || !validated.ok) throw new Error('[internal] fixture plan must parse')
+    expect(identity.manifestId).toBe(plan.manifestId)
+    expect(identity.manifestHash).toBe(validated.manifestHash)
+
+    const foreign = parsePlanProposal(plan, '99999999-9999-4999-8999-999999999999')
+    expect(foreign).toMatchObject({ ok: false, status: 422, body: { code: 'foreign_reference' } })
+    const requirements = parsePlanProposal({ ...plan, schemaVersion: 'delivery.requirements-proposal/v1' }, plan.projectId)
+    expect(requirements).toMatchObject({ ok: false, status: 422, body: { code: 'unsupported_schema_version' } })
   })
 
   it('hashes the manifest canonically: key order and unknown fields do not change it, content does', () => {

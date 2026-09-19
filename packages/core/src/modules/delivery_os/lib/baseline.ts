@@ -76,13 +76,13 @@ export type TaskReadinessInput = {
 
 export type ReadinessReason = { code: DeliveryErrorCode; error: string; detail: DeliveryErrorDetail }
 
-const BASELINE_DECISION_KINDS: readonly BaselineDecisionKind[] = ['requirements', 'design']
+export const BASELINE_DECISION_KINDS: readonly BaselineDecisionKind[] = ['requirements', 'design']
 
 export function hashBaseline(content: BaselineContentV1): string {
   return hashCanonical(content)
 }
 
-function tryHashBaseline(content: BaselineContentV1): string | null {
+export function tryHashBaseline(content: BaselineContentV1): string | null {
   try {
     return hashBaseline(content)
   } catch {
