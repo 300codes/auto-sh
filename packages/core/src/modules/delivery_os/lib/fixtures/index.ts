@@ -39,7 +39,9 @@ import resultManifestForeignTaskJson from './negative/result-manifest.foreign-ta
 import resultManifestForeignAttemptJson from './negative/result-manifest.foreign-attempt.v1.json'
 import resultManifestSnapshotForReactJson from './negative/result-manifest.snapshot-for-react.v1.json'
 import resultManifestMissingCheckFieldsJson from './negative/result-manifest.missing-check-fields.v1.json'
+import resultManifestPathEscapeJson from './negative/result-manifest.path-escape.v1.json'
 import resultManifestStatusSkippedJson from './negative/result-manifest.status-skipped.v1.json'
+import resultManifestUnknownTestJson from './negative/result-manifest.unknown-test.v1.json'
 import reserveDuplicateKeyJson from './negative/reserve.duplicate-key.v1.json'
 import reserveAutomaticModeJson from './negative/reserve.automatic-mode.v1.json'
 import planProposalCycleJson from './negative/plan-proposal.cycle.v1.json'
@@ -136,7 +138,7 @@ export function buildExecutionWidgetContextFixture(
   )
 }
 
-export const negativeFixtureStages = ['schema', 'profile', 'correlation', 'dag', 'idempotency', 'proposal'] as const
+export const negativeFixtureStages = ['schema', 'profile', 'correlation', 'dag', 'idempotency', 'proposal', 'acceptance'] as const
 export type NegativeFixtureStage = (typeof negativeFixtureStages)[number]
 
 export const negativeDeliveryFixtureSchema = z.object({
@@ -160,6 +162,8 @@ const negativeFixtureDocuments = {
   'result-manifest.snapshot-for-react': resultManifestSnapshotForReactJson,
   'result-manifest.missing-check-fields': resultManifestMissingCheckFieldsJson,
   'result-manifest.status-skipped': resultManifestStatusSkippedJson,
+  'result-manifest.path-escape': resultManifestPathEscapeJson,
+  'result-manifest.unknown-test': resultManifestUnknownTestJson,
   'reserve.duplicate-key': reserveDuplicateKeyJson,
   'reserve.automatic-mode': reserveAutomaticModeJson,
   'plan-proposal.cycle': planProposalCycleJson,

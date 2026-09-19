@@ -23,6 +23,7 @@ import { LockMode } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
+import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import { DeliveryBaseline, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../../data/entities'
 import { reconcileAttempt, requestCancellation, reserveAttempt } from '../../lib/attempts'
 import { hashBaseline } from '../../lib/baseline'
@@ -53,6 +54,7 @@ import {
   detailCodes,
   expectFrozenBody,
   getHandler,
+  makeAttachmentInspector,
   makeBaseline,
   makeProject,
   matches,
@@ -70,6 +72,7 @@ type Store = {
   tasks: DeliveryTask[]
   baselines: DeliveryBaseline[]
   evidence: DeliveryEvidence[]
+  attachments?: Row[]
 }
 
 let store: Store
@@ -79,6 +82,7 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryTask) return store.tasks as unknown as Row[]
   if (entity === DeliveryBaseline) return store.baselines as unknown as Row[]
   if (entity === DeliveryEvidence) return store.evidence as unknown as Row[]
+  if (entity === Attachment) return store.attachments ?? []
   throw new Error('[internal] unexpected entity in test store')
 }
 
@@ -186,7 +190,11 @@ function makeHarness(options: { orgId?: string; inProcess?: boolean; sub?: strin
   }
   em.fork.mockReturnValue(em)
   em.transactional.mockImplementation(async (work: (tx: EmMock) => Promise<unknown>) => work(em))
-  const services: Record<string, unknown> = { em, dataEngine: { markOrmEntityChange: jest.fn() } }
+  const services: Record<string, unknown> = {
+    em,
+    dataEngine: { markOrmEntityChange: jest.fn() },
+    deliveryOsAttachmentInspector: makeAttachmentInspector(() => store.attachments ?? []),
+  }
   const container = {
     resolve: jest.fn((name: string) => {
       if (name in services) return services[name]
@@ -484,6 +492,172 @@ describe('delivery_os.results.accept', () => {
     expect(store.evidence).toHaveLength(0)
     expect(store.tasks[0].status).toBe('executing')
     expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+  })
+
+  describe('acceptance rules after correlation', () => {
+    const ARTIFACT_ATTACHMENT_ID = '5a5a5a5a-5555-4555-8555-555555555555'
+    const SECOND_ATTACHMENT_ID = '5b5b5b5b-5555-4555-8555-555555555555'
+    const REPORT_SHA = 'a'.repeat(64)
+
+    function storedFile(id: string, overrides: Row = {}): Row {
+      return {
+        id,
+        tenantId: TENANT_ID,
+        organizationId: ORG_ID,
+        mimeType: 'application/json',
+        fileSize: 512,
+        partitionCode: 'privateAttachments',
+        storagePath: `delivery/${id}.json`,
+        storedSha256: REPORT_SHA,
+        unreadable: false,
+        ...overrides,
+      }
+    }
+
+    function manifestWithArtifacts(artifacts: Row[]): Row {
+      return { ...loadResultManifestFixture('git'), artifacts }
+    }
+
+    async function expectRejectedWithoutWrites(payload: Row, status: number, code: string, options: Parameters<typeof makeHarness>[0] = {}) {
+      const before = JSON.stringify(store.tasks)
+      const error = await catchHttpError(() => accept(payload, options))
+      expectFrozenBody(error, status, code)
+      expect(store.evidence).toHaveLength(0)
+      expect(JSON.stringify(store.tasks)).toBe(before)
+      expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+      return error
+    }
+
+    it('accepts changed paths inside the allowed paths and rejects the path-escape fixture with nothing persisted', async () => {
+      const taskPackage = seedGit()
+      const error = await expectRejectedWithoutWrites(input(taskPackage, { manifest: negative('result-manifest.path-escape') }), 422, 'path_not_allowed')
+      expect(error.body.details).toEqual([
+        expect.objectContaining({ path: 'changedPaths.1', code: 'outside_allowed_paths' }),
+        expect.objectContaining({ path: 'changedPaths.2', code: 'outside_allowed_paths' }),
+      ])
+      const accepted = await accept(input(taskPackage))
+      expect(accepted).toMatchObject({ duplicate: false, taskStatus: 'awaiting_review' })
+      expect(store.evidence).toHaveLength(1)
+    })
+
+    it('checks the paths of the locked task row, so narrowed paths reject a new result', async () => {
+      const taskPackage = seedGit({ task: { allowedPaths: ['tests/**'] } })
+      await expectRejectedWithoutWrites(input(taskPackage), 422, 'path_not_allowed')
+    })
+
+    it('still answers duplicate for the identical manifest after the allowed paths were narrowed', async () => {
+      const taskPackage = seedGit()
+      const first = await accept(input(taskPackage))
+      store.tasks[0].allowedPaths = ['tests/**']
+      const replay = await accept(input(taskPackage))
+      expect(replay).toMatchObject({ evidenceId: first.evidenceId, duplicate: true })
+      expect(store.evidence).toHaveLength(1)
+      const other = { ...loadResultManifestFixture('git'), externalRunId: 'another-run' }
+      expectFrozenBody(await catchHttpError(() => accept(input(taskPackage, { manifest: other }))), 409, 'result_conflict')
+    })
+
+    it('rejects an unknown test id and an acceptance criterion of another task', async () => {
+      const taskPackage = seedGit()
+      await expectRejectedWithoutWrites(input(taskPackage, { manifest: negative('result-manifest.unknown-test') }), 422, 'unknown_test_id')
+      const manifest = loadResultManifestFixture('git')
+      manifest.checks[0].acIds = ['AC-001', 'AC-003']
+      const error = await expectRejectedWithoutWrites(input(taskPackage, { manifest }), 422, 'unknown_ac')
+      expect(detailCodes(error)).toEqual(['unknown_ac'])
+    })
+
+    it('accepts a declared test of the baseline that is not mapped to this task', async () => {
+      const taskPackage = seedGit({ task: { acIds: ['AC-001'] } })
+      const manifest = loadResultManifestFixture('git')
+      manifest.checks[1].acIds = []
+      manifest.agentDeclaration = undefined
+      const accepted = await accept(input(taskPackage, { manifest }))
+      expect(accepted.duplicate).toBe(false)
+    })
+
+    it('applies the same rules to the trusted adapter source', async () => {
+      const taskPackage = seedGit()
+      const payload = input(taskPackage, { manifest: negative('result-manifest.path-escape'), source: 'adapter', trustedExecution })
+      await expectRejectedWithoutWrites(payload, 422, 'path_not_allowed', { inProcess: true })
+    })
+
+    it('answers 413 for more changed paths than the limit', async () => {
+      const taskPackage = seedGit()
+      const manifest = { ...loadResultManifestFixture('git'), changedPaths: Array.from({ length: 501 }, (_value, index) => `src/file-${index}.ts`) }
+      const error = await expectRejectedWithoutWrites(input(taskPackage, { manifest }), 413, 'payload_too_large')
+      expect(detailCodes(error)).toEqual(['too_many_changed_paths'])
+    })
+
+    it('accepts a stored artifact with the declared sha256 and keeps its id on the evidence', async () => {
+      const taskPackage = seedGit()
+      store.attachments = [storedFile(ARTIFACT_ATTACHMENT_ID)]
+      const manifest = manifestWithArtifacts([
+        { path: 'reports/vitest-report.json', sha256: REPORT_SHA, attachmentId: ARTIFACT_ATTACHMENT_ID, sizeBytes: 512 },
+        { path: 'reports/coverage.json', sha256: 'c'.repeat(64) },
+      ])
+      await accept(input(taskPackage, { manifest }))
+      expect(store.evidence[0].attachmentIds).toEqual([ARTIFACT_ATTACHMENT_ID])
+    })
+
+    it('rejects a stored artifact whose bytes hash to another sha256', async () => {
+      const taskPackage = seedGit()
+      store.attachments = [storedFile(ARTIFACT_ATTACHMENT_ID, { storedSha256: 'b'.repeat(64) })]
+      const manifest = manifestWithArtifacts([{ path: 'reports/vitest-report.json', sha256: REPORT_SHA, attachmentId: ARTIFACT_ATTACHMENT_ID }])
+      const error = await expectRejectedWithoutWrites(input(taskPackage, { manifest }), 422, 'attachment_hash_mismatch')
+      expect(error.body.details).toEqual([expect.objectContaining({ path: 'artifacts.0.sha256', code: 'sha256_mismatch' })])
+    })
+
+    it('answers foreign_reference for an artifact of another organization, also next to a tampered one', async () => {
+      const taskPackage = seedGit()
+      store.attachments = [
+        storedFile(ARTIFACT_ATTACHMENT_ID, { organizationId: FOREIGN_ORG_ID }),
+        storedFile(SECOND_ATTACHMENT_ID, { storedSha256: 'b'.repeat(64) }),
+      ]
+      const manifest = manifestWithArtifacts([
+        { path: 'reports/vitest-report.json', sha256: REPORT_SHA, attachmentId: ARTIFACT_ATTACHMENT_ID },
+        { path: 'reports/other.json', sha256: REPORT_SHA, attachmentId: SECOND_ATTACHMENT_ID },
+      ])
+      const error = await expectRejectedWithoutWrites(input(taskPackage, { manifest }), 422, 'foreign_reference')
+      expect(detailCodes(error)).toEqual(['attachment_scope_mismatch', 'sha256_mismatch'])
+    })
+
+    it('answers 413 with the artifact wording when the stored files are too large together, before reading any of them', async () => {
+      const taskPackage = seedGit()
+      const ids = Array.from({ length: 7 }, (_value, index) => `5c5c5c5c-5555-4555-8555-55555555555${index}`)
+      store.attachments = ids.map((id) => storedFile(id, { fileSize: 10 * 1024 * 1024 }))
+      const manifest = manifestWithArtifacts(ids.map((attachmentId, index) => ({ path: `reports/r-${index}.json`, sha256: REPORT_SHA, attachmentId })))
+      const { ctx } = makeHarness()
+      const error = await catchHttpError(() => handler().execute(input(taskPackage, { manifest }), ctx))
+      expectFrozenBody(error, 413, 'payload_too_large')
+      expect(error.body.details).toEqual([expect.objectContaining({ path: 'artifacts', code: 'artifacts_total_too_large' })])
+      expect(ctx.container.resolve('deliveryOsAttachmentInspector')).not.toHaveBeenCalled()
+      expect(store.evidence).toHaveLength(0)
+    })
+
+    it('refuses a task that cannot move to awaiting_review before reading stored files', async () => {
+      const taskPackage = seedGit({ task: { status: 'cancelled' } })
+      store.attachments = [storedFile(ARTIFACT_ATTACHMENT_ID)]
+      const manifest = manifestWithArtifacts([{ path: 'reports/vitest-report.json', sha256: REPORT_SHA, attachmentId: ARTIFACT_ATTACHMENT_ID }])
+      const { ctx } = makeHarness()
+      const error = await catchHttpError(() => handler().execute(input(taskPackage, { manifest }), ctx))
+      expectFrozenBody(error, 409, 'invalid_transition')
+      expect(ctx.container.resolve('deliveryOsAttachmentInspector')).not.toHaveBeenCalled()
+    })
+
+    it('does not read stored files on a replay or before the path rule passes', async () => {
+      const taskPackage = seedGit()
+      store.attachments = [storedFile(ARTIFACT_ATTACHMENT_ID)]
+      const artifacts = [{ path: 'reports/vitest-report.json', sha256: REPORT_SHA, attachmentId: ARTIFACT_ATTACHMENT_ID }]
+      const { ctx } = makeHarness()
+      const inspector = ctx.container.resolve('deliveryOsAttachmentInspector') as jest.Mock
+      const escaping = { ...manifestWithArtifacts(artifacts), changedPaths: ['package.json'] }
+      await catchHttpError(() => handler().execute(input(taskPackage, { manifest: escaping }), ctx))
+      expect(inspector).not.toHaveBeenCalled()
+      await handler().execute(input(taskPackage, { manifest: manifestWithArtifacts(artifacts) }), ctx)
+      expect(inspector).toHaveBeenCalledTimes(1)
+      const replay = await handler().execute(input(taskPackage, { manifest: manifestWithArtifacts(artifacts) }), ctx)
+      expect(replay.duplicate).toBe(true)
+      expect(inspector).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('rejects the published foreign-attempt manifest with correlation_mismatch', async () => {

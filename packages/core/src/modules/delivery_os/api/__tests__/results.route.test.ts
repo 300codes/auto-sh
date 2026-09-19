@@ -109,6 +109,32 @@ describe('POST /api/delivery_os/tasks/:id/results', () => {
     expect(routeState.store.evidence).toHaveLength(0)
   })
 
+  it('answers 422 path_not_allowed with one detail per path outside the task scope, then accepts the path inside', async () => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    routeState.store.tasks[0].allowedPaths = ['src/**']
+    const escaping = { ...manifest, changedPaths: ['src/App.tsx', 'package.json'] }
+    const body = await expectFrozenError(await importResult({ attemptId, manifest: escaping }), 422, 'path_not_allowed')
+    expect(body.details).toEqual([expect.objectContaining({ path: 'changedPaths.1', code: 'outside_allowed_paths' })])
+    expect(routeState.store.evidence).toHaveLength(0)
+    expect(routeState.store.tasks[0].status).toBe('executing')
+    const inside = await importResult({ attemptId, manifest: { ...manifest, changedPaths: ['src/App.tsx'] } })
+    expect(inside.status).toBe(201)
+  })
+
+  it('answers 422 unknown_test_id for a check outside the frozen catalogue and 413 for too many changed paths', async () => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    const checks = (manifest.checks as Array<Record<string, unknown>>).map((check, index) =>
+      index === 0 ? { ...check, testId: 'a test nobody declared' } : check,
+    )
+    await expectFrozenError(await importResult({ attemptId, manifest: { ...manifest, checks } }), 422, 'unknown_test_id')
+    const changedPaths = Array.from({ length: 501 }, (_value, index) => `src/file-${index}.ts`)
+    const tooMany = await expectFrozenError(await importResult({ attemptId, manifest: { ...manifest, changedPaths } }), 413, 'payload_too_large')
+    expect((tooMany.details as Array<{ code: string }>)[0].code).toBe('too_many_changed_paths')
+    expect(routeState.store.evidence).toHaveLength(0)
+  })
+
   it('answers 413 payload_too_large for an oversized manifest and for an oversized declared body', async () => {
     seedReadyTask()
     const { attemptId, manifest } = await reservedResult()

@@ -50,7 +50,7 @@ export type TaskPackageInput = {
 
 export type TaskPackageFailure = { ok: false } & DeliveryErrorResult
 
-export type TaskPackageResult = { ok: true; taskPackage: TaskPackageV1 } | TaskPackageFailure
+export type TaskPackageResult = { ok: true; taskPackage: TaskPackageV1; declaredTestIds: string[] } | TaskPackageFailure
 
 export type TaskPackageOptions = { attemptGate?: 'open' | 'none' }
 
@@ -161,5 +161,5 @@ export function buildTaskPackageV1(input: TaskPackageInput, options: TaskPackage
   }
   const parsed = taskPackageV1Schema.safeParse(candidate)
   if (!parsed.success) return { ok: false, ...deliveryErrorFromZod(parsed.error) }
-  return { ok: true, taskPackage: parsed.data }
+  return { ok: true, taskPackage: parsed.data, declaredTestIds: content.data.declaredTests.map((test) => test.testId) }
 }

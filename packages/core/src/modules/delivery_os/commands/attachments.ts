@@ -5,8 +5,16 @@ import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
-import type { AttachmentRef, DeliveryCheckResult, DeliveryErrorResult, ScreenRef } from '../lib/contracts'
 import {
+  buildDeliveryError,
+  type AttachmentRef,
+  type DeliveryCheckResult,
+  type DeliveryErrorResult,
+  type ResultManifestV1,
+  type ScreenRef,
+} from '../lib/contracts'
+import {
+  MAX_BASELINE_TOTAL_ATTACHMENT_BYTES,
   attachmentScopeIssue,
   attachmentUnreadableIssue,
   buildAttachmentVerificationError,
@@ -18,8 +26,10 @@ import {
   normalizeMimeType,
   type AttachmentByteFacts,
   type AttachmentIssue,
+  type AttachmentReference,
   type AttachmentSnapshot,
 } from '../lib/designReview'
+import { collectArtifactReferences } from '../lib/resultAcceptance'
 import type { DeliveryScope } from './shared'
 
 const logger = createLogger('delivery_os')
@@ -42,6 +52,8 @@ export type StorageDriverFactoryLike = {
 export type DraftAttachmentVerification =
   | { ok: true; attachmentIds: string[]; snapshots: Map<string, AttachmentSnapshot> }
   | ({ ok: false } & DeliveryErrorResult)
+
+export type ResultArtifactVerification = { ok: true; attachmentIds: string[] } | ({ ok: false } & DeliveryErrorResult)
 
 export function createDeliveryAttachmentInspector(resolveFactory: () => StorageDriverFactoryLike): DeliveryAttachmentInspector {
   return async (attachment, scope) => {
@@ -66,19 +78,18 @@ async function inspectOrNull(
   try {
     return await inspect(attachment, scope)
   } catch (error) {
-    logger.warn('Stored attachment could not be read for baseline verification', { attachmentId: attachment.id, err: error })
+    logger.warn('Stored attachment could not be read for verification', { attachmentId: attachment.id, err: error })
     getTelemetryRuntime()?.reportError(error, { module: 'delivery_os', code: 'delivery_os.attachment_unreadable' })
     return null
   }
 }
 
-export async function verifyDraftAttachments(
+export async function verifyAttachmentReferences(
   tx: EntityManager,
   ctx: CommandRuntimeContext,
-  draft: { screens: readonly ScreenRef[]; attachments: readonly AttachmentRef[] },
+  references: readonly AttachmentReference[],
   scope: DeliveryScope,
 ): Promise<DraftAttachmentVerification> {
-  const references = collectAttachmentReferences(draft)
   const attachmentIds = [...new Set(references.map((reference) => reference.attachmentId))]
   if (attachmentIds.length === 0) return { ok: true, attachmentIds, snapshots: new Map() }
 
@@ -120,4 +131,36 @@ export async function verifyDraftAttachments(
   const verdict: DeliveryCheckResult = buildAttachmentVerificationError(issues)
   if (!verdict.ok) return verdict
   return { ok: true, attachmentIds, snapshots }
+}
+
+export function verifyDraftAttachments(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  draft: { screens: readonly ScreenRef[]; attachments: readonly AttachmentRef[] },
+  scope: DeliveryScope,
+): Promise<DraftAttachmentVerification> {
+  return verifyAttachmentReferences(tx, ctx, collectAttachmentReferences(draft), scope)
+}
+
+export async function verifyResultArtifacts(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  artifacts: ResultManifestV1['artifacts'],
+  scope: DeliveryScope,
+): Promise<ResultArtifactVerification> {
+  const verified = await verifyAttachmentReferences(tx, ctx, collectArtifactReferences(artifacts), scope)
+  if (verified.ok) return { ok: true, attachmentIds: verified.attachmentIds }
+  if (verified.body.code === 'payload_too_large') {
+    return {
+      ok: false,
+      ...buildDeliveryError('payload_too_large', 'The stored artifacts are too large together', [
+        { path: 'artifacts', code: 'artifacts_total_too_large', message: `All stored artifacts together may have at most ${MAX_BASELINE_TOTAL_ATTACHMENT_BYTES} bytes` },
+      ]),
+    }
+  }
+  if (verified.body.code !== 'attachment_scope_mismatch') return verified
+  return {
+    ok: false,
+    ...buildDeliveryError('foreign_reference', 'An artifact points at a file that is not available in this organization', verified.body.details),
+  }
 }

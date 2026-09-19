@@ -17,6 +17,7 @@ import { evaluateResultAcceptance } from '../lib/resultAcceptance'
 import { canTransition } from '../lib/taskLifecycle'
 import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/trustedExecution'
 import { emitDeliveryOsEvent } from '../events'
+import { verifyResultArtifacts } from './attachments'
 import { loadTaskPackage } from './attemptQueries'
 import {
   assertDeliveryCheck,
@@ -135,6 +136,8 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
         assertDeliveryCheck(
           canTransition(task.status, 'awaiting_review', { source: 'command', statusReason: task.statusReason ?? null }),
         )
+        const artifacts = await verifyResultArtifacts(tx, ctx, evaluation.manifest.artifacts, scope)
+        if (!artifacts.ok) throw deliveryHttpError(artifacts)
         const evidenceId = randomUUID()
         const recorded = recordAttemptResult(register, {
           attemptId: parsed.attemptId,
@@ -159,7 +162,7 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
           payload: evaluation.manifest,
           payloadHash: evaluation.manifestHash,
           rawReportHash: null,
-          attachmentIds: [],
+          attachmentIds: artifacts.attachmentIds,
           recordedBy: recordedBy.success ? recordedBy.data : null,
         })
         tx.persist(evidence)

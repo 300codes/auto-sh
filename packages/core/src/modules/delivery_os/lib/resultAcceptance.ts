@@ -1,3 +1,4 @@
+import { isPathAllowed } from './allowedPaths'
 import { checkAttemptAcceptsResult } from './attempts'
 import {
   DELIVERY_SCHEMA_VERSIONS,
@@ -13,8 +14,10 @@ import {
   type ResultManifestV1,
   type TaskPackageV1,
 } from './contracts'
+import type { AttachmentReference } from './designReview'
 import { hashCanonical } from './hash'
-import { assertRevisionKind, getTargetProfile } from './targetProfiles'
+import { checkReportedChecks } from './resultChecks'
+import { assertRevisionKind, getTargetProfile, type TargetProfile } from './targetProfiles'
 import type { TaskPackageResult } from './taskPackage'
 
 type CorrelatedField = 'projectId' | 'taskId' | 'attemptId' | 'baselineId' | 'baselineHash' | 'targetProfileVersion' | 'baseRevision'
@@ -69,25 +72,88 @@ export type ResultAcceptanceOutcome =
   | { ok: true; outcome: 'duplicate'; evidenceId: string; manifestHash: string }
   | ({ ok: false } & DeliveryErrorResult)
 
-export type PendingResultCheckContext = {
+export type ResultAcceptanceCheckContext = {
   manifest: ResultManifestV1
   task: ResultAcceptanceTask
   taskPackage: TaskPackageV1
+  profile: TargetProfile
+  declaredTestIds: readonly string[]
 }
 
-export type PendingResultCheck = (context: PendingResultCheckContext) => DeliveryCheckResult
+export type ResultAcceptanceCheck = (context: ResultAcceptanceCheckContext) => DeliveryCheckResult
 
-export const checkChangedPathsAllowed: PendingResultCheck = () => ({ ok: true })
+export const MAX_RESULT_CHANGED_PATHS = 500
+export const MAX_RESULT_CHECKS = 500
+export const MAX_RESULT_ARTIFACTS = 50
+export const MAX_RESULT_ARTIFACT_BYTES = 10 * 1024 * 1024
+export const MAX_RESULT_TOTAL_ARTIFACT_BYTES = 64 * 1024 * 1024
 
-export const checkArtifactAttachments: PendingResultCheck = () => ({ ok: true })
+export const checkResultSizeLimits: ResultAcceptanceCheck = ({ manifest }) => {
+  const details: DeliveryErrorDetail[] = []
+  const countLimits = [
+    { path: 'changedPaths', code: 'too_many_changed_paths', count: manifest.changedPaths.length, max: MAX_RESULT_CHANGED_PATHS },
+    { path: 'checks', code: 'too_many_checks', count: manifest.checks.length, max: MAX_RESULT_CHECKS },
+    { path: 'artifacts', code: 'too_many_artifacts', count: manifest.artifacts.length, max: MAX_RESULT_ARTIFACTS },
+  ]
+  for (const limit of countLimits) {
+    if (limit.count > limit.max) {
+      details.push({ path: limit.path, code: limit.code, message: `At most ${limit.max} entries are accepted, received ${limit.count}` })
+    }
+  }
+  manifest.artifacts.forEach((artifact, index) => {
+    if ((artifact.sizeBytes ?? 0) > MAX_RESULT_ARTIFACT_BYTES) {
+      details.push({ path: `artifacts.${index}.sizeBytes`, code: 'artifact_too_large', message: `An artifact may have at most ${MAX_RESULT_ARTIFACT_BYTES} bytes` })
+    }
+  })
+  const totalBytes = manifest.artifacts.reduce((sum, artifact) => sum + (artifact.sizeBytes ?? 0), 0)
+  if (totalBytes > MAX_RESULT_TOTAL_ARTIFACT_BYTES) {
+    details.push({ path: 'artifacts', code: 'artifacts_total_too_large', message: `All artifacts together may have at most ${MAX_RESULT_TOTAL_ARTIFACT_BYTES} bytes` })
+  }
+  if (details.length === 0) return { ok: true }
+  return { ok: false, ...buildDeliveryError('payload_too_large', 'The result is too large', details) }
+}
 
-export const checkResultSizeLimits: PendingResultCheck = () => ({ ok: true })
+export const checkChangedPathsAllowed: ResultAcceptanceCheck = ({ manifest, task }) => {
+  const details = manifest.changedPaths.flatMap((changedPath, index): DeliveryErrorDetail[] =>
+    isPathAllowed(changedPath, task.allowedPaths)
+      ? []
+      : [{ path: `changedPaths.${index}`, code: 'outside_allowed_paths', message: `${changedPath} is outside the allowed paths of this task` }],
+  )
+  if (details.length === 0) return { ok: true }
+  return { ok: false, ...buildDeliveryError('path_not_allowed', 'The result changes files outside the allowed paths of this task', details) }
+}
 
-export const RESULT_ACCEPTANCE_PENDING_CHECKS: readonly PendingResultCheck[] = [
-  checkChangedPathsAllowed,
-  checkArtifactAttachments,
+export const checkResultChecks: ResultAcceptanceCheck = ({ manifest, taskPackage, profile, declaredTestIds }) =>
+  checkReportedChecks({
+    checks: manifest.checks,
+    resultRevision: manifest.resultRevision,
+    validationProfile: taskPackage.validationProfile,
+    acceptanceCriteriaIds: taskPackage.acceptanceCriteria.map((criterion) => criterion.id),
+    knownTestIds: [
+      ...Object.values(taskPackage.validationProfile.requiredTests).flat(),
+      ...declaredTestIds,
+      ...profile.testCatalogue.map((test) => test.testId),
+    ],
+  })
+
+export const RESULT_ACCEPTANCE_CHECKS: readonly ResultAcceptanceCheck[] = [
   checkResultSizeLimits,
+  checkChangedPathsAllowed,
+  checkResultChecks,
 ]
+
+export function collectArtifactReferences(artifacts: ResultManifestV1['artifacts']): AttachmentReference[] {
+  return artifacts.flatMap((artifact, index): AttachmentReference[] =>
+    artifact.attachmentId
+      ? [{
+          path: `artifacts.${index}`,
+          role: 'attachment',
+          attachmentId: artifact.attachmentId,
+          declared: { sha256: artifact.sha256, sizeBytes: artifact.sizeBytes },
+        }]
+      : [],
+  )
+}
 
 const resultManifestSchemas = { [DELIVERY_SCHEMA_VERSIONS.resultManifest]: resultManifestV1Schema }
 
@@ -137,8 +203,9 @@ export function evaluateResultAcceptance(input: ResultAcceptanceInput): ResultAc
   const correlation = checkResultCorrelation(taskPackage, manifest)
   if (!correlation.ok) return correlation
 
-  for (const pendingCheck of RESULT_ACCEPTANCE_PENDING_CHECKS) {
-    const checked = pendingCheck({ manifest, task: input.task, taskPackage })
+  const context = { manifest, task: input.task, taskPackage, profile, declaredTestIds: input.taskPackage.declaredTestIds }
+  for (const acceptanceCheck of RESULT_ACCEPTANCE_CHECKS) {
+    const checked = acceptanceCheck(context)
     if (!checked.ok) return checked
   }
   return { ok: true, outcome: 'accept', manifest, manifestHash }

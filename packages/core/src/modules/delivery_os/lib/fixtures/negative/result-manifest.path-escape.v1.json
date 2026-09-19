@@ -1,0 +1,139 @@
+{
+  "description": "A result that also changes files outside the task allowedPaths (src/**, tests/**): the dependency manifest and a CI workflow. Rejected with one detail per offending path; nothing is persisted.",
+  "expected": {
+    "stage": "acceptance",
+    "code": "path_not_allowed",
+    "status": 422
+  },
+  "documentType": "versioned",
+  "correlatesWith": "task-package",
+  "document": {
+    "schemaVersion": "delivery.result-manifest/v1",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "taskId": "22222222-2222-4222-8222-222222222222",
+    "attemptId": "33333333-3333-4333-8333-333333333333",
+    "baselineId": "44444444-4444-4444-8444-444444444444",
+    "baselineHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+    "targetProfileVersion": 1,
+    "externalRunId": "fake-run-33333333-3333-4333-8333-333333333333",
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+    },
+    "resultRevision": {
+      "kind": "git",
+      "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+    },
+    "baseCommit": "687670c20c93d6a60c2ab494419ec38636cf0a8c",
+    "resultCommit": "cabd0065259e3397d795a8431b9999ea4895be94",
+    "changedPaths": [
+      "src/ServiceCatalogue.tsx",
+      "package.json",
+      ".github/workflows/deploy.yml"
+    ],
+    "artifacts": [
+      {
+        "path": "reports/vitest-report.json",
+        "sha256": "d46fd41a1536da8b4e36ee28cbf2540c05b22713911f97669186182e380b23d9"
+      }
+    ],
+    "checks": [
+      {
+        "checkId": "unit-tests-1",
+        "testId": "service catalogue AC-001: service list renders seeded services",
+        "acIds": [
+          "AC-001"
+        ],
+        "commandProfileId": "vitest-report",
+        "testDefinitionHash": "ace813de0011021d2ba47f784677ff4553df144fa3383451be501305e4356bee",
+        "rawReportHash": "8d6bd19619f04ac622ba284d0ad08f90c52bcd65d4fd2c7abec58fe07803467d",
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000,
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+        }
+      },
+      {
+        "checkId": "unit-tests-2",
+        "testId": "service catalogue AC-002: category filter narrows the list",
+        "acIds": [
+          "AC-002"
+        ],
+        "commandProfileId": "vitest-report",
+        "testDefinitionHash": "3e9b3cfe2d4035590e375a5d36ad801af29864dfc64b2671abf234632b1d9900",
+        "rawReportHash": "e8ab0bd2123df3012dd74de61ddcbd2221ed349f049955ce3003424dec8edce3",
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000,
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+        }
+      },
+      {
+        "checkId": "build",
+        "testId": "build",
+        "acIds": [],
+        "commandProfileId": "vite-build",
+        "testDefinitionHash": "77a3702aa3eda202b1ff61bc262f520783e47221197b5f4794af1b5313bdd350",
+        "rawReportHash": "80a1a807826cca0895df3e55a5a7750569d07a250d14cb338a2b87dba786826c",
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000,
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+        }
+      },
+      {
+        "checkId": "lint",
+        "testId": "lint",
+        "acIds": [],
+        "commandProfileId": "oxlint",
+        "testDefinitionHash": "f10fa12f829abd17b955c268ce19d24a0386aead9472e613959620c406748923",
+        "rawReportHash": "be10ddf349489089e98b41c6fda1e72e58189338b9d1cea5e66f379a129abbb4",
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000,
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+        }
+      },
+      {
+        "checkId": "dependency-audit",
+        "testId": "dependency-audit",
+        "acIds": [],
+        "commandProfileId": "npm-audit",
+        "testDefinitionHash": "074fbe2b55421206ff31267d3c911ce4c0579aab53e3f79413f7bf4eaf1c93e1",
+        "rawReportHash": "a48bf5be3c4735b5a26fa6da503cf5facb7c8b3a3e2e5a60dc61c17f652f543f",
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000,
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "cabd0065259e3397d795a8431b9999ea4895be94"
+        }
+      }
+    ],
+    "agentDeclaration": {
+      "summary": "Deterministic fake executor result",
+      "claimedAcIds": [
+        "AC-001",
+        "AC-002"
+      ]
+    },
+    "findings": [],
+    "usage": {
+      "source": "runner",
+      "values": "unknown"
+    }
+  }
+}

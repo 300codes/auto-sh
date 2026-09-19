@@ -15,10 +15,11 @@ import {
   type PlanProposalV1,
   type ResultManifestV1,
   type SourceRevision,
+  type TaskPackageV1,
 } from '../contracts'
 import { hashCanonical } from '../hash'
 import { checkAcyclic } from '../dag'
-import { checkResultCorrelation } from '../resultAcceptance'
+import { RESULT_ACCEPTANCE_CHECKS, checkResultCorrelation } from '../resultAcceptance'
 import { validatePlanProposal } from '../proposals'
 import { assertRevisionKind, checkAllowedPathsForProfile, getTargetProfile, type TargetProfile } from '../targetProfiles'
 import {
@@ -101,6 +102,17 @@ function runProposalStage(document: unknown): DeliveryCheckResult {
   return result.ok ? { ok: true } : result
 }
 
+function runAcceptanceStage(taskPackage: TaskPackageV1, manifest: ResultManifestV1): DeliveryCheckResult {
+  const context = {
+    manifest,
+    task: { id: taskPackage.taskId, allowedPaths: taskPackage.allowedPaths },
+    taskPackage,
+    profile: requireProfile(taskPackage.targetProfileId, taskPackage.targetProfileVersion),
+    declaredTestIds: loadBaselineContentFixture().declaredTests.map((test) => test.testId),
+  }
+  return RESULT_ACCEPTANCE_CHECKS.map((check) => check(context)).find((result) => !result.ok) ?? { ok: true }
+}
+
 function runLabelledStage(fixture: NegativeDeliveryFixture, data: unknown): DeliveryCheckResult {
   const schemaVersion = (data as { schemaVersion?: string } | undefined)?.schemaVersion ?? ''
   switch (fixture.expected.stage) {
@@ -118,6 +130,10 @@ function runLabelledStage(fixture: NegativeDeliveryFixture, data: unknown): Deli
       return runIdempotencyStage(data as { idempotencyKey: string; first: unknown; second: unknown })
     case 'proposal':
       return runProposalStage(fixture.document)
+    case 'acceptance': {
+      if (!fixture.correlatesWith) throw new Error('[internal] acceptance fixture without correlatesWith')
+      return runAcceptanceStage(taskPackages[fixture.correlatesWith], data as ResultManifestV1)
+    }
     default:
       throw new Error(`[internal] unexpected stage ${fixture.expected.stage}`)
   }
@@ -218,6 +234,8 @@ describe('negative delivery fixtures', () => {
       'proposal:foreign_reference',
       'proposal:path_not_allowed',
       'proposal:unknown_test_id',
+      'acceptance:path_not_allowed',
+      'acceptance:unknown_test_id',
     ]) {
       expect(labels).toContain(label)
     }
@@ -264,6 +282,8 @@ describe('negative delivery fixtures', () => {
     const body = { mode: 'manual_handoff', baseRevision: loadTaskPackageFixture().baseRevision }
     expect(runIdempotencyStage({ idempotencyKey: 'k', first: body, second: { ...body } })).toEqual({ ok: true })
     expect(reserveAttemptRequestSchema.safeParse(body).success).toBe(true)
+    expect(runAcceptanceStage(loadTaskPackageFixture('git'), loadResultManifestFixture('git'))).toEqual({ ok: true })
+    expect(runAcceptanceStage(loadTaskPackageFixture('snapshot'), loadResultManifestFixture('snapshot'))).toEqual({ ok: true })
   })
 })
 
