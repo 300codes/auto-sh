@@ -24,3 +24,5 @@ Zoptymalizowane wdrożenie dla czterech developerów w 36 godzin, na podstawie s
 Zakres i sześć etapów zatwierdzone przez użytkownika. Status `plan_reviewed` oznacza zakończony przegląd dokumentacji; nie oznacza wykonania testów ani integracji. Stan wdrożenia należy prowadzić wyłącznie w sekcji Progress planu.
 
 Korekta WP z 2026-09-19: własne narzędzia Studio w OM i nowa witryna, bez starego API/runtime/DB/kolejki/projektów. Szczegół WP-M01 oraz niezależnych prac: [plan narzędzi Studio](../wordpress-studio-tools/plan.md). Maksymalnie 6 h łącznie; podłączenie OSS/enterprise i odbiór PoC pozostają zależne. Ta synchronizacja nie zalicza żadnego Progress ani E2E.
+
+- [Audyt kompletności UI i procesu](workstreams/ui-completeness/research.md) — materiały przeniesione z `delivery-design-ui-completeness`; plan domknięcia w przygotowaniu.
