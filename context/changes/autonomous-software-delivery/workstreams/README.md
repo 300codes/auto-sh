@@ -4,6 +4,8 @@ Data rozpiski: 2026-09-19. Źródło: [zatwierdzony plan po review](../plan.md).
 
 Drzewo kolejności i rozgałęzień: [task-tree.md](task-tree.md).
 
+Aktualny przydział po nocnych branchach: [kolejna runda — 2026-09-19](next-tasks-2026-09-19.md).
+
 ## Plany do podziału w zespole
 
 | Plan | Zakres | Bazowy nakład | Dostęp do WP |

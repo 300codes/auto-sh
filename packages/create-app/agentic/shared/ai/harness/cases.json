@@ -13024,7 +13024,7 @@
     "mode": "one-shot",
     "evaluationKind": "routing",
     "risk": "high",
-    "prompt": "Show live progress for a long assistant job and let users cancel or resume it without repeating completed work or losing the result.",
+    "prompt": "Show live progress for a long assistant job and let users cancel or resume it without repeating completed work or losing the result. The job executes a Delivery OS task: read the shipped delivery_os module fact-sheet before designing the integration, reuse its existing execution-attempt and result-evidence contracts, and distinguish a cancellation request from confirmed stopping. Reconcile an unknown attempt before allowing another execution; do not create a parallel attempt ledger.",
     "tags": [
       "business-language",
       "operation-progress",
@@ -13059,7 +13059,8 @@
         ".ai/guides/ai-workflows.md",
         ".ai/skills/om-build-workflow/SKILL.md",
         ".ai/guides/modules/workflows/index.md",
-        ".ai/guides/modules/progress/index.md"
+        ".ai/guides/modules/progress/index.md",
+        ".ai/guides/modules/delivery_os/index.md"
       ],
       "allowedExtra": [
         ".ai/guides/modules/ai_assistant/index.md"

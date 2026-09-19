@@ -31,7 +31,7 @@ export async function scaffoldTheme(sitePath: string, themeSlug: string, title: 
     for (const [relativePath, content] of Object.entries(files)) {
       await writeFile(join(themePath, relativePath), content, { flag: 'wx', mode: 0o600 })
     }
-    return { themePath, files: Object.keys(files).sort() }
+    return { themePath, files: Object.keys(files).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0)) }
   } catch {
     throw new Error('[internal] Theme scaffold failed')
   }

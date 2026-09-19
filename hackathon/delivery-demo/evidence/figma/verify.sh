@@ -120,7 +120,7 @@ if [[ -z $repo_root ]]; then
   check "brak wzorców sekretów w hackathon/delivery-demo" fail \
     "skan nie wykonał się — katalog nie jest repozytorium git"
 else
-  scan_hits=$(git -C "$repo_root" grep -nIE "$SECRET_PATTERN" -- hackathon/delivery-demo 2>&1)
+  scan_hits=$(git -C "$repo_root" grep --no-index -lIE "$SECRET_PATTERN" -- hackathon/delivery-demo 2>&1)
   scan_status=$?
   case $scan_status in
     0) check "brak wzorców sekretów w hackathon/delivery-demo" fail \

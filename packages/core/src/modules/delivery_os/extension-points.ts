@@ -11,7 +11,7 @@ export const extensionPoints = defineModuleExtensionPoints({
       spotId: 'delivery_os.project.execution',
       supported: ['render-widget'],
       contextContract: 'delivery_os.project.execution.v1',
-      source: 'backend/delivery/projects/[id]/page.tsx',
+      source: 'backend/delivery/projects/[id]/DeliveryProjectDetailClient.tsx',
     }),
   },
 })

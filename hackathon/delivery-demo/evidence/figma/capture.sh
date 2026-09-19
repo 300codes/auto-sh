@@ -38,22 +38,23 @@ fi
 
 render_name="${op}-$(printf '%s' "$node_id" | tr -c 'A-Za-z0-9._-' '-').png"
 
-curl --fail --silent --show-error --location --remove-on-error --max-time 60 --output "$render_name" "$render_url"
+render_temp=$(mktemp "./.capture-render.XXXXXX")
+trap 'rm -f "$render_temp"' EXIT
 
-if ! file --brief --mime-type "$render_name" | grep -qx 'image/png'; then
-  echo "error: $render_name nie jest plikiem PNG ($(file --brief "$render_name"))" >&2
-  rm -f "$render_name"
+curl --fail --silent --show-error --location --remove-on-error --max-time 60 --output "$render_temp" "$render_url"
+
+if ! file --brief --mime-type "$render_temp" | grep -qx 'image/png'; then
+  echo "error: $render_name nie jest plikiem PNG ($(file --brief "$render_temp"))" >&2
   exit 1
 fi
 
-bytes=$(stat -c %s "$render_name")
+bytes=$(stat -c %s "$render_temp")
 if (( bytes > MAX_BYTES )); then
   echo "error: $render_name ma $bytes B, limit to $MAX_BYTES B" >&2
-  rm -f "$render_name"
   exit 1
 fi
 
-sha=$(sha256sum "$render_name" | cut -d' ' -f1)
+sha=$(sha256sum "$render_temp" | cut -d' ' -f1)
 captured_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 prompt_text=""
 [[ -f $prompts_file ]] && prompt_text="patrz $prompts_file → krok $op"
@@ -100,7 +101,10 @@ jq \
       + [{op: $op, nodeId: $nodeId, prompt: $prompt, render: $render,
           sha256: $sha256, bytes: $bytes, at: $at, renderUrl: $url}]
   | .steps |= sort_by(if .op == "create" then 0 else 1 end)
-  ' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
+  ' manifest.json > manifest.json.tmp
+
+mv -- "$render_temp" "$render_name"
+mv manifest.json.tmp manifest.json
 
 # SHA256SUMS odtwarzany z manifestu, żeby oba pliki nie mogły się rozjechać.
 jq -r '.steps[] | "\(.sha256)  \(.render)"' manifest.json > SHA256SUMS

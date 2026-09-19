@@ -1,8 +1,8 @@
 ---
 date: 2026-09-19
 phase: EXEC-01
-status: complete
-decision: automatic
+status: pending_worker_validation
+decision: automatic_candidate
 ---
 
 # EXEC-01 Readiness Report
@@ -11,7 +11,7 @@ decision: automatic
 
 Cezar v0.11.0 działa headless na tym hoście (`npx cezar-cli run "<task>"`). Claude Code jest zalogowany. Live probe zakończony sukcesem: output `EXEC-01-PROBE-OK`, zero zmian plików (`diffStat: files=0`), worktree izolowany w `.ai/cezar/worktrees/`. Redis container (mercato-redis) działa na porcie 6379. `.env.local` z `QUEUE_STRATEGY=async`, `REDIS_URL=redis://localhost:6379` i `OM_WORKERS_DB_CONNECTION_BUDGET=10` został utworzony. Cezar zainicjalizowany (`cezar init`).
 
-**Decyzja: `automatic`** — wszystkie warunki kryterium 1.6 spełnione.
+**Kandydat: `automatic`** — probe CLI zaliczony; kryterium 1.6 czeka na rzeczywisty start workera i log efektywnej współbieżności ≥ 2. Dowody dotyczą stanowiska autora raportu (macOS), nie każdego klona repozytorium.
 
 ---
 
@@ -221,11 +221,12 @@ Wszystkie trzy subagenty zgodne w kwestii DB_POOL_MAX=20 i per-job connection pa
 | Exit codes / output format verified | ✓ live probe: exit 0, format plain text z markerami | ✓ |
 | `.ai/cezar/` initialized | ✓ `cezar init` wykonany | ✓ |
 | DB budget zaplanowany | ✓ `OM_WORKERS_DB_CONNECTION_BUDGET=10` w `.env.local` | ✓ |
+| Efektywna współbieżność workera ≥ 2 | Brak logu uruchomienia i próby dwóch zadań | PENDING |
 | Zero zmian plików w probe | ✓ `diffStat: files=0, adds=0, dels=0` | ✓ |
 
-### DECISION: **automatic** ✓
+### DECISION: **automatic — pending worker validation**
 
-Wszystkie warunki kryterium 1.6 są spełnione:
+Potwierdzono konfigurację i probe CLI; nie potwierdzono jeszcze wszystkich warunków 1.6:
 - `QUEUE_STRATEGY=async` ustawione
 - Redis osiągalny (`redis://localhost:6379`)
 - Plan budżetu DB zapisany (`OM_WORKERS_DB_CONNECTION_BUDGET=10`)
@@ -279,7 +280,7 @@ EXEC-01 EVIDENCE (final):
 
 ## 7. Blockers / Unknowns
 
-Wszystkie poprzednie blockery rozwiązane. Pozostające UNKNOWN:
+Probe CLI usunął blocker dostępności Cezara. Walidacja workera pozostaje otwarta. Pozostałe UNKNOWN:
 
 | # | Item | Type | Wpływ |
 |---|---|---|---|
@@ -287,13 +288,13 @@ Wszystkie poprzednie blockery rozwiązane. Pozostające UNKNOWN:
 | U2 | Codex nie dostępny | N/A | Brak wpływu — Claude Code wystarczy (✓ zalogowany) |
 | U3 | Cezar exit code przy błędzie | Unknown | Wymaga oddzielnego testu błędu — niekrytyczne dla EXEC-01 |
 
-**Brak aktywnych blockerów dla trybu automatic.**
+**Tryb automatic nie ma jeszcze pełnego potwierdzenia runtime; konfiguracja nie zastępuje logu workera.**
 
 ---
 
 ## 8. Recommended Next Steps for EXEC-02
 
-EXEC-01 zamknięty. Środowisko gotowe.
+EXEC-01 częściowo ukończony: CLI działa, gotowość współbieżnej kolejki czeka na weryfikację.
 
 ### Przed pierwszym prawdziwym runem Cezara (w EXEC-02)
 
@@ -307,8 +308,8 @@ EXEC-01 zamknięty. Środowisko gotowe.
 
 ## Progress Update
 
-Po ukończeniu EXEC-01 z live probe i konfiguracją:
+Po live probe i konfiguracji (aktualizacja po przeglądzie integracyjnym):
 
-- [x] 1.1 — DONE: wersja v0.11.0 potwierdzona, exit code 0 z live probe, tryb automatic
+- [ ] 1.1 — PARTIAL: wersja v0.11.0 i exit code 0 z live probe potwierdzone; automatic jest kandydatem. Pełne 1.1 wymaga także wyboru previewTargetRef i pozostałych ustaleń planu.
 - [ ] 1.4 — manual: wymaga potwierdzenia przez zespół (poza zakresem agenta)
-- [x] 1.6 — DONE: QUEUE_STRATEGY=async ✓, Redis localhost:6379 ✓, plan budżetu OM_WORKERS_DB_CONNECTION_BUDGET=10 ✓, efektywna współbieżność ≥ 2 dla kolejki delivery-execute ✓
+- [ ] 1.6 — PENDING: konfiguracja async/Redis/budżetu udokumentowana; wymagany log efektywnej współbieżności ≥ 2 z uruchomionego workera delivery-execute.

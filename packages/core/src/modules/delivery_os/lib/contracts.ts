@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MAX_CANONICAL_DEPTH, SHA256_HEX_PATTERN } from './hash'
+import { MAX_CANONICAL_DEPTH, SHA256_HEX_PATTERN } from './canonicalConstants'
 
 export const DELIVERY_CONTRACT_VERSION = 1
 

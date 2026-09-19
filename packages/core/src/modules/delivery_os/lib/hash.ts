@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
+import { MAX_CANONICAL_DEPTH } from './canonicalConstants'
 
-export const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
-export const MAX_CANONICAL_DEPTH = 64
+export { MAX_CANONICAL_DEPTH, SHA256_HEX_PATTERN } from './canonicalConstants'
 
 type CanonicalValue = null | boolean | number | string | CanonicalValue[] | { [key: string]: CanonicalValue }
 
@@ -34,7 +34,7 @@ function toCanonicalValue(value: unknown, ancestors: Set<object>): CanonicalValu
     }
     const source = value as Record<string, unknown>
     const result: { [key: string]: CanonicalValue } = Object.create(null)
-    for (const key of Object.keys(source).sort()) {
+    for (const key of Object.keys(source).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) {
       const entry = source[key]
       if (entry === undefined) continue
       result[key] = toCanonicalValue(entry, ancestors)

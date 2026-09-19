@@ -38,7 +38,7 @@ export type DeploymentVerificationFacts = {
 const TEST_EVIDENCE_CHECKS_PATH_PREFIX = 'payload.checks.'
 
 export function normalizeAttachmentIds(attachmentIds: readonly string[]): string[] {
-  return [...new Set(attachmentIds.map((attachmentId) => attachmentId.toLowerCase()))].sort()
+  return [...new Set(attachmentIds.map((attachmentId) => attachmentId.toLowerCase()))].sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
 }
 
 export function hashEvidenceIdentity(identity: EvidenceIdentity): string | null {
