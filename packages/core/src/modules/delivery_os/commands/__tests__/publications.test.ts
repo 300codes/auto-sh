@@ -251,8 +251,10 @@ function projectLock(): Record<string, string> {
 type HarnessOptions = { headers?: Record<string, string>; orgId?: string; failPublicationPersist?: boolean }
 
 /**
- * The kit `persist` mock routes by shape; publications and evidence get their own arrays and sequential ids. The
- * fake transaction snapshots the store and restores it when the work throws, mirroring a database rollback.
+ * The kit `persist` mock routes by shape; publications and evidence get their own arrays and sequential ids. A
+ * publication gets no id from `create` (its key is database-generated), so the command must assign it before the flush,
+ * as on a real database. The fake transaction snapshots the store and restores it when the work throws, mirroring a
+ * database rollback.
  */
 function harness(options: HarnessOptions = {}) {
   const rbacService = { getGrantedFeatures: jest.fn(async () => grantedFeatures) }
@@ -262,7 +264,8 @@ function harness(options: HarnessOptions = {}) {
     services: { rbacService, deliveryOsReportQueries: createDeliveryOsReportQueries(makeHarness(store).em as never) },
   })
   const em: EmMock = built.em
-  em.create.mockImplementation((_entity: unknown, data: Row) => {
+  em.create.mockImplementation((entity: unknown, data: Row) => {
+    if (entity === DeliveryPublication) return { ...data }
     createSeq += 1
     return { id: `cccccccc-cccc-4ccc-8ccc-${String(createSeq).padStart(12, '0')}`, ...data }
   })
@@ -367,6 +370,7 @@ describe('delivery_os.publications.record — happy path (F14, UA-43)', () => {
     const [evidence] = deployments
     const [stored] = store.publications
     expect(result).toEqual({ publicationId: stored.id, deploymentEvidenceId: evidence.id, duplicate: false })
+    expect(result.publicationId).toMatch(/^[0-9a-f-]{36}$/)
     expect(stored).toMatchObject({
       tenantId: TENANT_ID,
       organizationId: ORG_ID,

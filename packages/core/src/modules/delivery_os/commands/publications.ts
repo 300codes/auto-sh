@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
@@ -200,6 +201,7 @@ async function recordPublicationInTransaction(
   const recorded = await recordEvidenceWithinTransaction(tx, ctx, project, toDeploymentEvidenceInput(publication), scope)
   const now = new Date()
   const row = tx.create(DeliveryPublication, {
+    id: randomUUID(),
     tenantId: scope.tenantId,
     organizationId: scope.organizationId,
     projectId: project.id,
