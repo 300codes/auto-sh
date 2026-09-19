@@ -88,12 +88,16 @@ export const DELIVERY_BRIEF_STRUCTURER_KEY = 'deliveryBriefStructurer'
 
 export type BriefStructuringRequest = { brief: string; targetProfileId: string }
 
+export type JsonCompletionRequest = { system: string; prompt: string }
+
 /**
- * Optional peer that structures a brief with something other than a configured API model — the enterprise module
- * registers one that drives the operator's logged-in agent CLI. Returning null means "not available here".
+ * Optional peer that answers with a JSON object using something other than a configured API model — the enterprise
+ * module registers one that drives the operator's logged-in agent CLI. Returning null means "not available here", so
+ * the caller can fall back to a configured model.
  */
 export type DeliveryBriefStructurer = {
   structure(request: BriefStructuringRequest): Promise<unknown | null>
+  completeJson?(request: JsonCompletionRequest): Promise<unknown | null>
 }
 
 export function tryResolveBriefStructurer(container: { resolve: (name: string) => unknown }): DeliveryBriefStructurer | null {

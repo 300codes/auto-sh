@@ -59,3 +59,20 @@ describe('CLI brief structurer', () => {
     expect(calls.map((call) => call.bin)).toEqual(['codex'])
   })
 })
+
+describe('CLI JSON completion', () => {
+  const answer = { summary: 'A five-page site' }
+
+  it('sends the system prompt and the request to the connected CLI', async () => {
+    const { run, calls } = runner({ claude: ok(JSON.stringify(answer)) })
+    const structurer = createCliBriefStructurer({ run, tools: ['claude'] })
+    await expect(structurer.completeJson?.({ system: 'Answer with JSON', prompt: 'Draft the scope' })).resolves.toEqual(answer)
+    expect(calls[0].args.at(-1)).toBe('Answer with JSON\n\nDraft the scope')
+  })
+
+  it('returns null when no connected CLI answers with JSON', async () => {
+    const { run } = runner({ claude: ok('I cannot help with that.') })
+    const structurer = createCliBriefStructurer({ run, tools: ['claude'] })
+    await expect(structurer.completeJson?.({ system: 's', prompt: 'p' })).resolves.toBeNull()
+  })
+})

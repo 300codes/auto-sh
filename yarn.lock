@@ -8638,6 +8638,7 @@ __metadata:
     "@open-mercato/cli": "workspace:*"
     "@open-mercato/content": "workspace:*"
     "@open-mercato/core": "workspace:*"
+    "@open-mercato/delivery-workflows": "workspace:*"
     "@open-mercato/documents": "workspace:*"
     "@open-mercato/enterprise": "workspace:*"
     "@open-mercato/events": "workspace:*"
@@ -9120,7 +9121,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@open-mercato/delivery-workflows@workspace:packages/delivery-workflows":
+"@open-mercato/delivery-workflows@workspace:*, @open-mercato/delivery-workflows@workspace:packages/delivery-workflows":
   version: 0.0.0-use.local
   resolution: "@open-mercato/delivery-workflows@workspace:packages/delivery-workflows"
   dependencies:

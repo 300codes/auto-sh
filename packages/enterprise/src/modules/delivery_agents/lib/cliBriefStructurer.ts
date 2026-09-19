@@ -4,6 +4,7 @@ import {
   readJsonObject,
   type BriefStructuringRequest,
   type DeliveryBriefStructurer,
+  type JsonCompletionRequest,
 } from '@open-mercato/core/modules/delivery_os/lib/briefStructuring'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { defaultCommandRunner, type CommandRunner } from './toolConnections'
@@ -57,21 +58,22 @@ function preferredTools(deps: CliBriefStructurerDeps): readonly BriefCliTool[] {
 export function createCliBriefStructurer(deps: CliBriefStructurerDeps = {}): DeliveryBriefStructurer {
   const run = deps.run ?? defaultCommandRunner
   const timeoutMs = deps.timeoutMs ?? STRUCTURING_TIMEOUT_MS
-  return {
-    async structure(request: BriefStructuringRequest): Promise<unknown | null> {
-      const prompt = promptFor(request)
-      for (const tool of preferredTools(deps)) {
-        const result = await run(tool, argsFor(tool, prompt), timeoutMs)
-        if (result.notFound) continue
-        if (result.timedOut || result.exitCode !== 0) {
-          logger.info('agent CLI did not structure the brief', { tool, exitCode: result.exitCode, timedOut: result.timedOut })
-          continue
-        }
-        const answer = readAnswer(tool, result.output)
-        if (answer) return answer
-        logger.info('agent CLI answered without a JSON object', { tool })
+  const askFirstAvailable = async (prompt: string, purpose: string): Promise<unknown | null> => {
+    for (const tool of preferredTools(deps)) {
+      const result = await run(tool, argsFor(tool, prompt), timeoutMs)
+      if (result.notFound) continue
+      if (result.timedOut || result.exitCode !== 0) {
+        logger.info('agent CLI did not answer', { tool, purpose, exitCode: result.exitCode, timedOut: result.timedOut })
+        continue
       }
-      return null
-    },
+      const answer = readAnswer(tool, result.output)
+      if (answer) return answer
+      logger.info('agent CLI answered without a JSON object', { tool, purpose })
+    }
+    return null
+  }
+  return {
+    structure: (request: BriefStructuringRequest) => askFirstAvailable(promptFor(request), 'brief-structuring'),
+    completeJson: (request: JsonCompletionRequest) => askFirstAvailable([request.system, request.prompt].join('\n\n'), 'json-completion'),
   }
 }

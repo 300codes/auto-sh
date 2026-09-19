@@ -6,7 +6,7 @@ import { CrudForm, type CrudField } from '@open-mercato/ui/backend/CrudForm'
 import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@open-mercato/ui/primitives/dialog'
-import { apiCallOrThrow, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/utils/apiCall'
+import { apiCall, apiCallOrThrow, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/utils/apiCall'
 import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
 import { createCrudFormError } from '@open-mercato/ui/backend/utils/serverErrors'
 import { stageArtifactListResponseSchema, stageDecisionListResponseSchema, stageDecisionRequestSchema, stageArtifactV1Schema, scopeContentSchema, designStageContentSchema, type FlowStageStatus } from '../../lib/contracts'
@@ -24,13 +24,31 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
   const decisions = useFlowQuery(`${base}/decisions?page=1&pageSize=100`, stageDecisionListResponseSchema)
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [dialog, setDialog] = React.useState<'artifact' | 'decision' | null>(null)
+  const [draft, setDraft] = React.useState<string>('')
+  const [drafting, setDrafting] = React.useState(false)
+  const [draftError, setDraftError] = React.useState<string | null>(null)
   const idempotencyKey = React.useRef(crypto.randomUUID())
   const pendingDecision = React.useRef<{ signature: string; payload: unknown; key: string } | null>(null)
   const selected = artifacts.data?.items.find((artifact) => artifact.artifactId === (selectedId ?? stage.currentArtifact?.artifactId)) ?? artifacts.data?.items[0]
   const isCurrent = selected?.artifactId === stage.currentArtifact?.artifactId
   const scope = scopeContentSchema.safeParse(selected?.content)
   const design = designStageContentSchema.safeParse(selected?.content)
-  const changed = async () => { setDialog(null); pendingDecision.current = null; idempotencyKey.current = crypto.randomUUID(); await Promise.all([artifacts.reload(), decisions.reload(), onChanged()]) }
+  const generateDraft = async () => {
+    setDrafting(true)
+    setDraftError(null)
+    try {
+      const response = await apiCall<unknown>(`${base}/draft`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+      const parsed = stageArtifactV1Schema.safeParse((response.result as { artifact?: unknown } | null)?.artifact)
+      if (!response.ok || !parsed.success) throw new Error('[internal] stage draft unavailable')
+      setDraft(JSON.stringify(parsed.data, null, 2))
+      setDialog('artifact')
+    } catch {
+      setDraftError(t('delivery_os.flow.artifact.draftFailed'))
+    } finally {
+      setDrafting(false)
+    }
+  }
+  const changed = async () => { setDialog(null); setDraft(''); pendingDecision.current = null; idempotencyKey.current = crypto.randomUUID(); await Promise.all([artifacts.reload(), decisions.reload(), onChanged()]) }
   const fields = React.useMemo<CrudField[]>(() => dialog === 'artifact'
     ? [{ id: 'artifact', type: 'textarea', rows: 14, label: t('delivery_os.flow.artifact.document'), required: true }]
     : [
@@ -47,7 +65,7 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
       let raw: unknown
       try { raw = JSON.parse(String(values.artifact ?? '')) } catch { throw createCrudFormError(t('delivery_os.flow.invalid')) }
       const parsed = stageArtifactV1Schema.safeParse(raw)
-      if (!parsed.success || parsed.data.projectId !== projectId || parsed.data.stageId !== stage.stageId || parsed.data.source !== 'manual') throw createCrudFormError(t('delivery_os.flow.invalid'))
+      if (!parsed.success || parsed.data.projectId !== projectId || parsed.data.stageId !== stage.stageId || (parsed.data.source !== 'manual' && parsed.data.source !== 'agent')) throw createCrudFormError(t('delivery_os.flow.invalid'))
       payload = parsed.data
     } else {
       if (!selected || !isCurrent) throw createCrudFormError(t('delivery_os.flow.historyReadOnly'))
@@ -73,7 +91,11 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
   return <section id={`delivery-stage-${stage.stageId}`} className="space-y-4" data-testid={`delivery-stage-${stage.stageId}`}>
     <h2 className="text-lg font-semibold">{t(`delivery_os.flow.stage.${stage.stageId}`)}</h2>
     <p>{t(`delivery_os.flow.currency.${stage.currency ?? "pending"}`)}</p>
-    {canManage ? <Button type="button" onClick={() => setDialog('artifact')}>{t('delivery_os.flow.artifact.import')}</Button> : null}
+    {canManage ? <div className="flex flex-wrap items-center gap-2">
+      {stage.stageId === 'scope' ? <Button type="button" onClick={() => { void generateDraft() }} disabled={drafting}>{t(drafting ? 'delivery_os.flow.artifact.drafting' : 'delivery_os.flow.artifact.draft')}</Button> : null}
+      <Button type="button" variant="outline" onClick={() => setDialog('artifact')}>{t('delivery_os.flow.artifact.import')}</Button>
+    </div> : null}
+    {draftError ? <p role="status" className="text-sm text-status-error-text">{draftError}</p> : null}
     {selected ? <article className="space-y-3 rounded border border-border p-4">
       {!isCurrent ? <p>{t('delivery_os.flow.historyReadOnly')}</p> : null}
       <h3 className="text-sm font-semibold">{t('delivery_os.flow.version', { version: selected.version })}</h3>
@@ -86,6 +108,6 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
     {isCurrent ? <FigmaSync projectId={projectId} stageId={stage.stageId} artifactId={selected?.artifactId ?? null} onChanged={onChanged} /> : null}
     <StageHistory artifacts={artifacts.data?.items ?? []} decisions={decisions.data?.items ?? []} selectedId={selected?.artifactId ?? null} onSelect={setSelectedId} />
     <div className="flex gap-2"><Button type="button" variant="outline" disabled={page === 1} onClick={() => { setSelectedId(null); setPage((value) => value - 1) }}>{t('delivery_os.flow.previous')}</Button><Button type="button" variant="outline" disabled={page * 20 >= (artifacts.data?.total ?? 0)} onClick={() => { setSelectedId(null); setPage((value) => value + 1) }}>{t('delivery_os.flow.next')}</Button></div>
-    <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) setDialog(null) }}><DialogContent><DialogHeader><DialogTitle>{t(dialog === 'artifact' ? 'delivery_os.flow.artifact.import' : 'delivery_os.flow.recordDecision')}</DialogTitle></DialogHeader><CrudForm embedded entityId="delivery_os:project" fields={fields} initialValues={{ updatedAt, verdict: 'approved', evidenceKind: 'email' }} submitLabel={t('delivery_os.flow.save')} onSubmit={submit} /></DialogContent></Dialog>
+    <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) setDialog(null) }}><DialogContent><DialogHeader><DialogTitle>{t(dialog === 'artifact' ? 'delivery_os.flow.artifact.import' : 'delivery_os.flow.recordDecision')}</DialogTitle></DialogHeader><CrudForm embedded entityId="delivery_os:project" fields={fields} initialValues={{ updatedAt, artifact: draft, verdict: 'approved', evidenceKind: 'email' }} submitLabel={t('delivery_os.flow.save')} onSubmit={submit} /></DialogContent></Dialog>
   </section>
 }

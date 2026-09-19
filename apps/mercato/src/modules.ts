@@ -105,6 +105,8 @@ export const enabledModules: ModuleEntry[] = [
   { id: 'notifications', from: '@open-mercato/core' },
   { id: 'progress', from: '@open-mercato/core' },
   { id: 'delivery_os', from: '@open-mercato/core' },
+  // Delivery workflows: the staged process a delivery project can be pinned to (Workflow Studio bindings).
+  { id: 'delivery_workflows', from: '@open-mercato/delivery-workflows' },
   { id: 'integrations', from: '@open-mercato/core' },
   { id: 'data_sync', from: '@open-mercato/core' },
   { id: 'sync_excel', from: '@open-mercato/core' },
