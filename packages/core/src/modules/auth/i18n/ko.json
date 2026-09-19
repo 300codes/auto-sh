@@ -151,6 +151,8 @@
   "auth.acl.features.delivery_agents.execute": "Cezar를 통해 Delivery 작업 실행",
   "auth.acl.features.delivery_agents.monitor": "실행 상태 및 시도 수명 주기 모니터링",
   "auth.acl.features.delivery_agents.scope": "Delivery 범위 제안 준비",
+  "auth.acl.features.delivery_agents.tools.manage": "실행 호스트에서 도구 연결 및 해제",
+  "auth.acl.features.delivery_agents.tools.view": "실행 호스트의 도구 연결 보기",
   "auth.acl.features.delivery_os.attempts.manage": "실행 시도 예약, 취소 및 내보내기",
   "auth.acl.features.delivery_os.attempts.reconcile": "실행 시도 상태 확인 및 조정",
   "auth.acl.features.delivery_os.baselines.approve": "납품 요구 사항 및 설계 승인",

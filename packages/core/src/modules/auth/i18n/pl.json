@@ -151,6 +151,8 @@
   "auth.acl.features.delivery_agents.execute": "Wykonywanie zadań Delivery przez Cezara",
   "auth.acl.features.delivery_agents.monitor": "Monitorowanie stanu wykonania i cyklu życia prób",
   "auth.acl.features.delivery_agents.scope": "Przygotowywanie propozycji zakresu Delivery",
+  "auth.acl.features.delivery_agents.tools.manage": "Łączenie i rozłączanie narzędzi na hoście wykonania",
+  "auth.acl.features.delivery_agents.tools.view": "Podgląd połączeń narzędzi na hoście wykonania",
   "auth.acl.features.delivery_os.attempts.manage": "Rezerwowanie, anulowanie i eksportowanie prób wykonania",
   "auth.acl.features.delivery_os.attempts.reconcile": "Uzgadnianie stanu prób wykonania",
   "auth.acl.features.delivery_os.baselines.approve": "Zatwierdzanie wymagań i projektu rozwiązania",

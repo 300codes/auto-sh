@@ -151,6 +151,8 @@
   "auth.acl.features.delivery_agents.execute": "Ejecutar tareas de Delivery mediante Cezar",
   "auth.acl.features.delivery_agents.monitor": "Supervisar el estado de ejecución y el ciclo de vida de los intentos",
   "auth.acl.features.delivery_agents.scope": "Preparar propuestas de alcance de Delivery",
+  "auth.acl.features.delivery_agents.tools.manage": "Conectar y desconectar herramientas en el host de ejecución",
+  "auth.acl.features.delivery_agents.tools.view": "Ver las conexiones de herramientas en el host de ejecución",
   "auth.acl.features.delivery_os.attempts.manage": "Reservar, cancelar y exportar intentos de ejecución",
   "auth.acl.features.delivery_os.attempts.reconcile": "Conciliar el estado de los intentos de ejecución",
   "auth.acl.features.delivery_os.baselines.approve": "Aprobar los requisitos y el diseño de la entrega",
