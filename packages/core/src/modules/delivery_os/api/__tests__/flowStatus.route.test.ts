@@ -13,11 +13,14 @@ import '@open-mercato/core/modules/delivery_os/commands'
 import { GET, metadata, openApi } from '../projects/[id]/flow/route'
 import { POST as PIN } from '../projects/[id]/flow/pin/route'
 import { PUT as PUT_INTAKE } from '../projects/[id]/intake/route'
-import { FOREIGN_ORG_ID, ORG_ID, TENANT_ID } from '../../commands/__tests__/baselineTestKit'
+import { FOREIGN_ORG_ID, ORG_ID, PROJECT_ID, TENANT_ID, catchHttpError, expectFrozenBody } from '../../commands/__tests__/baselineTestKit'
 import { createDeliveryOsFlowQueries } from '../../commands/flowQueries'
-import { FLOW_APPROVAL_STAGE_ORDER, flowStatusV1Schema, type FlowStatusV1 } from '../../lib/contracts'
+import { createDeliveryOsReportQueries } from '../../commands/reportQueries'
+import { FLOW_APPROVAL_STAGE_ORDER, flowStatusV1Schema, type FlowStageId, type FlowStatusV1 } from '../../lib/contracts'
+import { hashFlowTemplate } from '../../lib/flowRules'
 import { DEFAULT_FLOW_TEMPLATE } from '../../lib/flowTemplates'
 import { loadIntakeFixture } from '../../lib/fixtures/flow/index'
+import { seedReadyTask } from './attemptRouteKit'
 import { createProject, expectStatus, prepareReadyTask, projectVersion, reserveOn, type Json } from './flowHelpers'
 import {
   EM_WRITE_METHODS,
@@ -34,6 +37,9 @@ import {
 } from './routeTestKit'
 
 const SCOPE_HASH = 'a'.repeat(64)
+const TEMPLATE_HASH = hashFlowTemplate(DEFAULT_FLOW_TEMPLATE)
+const CLIENT_STAGES: readonly FlowStageId[] = ['key_visual', 'design_system_ui']
+const QUERY_SCOPE = { tenantId: TENANT_ID, organizationId: ORG_ID }
 
 function getFlow(projectId: string): Promise<Response> {
   return GET(apiRequest('GET', `/projects/${projectId}/flow`), routeParams(projectId))
@@ -62,6 +68,60 @@ function seedScopeArtifact(projectId: string): string {
     createdAt: new Date('2026-09-19T12:00:00.000Z'),
   })
   return id
+}
+
+function pinStoredProject(): void {
+  Object.assign(routeState.store.projects[0], {
+    flowTemplateId: DEFAULT_FLOW_TEMPLATE.templateId,
+    flowTemplateVersion: DEFAULT_FLOW_TEMPLATE.version,
+    flowTemplateHash: TEMPLATE_HASH,
+    flowTemplateSnapshot: DEFAULT_FLOW_TEMPLATE,
+  })
+}
+
+function stageRowId(prefix: string, index: number): string {
+  return `${prefix.repeat(8)}-${prefix.repeat(4)}-4${prefix.repeat(3)}-8${prefix.repeat(3)}-${prefix.repeat(11)}${index}`
+}
+
+function stageHash(index: number): string {
+  return String(index).repeat(64)
+}
+
+function seedApprovedStages(): void {
+  FLOW_APPROVAL_STAGE_ORDER.forEach((stageId, index) => {
+    const artifactId = stageRowId('a', index)
+    const upstreamStageId = FLOW_APPROVAL_STAGE_ORDER[index - 1]
+    routeState.store.stageArtifacts.push({
+      id: artifactId,
+      tenantId: TENANT_ID,
+      organizationId: ORG_ID,
+      projectId: PROJECT_ID,
+      stageId,
+      version: 1,
+      contentHash: stageHash(index + 1),
+      dependsOn: upstreamStageId ? [{ stageId: upstreamStageId, artifactId: stageRowId('a', index - 1), version: 1, contentHash: stageHash(index) }] : [],
+      createdAt: new Date(`2026-09-19T12:0${index}:00.000Z`),
+    })
+    routeState.store.stageDecisions.push({
+      id: stageRowId('d', index),
+      tenantId: TENANT_ID,
+      organizationId: ORG_ID,
+      projectId: PROJECT_ID,
+      stageId,
+      artifactId,
+      subjectHash: stageHash(index + 1),
+      verdict: 'approved',
+      decidedAt: new Date(`2026-09-19T12:1${index}:00.000Z`),
+      clientApproverName: CLIENT_STAGES.includes(stageId) ? 'Client Owner' : null,
+    })
+  })
+}
+
+function seedApprovedProjectWithCorruptTemplateRef(): void {
+  seedReadyTask()
+  pinStoredProject()
+  seedApprovedStages()
+  routeState.store.projects[0].flowTemplateHash = ''
 }
 
 function expectNoWrites(): void {
@@ -147,6 +207,46 @@ describe('GET /projects/:id/flow (F6)', () => {
     expect(status.gates.dispatchable.ok).toBe(false)
     expect(status.gates.publishable.blocking.map((blocker) => blocker.stageId)).toEqual([...FLOW_APPROVAL_STAGE_ORDER])
     expect(status.nextAction.kind).toBe('none')
+  })
+
+  it('fails closed like the F15 report when the snapshot parses but the pinned template ref is corrupt', async () => {
+    seedReadyTask()
+    pinStoredProject()
+    seedApprovedStages()
+    const intact = await readFlow(PROJECT_ID)
+    expect(intact.gates.dispatchable.ok).toBe(true)
+    expect(intact.gates.publishable.ok).toBe(true)
+
+    routeState.store.projects[0].flowTemplateHash = ''
+    const status = await readFlow(PROJECT_ID)
+    expect(status.template).toBeNull()
+    expect(status.gates.dispatchable.ok).toBe(false)
+    expect(status.gates.publishable.ok).toBe(false)
+    expect(status.gates.publishable.blocking.map((blocker) => blocker.stageId)).toEqual([...FLOW_APPROVAL_STAGE_ORDER])
+    expect(status.nextAction.kind).toBe('none')
+  })
+
+  it('reads the corrupt-ref project through the DI flow status and the F15 report without writing', async () => {
+    seedApprovedProjectWithCorruptTemplateRef()
+    const before = structuredClone(routeState.store)
+    for (const method of EM_WRITE_METHODS) em[method].mockClear()
+    const status = await createDeliveryOsFlowQueries(em as never).flowStatus(PROJECT_ID, QUERY_SCOPE)
+    const report = await createDeliveryOsReportQueries(em as never).buildReport(QUERY_SCOPE, PROJECT_ID, { includeFlow: true })
+    expect(status.gates.dispatchable.ok).toBe(false)
+    expect(status.gates.publishable.ok).toBe(false)
+    expect(report.flow?.gate.ok).toBe(false)
+    expectNoWrites()
+    expect(routeState.writes).toBe(0)
+    expect(routeState.store).toEqual(before)
+  })
+
+  it('hides a project of another organization from the DI flow status behind 404', async () => {
+    seedReadyTask()
+    pinStoredProject()
+    const error = await catchHttpError(() =>
+      createDeliveryOsFlowQueries(em as never).flowStatus(PROJECT_ID, { tenantId: TENANT_ID, organizationId: FOREIGN_ORG_ID }),
+    )
+    expectFrozenBody(error, 404, 'not_found')
   })
 
   it('keeps an archived project readable', async () => {

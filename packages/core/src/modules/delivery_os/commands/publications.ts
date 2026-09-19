@@ -11,7 +11,7 @@ import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
-import { DeliveryDecision, DeliveryEvidence, DeliveryPublication, type DeliveryProject } from '../data/entities'
+import { DeliveryDecision, DeliveryEvidence, DeliveryPublication, type DeliveryBaseline, type DeliveryProject } from '../data/entities'
 import { parseRecordEvidenceBody, recordPublicationCommandInputSchema, type RecordPublicationCommandInput } from '../data/validators'
 import {
   buildDeliveryError,
@@ -126,7 +126,13 @@ function findProjectDeployDecisions(tx: EntityManager, projectId: string, scope:
   )
 }
 
-async function assertVerificationEvidence(tx: EntityManager, project: DeliveryProject, publication: PublicationResultV1, scope: DeliveryScope): Promise<void> {
+async function assertVerificationEvidence(
+  tx: EntityManager,
+  project: DeliveryProject,
+  baseline: DeliveryBaseline,
+  publication: PublicationResultV1,
+  scope: DeliveryScope,
+): Promise<void> {
   const evidenceId = publication.verification.evidenceId
   if (evidenceId === null) return
   const row = await findOneWithDecryption(
@@ -144,7 +150,7 @@ async function assertVerificationEvidence(tx: EntityManager, project: DeliveryPr
     )
   }
   assertDeliveryCheck(checkVerificationEvidenceKind({ kind: row.kind, payload: row.payload }))
-  if (row.baselineId !== publication.baselineId) {
+  if (row.baselineId !== baseline.id) {
     throw deliveryHttpError(
       buildDeliveryError('baseline_mismatch', 'The verification evidence belongs to another baseline', [
         { path: 'verification.evidenceId', code: 'baseline_mismatch' },
@@ -276,7 +282,7 @@ async function recordPublicationInTransaction(
     ),
   )
   await assertReleaseDecision(tx, project, publication, scope)
-  await assertVerificationEvidence(tx, project, publication, scope)
+  await assertVerificationEvidence(tx, project, baseline, publication, scope)
   await assertPublicationFlowGate(tx, project, scope)
 
   const recorded = await recordDeploymentEvidence(tx, ctx, project, publication, scope)

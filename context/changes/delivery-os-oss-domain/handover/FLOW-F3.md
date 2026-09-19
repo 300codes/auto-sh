@@ -76,3 +76,7 @@ provider hash is refused.
 - `deliveryStaffKanbanAdapter` (F2, lane A) is not registered on this branch; the DI registration test lists the keys
   present here — after merge add it to the list in `commands/__tests__/attemptQueries.test.ts`.
 - Live `GET /report` against the shared dev server was not run (that server runs lane A's code); run after merge.
+
+## Correction (T068)
+
+The first Limitations bullet is wrong: nothing needs to be plugged into the report after F2. `flow.gate` (F15 and F6) drops `open_comments` blockers by design — `gateFrom` in `lib/flowStatus.ts` filters them, because open comment threads gate an approval (F8), never dispatch or publication. F6 already counts open threads per stage (`stages[].openThreads`, `resolve_comments` next action) via `commands/flowQueries.ts`; the F15 section intentionally takes no `openThreadsByStage`. The matching "Optionally feed `openThreadsByStage`" merge note in `FLOW-F3-F4-lane-b.md` is void.

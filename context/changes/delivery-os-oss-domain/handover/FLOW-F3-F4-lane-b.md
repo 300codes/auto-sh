@@ -81,3 +81,34 @@ F3 ≈ 4 h and F4 ≈ 4 h estimated. Actual, from task timestamps: T058 finished
 - `/report` (R22/F15) answers 404 before a baseline exists; use F6 `GET /projects/:id/flow` for the stage status of a project that has no baseline yet.
 - Merge hygiene: `routeTestKit.ts` (`emptyRouteStore`, `ORDERED_ENTITIES`) and `scopeChange.test.ts` (`IMMUTABLE_SUBJECTS`) are one entry per line with lane B's entry last; the spec status sentence is byte-identical to `dev-mateusz` with a separate "Lane B status:" sentence after it.
 - Human blockers unchanged and still open: Playwright FLOW-07 run after the merge on a server with lane-B code and the F4 migration; snapshot regeneration after both lanes' migrations; live publication target and access (Michał); manual acceptance (Progress 5.1, 5.4) — none of them is ticked by this hand-over.
+
+## T068 audit-fix addendum (appended; supersedes the matching statements above)
+
+- Scope: F14 compares the verification evidence baseline with the stored baseline id and the command `projectId` case-insensitively; F14 OpenAPI `422` lists `unsupported_evidence_kind`, `baseline_mismatch` and the evidence `revision_mismatch`; F6 `flowStatus` fails closed on an unreadable pinned template ref (parity with F15); FLOW-07 spec: strict foreign-fixture cleanup, view-only `403`, pagination / `pageSize` cases. No migration, ACL, event or DI change.
+- Errors on F14 (additions): `422 unsupported_evidence_kind` (verification evidence is not a passed test/scan or approved review), `428` (project version header missing, new publication only), `409` (stale project version).
+- Spec status line: the "Lane B status:" sentence now sits in its own paragraph below the Flow delta status paragraph, and the status line itself is byte-identical to lane A's current text on `dev-mateusz`, so both sides make the same change and git merges it cleanly (if lane A edits that line again before the merge, keep lane A's version).
+
+### Merge notes (lane B into `dev-mateusz`)
+
+Seven files conflict with `dev-mateusz`. Resolution for all: keep both sides, lane A's lines first, lane B's last.
+
+1. `.ai/specs/2026-09-18-delivery-os-hackathon.md` — the status line should now auto-merge (T068 moved the lane-B sentence to its own line); the changelog tail still conflicts (both lanes append), keep both blocks.
+2. `context/changes/delivery-os-oss-domain/handover/FLOW-progress.md` — both lanes append; keep both.
+3. `packages/core/src/modules/delivery_os/api/__tests__/routeTestKit.ts` — keep lane B's multi-line `emptyRouteStore` and `ORDERED_ENTITIES`; add lane A's `staffLinks`, `commentThreads`, `commentReplies` (type, `emptyRouteStore`, entity→store mapping, imports) before `publications`.
+4. `packages/core/src/modules/delivery_os/commands/index.ts` — both registry lines.
+5. `packages/core/src/modules/delivery_os/data/entities.ts` — lane A's entities, then `DeliveryPublication`.
+6. `packages/core/src/modules/delivery_os/data/validators.ts` — lane A's schemas, then the publication schemas.
+7. `packages/core/src/modules/delivery_os/migrations/.snapshot-open-mercato.json` — never hand-merge; take either side and regenerate it after both migrations are in place.
+
+- Migration order: F4 `Migration20260919152308_delivery_os_flow_f4.ts` (152308) sorts before lane A's F2 `Migration20260919160535_delivery_os_flow_f2.ts` (160535). On a DB that already ran F2 it runs as an older pending migration; harmless (additive, independent tables). Do not rename either file.
+- Run `yarn generate` after the merge.
+- Estimate (not measured): ~1–1.5 h post-merge — resolve the 7 conflicts, regenerate the snapshot, `yarn generate`, `yarn db:migrate` (ask first), run the FLOW-07 Playwright spec and the FLOW-08 regression.
+
+### Fixture marker is not enforced by F14
+
+The fixture marker (`*.example.test` host, `fixture:` ref — `FAKE_DEPLOY_HOST_SUFFIX` / `FAKE_DEPLOY_REF_PREFIX` in `packages/core/src/modules/delivery_os/lib/fixtures/flow/fakes.ts`) is enforced only in the fake adapter, not by the F14 command: F14 accepts such a publication. The live FLOW-07 checklist MUST reject a `*.example.test` host and a `fixture:` ref.
+
+### Patch requested from the UI owner (i18n, `delivery_os/i18n`, not owned by lane B)
+
+- Error codes: `baseline_mismatch`, `unsupported_evidence_kind`, `foreign_reference`, `deployment_unverified`.
+- Detail codes: `verification_evidence_kind`, `verification_evidence_not_passed`, `foreign_release_decision`, `foreign_evidence`, `deploy_decision_rejected`, `deploy_revision_mismatch`.

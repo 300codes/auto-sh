@@ -11,6 +11,21 @@ describe('flow F4 publication validators', () => {
     expect(parsed.success).toBe(true)
   })
 
+  it('accepts a publication whose projectId differs from the path project only in letter case', () => {
+    const publication = loadPublicationResultFixture()
+    const upper = recordPublicationCommandInputSchema.safeParse({ projectId: publication.projectId, publication: { ...publication, projectId: publication.projectId.toUpperCase() } })
+    const lower = recordPublicationCommandInputSchema.safeParse({ projectId: publication.projectId.toUpperCase(), publication })
+    expect(upper.success).toBe(true)
+    expect(lower.success).toBe(true)
+  })
+
+  it('still rejects an uppercase id of another project with foreign_reference', () => {
+    const publication = loadPublicationResultFixture()
+    const parsed = recordPublicationCommandInputSchema.safeParse({ projectId: OTHER_PROJECT_ID, publication: { ...publication, projectId: publication.projectId.toUpperCase() } })
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) expect(deliveryErrorFromZod(parsed.error).body.code).toBe('foreign_reference')
+  })
+
   it('rejects a publication for another project with foreign_reference', () => {
     const publication = loadPublicationResultFixture()
     const parsed = recordPublicationCommandInputSchema.safeParse({ projectId: OTHER_PROJECT_ID, publication })

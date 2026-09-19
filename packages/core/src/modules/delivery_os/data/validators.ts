@@ -589,7 +589,7 @@ export const recordPublicationCommandInputSchema = z
     publication: publicationResultV1Schema,
   })
   .superRefine((value, ctx) => {
-    if (value.publication.projectId !== value.projectId) {
+    if (value.publication.projectId.toLowerCase() !== value.projectId.toLowerCase()) {
       addDeliveryIssue(ctx, 'foreign_reference', ['publication', 'projectId'], 'Publication belongs to another project')
     }
   })

@@ -191,6 +191,19 @@ describe('F14 /api/delivery_os/projects/:id/publications — guards', () => {
     }
     expect(statuses('POST')).toEqual([200, 201, 400, 403, 404, 409, 413, 422, 428])
     expect(statuses('GET')).toEqual([200, 400, 403, 404])
+    const unprocessable = openApi.methods.POST?.errors?.find((entry) => entry.status === 422)?.description ?? ''
+    for (const code of [
+      'unsupported_schema_version',
+      'deploy_decision_missing',
+      'revision_mismatch',
+      'stage_not_approved',
+      'deployment_unverified',
+      'foreign_reference',
+      'unsupported_evidence_kind',
+      'baseline_mismatch',
+    ]) {
+      expect(unprocessable).toContain(code)
+    }
   })
 
   it('answers 403 from the command when the caller lacks results.import, before any write', async () => {

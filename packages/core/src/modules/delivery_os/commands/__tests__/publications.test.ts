@@ -649,6 +649,21 @@ describe('delivery_os.publications.record — refusals', () => {
     expect(result.duplicate).toBe(false)
   })
 
+  it('binds a verification evidence to project and baseline ids sent in uppercase, as the uuid lookup ignores case', async () => {
+    const lowerIds = (where: Row): Row =>
+      Object.fromEntries(Object.entries(where).map(([key, value]) => [key, typeof value === 'string' && /^[0-9A-F-]{36}$/i.test(value) ? value.toLowerCase() : value]))
+    mockFindOneWithDecryption.mockImplementation(async (_em: unknown, entity: unknown, where: Row) => rows(entity).find((row) => matches(row, lowerIds(where))) ?? null)
+    mockFindWithDecryption.mockImplementation(async (_em: unknown, entity: unknown, where: Row) => rows(entity).filter((row) => matches(row, lowerIds(where))))
+    seedApprovedDeploy()
+    const evidenceId = seedEvidence('screenshot', {})
+    const input = publication({ baselineId: BASELINE_ID.toUpperCase(), ...verifiedBy(evidenceId.toUpperCase()) })
+    const { ctx } = harness()
+    const result = await record.execute({ projectId: PROJECT_ID, publication: { ...input, projectId: PROJECT_ID.toUpperCase() } }, ctx)
+    expect(result.duplicate).toBe(false)
+    expect(store.publications).toHaveLength(1)
+    expect(store.publications[0]).toMatchObject({ baselineId: BASELINE_ID })
+  })
+
   it('refuses a publication that names its own earlier deployment evidence as the verification proof', async () => {
     seedApprovedDeploy()
     const first = await run(publication(unverified()))

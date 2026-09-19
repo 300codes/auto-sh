@@ -51,7 +51,7 @@ async function loadThreads(em: EntityManager, projectId: string, scope: Delivery
   return perStage.flat()
 }
 
-/** A pinned snapshot that no longer parses never opens a gate: every approval stage counts as missing. */
+/** A pinned snapshot or template ref that no longer parses never opens a gate: every approval stage counts as missing. */
 function unreadableSnapshotStatus(base: FlowStatusV1, templateRef: FlowTemplateRef | null): FlowStatusV1 {
   const blocking: FlowBlocker[] = FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ kind: 'artifact_missing', stageId, ref: null }))
   return {
@@ -104,7 +104,7 @@ export function createDeliveryOsFlowQueries(rootEm: EntityManager): DeliveryOsFl
         openThreadsByStage,
         attempts: collectAttempts(tasks),
       })
-      if (!pinned || template) return status
+      if (!pinned || (template && templateRef)) return status
       logger.warn('pinned flow template snapshot is unreadable; flow status fails closed', { projectId: project.id, templateId: project.flowTemplateId })
       return unreadableSnapshotStatus(status, templateRef)
     },

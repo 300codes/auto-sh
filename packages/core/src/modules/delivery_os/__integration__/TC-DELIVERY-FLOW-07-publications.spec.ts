@@ -11,6 +11,7 @@ import { getTokenScope, readJsonSafe } from '@open-mercato/core/helpers/integrat
 import { buildResultManifest } from '../lib/fixtures/builders'
 import { createFakeDeployAdapter, type FakeDeployAdapter } from '../lib/fixtures/flow/fakes'
 import {
+  PUBLICATION_LIST_MAX_PAGE_SIZE,
   deliveryFlowErrorBodySchema,
   deliveryReportFlowSectionSchema,
   publicationListResponseSchema,
@@ -34,6 +35,8 @@ import {
  * write, and that a pinned project cannot publish until every approval stage is approved and current (F15 shows the same
  * gate in the report `flow` section). Addendum FLOW-07 negatives: no consent, consent on another revision, a missing
  * lock header and a publication naming its own deployment evidence as the URL check are refused without a write.
+ * The list pages newest first, refuses a `pageSize` above `PUBLICATION_LIST_MAX_PAGE_SIZE`, and a user holding only
+ * `delivery_os.projects.view` reads it but cannot record a publication.
  *
  * Publication bodies come from the deterministic fake deploy adapter (the same seam the WordPress host calls); the URL
  * check is a passed `scan` evidence on the published revision (F14 accepts only `test`, `screenshot`, `scan` and `review`
@@ -41,7 +44,9 @@ import {
  *
  * ENVIRONMENT: mixes API fixtures with DB fixtures (`withClient` reads DATABASE_URL), so the app and the fixtures must
  * share one database. Decisions, evidence, stage rows and publications are append-only without a delete route, so
- * teardown hard-deletes the rows of the projects this spec created, by project id, including their index rows.
+ * teardown hard-deletes the rows of the projects this spec created, by project id, including their index rows. The
+ * users, organizations and tenants this spec creates are collected per spec and hard-deleted in `afterAll`; a failed
+ * deletion fails the teardown, and zero leftover rows are asserted afterwards.
  */
 
 const FIXTURES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'fixtures')
@@ -59,6 +64,7 @@ const MANUAL_CHECK_ID = 'MC-visual-001'
 const FOREIGN_PASSWORD = 'Secret123!'
 const TEST_TIMEOUT_MS = 180_000
 const INDEX_TABLES = ['entity_indexes', 'search_tokens']
+const USER_TABLES = ['sessions', 'user_acls', 'user_roles', 'password_resets']
 const PROJECT_TABLES = [
   'delivery_publications',
   'delivery_flow_stage_decisions',
@@ -79,7 +85,9 @@ type Seed = { projectId: string; attachmentId: string; baselineId: string; taskI
 const createdProjectIds: string[] = []
 const createdAttachmentIds: string[] = []
 const createdResourceIds = new Set<string>()
-const createdUserIds: string[] = []
+const foreignUserIds: string[] = []
+const foreignOrganizationIds: string[] = []
+const foreignTenantIds: string[] = []
 
 function caller(request: APIRequestContext, token: string): Call {
   return async (method, path, options = {}) => {
@@ -308,51 +316,81 @@ async function leftoverRows(projectIds: string[]): Promise<number> {
      + (select count(*) from search_tokens where entity_type like 'delivery_os:%' and entity_id = any($2::text[]))
      + (select count(*) from entity_indexes where entity_type = 'auth:user' and entity_id = any($3::text[]))
      + (select count(*) from search_tokens where entity_type = 'auth:user' and entity_id = any($3::text[])) as total`,
-    [projectIds, resourceIds, createdUserIds],
+    [projectIds, resourceIds, foreignUserIds],
   )
   return Number(rows[0]?.total ?? 0)
 }
 
-type ForeignFixture = { userIds: string[]; organizationIds: string[]; tenantIds: string[] }
+async function foreignLeftoverRows(): Promise<number> {
+  const rows = await sql<{ total: string }>(
+    `select
+       (select count(*) from users where id = any($1::uuid[]))
+     ${USER_TABLES.map((table) => `+ (select count(*) from ${table} where user_id = any($1::uuid[]))`).join('\n     ')}
+     + (select count(*) from organizations where id = any($2::uuid[]))
+     + (select count(*) from tenants where id = any($3::uuid[])) as total`,
+    [foreignUserIds, foreignOrganizationIds, foreignTenantIds],
+  )
+  return Number(rows[0]?.total ?? 0)
+}
 
-/** A user homed in a new organization of `tenantId` with `delivery_os.*`; the ACL row is written before the first login so no RBAC cache entry predates it. */
-async function createScopedUser(request: APIRequestContext, superadminToken: string, fixture: ForeignFixture, tenantId: string, label: string): Promise<string> {
-  const organizationId = await createOrganizationInDb({ name: `TC-DELIVERY-FLOW-07 org ${label} ${Date.now()}`, tenantId })
-  fixture.organizationIds.push(organizationId)
-  const email = `tc-delivery-flow-07-${label}-${Date.now()}@example.com`
-  const userId = await createUserFixture(request, superadminToken, { email, password: FOREIGN_PASSWORD, organizationId, roles: [] })
-  fixture.userIds.push(userId)
-  createdUserIds.push(userId)
-  await setUserAclInDb({ userId, tenantId, features: ['delivery_os.*'], organizations: [organizationId] })
+/** A user homed in `organizationId` holding exactly `features`; the ACL row is written before the first login so no RBAC cache entry predates it. */
+async function createFeatureUser(
+  request: APIRequestContext,
+  superadminToken: string,
+  input: { tenantId: string; organizationId: string; features: string[]; label: string },
+): Promise<string> {
+  const email = `tc-delivery-flow-07-${input.label}-${Date.now()}@example.com`
+  const userId = await createUserFixture(request, superadminToken, { email, password: FOREIGN_PASSWORD, organizationId: input.organizationId, roles: [] })
+  foreignUserIds.push(userId)
+  await setUserAclInDb({ userId, tenantId: input.tenantId, features: input.features, organizations: [input.organizationId] })
   const token = await getAuthToken(request, email, FOREIGN_PASSWORD)
-  expect(getTokenScope(token)).toMatchObject({ tenantId, organizationId })
+  expect(getTokenScope(token)).toMatchObject({ tenantId: input.tenantId, organizationId: input.organizationId })
   return token
 }
 
-async function createForeignTenantUser(request: APIRequestContext, superadminToken: string, fixture: ForeignFixture): Promise<string> {
+/** A user homed in a new organization of `tenantId` with `delivery_os.*`. */
+async function createScopedUser(request: APIRequestContext, superadminToken: string, tenantId: string, label: string): Promise<string> {
+  const organizationId = await createOrganizationInDb({ name: `TC-DELIVERY-FLOW-07 org ${label} ${Date.now()}`, tenantId })
+  foreignOrganizationIds.push(organizationId)
+  return createFeatureUser(request, superadminToken, { tenantId, organizationId, features: ['delivery_os.*'], label })
+}
+
+async function createForeignTenantUser(request: APIRequestContext, superadminToken: string): Promise<string> {
   const tenantId = (await sql<{ id: string }>(
     `insert into tenants (id, name, is_active, created_at, updated_at) values (gen_random_uuid(), $1, true, now(), now()) returning id`,
     [`TC-DELIVERY-FLOW-07 tenant ${Date.now()}`],
   ))[0].id
-  fixture.tenantIds.push(tenantId)
-  return createScopedUser(request, superadminToken, fixture, tenantId, 'tenant-c')
+  foreignTenantIds.push(tenantId)
+  return createScopedUser(request, superadminToken, tenantId, 'tenant-c')
 }
 
-async function deleteForeignFixture(fixture: ForeignFixture): Promise<void> {
+async function deleteForeignFixtures(): Promise<void> {
   await withClient(async (client) => {
-    if (fixture.userIds.length > 0) {
-      for (const table of ['sessions', 'user_acls', 'user_roles', 'password_resets']) {
-        await client.query(`delete from ${table} where user_id = any($1::uuid[])`, [fixture.userIds])
+    if (foreignUserIds.length > 0) {
+      for (const table of USER_TABLES) {
+        await client.query(`delete from ${table} where user_id = any($1::uuid[])`, [foreignUserIds])
       }
-      await client.query('delete from action_logs where resource_id = any($1::text[])', [fixture.userIds])
+      await client.query('delete from action_logs where resource_id = any($1::text[])', [foreignUserIds])
       for (const table of INDEX_TABLES) {
-        await client.query(`delete from ${table} where entity_type = 'auth:user' and entity_id = any($1::text[])`, [fixture.userIds])
+        await client.query(`delete from ${table} where entity_type = 'auth:user' and entity_id = any($1::text[])`, [foreignUserIds])
       }
-      await client.query('delete from users where id = any($1::uuid[])', [fixture.userIds])
+      await client.query('delete from users where id = any($1::uuid[])', [foreignUserIds])
     }
-    if (fixture.organizationIds.length > 0) await client.query('delete from organizations where id = any($1::uuid[])', [fixture.organizationIds])
-    if (fixture.tenantIds.length > 0) await client.query('delete from tenants where id = any($1::uuid[])', [fixture.tenantIds])
+    if (foreignOrganizationIds.length > 0) await client.query('delete from organizations where id = any($1::uuid[])', [foreignOrganizationIds])
+    if (foreignTenantIds.length > 0) await client.query('delete from tenants where id = any($1::uuid[])', [foreignTenantIds])
   })
+}
+
+async function runTeardownSteps(steps: Array<() => Promise<void>>): Promise<void> {
+  const failures: string[] = []
+  for (const step of steps) {
+    try {
+      await step()
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error))
+    }
+  }
+  if (failures.length > 0) throw new Error(`[internal] TC-DELIVERY-FLOW-07 teardown failed: ${failures.join('; ')}`)
 }
 
 async function cleanup(request: APIRequestContext, token: string | null, projectIds: string[], attachmentIds: string[]): Promise<void> {
@@ -362,15 +400,18 @@ async function cleanup(request: APIRequestContext, token: string | null, project
 
 test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
   test.afterAll(async ({ request }) => {
-    await deleteProjectsInDb(createdProjectIds)
-    for (const table of INDEX_TABLES) {
-      await sql(`delete from ${table} where entity_type = 'auth:user' and entity_id = any($1::text[])`, [createdUserIds])
-    }
-    const token = await getAuthToken(request, 'admin')
-    for (const attachmentId of createdAttachmentIds) await deleteAttachmentIfExists(request, token, attachmentId)
+    await runTeardownSteps([
+      () => deleteProjectsInDb(createdProjectIds),
+      () => deleteForeignFixtures(),
+      async () => {
+        const token = await getAuthToken(request, 'admin')
+        for (const attachmentId of createdAttachmentIds) await deleteAttachmentIfExists(request, token, attachmentId)
+      },
+    ])
     const leftAttachments = await sql<{ total: string }>('select count(*) as total from attachments where id = any($1::uuid[])', [createdAttachmentIds])
     expect(leftAttachments[0]?.total, 'no attachment of this spec is left behind').toBe('0')
     expect(await leftoverRows(createdProjectIds), 'no delivery_os row of this spec is left behind').toBe(0)
+    expect(await foreignLeftoverRows(), 'no user, organization or tenant of this spec is left behind').toBe(0)
   })
 
   test('legacy WordPress project: refused without consent, on another revision, without a lock and with its own deployment evidence; consent → unverified → URL check → verified → release, replay, second organization and foreign tenant', async ({ request }) => {
@@ -378,7 +419,6 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
     let token: string | null = null
     const projectIds: string[] = []
     const attachmentIds: string[] = []
-    const foreign: ForeignFixture = { userIds: [], organizationIds: [], tenantIds: [] }
     try {
       token = await getAuthToken(request, 'admin')
       const call = caller(request, token)
@@ -478,8 +518,8 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       )
       const superadminToken = await getAuthToken(request, 'superadmin')
       const outsiders: Array<[string, Call]> = [
-        ['a second-organization user of the same tenant', caller(request, await createScopedUser(request, superadminToken, foreign, getTokenScope(token).tenantId, 'org-b'))],
-        ['a foreign-tenant user', caller(request, await createForeignTenantUser(request, superadminToken, foreign))],
+        ['a second-organization user of the same tenant', caller(request, await createScopedUser(request, superadminToken, getTokenScope(token).tenantId, 'org-b'))],
+        ['a foreign-tenant user', caller(request, await createForeignTenantUser(request, superadminToken))],
       ]
       for (const [who, foreignCall] of outsiders) {
         const probes: Array<[string, () => Promise<CallResult>]> = [
@@ -501,7 +541,6 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       expect(ownerAfter, 'owner rows untouched by the second-organization and foreign-tenant probes').toEqual(ownerBefore)
     } finally {
       await cleanup(request, token, projectIds, attachmentIds)
-      await deleteForeignFixture(foreign).catch(() => undefined)
     }
   })
 
@@ -575,6 +614,121 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`)).toBe(1)
     } finally {
       await cleanup(request, token, projectIds, attachmentIds)
+    }
+  })
+
+  test('F14 list pages newest first: with two publications recorded, page 2 of pageSize 1 answers the older one', async ({ request }) => {
+    test.setTimeout(TEST_TIMEOUT_MS)
+    let token: string | null = null
+    const projectIds: string[] = []
+    const attachmentIds: string[] = []
+    try {
+      token = await getAuthToken(request, 'admin')
+      const call = caller(request, token)
+      const adapter = createFakeDeployAdapter()
+      const projectId = await createProject(call, 'paging')
+      projectIds.push(projectId)
+      const seed = await seedReadyTask(request, token, call, projectId, 'paging')
+      attachmentIds.push(seed.attachmentId)
+      const revision = await deliverResult(call, seed, 'paging')
+      const consentId = await deployConsent(call, seed, revision)
+
+      const olderBody = publicationBody(adapter, seed, revision, consentId)
+      const newerBody = publicationBody(adapter, seed, revision, consentId)
+      expect(newerBody.publishedAt, 'the second fake publication is a distinct payload').not.toBe(olderBody.publishedAt)
+      const older = await publish(call, projectId, olderBody)
+      expect(older.status, `F14 older publication: ${JSON.stringify(older.body)}`).toBe(201)
+      const newer = await publish(call, projectId, newerBody)
+      expect(newer.status, `F14 newer publication: ${JSON.stringify(newer.body)}`).toBe(201)
+      expect(newer.body.duplicate, 'a distinct payload is not a replay').toBe(false)
+      expect(newer.body.publicationId).not.toBe(older.body.publicationId)
+
+      const expectedPages: Array<[number, CallResult, PublicationResultV1]> = [
+        [1, newer, newerBody],
+        [2, older, olderBody],
+      ]
+      for (const [page, recorded, recordedBody] of expectedPages) {
+        const listed = await call('GET', `${API}/projects/${projectId}/publications?pageSize=1&page=${page}`)
+        expect(listed.status, `F14 list page ${page}: ${JSON.stringify(listed.body)}`).toBe(200)
+        const list = publicationListResponseSchema.parse(listed.body)
+        expect(list.total, `F14 list page ${page} counts both publications`).toBe(2)
+        expect(list.items.map((item) => item.publicationId), `F14 list page ${page} answers one publication`).toEqual([recorded.body.publicationId])
+        expect(Date.parse(list.items[0]?.publishedAt ?? ''), `F14 list page ${page} answers the recorded publishedAt`).toBe(Date.parse(recordedBody.publishedAt))
+      }
+
+      const pastEnd = await call('GET', `${API}/projects/${projectId}/publications?pageSize=1&page=3`)
+      expect(pastEnd.status, 'F14 list past the last page').toBe(200)
+      expect(publicationListResponseSchema.parse(pastEnd.body), 'F14 list past the last page is empty').toMatchObject({ items: [], total: 2 })
+    } finally {
+      await cleanup(request, token, projectIds, attachmentIds)
+    }
+  })
+
+  test('F14 list refuses a pageSize above PUBLICATION_LIST_MAX_PAGE_SIZE with 400 validation_failed', async ({ request }) => {
+    test.setTimeout(TEST_TIMEOUT_MS)
+    let token: string | null = null
+    const projectIds: string[] = []
+    try {
+      token = await getAuthToken(request, 'admin')
+      const call = caller(request, token)
+      const projectId = await createProject(call, 'page-size')
+      projectIds.push(projectId)
+      expect(PUBLICATION_LIST_MAX_PAGE_SIZE, 'the published list cap').toBe(100)
+
+      const atMax = await call('GET', `${API}/projects/${projectId}/publications?pageSize=${PUBLICATION_LIST_MAX_PAGE_SIZE}`)
+      expect(atMax.status, `F14 list at the page size cap: ${JSON.stringify(atMax.body)}`).toBe(200)
+      expect(publicationListResponseSchema.parse(atMax.body).total).toBe(0)
+
+      const overMax = await call('GET', `${API}/projects/${projectId}/publications?pageSize=${PUBLICATION_LIST_MAX_PAGE_SIZE + 1}`)
+      expectFlowError(overMax, 400, 'validation_failed', 'F14 list above the page size cap')
+      expect(deliveryFlowErrorBodySchema.parse(overMax.body).details.map((detail) => detail.path), 'the page size is named').toContain('pageSize')
+    } finally {
+      await cleanup(request, token, projectIds, [])
+    }
+  })
+
+  test('view-only user: with only delivery_os.projects.view, F14 GET answers 200 and POST answers 403 without a write', async ({ request }) => {
+    test.setTimeout(TEST_TIMEOUT_MS)
+    let token: string | null = null
+    const projectIds: string[] = []
+    try {
+      token = await getAuthToken(request, 'admin')
+      const call = caller(request, token)
+      const projectId = await createProject(call, 'view-only')
+      projectIds.push(projectId)
+      const ownerScope = getTokenScope(token)
+      const superadminToken = await getAuthToken(request, 'superadmin')
+      const viewerCall = caller(
+        request,
+        await createFeatureUser(request, superadminToken, {
+          tenantId: ownerScope.tenantId,
+          organizationId: ownerScope.organizationId,
+          features: ['delivery_os.projects.view'],
+          label: 'viewer',
+        }),
+      )
+
+      const listed = await viewerCall('GET', `${API}/projects/${projectId}/publications`)
+      expect(listed.status, `F14 list as a view-only user: ${JSON.stringify(listed.body)}`).toBe(200)
+      expect(publicationListResponseSchema.parse(listed.body).total).toBe(0)
+
+      const ownerLock = await projectVersion(call, projectId)
+      const body = createFakeDeployAdapter().publish({
+        projectId,
+        baselineId: randomUUID(),
+        sourceRevision: BASE_REVISION,
+        deployDecisionId: randomUUID(),
+        target: TARGET,
+        verified: false,
+        evidenceId: null,
+      })
+      const refused = await viewerCall('POST', `${API}/projects/${projectId}/publications`, { body, lock: ownerLock })
+      expect(refused.status, `F14 record as a view-only user: ${JSON.stringify(refused.body)}`).toBe(403)
+      expect(await countRows('delivery_publications', projectId), 'a refused publication writes nothing').toBe(0)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a refused publication writes no evidence').toBe(0)
+      expect(await projectVersion(call, projectId), 'the project version is untouched').toBe(ownerLock)
+    } finally {
+      await cleanup(request, token, projectIds, [])
     }
   })
 })

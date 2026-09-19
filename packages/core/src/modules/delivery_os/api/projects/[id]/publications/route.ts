@@ -127,7 +127,7 @@ export const openApi: OpenApiRouteDoc = {
         {
           status: 422,
           description:
-            'unsupported_schema_version, deploy_decision_missing (no approved deploy decision for baselineId + sourceRevision, or a newer reject), revision_mismatch (deployDecisionId bound to another revision), stage_not_approved (flow gate, pinned projects), deployment_unverified (verified without method, checkedAt or evidenceId), foreign_reference (baseline, project or verification evidence of another project)',
+            'unsupported_schema_version, deploy_decision_missing (no approved deploy decision for baselineId + sourceRevision, or a newer reject), revision_mismatch (deployDecisionId bound to another revision), stage_not_approved (flow gate, pinned projects), deployment_unverified (verified without method, checkedAt or evidenceId), foreign_reference (baseline, project or verification evidence of another project), unsupported_evidence_kind (verification evidence is not a passed test/scan or approved review), baseline_mismatch (verification evidence recorded on another baseline), revision_mismatch (verification evidence recorded on another sourceRevision)',
           schema: deliveryFlowErrorBodySchema,
         },
         { status: 428, description: 'Project version header missing (new publication only)', schema: deliveryFlowErrorBodySchema },
