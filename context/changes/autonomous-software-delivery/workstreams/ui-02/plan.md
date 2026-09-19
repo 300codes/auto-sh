@@ -361,15 +361,15 @@ Ostatnia komenda ma nie zwrócić nic. Runner (local albo Docker) wybrać raz dl
 
 #### Automated
 
-- [x] 2.1 Siedem istniejących testów szczegółów przechodzi bez zmiany ich asercji.
-- [x] 2.2 Trzy rozłączne komunikaty: brak baseline'u, brak zadań, brak endpointu dowodów.
-- [x] 2.3 `percent: null` nie renderuje się jako wartość procentowa.
-- [x] 2.4 `attemptRegisterReadable: false` daje komunikat inny niż brak prób.
-- [x] 2.5 Wybór zadania trafia do `context.taskId` walidowanego schematem; zniknięcie zadania po refetchu czyści wybór.
-- [x] 2.6 Błąd jednego źródła sekcji nie odmontowuje `InjectionSpot`.
-- [x] 2.7 Węzeł `[data-testid="delivery-execution-action"]` obecny z właściwym `data-task-id` i nieobecny po odebraniu `delivery_agents.execute`.
-- [x] 2.8 `yarn i18n:check-sync`, `yarn i18n:check-usage`, `yarn lint`, `yarn typecheck` przechodzą.
-- [x] 2.9 `git diff --stat` nadal nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`.
+- [x] 2.1 Siedem istniejących testów szczegółów przechodzi bez zmiany ich asercji. — c83163ae2c
+- [x] 2.2 Trzy rozłączne komunikaty: brak baseline'u, brak zadań, brak endpointu dowodów. — c83163ae2c
+- [x] 2.3 `percent: null` nie renderuje się jako wartość procentowa. — c83163ae2c
+- [x] 2.4 `attemptRegisterReadable: false` daje komunikat inny niż brak prób. — c83163ae2c
+- [x] 2.5 Wybór zadania trafia do `context.taskId` walidowanego schematem; zniknięcie zadania po refetchu czyści wybór. — c83163ae2c
+- [x] 2.6 Błąd jednego źródła sekcji nie odmontowuje `InjectionSpot`. — c83163ae2c
+- [x] 2.7 Węzeł `[data-testid="delivery-execution-action"]` obecny z właściwym `data-task-id` i nieobecny po odebraniu `delivery_agents.execute`. — c83163ae2c
+- [x] 2.8 `yarn i18n:check-sync`, `yarn i18n:check-usage`, `yarn lint`, `yarn typecheck` przechodzą. — c83163ae2c
+- [x] 2.9 `git diff --stat` nadal nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`. — c83163ae2c
 
 #### Manual
 
@@ -384,7 +384,7 @@ Ostatnia komenda ma nie zwrócić nic. Runner (local albo Docker) wybrać raz dl
 - [ ] 3.1 `TC-DELIVERY-UI-002` przechodzi i sprząta rekordy także przy niepowodzeniu asercji.
 - [ ] 3.2 Scenariusz przechodzi na świeżym tenancie, bez danych demo.
 - [ ] 3.3 Pełny zestaw testów modułu przechodzi na rewizji zapisanej w `handoff.md`.
-- [ ] 3.4 `handoff.md` zawiera SHA, zakres dostarczony, zakres pominięty i obie prośby do OSS.
+- [x] 3.4 `handoff.md` zawiera SHA, zakres dostarczony, zakres pominięty i obie prośby do OSS.
 
 #### Manual
 
