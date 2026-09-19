@@ -1,0 +1,74 @@
+{
+  "description": "allowedPaths is repository-relative but outside the react-vite@1 roots.",
+  "expected": {
+    "stage": "profile",
+    "code": "path_not_allowed",
+    "status": 422
+  },
+  "documentType": "versioned",
+  "targetProfile": {
+    "id": "react-vite",
+    "version": 1
+  },
+  "document": {
+    "schemaVersion": "delivery.plan-proposal/v1",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "baselineId": "66666666-6666-4666-8666-666666666666",
+    "baselineHash": "39969f5de9cb9d093b3b15ead40f0e46152f91eff00e52d14d8a1e1cee8418d7",
+    "manifestId": "plan-from-baseline-2026-09-19-001",
+    "architectureSummary": "Single-page React app; services come from a typed seed module.",
+    "tasks": [
+      {
+        "proposalTaskKey": "service-list",
+        "title": "Service catalogue list",
+        "description": "Render the seeded services with name and price.",
+        "acIds": [
+          "AC-001"
+        ],
+        "dependsOn": [],
+        "allowedPaths": [
+          "src/**",
+          "tests/**"
+        ]
+      },
+      {
+        "proposalTaskKey": "service-filter",
+        "title": "Category filter",
+        "description": "Add a category select that narrows the list.",
+        "acIds": [
+          "AC-002"
+        ],
+        "dependsOn": [
+          "service-list"
+        ],
+        "allowedPaths": [
+          "src/**",
+          "package.json",
+          ".github/workflows/**"
+        ]
+      }
+    ],
+    "acTestMap": {
+      "AC-001": [
+        "service catalogue AC-001: service list renders seeded services"
+      ],
+      "AC-002": [
+        "service catalogue AC-002: category filter narrows the list"
+      ]
+    },
+    "declaredTests": [
+      {
+        "testId": "service catalogue AC-001: service list renders seeded services",
+        "file": "src/__tests__/service-catalogue.test.tsx"
+      },
+      {
+        "testId": "service catalogue AC-002: category filter narrows the list",
+        "file": "src/__tests__/service-catalogue.test.tsx"
+      }
+    ],
+    "producedBy": {
+      "tool": "claude-code",
+      "sessionRef": null
+    }
+  }
+}

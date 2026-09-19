@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "delivery.task-package/v1",
+  "projectId": "11111111-1111-4111-8111-111111111111",
+  "taskId": "22222222-2222-4222-8222-222222222222",
+  "attemptId": "33333333-3333-4333-8333-333333333333",
+  "baselineId": "44444444-4444-4444-8444-444444444444",
+  "baselineHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+  "targetProfileId": "react-vite",
+  "targetProfileVersion": 1,
+  "title": "Service catalogue list and category filter",
+  "description": "Render the seeded services and add a category filter.",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "title": "Service catalogue list",
+      "description": "Visitors see every offered service with its price."
+    },
+    {
+      "id": "REQ-2",
+      "title": "Filter services by category"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001",
+      "requirementId": "REQ-1",
+      "description": "The list renders all seeded services."
+    },
+    {
+      "id": "AC-002",
+      "requirementId": "REQ-2",
+      "description": "Choosing a category shows only services of that category."
+    }
+  ],
+  "designArtifactRefs": [
+    {
+      "fileKey": "FigmaDeliveryDemo",
+      "nodeId": "12:34",
+      "name": "Service catalogue - desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "attachmentId": "55555555-5555-4555-8555-555555555555",
+      "sha256": "238ec85f8984fd50cb8bb854c5400e8e260d310d7dd672618f6edcc27f2777f8",
+      "capturedAt": "2026-09-19T08:00:00.000Z",
+      "figmaVersion": "2150470001"
+    }
+  ],
+  "repositoryRef": "delivery-demo-react",
+  "baseRevision": {
+    "kind": "git",
+    "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+  },
+  "baseCommit": "687670c20c93d6a60c2ab494419ec38636cf0a8c",
+  "allowedPaths": [
+    "src/**",
+    "tests/**"
+  ],
+  "validationProfile": {
+    "version": 1,
+    "requiredTests": {
+      "AC-001": [
+        "service catalogue AC-001: service list renders seeded services"
+      ],
+      "AC-002": [
+        "service catalogue AC-002: category filter narrows the list"
+      ]
+    },
+    "checks": [
+      {
+        "checkId": "unit-tests",
+        "commandProfileId": "vitest-report",
+        "kind": "test",
+        "required": true
+      },
+      {
+        "checkId": "build",
+        "commandProfileId": "vite-build",
+        "kind": "build",
+        "required": true
+      },
+      {
+        "checkId": "lint",
+        "commandProfileId": "oxlint",
+        "kind": "lint",
+        "required": true
+      },
+      {
+        "checkId": "dependency-audit",
+        "commandProfileId": "npm-audit",
+        "kind": "scan",
+        "required": true
+      }
+    ]
+  },
+  "limits": {
+    "maxParallelTasks": 2,
+    "maxCorrectionRounds": 2,
+    "attemptTimeoutMinutes": 20
+  },
+  "idempotencyKey": "reserve-22222222-2222-4222-8222-222222222222-1"
+}

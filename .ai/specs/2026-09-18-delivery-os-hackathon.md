@@ -37,7 +37,8 @@ packages/core/src/modules/delivery_os/
   data/entities.ts  data/validators.ts
   lib/contracts.ts  lib/targetProfiles.ts  lib/hash.ts  lib/dag.ts  lib/taskLifecycle.ts
   lib/attempts.ts  lib/resultAcceptance.ts  lib/baseline.ts  lib/designReview.ts  lib/proposals.ts
-  lib/allowedPaths.ts  lib/traceability.ts  lib/projectStatus.ts  lib/deliveryReport.ts  lib/fixtures/
+  lib/allowedPaths.ts  lib/traceability.ts  lib/projectStatus.ts  lib/deliveryReport.ts
+  lib/fixtures/{index,builders}.ts  lib/fixtures/*.v1.json  lib/fixtures/negative/*.v1.json
   commands/{projects,tasks,baselines,decisions,attempts,evidence,index}.ts
   api/openapi.ts  api/**/route.ts
   migrations/Migration*.ts  migrations/.snapshot-open-mercato.json
@@ -177,8 +178,21 @@ Index: `(tenant_id, organization_id, project_id, kind, decided_at)`. Latest deci
 | `DesignManifest v1` | `delivery.design-manifest/v1` | `screens[{fileKey, nodeId, name, viewport, attachmentId, sha256, capturedAt, figmaVersion?}], tokens` |
 | `DeliveryReport v1` | `delivery.report/v1` | per requirement → AC → tasks → revision → checks → deployment; AC status `passed/failed/not_run/missing/manual_pending`; deployment `verified/unverified/missing`; scans; decisions with `appliesToRevision`; `progress { proven, total, unit: 'ac' }` |
 | `ExecutionWidgetContext v1` | `delivery_os.project.execution.v1` | see *Extension spot* |
+| `ReserveAttemptRequest` | — (route body of R14) | `{ mode: 'manual_handoff', baseRevision: SourceRevision }` — `reserveAttemptRequestSchema` |
+| `ReserveAttemptResponse` | — (R14 response) | `{ attemptId, taskId, baselineId, baselineHash, taskUpdatedAt, packageUrl }`; `packageUrl` must equal `buildPackageUrl(taskId, attemptId)` — `reserveAttemptResponseSchema` |
+| `DeliveryEvidenceKind` | — | `result_manifest test review screenshot deployment scan reference_material` — `deliveryEvidenceKindSchema` |
 
-Target profiles (data only, `lib/targetProfiles.ts`): `react-vite@1` (git), `open-mercato-module@1` (git), `wordpress-theme@1` (snapshot). Fixtures, including negative ones, live in `delivery_os/lib/fixtures/*.v1.json`.
+Target profiles (data only, `lib/targetProfiles.ts`; a profile change is a new profile version, never an edit):
+
+| Profile | `revisionKind` | `allowedPathRoots` | Checks (`checkId` → command profile) | Required evidence | Extra permitted evidence |
+|---|---|---|---|---|---|
+| `react-vite@1` | git | `src/**`, `public/**`, `tests/**`, `index.html` | `unit-tests` (vitest `npm run test:report`), `build` (`npm run build` = `tsc -b && vite build`, so it is also the typecheck), `lint` (`npm run lint`), `dependency-audit` scan (`npm audit --audit-level=high`) | result_manifest, test, scan, deployment | review, screenshot |
+| `open-mercato-module@1` | git | `src/modules/**` | `unit-tests` (jest), `typecheck`, `dependency-audit` scan | result_manifest, test, scan | review, screenshot, deployment |
+| `wordpress-theme@1` | snapshot | theme files (`style.css`, `theme.json`, `functions.php`, `templates/**`, `parts/**`, `patterns/**`, `assets/**`, `inc/**`, `tests/**`) | `smoke-tests` (playwright), `lint` (php) | result_manifest, screenshot | test, review, deployment, scan, **reference_material** |
+
+Helpers: `getTargetProfile(id, version)` (`undefined` if unknown → routes answer `422 unknown_target_profile`), `assertRevisionKind(profile, revision)` (`422 revision_kind_mismatch`), `checkAllowedPathsForProfile(profile, paths)` (`422 path_not_allowed` for `..`, absolute, or outside the roots), `isEvidenceKindPermitted`, `countsAsAcEvidence` (only `result_manifest`, `test`, `review`; `reference_material` never counts). All helpers return `{ ok: true } | { ok: false, status, body }` (`DeliveryCheckResult`). Pure domain helpers already landed with the fixtures: `lib/resultAcceptance.ts#checkResultCorrelation` (UA-12 step 3: `correlation_mismatch`, `baseline_mismatch`, `base_revision_mismatch`) and `lib/dag.ts#findDependencyCycle` / `checkAcyclic` (`cycle`).
+
+Fixtures (`lib/fixtures/`, import from `@open-mercato/core/modules/delivery_os/lib/fixtures/index` — the package export map has no folder-index fallback; the JSON-free builder is `…/lib/fixtures/builders`; the JSON loaders work under jest and bundlers, not from `dist` under plain Node ESM): positive `task-package`, `task-package.snapshot` (WP), `result-manifest`, `result-manifest.snapshot` (WP), `baseline-content`, `requirements-proposal`, `plan-proposal`, `design-manifest`, `execution-widget-context` (data only; `buildExecutionWidgetContextFixture()` adds the callbacks), `reserve-response`, `error-body`; typed loaders parse through the published schema and return fresh copies. Negative fixtures in `lib/fixtures/negative/` are self-describing wrappers `{ description, expected: { stage, code, status }, documentType, correlatesWith?, targetProfile?, document }` where `stage` is `schema | profile | correlation | dag | idempotency`. `buildResultManifest(taskPackage, overrides)` is a deterministic fake-executor builder (no clock, no randomness; `checkStatus`, `resultRevision` and `baseRevision` overrides). Expected codes are for the labelled stage in isolation; through a route, earlier stages run first (UA-12 order), see the hand-over note for the route-level mapping.
 
 ## Access Control
 
@@ -353,7 +367,7 @@ QA owns the Playwright specs (`packages/core/src/modules/delivery_os/__integrati
 | R17–R18 cancel / reconcile | TC-DELIVERY-007 | `lib/__tests__/attempts.test.ts`, `commands/__tests__/attempts.test.ts` | separate features, late result rejected, `unknown` blocks reserve/archive, `completed` never `verified` |
 | R19–R20 evidence, deploy decisions | TC-DELIVERY-008 | `commands/__tests__/evidence.test.ts`, `commands/__tests__/decisions.test.ts` | discriminator, revision and AC mapping, false hashes, review `approved` → `verified` only with proof, `changes_requested` round limit, deploy refused on non-green report |
 | R21–R22 release decisions, report | TC-DELIVERY-009 | `lib/__tests__/deliveryReport.test.ts`, `lib/__tests__/projectStatus.test.ts` | missing/failed/not_run (incl. runner `skipped`) block, manual AC stays `manual_pending` until a human review, missing scan blocks, unverified deployment blocks release, old decision not applied to a new revision |
-| Contracts / fixtures | — | `lib/__tests__/contracts.test.ts`, `lib/__tests__/hash.test.ts`, `data/__tests__/validators.test.ts` | every fixture parses or fails as labelled; unknown `schemaVersion` rejected; snapshot revision accepted for WP, rejected for React |
+| Contracts / fixtures | — | `lib/__tests__/contracts.test.ts`, `lib/__tests__/hash.test.ts`, `lib/__tests__/targetProfiles.test.ts`, `lib/__tests__/fixtures.test.ts`, `data/__tests__/validators.test.ts` | every fixture parses or fails as labelled; unknown `schemaVersion` rejected; snapshot revision accepted for WP, rejected for React |
 | OSS-only manual flow (enterprise disabled) | TC-DELIVERY-010 | `commands/__tests__/manualFlow.test.ts` | project → baseline with snapshot → real decisions → ready → reserve → package → result, with `OM_ENABLE_ENTERPRISE_MODULES=false` |
 | UI `/backend/delivery/projects` → intake → design review → baseline (FROM_BRIEF, FROM_DESIGN) | TC-DELIVERY-011 | — | both inputs, comment on a version, dialog keyboard (Cmd/Ctrl+Enter, Escape), loading and error states |
 | UI `/backend/delivery/projects/:id` task → attempt → evidence → report → release | TC-DELIVERY-012 | — | manual handoff visible, result provenance, conflict on stale approval, cancel/reconcile states |
@@ -399,6 +413,7 @@ Enterprise flows (`/api/delivery_agents/*`, worker delivery, workflow resume) ar
 
 ## Changelog
 
+- 2026-09-19 — Target profiles, fixtures and H4 hand-over (OSS-02 L1b, T005): `lib/targetProfiles.ts` (three v1 profiles + helpers), additive contract exports (`deliveryEvidenceKindSchema`, `reserveAttemptRequestSchema`, `reserveAttemptResponseSchema`, `buildPackageUrl`, `DeliveryCheckResult`, `isSameRevision`), `lib/resultAcceptance.ts#checkResultCorrelation`, `lib/dag.ts`, positive and negative fixtures with loaders and `buildResultManifest`. No route, path, schema-version string or error code changed (contracts.ts only gained exports); hand-over note `context/changes/delivery-os-oss-domain/handover/OSS-02-H4-contracts.md`.
 - 2026-09-19 — Executable contracts (OSS-02 L1a, T004): `lib/contracts.ts` + `lib/hash.ts` landed. Additive clarifications: TaskPackage carries `title` and optional `description` and at least one AC; BaselineContent and PlanProposal carry `declaredTests[]`; attempt `outcome` values listed; a check's `sourceRevision` must equal `resultRevision`; documents nested deeper than 64 levels → `413 payload_too_large`; `parseVersioned` returns `unsupported_schema_version` before shape validation.
 - 2026-09-19 — Review fixes (OSS-01, T003): `verified` only via review evidence with proof; replay-before-lock for proposals; UA-12 validation order; explicit `baseCommit`/`resultCommit`; `manualChecks`; runner `skipped` → `not_run`; UA-19 `not_started`/`stopped`; typed `trustedExecution` for `automatic`; `change` decision kind dropped. Codes deliberately renamed vs the breakdown (this spec is authoritative): `attempt_limit` → `attempt_limit_reached`, `task_blocked` → `task_not_ready`, `active_attempt` → `attempt_active`; package export uses `delivery_os.attempts.manage`.
 - 2026-09-19 — Initial draft (OSS-01, T003): data model, contracts v1 names, ACL, events, spot, DI service, commands, frozen route map with router/`makeCrudRoute` evidence, API table UA-01…UA-20, error catalogue, integration coverage, Migration & BC.

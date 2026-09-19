@@ -97,6 +97,8 @@ export type DeliveryErrorBody = z.infer<typeof deliveryErrorBodySchema>
 
 export type DeliveryErrorResult = { status: number; body: DeliveryErrorBody }
 
+export type DeliveryCheckResult = { ok: true } | ({ ok: false } & DeliveryErrorResult)
+
 export function buildDeliveryError(
   code: DeliveryErrorCode,
   error: string,
@@ -192,7 +194,7 @@ function checkRevisionCommit(
   }
 }
 
-function isSameRevision(first: SourceRevision, second: SourceRevision): boolean {
+export function isSameRevision(first: SourceRevision, second: SourceRevision): boolean {
   if (first.kind === 'git' && second.kind === 'git') return first.commitSha === second.commitSha
   if (first.kind === 'snapshot' && second.kind === 'snapshot') {
     return first.contentHash === second.contentHash && first.externalWorkspaceId === second.externalWorkspaceId
@@ -636,6 +638,43 @@ export const executionAttemptsSchema = z.array(executionAttemptSchema).superRefi
     seenKeys.add(attempt.idempotencyKey)
   })
 })
+
+export const deliveryEvidenceKindSchema = z.enum([
+  'result_manifest',
+  'test',
+  'review',
+  'screenshot',
+  'deployment',
+  'scan',
+  'reference_material',
+])
+export type DeliveryEvidenceKind = z.infer<typeof deliveryEvidenceKindSchema>
+
+export function buildPackageUrl(taskId: string, attemptId: string): string {
+  return `/api/delivery_os/tasks/${encodeURIComponent(taskId)}/package?attemptId=${encodeURIComponent(attemptId)}`
+}
+
+export const reserveAttemptRequestSchema = z.object({
+  mode: z.literal('manual_handoff'),
+  baseRevision: sourceRevisionSchema,
+})
+export type ReserveAttemptRequest = z.infer<typeof reserveAttemptRequestSchema>
+
+export const reserveAttemptResponseSchema = z
+  .object({
+    attemptId: uuidSchema,
+    taskId: uuidSchema,
+    baselineId: uuidSchema,
+    baselineHash: sha256Schema,
+    taskUpdatedAt: isoDateTimeSchema,
+    packageUrl: z.string().min(1).max(500),
+  })
+  .superRefine((value, ctx) => {
+    if (value.packageUrl !== buildPackageUrl(value.taskId, value.attemptId)) {
+      addDeliveryIssue(ctx, 'correlation_mismatch', ['packageUrl'], 'packageUrl must point at this task and attempt')
+    }
+  })
+export type ReserveAttemptResponse = z.infer<typeof reserveAttemptResponseSchema>
 
 function callbackSchema<TCallback extends (...args: never[]) => unknown>() {
   return z.custom<TCallback>((value) => typeof value === 'function', { message: 'Expected a function' })

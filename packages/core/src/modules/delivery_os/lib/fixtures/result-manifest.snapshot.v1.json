@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "delivery.result-manifest/v1",
+  "projectId": "77777777-7777-4777-8777-777777777777",
+  "taskId": "88888888-8888-4888-8888-888888888888",
+  "attemptId": "99999999-9999-4999-8999-999999999999",
+  "baselineId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "baselineHash": "e8f4cc3f3b5992d54429734a8408e9a2efaf4fbb15cb27a4703abd12e2b048da",
+  "targetProfileVersion": 1,
+  "externalRunId": "fake-run-99999999-9999-4999-8999-999999999999",
+  "baseRevision": {
+    "kind": "snapshot",
+    "contentHash": "a2cdbe522313a838c28d1619c897c0024000062621ceeb4c8afbff9453c53986",
+    "externalWorkspaceId": "wp-local-1"
+  },
+  "resultRevision": {
+    "kind": "snapshot",
+    "contentHash": "e76fdbeb23070414ba7715acd3b9829bb7512556dc3b0389cd16cd10b76e8c1a",
+    "externalWorkspaceId": "wp-local-1"
+  },
+  "changedPaths": [
+    "templates/front-page.html",
+    "parts/services.html"
+  ],
+  "artifacts": [],
+  "checks": [
+    {
+      "checkId": "smoke-tests-1",
+      "testId": "front page AC-101: services section lists three services",
+      "acIds": [
+        "AC-101"
+      ],
+      "commandProfileId": "playwright-smoke",
+      "testDefinitionHash": "7d8944fa744455de454c342a4846edfd7ba42b4f7a902e2c5ba73935ab514526",
+      "rawReportHash": "cfec2c44a2f4aea26b450972f67e6eeb4ed689e77f828bc85833b81bae2b89b2",
+      "validationProfileVersion": 1,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1000,
+      "sourceRevision": {
+        "kind": "snapshot",
+        "contentHash": "e76fdbeb23070414ba7715acd3b9829bb7512556dc3b0389cd16cd10b76e8c1a",
+        "externalWorkspaceId": "wp-local-1"
+      }
+    },
+    {
+      "checkId": "lint",
+      "testId": "lint",
+      "acIds": [],
+      "commandProfileId": "php-lint",
+      "testDefinitionHash": "5752310e3de7abda85d3bd44f2b0f781cee7f5a0205dd7d1268f523aaca8c7fb",
+      "rawReportHash": "f9242cfc429207ea1a11cf4a42d644859ebd91ef1053d0d7f6556faf7e22a406",
+      "validationProfileVersion": 1,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1000,
+      "sourceRevision": {
+        "kind": "snapshot",
+        "contentHash": "e76fdbeb23070414ba7715acd3b9829bb7512556dc3b0389cd16cd10b76e8c1a",
+        "externalWorkspaceId": "wp-local-1"
+      }
+    }
+  ],
+  "agentDeclaration": {
+    "summary": "Deterministic fake executor result",
+    "claimedAcIds": [
+      "AC-101"
+    ]
+  },
+  "findings": [],
+  "usage": {
+    "source": "runner",
+    "values": "unknown"
+  }
+}

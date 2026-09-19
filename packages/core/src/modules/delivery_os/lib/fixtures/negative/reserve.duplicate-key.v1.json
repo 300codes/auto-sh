@@ -1,0 +1,26 @@
+{
+  "description": "Two reserve bodies under one Idempotency-Key with different payloads; the second must get 409.",
+  "expected": {
+    "stage": "idempotency",
+    "code": "idempotency_conflict",
+    "status": 409
+  },
+  "documentType": "reserve-pair",
+  "document": {
+    "idempotencyKey": "reserve-22222222-2222-4222-8222-222222222222-1",
+    "first": {
+      "mode": "manual_handoff",
+      "baseRevision": {
+        "kind": "git",
+        "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+      }
+    },
+    "second": {
+      "mode": "manual_handoff",
+      "baseRevision": {
+        "kind": "git",
+        "commitSha": "d291e183e9e6db84ca0d836d57b918fa02f41cbf"
+      }
+    }
+  }
+}

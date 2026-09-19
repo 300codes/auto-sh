@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "delivery.design-manifest/v1",
+  "screens": [
+    {
+      "fileKey": "FigmaDeliveryDemo",
+      "nodeId": "12:34",
+      "name": "Service catalogue - desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "attachmentId": "55555555-5555-4555-8555-555555555555",
+      "sha256": "238ec85f8984fd50cb8bb854c5400e8e260d310d7dd672618f6edcc27f2777f8",
+      "capturedAt": "2026-09-19T08:00:00.000Z",
+      "figmaVersion": "2150470001"
+    }
+  ],
+  "tokens": {
+    "color.primary": "#1f6feb",
+    "space.md": 16
+  },
+  "producedBy": {
+    "tool": "figma-mcp",
+    "sessionRef": null
+  }
+}

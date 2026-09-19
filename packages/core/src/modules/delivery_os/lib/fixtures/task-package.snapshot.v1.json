@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "delivery.task-package/v1",
+  "projectId": "77777777-7777-4777-8777-777777777777",
+  "taskId": "88888888-8888-4888-8888-888888888888",
+  "attemptId": "99999999-9999-4999-8999-999999999999",
+  "baselineId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "baselineHash": "e8f4cc3f3b5992d54429734a8408e9a2efaf4fbb15cb27a4703abd12e2b048da",
+  "targetProfileId": "wordpress-theme",
+  "targetProfileVersion": 1,
+  "title": "Front page services section",
+  "requirements": [
+    {
+      "id": "REQ-101",
+      "title": "Services section on the front page"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-101",
+      "requirementId": "REQ-101",
+      "description": "The front page lists the three services."
+    }
+  ],
+  "designArtifactRefs": [
+    {
+      "fileKey": null,
+      "nodeId": null,
+      "name": "Front page - manual snapshot",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "attachmentId": "55555555-5555-4555-8555-555555555555",
+      "sha256": "16a208f0b24f692a58db90c0a28f109ee49f1d7cf48956473181efaa4467574f",
+      "capturedAt": "2026-09-19T08:30:00.000Z"
+    }
+  ],
+  "repositoryRef": null,
+  "baseRevision": {
+    "kind": "snapshot",
+    "contentHash": "a2cdbe522313a838c28d1619c897c0024000062621ceeb4c8afbff9453c53986",
+    "externalWorkspaceId": "wp-local-1"
+  },
+  "allowedPaths": [
+    "templates/**",
+    "parts/**",
+    "patterns/**"
+  ],
+  "validationProfile": {
+    "version": 1,
+    "requiredTests": {
+      "AC-101": [
+        "front page AC-101: services section lists three services"
+      ]
+    },
+    "checks": [
+      {
+        "checkId": "smoke-tests",
+        "commandProfileId": "playwright-smoke",
+        "kind": "test",
+        "required": true
+      },
+      {
+        "checkId": "lint",
+        "commandProfileId": "php-lint",
+        "kind": "lint",
+        "required": true
+      }
+    ]
+  },
+  "limits": {
+    "maxParallelTasks": 2,
+    "maxCorrectionRounds": 2,
+    "attemptTimeoutMinutes": 20
+  },
+  "idempotencyKey": "reserve-88888888-8888-4888-8888-888888888888-1"
+}
