@@ -22,7 +22,7 @@ export function DeploymentSummary({ report }: { report: DeliveryReportV1 }) {
   const deployment = report.deployment
   const url = safeDeploymentUrl(deployment.url)
   return (
-    <section className="space-y-3" data-testid="delivery-report-deployment">
+    <section id="report-deployment" className="space-y-3" data-testid="delivery-report-deployment">
       <SectionHeader title={t('delivery_os.report.deployment.title')} />
       <StatusBadge variant={deployment.status === 'verified' ? 'success' : 'neutral'}>{t(`delivery_os.report.status.${deployment.status}`)}</StatusBadge>
       {deployment.status === 'missing' ? <EmptyState title={t('delivery_os.report.deployment.missing')} /> : (

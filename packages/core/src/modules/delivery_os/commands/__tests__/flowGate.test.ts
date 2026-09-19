@@ -1,3 +1,9 @@
+import { hashCanonical } from '../../lib/hash'
+import { draftAttachmentRows, makeDraft } from './baselineTestKit'
+import type { BaselineCommandResult } from '../baselines'
+import { flowRefsHash } from '../../lib/flowBaseline'
+import { createDeliveryOsAttemptQueries } from '../attemptQueries'
+import type { EntityManager } from '@mikro-orm/postgresql'
 jest.mock('@open-mercato/shared/lib/i18n/server', () => ({
   resolveTranslations: async () => ({
     translate: (_key: string, fallback?: string) => fallback ?? _key,
@@ -178,7 +184,7 @@ type StageRef = { artifactId: string; version: number; contentHash: string }
 function artifactRow(stageId: FlowStageId, version: number, upstream: { stageId: FlowStageId; ref: StageRef } | null): StageRef {
   stageSeq += 1
   const artifactId = `${String(stageSeq).padStart(8, '0')}-aaaa-4aaa-8aaa-000000000000`
-  const contentHash = `${stageId}-v${version}`.padEnd(64, '0')
+  const contentHash = hashCanonical({ stageId, version })
   store.stageArtifacts.push({
     id: artifactId,
     tenantId: TENANT_ID,
@@ -226,6 +232,16 @@ function seedStages(pendingFrom: FlowStageId | 'none'): Record<FlowStageId, Stag
     upstream = { stageId, ref }
   }
   return refs
+}
+
+function seedBinding(refs: Record<FlowStageId, StageRef>) {
+  const stageRefs = FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, ...refs[stageId] }))
+  store.flowBaselineBindings.push({
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaabbbb',
+    tenantId: TENANT_ID, organizationId: ORG_ID, projectId: PROJECT_ID,
+    baselineId: BASELINE_ID, templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE),
+    stageRefs, refsHash: flowRefsHash(stageRefs),
+  })
 }
 
 function projectLock(): Record<string, string> {
@@ -359,8 +375,8 @@ describe('flow gate on the v1 dispatch and publish paths (C21, UA-48)', () => {
     )
   })
 
-  it('lets the v1 flow proceed once all four stages are approved and current', async () => {
-    seedStages('none')
+  it('lets the v1 flow proceed once all four stages and the binding are current', async () => {
+    seedBinding(seedStages('none'))
     const ready = await runReady()
     expect(ready.status).toBe('ready')
     expect(store.tasks[0].status).toBe('ready')
@@ -461,5 +477,83 @@ describe('flow gate on the v1 dispatch and publish paths (C21, UA-48)', () => {
     expect((await runDeploy()).verdict).toBe('approved')
     expect(queriedEntities).not.toContain(DeliveryFlowStageArtifact)
     expect(queriedEntities).not.toContain(DeliveryFlowStageDecision)
+  })
+})
+
+
+describe('flow baseline execution provenance', () => {
+  it('refuses ready and reserve with approved stages but without a binding', async () => {
+    seedStages('none')
+    expect((await catchHttpError(() => runReady())).body).toMatchObject({ code: 'baseline_not_approved', details: [{ code: 'flow_baseline_binding_missing' }] })
+    expect((await catchHttpError(() => runAutomaticReserve())).body).toMatchObject({ code: 'baseline_not_approved' })
+    expect(store.tasks[1].executionAttempts).toEqual([])
+  })
+
+  it('rejects a binding from another organization', async () => {
+    seedBinding(seedStages('none'))
+    store.flowBaselineBindings[0].organizationId = '99999999-9999-4999-8999-999999999999'
+    expect((await catchHttpError(() => runReady())).body.code).toBe('baseline_not_approved')
+  })
+
+  it('allows the own claimed attempt and fails closed before a stale external effect', async () => {
+    seedBinding(seedStages('none'))
+    const reserved = await runAutomaticReserve()
+    const attempt = store.tasks[1].executionAttempts[0]
+    attempt.state = 'claimed'
+    attempt.claimedAt = NOW
+    attempt.workerRef = 'worker:test'
+    const { em } = makeHarness(store)
+    const queries = createDeliveryOsAttemptQueries(em as unknown as EntityManager)
+    await expect(queries.assertExecutionReady({ tenantId: TENANT_ID, organizationId: ORG_ID }, READY_TASK_ID, reserved.attemptId)).resolves.toBeUndefined()
+    store.flowBaselineBindings = []
+    await expect(queries.assertExecutionReady({ tenantId: TENANT_ID, organizationId: ORG_ID }, READY_TASK_ID, reserved.attemptId)).rejects.toMatchObject({ status: 422 })
+  })
+
+  it('preserves reservation replay even after its binding is no longer current', async () => {
+    seedBinding(seedStages('none'))
+    const first = await runAutomaticReserve('binding-replay')
+    store.flowBaselineBindings = []
+    const replay = await runAutomaticReserve('binding-replay')
+    expect(replay).toMatchObject({ attemptId: first.attemptId, created: false })
+  })
+})
+
+
+describe('append-only baseline bindings', () => {
+  it('freezes identical content a second time with new full refs without changing the first binding', async () => {
+    const firstRefs = seedStages('none')
+    const draft = makeDraft()
+    const bindDraft = (refs: Record<FlowStageId, StageRef>) => {
+      store.projects[0].draftSpec = { ...draft, flowBaseline: {
+        templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE),
+        draftHash: hashCanonical(draft),
+        stageRefs: FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, ...refs[stageId] })),
+      } }
+    }
+    bindDraft(firstRefs)
+    store.attachments = draftAttachmentRows(draft)
+    const { ctx } = makeHarness(store, { headers: projectLock() })
+    const freeze = getHandler<BaselineCommandResult>('delivery_os.baselines.create')
+    const first = await freeze.execute({ projectId: PROJECT_ID, source: 'manual' }, ctx)
+    expect(store.flowBaselineBindings).toHaveLength(1)
+    const original = structuredClone(store.flowBaselineBindings[0])
+    const secondRefs = {} as Record<FlowStageId, StageRef>
+    let upstream: { stageId: FlowStageId; ref: StageRef } | null = null
+    for (const stageId of FLOW_APPROVAL_STAGE_ORDER) {
+      const ref = artifactRow(stageId, 2, upstream)
+      secondRefs[stageId] = ref
+      approvalRow(stageId, ref, 'Client')
+      upstream = { stageId, ref }
+    }
+    bindDraft(secondRefs)
+    const second = await freeze.execute({ projectId: PROJECT_ID, source: 'manual' }, ctx)
+    expect(second).toMatchObject({ baselineId: first.baselineId, contentHash: first.contentHash, duplicate: true })
+    expect(store.flowBaselineBindings).toHaveLength(2)
+    expect(store.flowBaselineBindings[0]).toEqual(original)
+    expect(store.flowBaselineBindings[1].refsHash).not.toBe(original.refsHash)
+    const decisionCount = store.decisions.length
+    await freeze.execute({ projectId: PROJECT_ID, source: 'manual' }, ctx)
+    expect(store.flowBaselineBindings).toHaveLength(2)
+    expect(store.decisions).toHaveLength(decisionCount)
   })
 })

@@ -1,7 +1,7 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { createLogger } from '@open-mercato/shared/lib/logger'
-import { DeliveryIntake, DeliveryProject, DeliveryTask } from '../data/entities'
+import { DeliveryCommentThread, DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryIntake, DeliveryProject, DeliveryTask } from '../data/entities'
 import {
   buildDeliveryError,
   FLOW_APPROVAL_STAGE_ORDER,
@@ -30,6 +30,7 @@ const logger = createLogger('delivery_os')
 
 export type DeliveryOsFlowQueries = {
   flowStatus(projectId: string, scope: DeliveryScope): Promise<FlowStatusV1>
+  portfolio(projectIds: string[], scope: DeliveryScope): Promise<FlowStatusV1[]>
 }
 
 function assertQueryScope(scope: DeliveryScope | null | undefined): DeliveryScope {
@@ -67,8 +68,56 @@ function unreadableSnapshotStatus(base: FlowStatusV1, templateRef: FlowTemplateR
  * F6 read model shared by `GET /projects/:id/flow` and the enterprise/workflow steps (DI `deliveryOsFlowQueries`).
  * Read-only: archived projects stay readable, nothing is locked or written.
  */
+function projectStatus(project: DeliveryProject, intake: DeliveryIntake | null, tasks: DeliveryTask[], artifactRows: DeliveryFlowStageArtifact[], decisionRows: DeliveryFlowStageDecision[], threads: CommentThreadRecord[]): FlowStatusV1 {
+  const pinned = isFlowPinned(project)
+  const template = pinned ? readPinnedTemplate(project) : null
+  const templateRef = pinned ? readPinnedTemplateRef(project) : null
+  const artifacts = artifactRows.map((row) => ({ ...toStageArtifactRecord(row), createdAt: row.createdAt.toISOString() }))
+  const decisions = decisionRows.map(toStageDecisionRecord)
+  const openThreadsByStage =
+    template && threads.length > 0 ? countBlockingThreadsByStage(threads, computeStageCurrency(template, artifacts, decisions)) : {}
+
+  const statusProject: FlowStatusProject = {
+    projectId: project.id,
+    template,
+    templateRef: template ? templateRef : null,
+    workflowInstanceId: project.flowWorkflowInstanceId ?? null,
+    updatedAt: project.updatedAt.toISOString(),
+  }
+  const status = buildFlowStatus({
+    project: statusProject,
+    intakeStep: intake?.step ?? null,
+    artifacts,
+    decisions,
+    openThreadsByStage,
+    attempts: collectAttempts(tasks),
+  })
+  if (!pinned || (template && templateRef)) return status
+  logger.warn('pinned flow template snapshot is unreadable; flow status fails closed', { projectId: project.id, templateId: project.flowTemplateId })
+  return unreadableSnapshotStatus(status, templateRef)
+}
+
 export function createDeliveryOsFlowQueries(rootEm: EntityManager): DeliveryOsFlowQueries {
   return {
+    async portfolio(projectIds, rawScope) {
+      const scope = assertQueryScope(rawScope)
+      if (projectIds.length === 0) return []
+      if (projectIds.length > 50) throw new Error('[internal] Portfolio reads at most 50 projects')
+      const em = rootEm.fork()
+      const projects = await findWithDecryption(em, DeliveryProject, { id: { $in: projectIds }, ...scope }, undefined, scope)
+      const where = { projectId: { $in: projects.map((project) => project.id) }, ...scope }
+      const [intakes, tasks, artifacts, decisions, threads] = await Promise.all([
+        findWithDecryption(em, DeliveryIntake, where, undefined, scope),
+        findWithDecryption(em, DeliveryTask, { ...where, deletedAt: null }, undefined, scope),
+        findWithDecryption(em, DeliveryFlowStageArtifact, where, { orderBy: { version: 'asc' } }, scope),
+        findWithDecryption(em, DeliveryFlowStageDecision, where, { orderBy: { decidedAt: 'asc', id: 'asc' } }, scope),
+        findWithDecryption(em, DeliveryCommentThread, where, undefined, scope),
+      ])
+      return projects.map((project) => projectStatus(project, intakes.find((row) => row.projectId === project.id) ?? null,
+        tasks.filter((row) => row.projectId === project.id), artifacts.filter((row) => row.projectId === project.id), decisions.filter((row) => row.projectId === project.id),
+        threads.filter((row) => row.projectId === project.id).map((row) => ({ threadKey: row.threadKey, stageId: row.stageId, artifactId: row.artifactId ?? null, sourceStatus: row.sourceStatus, triageStatus: row.triageStatus, deferral: row.deferral ? { artifactId: row.deferral.artifactId, contentHash: row.deferral.contentHash } : null })),
+      ))
+    },
     async flowStatus(projectId, rawScope) {
       const scope = assertQueryScope(rawScope)
       const em = rootEm.fork()
@@ -79,34 +128,10 @@ export function createDeliveryOsFlowQueries(rootEm: EntityManager): DeliveryOsFl
       const intake = await findOneWithDecryption(em, DeliveryIntake, { projectId: project.id, ...scoped }, undefined, scope)
       const tasks = await findWithDecryption(em, DeliveryTask, { projectId: project.id, ...scoped, deletedAt: null }, undefined, scope)
       const pinned = isFlowPinned(project)
-      const template = pinned ? readPinnedTemplate(project) : null
-      const templateRef = pinned ? readPinnedTemplateRef(project) : null
       const artifactRows = pinned ? await loadStageArtifactRows(em, project.id, scope) : []
       const decisionRows = pinned ? await loadStageDecisionRows(em, project.id, scope) : []
-      const artifacts = artifactRows.map((row) => ({ ...toStageArtifactRecord(row), createdAt: row.createdAt.toISOString() }))
-      const decisions = decisionRows.map(toStageDecisionRecord)
-      const threads = template ? await loadThreads(em, project.id, scope) : []
-      const openThreadsByStage =
-        template && threads.length > 0 ? countBlockingThreadsByStage(threads, computeStageCurrency(template, artifacts, decisions)) : {}
-
-      const statusProject: FlowStatusProject = {
-        projectId: project.id,
-        template,
-        templateRef: template ? templateRef : null,
-        workflowInstanceId: project.flowWorkflowInstanceId ?? null,
-        updatedAt: project.updatedAt.toISOString(),
-      }
-      const status = buildFlowStatus({
-        project: statusProject,
-        intakeStep: intake?.step ?? null,
-        artifacts,
-        decisions,
-        openThreadsByStage,
-        attempts: collectAttempts(tasks),
-      })
-      if (!pinned || (template && templateRef)) return status
-      logger.warn('pinned flow template snapshot is unreadable; flow status fails closed', { projectId: project.id, templateId: project.flowTemplateId })
-      return unreadableSnapshotStatus(status, templateRef)
+      const threads = pinned && readPinnedTemplate(project) ? await loadThreads(em, project.id, scope) : []
+      return projectStatus(project, intake, tasks, artifactRows, decisionRows, threads)
     },
   }
 }

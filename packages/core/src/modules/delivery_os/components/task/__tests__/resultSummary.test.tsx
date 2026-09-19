@@ -62,17 +62,17 @@ describe('ResultSummary — usage', () => {
     expect(screen.queryByTestId('result-usage-unknown')).toBeNull()
   })
 
-  it('says outright that usage does not survive a reload, and the English copy keeps saying it', () => {
+  it('states that accepted usage remains available after reload', () => {
     render(<ResultSummary manifest={manifest} source="manual" accepted />)
-    expect(screen.getByTestId('result-usage-not-persisted')).toBeTruthy()
-    const copy = messages['delivery_os.task.result.usage.notPersisted']
-    expect(copy).toContain('no read endpoint')
-    expect(copy).toContain('reloaded')
+    expect(screen.getByTestId('result-usage-persisted')).toBeTruthy()
+    const copy = messages['delivery_os.task.result.usage.persisted']
+    expect(copy).toContain('stored')
+    expect(copy).toContain('after reload')
   })
 
   it('keeps the caveat out of the pre-submit preview, where nothing has been stored yet', () => {
     render(<ResultSummary manifest={manifest} source="manual" />)
-    expect(screen.queryByTestId('result-usage-not-persisted')).toBeNull()
+    expect(screen.queryByTestId('result-usage-persisted')).toBeNull()
   })
 })
 

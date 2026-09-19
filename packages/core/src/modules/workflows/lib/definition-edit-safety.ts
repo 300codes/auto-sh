@@ -23,6 +23,40 @@
  */
 
 import type { WorkflowInstanceStatus } from '../data/entities'
+import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
+
+export const IMMUTABLE_DEFINITION_CONFLICT_CODE = 'WORKFLOW_PUBLISHED_DEFINITION_IMMUTABLE'
+
+function canonicalValue(value: unknown): string {
+  if (value instanceof Date) return JSON.stringify(value.toISOString())
+  if (Array.isArray(value)) return `[${value.map(canonicalValue).join(',')}]`
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value).filter(([, entry]) => entry !== undefined).sort(([first], [second]) => first.localeCompare(second)).map(([key, entry]) => `${JSON.stringify(key)}:${canonicalValue(entry)}`).join(',')}}`
+  }
+  return JSON.stringify(value) ?? 'null'
+}
+
+export function assertImmutableDefinitionUpdate(previous: {
+  id: string; lifecycle?: string; metadata?: unknown; definition: unknown;
+  version?: number; grantedFeatures?: unknown; effectiveFrom?: unknown; effectiveTo?: unknown; deletedAt?: unknown
+}, next: {
+  metadata?: unknown; definition?: unknown; version?: number;
+  grantedFeatures?: unknown; effectiveFrom?: unknown; effectiveTo?: unknown; deletedAt?: unknown
+}): void {
+  const metadata = asRecord(previous.metadata)
+  if (metadata?.immutablePolicy !== 'delivery') return
+  const removesPolicy = next.metadata !== undefined && asRecord(next.metadata)?.immutablePolicy !== 'delivery'
+  const changed = (['definition', 'metadata', 'version', 'grantedFeatures', 'effectiveFrom', 'effectiveTo', 'deletedAt'] as const)
+    .some((key) => next[key] !== undefined && canonicalValue(previous[key]) !== canonicalValue(next[key]))
+  if (removesPolicy || (previous.lifecycle !== 'draft' && changed)) {
+    throw new CrudHttpError(409, {
+      error: '[internal] Published Delivery definitions require a new version',
+      code: IMMUTABLE_DEFINITION_CONFLICT_CODE,
+      definitionId: previous.id,
+      remedy: { action: 'createVersion', method: 'POST', endpoint: `/api/workflows/definitions/${previous.id}/publish` },
+    })
+  }
+}
 
 /**
  * Instance statuses that still execute (or still resolve) their pinned

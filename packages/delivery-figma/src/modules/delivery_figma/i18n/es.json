@@ -1,0 +1,14 @@
+{
+  "delivery_figma.credentials.authType": "Tipo de autenticación",
+  "delivery_figma.credentials.healthFileKey": "Clave del archivo para comprobar la conexión",
+  "delivery_figma.credentials.personal": "Token de acceso personal",
+  "delivery_figma.credentials.token": "Token de acceso",
+  "delivery_figma.errors.figma_access_denied": "Figma denegó el acceso. Comprueba los permisos de la conexión.",
+  "delivery_figma.errors.figma_file_missing": "No se encontró el archivo de Figma.",
+  "delivery_figma.errors.figma_rate_limited": "Se alcanzó el límite de solicitudes de Figma. Inténtalo más tarde.",
+  "delivery_figma.errors.figma_response_invalid": "Figma devolvió una captura de comentarios incompleta o no válida.",
+  "delivery_figma.errors.figma_response_too_large": "La captura de comentarios supera el tamaño admitido.",
+  "delivery_figma.errors.figma_unavailable": "Figma no está disponible en este momento.",
+  "delivery_figma.errors.healthFailed": "No se pueden leer los comentarios del archivo de Figma configurado.",
+  "delivery_figma.errors.healthUnconfigured": "Configura un archivo accesible para comprobar la conexión."
+}

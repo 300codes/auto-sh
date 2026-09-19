@@ -140,7 +140,7 @@ export function computeStageCurrency(
           blockers.push({ kind: 'upstream_not_approved', stageId, ref: upstreamId })
           continue
         }
-        if (!bound || !upstream.currentArtifact || upstream.currentArtifact.contentHash !== bound.contentHash) {
+        if (!bound || !upstream.currentArtifact || upstream.currentArtifact.contentHash !== bound.contentHash || upstream.currentArtifact.artifactId !== bound.artifactId || upstream.currentArtifact.version !== bound.version) {
           currency = 'stale'
           blockers.push({ kind: 'upstream_stale', stageId, ref: upstreamId })
         }

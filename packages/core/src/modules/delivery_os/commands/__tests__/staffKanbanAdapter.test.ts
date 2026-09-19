@@ -102,44 +102,20 @@ describe('default deliveryStaffKanbanAdapter', () => {
     await expect(createCommandBusStaffKanbanAdapter().createTask({ staffProjectId: STAFF_PROJECT_ID, statusId: STATUS_ID, title: 'T', description: 'D' }, session)).rejects.toThrow('[internal]')
   })
 
-  it('hands staff a context whose em stays in the thread transaction, also after fork, and carries no request', async () => {
-    const { session, calls, forks } = makeSession({ [STAFF_TASK_CREATE_COMMAND_ID]: { taskId: TASK_ID } })
-    await createCommandBusStaffKanbanAdapter().createTask({ staffProjectId: STAFF_PROJECT_ID, statusId: STATUS_ID, title: 'T', description: 'D' }, session)
-    const staffCtx = calls[0].ctx
-    expect(staffCtx.request).toBeUndefined()
-    expect(staffCtx.transactionalEm).toBe(session.tx)
-    expect(staffCtx.auth).toBe(session.ctx.auth)
-    const em = staffCtx.container.resolve('em') as unknown as FakeEm
-    expect(em.label).toBe('tx>fork')
-    expect(em.getTransactionContext()).toBe(TX_CONTEXT)
-    const forked = em.fork() as unknown as FakeEm
-    forked.fork({ clear: true } as ForkOptions)
-    expect(forks.every((options) => options.keepTransactionContext === true)).toBe(true)
-    expect(forks).toHaveLength(3)
-    expect(staffCtx.container.resolve('rbacService')).toEqual({ marker: true })
-  })
-
-  it('holds staff side effects back until the transaction committed and drops them on rollback', async () => {
-    const { session, calls, engine } = makeSession({ [STAFF_TASK_CREATE_COMMAND_ID]: { taskId: TASK_ID } })
+  it('uses Staff-owned transactions and forwards stable creation keys without replacing DI or side effects', async () => {
+    const { session, calls, forks, engine } = makeSession({
+      [STAFF_TASK_CREATE_COMMAND_ID]: { taskId: TASK_ID },
+      [STAFF_TASK_COMMENT_CREATE_COMMAND_ID]: { commentId: COMMENT_ID },
+    })
     const adapter = createCommandBusStaffKanbanAdapter()
-    const mark = { action: 'created' as const, entity: { id: TASK_ID }, identifiers: { id: TASK_ID, tenantId: TENANT_ID, organizationId: ORG_ID } }
-
-    await adapter.createTask({ staffProjectId: STAFF_PROJECT_ID, statusId: STATUS_ID, title: 'T', description: 'D' }, session)
-    const staffEngine = calls[0].ctx.container.resolve('dataEngine') as typeof engine
-    staffEngine.markOrmEntityChange(mark)
-    await staffEngine.flushOrmEntityChanges()
-    expect(staffEngine.other()).toBe('kept')
-    expect(engine.markOrmEntityChange).not.toHaveBeenCalled()
-    expect(engine.flushOrmEntityChanges).not.toHaveBeenCalled()
-
-    await adapter.settle?.(session, false)
-    expect(engine.markOrmEntityChange).not.toHaveBeenCalled()
-
-    await adapter.createTask({ staffProjectId: STAFF_PROJECT_ID, statusId: STATUS_ID, title: 'T', description: 'D' }, session)
-    ;(calls[1].ctx.container.resolve('dataEngine') as typeof engine).markOrmEntityChange(mark)
-    await adapter.settle?.(session, true)
-    expect(engine.markOrmEntityChange).toHaveBeenCalledTimes(1)
-    expect(engine.markOrmEntityChange).toHaveBeenCalledWith(mark)
-    expect(engine.flushOrmEntityChanges).toHaveBeenCalledTimes(1)
+    await adapter.createTask({ staffProjectId: STAFF_PROJECT_ID, statusId: STATUS_ID, title: 'T', description: 'D', idempotencyKey: 'thread-key' }, session)
+    await adapter.createComment({ taskId: TASK_ID, body: 'Reply', idempotencyKey: 'reply-key' }, session)
+    expect(calls[0].input.idempotencyKey).toBe('thread-key')
+    expect(calls[1].input.idempotencyKey).toBe('reply-key')
+    expect(calls[0].ctx.container).toBe(session.ctx.container)
+    expect(calls[0].ctx.transactionalEm).toBeUndefined()
+    expect(calls[0].ctx.request).toBeUndefined()
+    expect(calls[0].ctx.container.resolve('dataEngine')).toBe(engine)
+    expect(forks).toHaveLength(0)
   })
 })

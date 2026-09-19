@@ -565,6 +565,7 @@ export const staffTimeTaskStatusReorderSchema = z.object({
 
 export const staffTimeTaskCreateSchema = z.object({
   ...scopedCreateFields,
+  idempotencyKey: z.string().trim().min(1).max(255).optional(),
   timeProjectId: z.string().uuid(),
   parentTaskId: z.string().uuid().optional().nullable(),
   taskStatusId: z.string().uuid().optional().nullable(),
@@ -593,6 +594,7 @@ export const staffTimeTaskStatusChangeSchema = z.object({
 
 export const staffTimeTaskCommentCreateSchema = z.object({
   ...scopedCreateFields,
+  idempotencyKey: z.string().trim().min(1).max(255).optional(),
   taskId: z.string().uuid(),
   body: z.string().trim().min(1).max(5000),
   authorUserId: z.string().uuid().optional().nullable(),

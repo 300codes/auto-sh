@@ -283,6 +283,32 @@ export function buildOpenApiDocument(modules: any[], options: any) {
     }
   })
 
+  it('bundles package JSON imports and tracks them when generating full schemas', async () => {
+    const jsonPath = path.join(tmpDir, 'node_modules', 'schema-data', 'schema.json')
+    touchFile(path.join(tmpDir, 'node_modules', 'schema-data', 'package.json'), '{"name":"schema-data","version":"1.0.0"}')
+    touchFile(jsonPath, JSON.stringify({ type: 'object', properties: { locale: { type: 'string', enum: ['en'] } } }))
+    touchFile(
+      path.join(tmpDir, 'packages', 'core', 'src', 'modules', 'demo', 'api', 'route.ts'),
+      [
+        "import schema from 'schema-data/schema.json'",
+        'export async function POST() {}',
+        "export const openApi = { POST: { requestBody: { content: { 'application/json': { schema } } } } }",
+      ].join('\n'),
+    )
+    const resolver = createMockResolver([{ id: 'demo', from: '@open-mercato/core' }])
+    const generatedPath = path.join(tmpDir, 'output', 'generated', 'openapi.generated.json')
+    const manifestPath = path.join(tmpDir, 'output', 'generated', 'openapi.generated.inputs.json')
+    const readSchema = () => JSON.parse(fs.readFileSync(generatedPath, 'utf8')).paths['/api/demo'].post.requestBody.content['application/json'].schema
+
+    await generateOpenApi({ resolver, quiet: true })
+    expect(readSchema().properties.locale.enum).toEqual(['en'])
+    expect(JSON.parse(fs.readFileSync(manifestPath, 'utf8')).inputPaths).toContain(jsonPath)
+
+    touchFile(jsonPath, JSON.stringify({ type: 'object', properties: { locale: { type: 'string', enum: ['en', 'pl'] } } }))
+    await generateOpenApi({ resolver, quiet: true })
+    expect(readSchema().properties.locale.enum).toEqual(['en', 'pl'])
+  })
+
   it('does not cache a static fallback after a bundle failure', async () => {
     touchFile(
       path.join(tmpDir, 'packages', 'core', 'src', 'modules', 'demo', 'api', 'route.ts'),

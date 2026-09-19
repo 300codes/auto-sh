@@ -1,4 +1,8 @@
 {
+  "delivery_agents.scope.description": "El asistente prepara propuestas. Confirmar la importación solo guarda la propuesta. Revise el artefacto y registre la decisión del cliente por separado.",
+  "delivery_agents.scope.open": "Hablar del alcance con IA",
+  "delivery_agents.scope.placeholder": "Describa el objetivo o pregunte sobre el alcance…",
+  "delivery_agents.scope.title": "Asistente de alcance",
   "delivery_agents.widget.cancel.ariaLabel": "Cancelar el intento de ejecución",
   "delivery_agents.widget.cancel.cancelling": "Cancelando…",
   "delivery_agents.widget.cancel.failed": "No se pudo cancelar",

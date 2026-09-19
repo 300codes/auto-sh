@@ -80,6 +80,9 @@ describe('deliveryOsAttemptQueries', () => {
     const registrations: Record<string, { resolve: (container: { resolve: (name: string) => unknown }) => unknown }> = {}
     register({ register: (entries: typeof registrations) => Object.assign(registrations, entries) } as never)
     expect(Object.keys(registrations)).toEqual([
+      'deliveryOsCommentQueries',
+      'deliveryOsDesignImportQueries',
+      'deliveryOsResultQueries',
       'deliveryOsEvidenceQueries',
       'deliveryOsAttemptQueries',
       'deliveryOsReportQueries',
@@ -92,11 +95,11 @@ describe('deliveryOsAttemptQueries', () => {
     expect(typeof registrations.deliveryOsAttachmentInspector.resolve({ resolve: lazyResolve })).toBe('function')
     expect(lazyResolve).not.toHaveBeenCalled()
     const service = registrations.deliveryOsAttemptQueries.resolve({ resolve: () => em }) as DeliveryOsAttemptQueries
-    expect(Object.keys(service).sort()).toEqual(['buildTaskPackage', 'getAttempt', 'listPendingDeliveries'])
+    expect(Object.keys(service).sort()).toEqual(['assertExecutionReady', 'buildTaskPackage', 'getAttempt', 'listPendingDeliveries'])
     const reports = registrations.deliveryOsReportQueries.resolve({ resolve: () => em }) as Record<string, unknown>
     expect(Object.keys(reports)).toEqual(['buildReport'])
     const flows = registrations.deliveryOsFlowQueries.resolve({ resolve: () => em }) as Record<string, unknown>
-    expect(Object.keys(flows)).toEqual(['flowStatus'])
+    expect(Object.keys(flows).sort()).toEqual(['flowStatus', 'portfolio'])
     expect(typeof flows.flowStatus).toBe('function')
   })
 

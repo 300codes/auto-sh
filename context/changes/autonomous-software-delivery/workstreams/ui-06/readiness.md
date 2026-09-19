@@ -1,5 +1,33 @@
 # UI-06 — fakty i warunki uruchomienia
 
+## Najnowsze ustalenia — 2026-09-19
+
+Figma: ponowione `whoami` potwierdziło tożsamość i seat Full; wcześniejszy
+USER_NOT_LOGGED_IN nie jest już aktualnym stanem konektora. Read/write/comments
+wymagają osobnych prób. WP Studio niedostępne: na polecenie użytkownika host,
+Preview i odbiór live WP pozostają odroczone jako
+[specyfikacja](../../../../../.ai/specs/2026-09-19-wordpress-studio-tools.md#aktualny-zakres--brak-wp-studio),
+bez zaliczenia kryteriów WP. Pozostałe prace kontynuujemy.
+
+## Aktualizacja z implementacji UI completeness — 2026-09-19
+
+Probe 17:21–17:25 UTC w aktualnej sesji Codex: runner **local**, brak app w dev
+compose, full compose wymaga JWT_SECRET; `.ai/qa/ephemeral-env.json` absent.
+OM `127.0.0.1:3000` i WP `127.0.0.1:8884`: curl exit 7 / HTTP 000. To nie
+wyklucza innych endpointów. Figma whoami i metadata historycznego node 3:2:
+`USER_NOT_LOGGED_IN` / connector not connected; write/render/comments not_run.
+Migracje, aktywne moduły i scoped login niepotwierdzone; niczego nie migrowano.
+
+Node shell 26.5.1, Yarn 4.17.1, PHP CLI 8.3.6; Studio/wp brak w PATH. Dostępny
+Node 24.13.0 jest używany do weryfikacji pakietu WP. Wersje hosta/wtyczek/licencje,
+target publikacji i osoby odbierające nadal wymagają przekazania.
+
+Nowy plan dopuszcza testy fazowe i pełny gate końcowy; historyczne ograniczenie
+„tylko nowe testy” poniżej dotyczy wyłącznie poprzedniej sesji UI-06. Inwentarz
+znalazł F1/F2/F4 i WP na innych refs; są integrowane zamiast odtwarzania.
+Aktualne fakty i wyniki prowadzi [handoff UI completeness](../ui-completeness/handoff.md).
+Nie zmienia to manualnych verdictów ani statusu próby live.
+
 Data: 2026-09-19. To zestawienie dostaw i blockerów, bez zaliczania kryteriów. [Scenariusz](demo-scenario.md), [plan](plan.md), [D1–D3 właściciela potrzeb](../ui-05/oss-dependencies.md), [pakiet zespołu](../../flow-handoff/README.md). Stan odbioru pozostaje w [Progress planu głównego](../../plan.md#progress) oraz przyszłym indeksie QA.
 
 ## Podstawa i granice weryfikacji

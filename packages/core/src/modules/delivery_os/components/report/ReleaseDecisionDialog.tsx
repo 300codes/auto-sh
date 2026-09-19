@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { CrudForm, type CrudField } from '@open-mercato/ui/backend/CrudForm'
 import { Button } from '@open-mercato/ui/primitives/button'
@@ -45,7 +46,9 @@ export function ReleaseDecisionDialog({ snapshot, kind, verdict, refresh, onClos
         {kind === 'release' ? <div><dt>{t('delivery_os.report.deployment.evidence')}</dt><dd>{report.deployment.evidenceId}</dd></div> : null}
       </dl>
       {decision.problem || blocker ? <Alert status="warning">{t(`delivery_os.report.decisions.error.${decision.problem ?? blocker}`)}</Alert> : null}
-      {decision.blockers.length ? <ul className="text-sm">{decision.blockers.map((item, index) => <li key={index}>{item}</li>)}</ul> : null}
+      {decision.blockers.length ? <ul className="space-y-2 text-sm">{decision.blockers.map((item, index) => <li key={index}>{item.href
+        ? <Link className="underline" href={item.href} onClick={onClose}>{t(item.labelKey)}{item.reference ? `: ${item.reference}` : ''}</Link>
+        : t(item.labelKey)}</li>)}</ul> : null}
       {decision.problem === 'ambiguous' ? <DecisionHistory report={report} /> : null}
       {decision.locked ? <Button type="button" variant="outline" onClick={() => void decision.reviewAgain()}>{t('delivery_os.report.decisions.reviewAgain')}</Button> : null}
       <div ref={form}>

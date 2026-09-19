@@ -9,7 +9,7 @@ jest.mock('@open-mercato/shared/lib/auth/server', () => require('./routeTestKit'
 jest.mock('@open-mercato/core/modules/directory/utils/organizationScope', () => require('./routeTestKit').organizationScopeMock)
 jest.mock('../../events', () => ({ emitDeliveryOsEvent: jest.fn(async () => undefined) }))
 import '@open-mercato/core/modules/delivery_os/commands'
-import { POST, metadata, openApi } from '../tasks/[id]/results/route'
+import { GET, POST, metadata, openApi } from '../tasks/[id]/results/route'
 import { FOREIGN_ORG_ID } from '../../commands/__tests__/baselineTestKit'
 import { buildResultManifest } from '../../lib/fixtures/builders'
 import { emitDeliveryOsEvent } from '../../events'
@@ -46,7 +46,7 @@ beforeEach(() => {
 
 describe('POST /api/delivery_os/tasks/:id/results — guards', () => {
   it('requires results.import: a manage-only user cannot import results', () => {
-    expect(Object.keys(openApi.methods)).toEqual(['POST'])
+    expect(Object.keys(openApi.methods)).toEqual(['GET', 'POST'])
     expect(isAllowedBy(metadata, 'POST', ['delivery_os.results.import'])).toBe(true)
     expect(isAllowedBy(metadata, 'POST', ['delivery_os.attempts.manage', 'delivery_os.projects.manage'])).toBe(false)
   })
@@ -160,4 +160,108 @@ describe('POST /api/delivery_os/tasks/:id/results', () => {
     await expectFrozenError(await importResult({ attemptId, manifest }, { taskId: 'nope' }), 404, 'not_found')
     expect(routeState.store.evidence).toHaveLength(0)
   })
+})
+
+
+function readResult(attemptId: string | null, taskId = TASK_ID): Promise<Response> {
+  return GET(apiRequest('GET', `/tasks/${taskId}/results${attemptId ? `?attemptId=${attemptId}` : ''}`), routeParams(taskId))
+}
+
+describe('GET /api/delivery_os/tasks/:id/results', () => {
+  it('reads the accepted projection after an import for a view-only user, without exposing the raw manifest', async () => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    expect((await importResult({ attemptId, manifest })).status).toBe(201)
+    signInAs({ features: ['delivery_os.projects.view'] })
+    const response = await readResult(attemptId)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    const body = await readBody(response)
+    expect(body).toMatchObject({ schemaVersion: 'delivery-result-read.v1', result: {
+      taskId: TASK_ID, attemptId, evidenceId: routeState.store.evidence[0].id, source: 'manual',
+      sourceRevision: manifest.resultRevision, usage: manifest.usage,
+    } })
+    const summary = body.result as Record<string, unknown>
+    expect(summary).not.toHaveProperty('agentDeclaration')
+    expect(summary).not.toHaveProperty('artifacts')
+    expect(summary).not.toHaveProperty('recordedBy')
+    expect(summary).not.toHaveProperty('payload')
+    expect(summary).not.toHaveProperty('tenantId')
+  })
+
+  it('returns explicit null for an existing attempt with no accepted result', async () => {
+    seedReadyTask()
+    const attemptId = await reserveAttemptId()
+    expect(await readBody(await readResult(attemptId))).toEqual({ schemaVersion: 'delivery-result-read.v1', result: null })
+    await expectFrozenError(await readResult(UNKNOWN_ATTEMPT_ID), 404, 'not_found')
+    await expectFrozenError(await readResult(null), 400, 'validation_failed')
+  })
+
+  it('requires view permission, including wildcard matching, and rejects foreign scopes', async () => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    await importResult({ attemptId, manifest })
+    signInAs({ features: ['delivery_os.results.import'] })
+    expect((await readResult(attemptId)).status).toBe(403)
+    signInAs({ features: ['delivery_os.*'] })
+    expect((await readResult(attemptId)).status).toBe(200)
+    for (const session of [{ tenantId: FOREIGN_TENANT_ID }, { orgId: FOREIGN_ORG_ID }]) {
+      signInAs(session)
+      await expectFrozenError(await readResult(attemptId), 404, 'not_found')
+    }
+    routeState.auth = null
+    expect((await readResult(attemptId)).status).toBe(401)
+  })
+
+  it.each(['taskId', 'projectId', 'attemptId', 'baselineId', 'tenantId', 'organizationId', 'id'])('rejects an evidence row with foreign %s', async (field) => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    await importResult({ attemptId, manifest })
+    routeState.store.evidence[0][field] = FOREIGN_ORG_ID
+    await expectFrozenError(await readResult(attemptId), 404, 'not_found')
+  })
+
+  it.each(['taskId', 'projectId', 'attemptId', 'baselineId', 'baselineHash', 'externalRunId'])('rejects a stored manifest with inconsistent %s', async (field) => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    await importResult({ attemptId, manifest })
+    const payload = routeState.store.evidence[0].payload as Record<string, unknown>
+    payload[field] = field === 'baselineHash' ? 'a'.repeat(64) : FOREIGN_ORG_ID
+    await expectFrozenError(await readResult(attemptId), 422, 'correlation_mismatch')
+  })
+
+  it('rejects a revision mismatch and corrupt payload hash', async () => {
+    seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    await importResult({ attemptId, manifest })
+    const evidence = routeState.store.evidence[0]
+    const revision = evidence.sourceRevision
+    evidence.sourceRevision = { kind: 'git', commitSha: 'a'.repeat(40) }
+    await expectFrozenError(await readResult(attemptId), 422, 'correlation_mismatch')
+    evidence.sourceRevision = revision
+    evidence.payloadHash = 'a'.repeat(64)
+    await expectFrozenError(await readResult(attemptId), 422, 'correlation_mismatch')
+  })
+
+  it('rejects an unreadable register instead of returning an empty result', async () => {
+    const task = seedReadyTask()
+    const { attemptId, manifest } = await reservedResult()
+    await importResult({ attemptId, manifest })
+    task.executionAttempts = [{ attemptId }]
+    await expectFrozenError(await readResult(attemptId), 409, 'reconciliation_required')
+  })
+})
+
+
+it('preserves archived task and project history with the same scope rules as the detail endpoints', async () => {
+  const task = seedReadyTask()
+  const { attemptId, manifest } = await reservedResult()
+  await importResult({ attemptId, manifest })
+  task.deletedAt = new Date()
+  routeState.store.projects[0].deletedAt = new Date()
+  const writes = routeState.writes
+  expect((await readResult(attemptId)).status).toBe(200)
+  expect(routeState.writes).toBe(writes)
+  signInAs({ orgId: FOREIGN_ORG_ID })
+  expect((await readResult(attemptId)).status).toBe(404)
 })

@@ -34,7 +34,7 @@ function fixture() {
     resolve: (name: string) => {
       if (name === 'commandBus') return { execute }
       if (name === 'workflowExecutor') return workflowExecutor
-      if (name === 'deliveryOsAttemptQueries') return { getAttempt }
+      if (name === 'deliveryOsAttemptQueries') return { getAttempt, assertExecutionReady: jest.fn(async () => undefined) }
       throw new Error(`Unexpected service: ${name}`)
     },
   } as unknown as AppContainer
@@ -120,5 +120,14 @@ test.each([
   const assertion = expect(startExecution(setup.startInput)).rejects.toThrow('did not park')
   await jest.runAllTimersAsync()
   await assertion
+  expect(mockEnqueue).not.toHaveBeenCalled()
+})
+
+
+test('never fabricates a workspace revision from a baseline when no revision is supplied', async () => {
+  const setup = fixture()
+  await expect(startExecution({ ...setup.startInput, baseRevision: undefined })).rejects.toThrow()
+  expect(setup.execute).not.toHaveBeenCalled()
+  expect(setup.workflowExecutor.startWorkflow).not.toHaveBeenCalled()
   expect(mockEnqueue).not.toHaveBeenCalled()
 })

@@ -32,8 +32,10 @@ it('shows an explicit unavailable detail instead of a fake empty payload', () =>
   expect(screen.queryByText('delivery_os.report.evidence.noFiles')).toBeNull()
 })
 it('renders safe read detail including nullable revision and missing files', () => {
-  mockDetail.mockReturnValue({ status: 'ready', data: { kind: 'review', sourceRevision: null, rawReportHash: null, payload: { verdict: 'approved' }, attachments: [], attachmentsTruncated: false }, reload: jest.fn() })
+  mockDetail.mockReturnValue({ status: 'ready', data: { kind: 'review', source: 'adapter', createdAt: '2026-09-19T10:00:00Z', baselineId: 'baseline-identity', taskId: 'task-identity', attemptId: 'attempt-identity', sourceRevision: null, rawReportHash: null, payload: { verdict: 'approved' }, attachments: [], attachmentsTruncated: false }, reload: jest.fn() })
   render(<EvidenceDetailDialog projectId="project" evidenceId="evidence" onOpenChange={jest.fn()} />)
   expect(screen.getByText('delivery_os.report.evidence.noFiles')).toBeTruthy()
   expect(screen.getByText(/"verdict": "approved"/)).toBeTruthy()
+  for (const value of ['delivery_os.report.evidence.source.adapter', 'baseline-identity', 'task-identity', 'attempt-identity']) expect(screen.getByText(value)).toBeTruthy()
+  expect(screen.getByText('2026-09-19T10:00:00Z').getAttribute('datetime')).toBe('2026-09-19T10:00:00Z')
 })

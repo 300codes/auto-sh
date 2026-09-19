@@ -83,7 +83,7 @@ async function transfer(filename: string, expected: z.infer<typeof fileSchema>, 
 
 async function verifyStage(directory: string, expected: z.infer<typeof stageSchema>) {
   await privateDirectory(directory)
-  if (JSON.stringify((await fs.readdir(directory)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify(['site', 'stage.json'])) throw toolError('preview_staging_inventory_mismatch')
+  if (JSON.stringify((await fs.readdir(directory)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify(['site', 'stage.json'])) throw toolError('preview_staging_inventory_mismatch')
   const record = await readPrivate(path.join(directory, 'stage.json'), 16 * 1024 * 1024)
   const parsed = parseInput(stageSchema, JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(record)))
   if (JSON.stringify(parsed) !== JSON.stringify(expected)) throw toolError('preview_staging_binding_mismatch')
@@ -97,7 +97,7 @@ async function verifyStage(directory: string, expected: z.infer<typeof stageSche
   let count = 0
   const walk = async (folder: string, relative: string): Promise<void> => {
     await privateDirectory(folder)
-    const names = (await fs.readdir(folder)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
+    const names = (await fs.readdir(folder)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
     for (const name of names) {
       if (++count > 30_000) throw toolError('preview_staging_limit')
       const candidate = relative ? `${relative}/${name}` : name
@@ -107,12 +107,12 @@ async function verifyStage(directory: string, expected: z.infer<typeof stageSche
       else if (stat.isFile() && files.has(candidate)) observed.set(candidate, await transfer(full, files.get(candidate)!))
       else throw toolError('preview_staging_inventory_mismatch')
     }
-    if (JSON.stringify((await fs.readdir(folder)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify(names)) throw toolError('preview_staging_changed')
+    if (JSON.stringify((await fs.readdir(folder)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify(names)) throw toolError('preview_staging_changed')
   }
   await walk(path.join(directory, 'site'), '')
   if (observed.size !== files.size) throw toolError('preview_staging_inventory_mismatch')
   for (const [relative, fingerprint] of observed) if (identity(await fs.lstat(path.join(directory, 'site', relative))) !== fingerprint) throw toolError('preview_staging_changed')
-  if (!record.equals(await readPrivate(path.join(directory, 'stage.json'), 16 * 1024 * 1024)) || JSON.stringify((await fs.readdir(directory)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify(['site', 'stage.json'])) throw toolError('preview_staging_changed')
+  if (!record.equals(await readPrivate(path.join(directory, 'stage.json'), 16 * 1024 * 1024)) || JSON.stringify((await fs.readdir(directory)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify(['site', 'stage.json'])) throw toolError('preview_staging_changed')
 }
 
 export async function prepareOwnedPreviewStaging(value: unknown) {

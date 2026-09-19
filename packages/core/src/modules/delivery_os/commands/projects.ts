@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { EntityManager } from '@mikro-orm/postgresql'
+import type { FlowTemplateV1 } from '../lib/contracts'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { buildChanges, emitCrudSideEffects } from '@open-mercato/shared/lib/commands/helpers'
@@ -201,21 +203,43 @@ const createProjectCommand: CommandHandler<ProjectCreateInput, ProjectCommandRes
     const profile = resolveTargetProfile(parsed.targetProfileId, parsed.targetProfileVersion)
 
     const em = resolveDeliveryEm(ctx)
-    const project = em.create(DeliveryProject, {
-      tenantId: scope.tenantId,
-      organizationId: scope.organizationId,
-      name: parsed.name,
-      inputMode: parsed.inputMode,
-      brief: parsed.brief ?? null,
-      targetProfileId: profile.id,
-      targetProfileVersion: profile.version,
-      repositoryRef: parsed.repositoryRef ?? null,
-      draftSpec: draftSpecV1Schema.parse({}),
-      activeBaselineId: null,
-      limits: mergeLimits(DEFAULT_DELIVERY_LIMITS, parsed.limits),
-    })
-    em.persist(project)
-    await em.flush()
+    const workflowService = typeof ctx.container.hasRegistration === 'function' && ctx.container.hasRegistration('deliveryProjectWorkflowService')
+      ? ctx.container.resolve<{ initialize(scope: { tenantId: string; organizationId: string }, projectId: string, userId: string, em: EntityManager): Promise<{ template: FlowTemplateV1; hash: string; definitionId: string; workflowInstanceId: string } | null> }>('deliveryProjectWorkflowService')
+      : null
+    const create = async (manager: EntityManager) => {
+      const project = manager.create(DeliveryProject, {
+        tenantId: scope.tenantId,
+        organizationId: scope.organizationId,
+        name: parsed.name,
+        inputMode: parsed.inputMode,
+        brief: parsed.brief ?? null,
+        targetProfileId: profile.id,
+        targetProfileVersion: profile.version,
+        repositoryRef: parsed.repositoryRef ?? null,
+        draftSpec: draftSpecV1Schema.parse({}),
+        activeBaselineId: null,
+        limits: mergeLimits(DEFAULT_DELIVERY_LIMITS, parsed.limits),
+      })
+      manager.persist(project)
+      await manager.flush()
+
+      if (workflowService) {
+        const initialized = await workflowService.initialize(scope, project.id, ctx.auth?.sub ?? '', manager)
+        if (initialized) {
+          project.flowTemplateId = initialized.template.templateId
+          project.flowTemplateVersion = initialized.template.version
+          project.flowTemplateSnapshot = initialized.template
+          project.flowTemplateHash = initialized.hash
+          project.flowPinnedAt = new Date()
+          project.flowWorkflowDefinitionId = initialized.definitionId
+          project.flowWorkflowInstanceId = initialized.workflowInstanceId
+          project.updatedAt = new Date()
+          await manager.flush()
+        }
+      }
+      return project
+    }
+    const project = workflowService ? await em.transactional(create) : await create(em)
 
     await emitProjectSideEffects(ctx, 'created', project)
     await emitDeliveryOsEvent(

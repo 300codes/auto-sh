@@ -8,8 +8,7 @@ import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
-import { authorizeFeatures } from '@open-mercato/shared/security/featurePolicy'
-import { DeliveryCommentThread, DeliveryStaffLink } from '../data/entities'
+import { DeliveryCommentThread, DeliveryStaffLink, DeliveryStaffImportIntent } from '../data/entities'
 import { staffLinkCommandSchema, type StaffLinkCommandInput } from '../data/validators'
 import { buildDeliveryError, buildDeliveryFlowError, staffLinkSchema, type StaffLink } from '../lib/contracts'
 import {
@@ -41,7 +40,6 @@ type StaffAccessResolver = {
     userId: string
     tenantId: string
     organizationId: string
-    userFeatures: readonly string[]
     canManageAll: boolean
   }): Promise<StaffProjectAccess>
 }
@@ -50,8 +48,8 @@ type StaffProjectProbe = {
   query(entity: string, options: { fields: string[]; filters: Record<string, unknown>; page: { page: number; pageSize: number }; tenantId: string; organizationId: string }): Promise<{ items?: unknown[] }>
 }
 
-type FeatureGrantReader = {
-  getGrantedFeatures(userId: string, scope: { tenantId: string | null; organizationId: string | null }): Promise<string[]>
+type FeatureAccessReader = {
+  userHasAllFeatures(userId: string, required: string[], scope: { tenantId: string | null; organizationId: string | null }): Promise<boolean>
 }
 
 const logger = createLogger('delivery_os')
@@ -82,15 +80,14 @@ function linkConflict(detailCode: 'staff_link_in_use' | 'staff_project_already_l
 }
 
 /** Wildcard-aware and fail closed: a failing RBAC lookup grants nothing, so only an explicit membership can pass. */
-async function resolveGrantedFeatures(ctx: CommandRuntimeContext, scope: DeliveryScope, userId: string): Promise<string[]> {
+async function resolveManageAllAccess(ctx: CommandRuntimeContext, scope: DeliveryScope, userId: string): Promise<boolean> {
   try {
-    const rbac = ctx.container.resolve('rbacService') as FeatureGrantReader
-    const granted = await rbac.getGrantedFeatures(userId, scope)
-    return Array.isArray(granted) ? granted.filter((feature): feature is string => typeof feature === 'string') : []
+    const rbac = ctx.container.resolve('rbacService') as FeatureAccessReader
+    return await rbac.userHasAllFeatures(userId, [STAFF_MANAGE_ALL_FEATURE], scope)
   } catch (error) {
     logger.warn('staff link feature lookup failed closed', { err: error })
     getTelemetryRuntime()?.reportError(error, { module: 'delivery_os', code: 'delivery_os.feature_check_failed' })
-    return []
+    return false
   }
 }
 
@@ -107,7 +104,7 @@ async function assertStaffProjectAccess(
 ): Promise<void> {
   const resolver = tryResolveStaffAccess(ctx)
   if (!resolver) throw staffLinkRequired()
-  const userFeatures = await resolveGrantedFeatures(ctx, scope, userId)
+  const canManageAll = await resolveManageAllAccess(ctx, scope, userId)
   let access: StaffProjectAccess
   try {
     access = await resolver.resolveProjectAccess({
@@ -115,8 +112,7 @@ async function assertStaffProjectAccess(
       userId,
       tenantId: scope.tenantId,
       organizationId: scope.organizationId,
-      userFeatures,
-      canManageAll: authorizeFeatures([STAFF_MANAGE_ALL_FEATURE], { grantedFeatures: userFeatures }),
+      canManageAll,
     })
   } catch (error) {
     logger.warn('staff project access lookup failed closed', { err: error })
@@ -181,6 +177,8 @@ async function assertRelinkAllowed(tx: EntityManager, projectId: string, staffPr
     scope,
   )
   if (carded) throw linkConflict('staff_link_in_use', 'Imported comment cards already live in the linked staff project')
+  const pending = await findOneWithDecryption(tx, DeliveryStaffImportIntent, { projectId, ...scope }, undefined, scope)
+  if (pending) throw linkConflict('staff_link_in_use', 'A durable comment import must be reconciled before changing the staff project')
   await assertStaffProjectFree(tx, projectId, staffProjectId, scope)
 }
 

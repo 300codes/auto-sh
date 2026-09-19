@@ -41,7 +41,7 @@ export function ReportSummary({ report, readAt }: { report: DeliveryReportV1 & P
   const t = useT()
   const revision = report.revision
   return (
-    <section className="space-y-4" data-testid="delivery-report-summary">
+    <section id="report-summary" className="space-y-4" data-testid="delivery-report-summary">
       <SectionHeader title={t('delivery_os.report.summary.title')} />
       <dl className="grid gap-4 text-sm sm:grid-cols-2">
         <div><dt className="text-muted-foreground">{t('delivery_os.report.summary.baseline')}</dt><dd className="break-all">{report.baselineId}</dd></div>
@@ -74,7 +74,7 @@ export function ReportSummary({ report, readAt }: { report: DeliveryReportV1 & P
       </div>
       <SectionHeader title={t('delivery_os.report.summary.criteria')} count={report.acceptanceCriteria.length} />
       {report.acceptanceCriteria.length === 0 ? <EmptyState title={t('delivery_os.report.summary.noCriteria')} /> : report.acceptanceCriteria.map((criterion) => (
-        <details key={criterion.acId} className="rounded-lg border border-border p-4">
+        <details id={`report-ac-${criterion.acId}`} key={criterion.acId} className="rounded-lg border border-border p-4">
           <summary className="cursor-pointer space-x-2"><span>{criterion.acId}</span><ProofStatus status={criterion.status} /><span>{criterion.description}</span></summary>
           <div className="mt-3 space-y-2 text-sm">
             <p>{t('delivery_os.report.summary.requirement')}: {criterion.requirementId}</p>
@@ -85,7 +85,7 @@ export function ReportSummary({ report, readAt }: { report: DeliveryReportV1 & P
       ))}
       <SectionHeader title={t('delivery_os.report.summary.scans')} />
       {report.scans.length === 0 ? <EmptyState title={t('delivery_os.report.summary.noScans')} /> : report.scans.map((scan) => (
-        <div key={scan.checkId} className="flex flex-wrap gap-2 text-sm">
+        <div id={`report-scan-${scan.checkId}`} key={scan.checkId} className="flex flex-wrap gap-2 text-sm">
           <span>{scan.checkId}</span><span>{t('delivery_os.report.summary.evidenceStatus')}:</span><ProofStatus status={scan.status} />
           <span>{t('delivery_os.report.summary.reportedStatus')}:</span><ProofStatus status={scan.reportedStatus ?? 'missing'} />
         </div>

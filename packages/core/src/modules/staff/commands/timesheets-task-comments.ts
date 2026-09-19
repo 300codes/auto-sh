@@ -41,6 +41,8 @@ import { authorizeFeatures } from '@open-mercato/shared/security/featurePolicy'
 import type { CrudEventsConfig, CrudIndexerConfig } from '@open-mercato/shared/lib/crud/types'
 import { StaffTimeTask, StaffTimeTaskComment } from '../data/entities'
 import { staffTimeTaskCommentCrudEvents } from '../lib/crud'
+import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
+import { staffCreateIdentity, readStaffCreateReplay, recordStaffCreate } from './createIdempotency'
 import {
   staffTimeTaskCommentCreateSchema,
   staffTimeTaskCommentUpdateSchema,
@@ -239,7 +241,7 @@ async function requireTaskInScope(
 
 const createTaskCommentCommand: CommandHandler<
   StaffTimeTaskCommentCreateInput,
-  { commentId: string; taskId: string; authorUserId: string | null }
+  { commentId: string; taskId: string; authorUserId: string | null; duplicate?: boolean }
 > = {
   id: staffTimeTaskCommentCommandIds.create,
   async execute(rawInput, ctx) {
@@ -250,6 +252,11 @@ const createTaskCommentCommand: CommandHandler<
     const { translate } = await resolveTranslations()
     // `parsed.authorUserId` is intentionally unread — see the file header.
     const authorUserId = stampAuthorUserId(ctx)
+    const identity = staffCreateIdentity(staffTimeTaskCommentCommandIds.create, parsed, {
+      tenantId: parsed.tenantId, organizationId: parsed.organizationId,
+      taskId: parsed.taskId, body: parsed.body,
+    })
+    let duplicate = false
 
     const em = (ctx.container.resolve('em') as EntityManager).fork()
     let created: StaffTimeTaskComment | null = null
@@ -257,8 +264,18 @@ const createTaskCommentCommand: CommandHandler<
     await withAtomicFlush(
       em,
       [
-        () => requireTaskInScope(em, parsed.taskId, scope, translate),
+        async () => {
+          await requireTaskInScope(em, parsed.taskId, scope, translate)
+          const replayId = await readStaffCreateReplay(em, identity)
+          if (!replayId) return
+          created = await findOneWithDecryption(em, StaffTimeTaskComment, {
+            id: replayId, tenantId: parsed.tenantId, organizationId: parsed.organizationId,
+          }, undefined, { tenantId: parsed.tenantId, organizationId: parsed.organizationId })
+          if (!created) throw commentNotFoundError(translate)
+          duplicate = true
+        },
         () => {
+          if (duplicate) return
           created = em.create(StaffTimeTaskComment, {
             tenantId: parsed.tenantId,
             organizationId: parsed.organizationId,
@@ -271,12 +288,16 @@ const createTaskCommentCommand: CommandHandler<
           })
           em.persist(created)
         },
+        () => {
+          if (created && !duplicate) recordStaffCreate(em, identity, created.id)
+        },
       ],
       { transaction: true, label: staffTimeTaskCommentCommandIds.create },
     )
 
     const record = created as StaffTimeTaskComment | null
     if (!record) throw commentNotFoundError(translate)
+    if (duplicate) return { commentId: record.id, taskId: record.taskId, authorUserId: record.authorUserId ?? null, duplicate: true }
 
     await emitCrudSideEffects({
       dataEngine: ctx.container.resolve('dataEngine'),
@@ -296,6 +317,7 @@ const createTaskCommentCommand: CommandHandler<
     return { snapshot }
   },
   buildLog: async ({ result, snapshots }) => {
+    if (result.duplicate) return null
     const snapshot = (snapshots.after as { snapshot?: CommentSnapshot } | undefined)?.snapshot
     if (!snapshot) return null
     const { translate } = await resolveTranslations()

@@ -94,7 +94,7 @@ export type ResultManifestSummary = {
  * check that produced no evidence, and adding it to the passing side would turn
  * a gap into a proof.
  */
-export function countChecksByStatus(manifest: ResultManifestV1): ResultCheckCounts {
+export function countChecksByStatus(manifest: { checks: ReadonlyArray<{ status: CheckStatus }> }): ResultCheckCounts {
   return manifest.checks.reduce<ResultCheckCounts>(
     (counts, check) => ({ ...counts, [check.status]: counts[check.status] + 1 }),
     { passed: 0, failed: 0, not_run: 0 },

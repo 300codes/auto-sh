@@ -95,7 +95,9 @@ before operator reconciliation; never blindly delete a lock and retry.
 
 This verifies native CLI persistence, not ACF field registration, editor-role browser UX,
 SEO configuration, theme redeploy, approved Figma/Tailwind mapping or OM integration.
-Translations are deferred by user; Polylang Free remains installed. The public Studio
+Translations were deferred in the original demo scope; the newer UI completeness plan
+requires two languages and their acceptance remains pending. Polylang Free remains the
+historical plugin selection, subject to the required compatibility verification. The public Studio
 Preview upload and its acceptance remain separate work. See the [bounded F0 plan](../../context/changes/wordpress-demo-foundation/plan.md).
 
 Deployment order (user requirement): perform all installation, configuration, theme/assets
@@ -124,7 +126,7 @@ Enqueue is provided by the coordinated preparation operator below; browser accep
 for the resulting revision remains a separate check.
 
 The optional `designTokens` input invokes the strict internal `mapDesignTokens` mapper.
-See the [fixture schema/example](../../context/changes/wordpress-design-token-mapping/fixture.json).
+See the [fixture schema/example](src/__tests__/fixtures/design-tokens.json).
 It produces a theme.json settings fragment and Tailwind variables referring to native
 WordPress preset variables. It does not write theme.json or verify Figma approval.
 Only bounded colors, font families/sizes and spacing are supported; layout/radii/variant

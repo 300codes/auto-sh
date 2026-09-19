@@ -196,18 +196,15 @@ test.describe('TC-DELIVERY-FLOW-02: stage approvals gate a project pinned in fli
       expect(complete.pendingApprovals).toEqual([])
 
       const readyC = await setTaskReady(call, taskC.taskId, (await taskVersion(call, taskC.taskId)).updatedAt)
-      expect(readyC.status, `R12 ready after approvals: ${JSON.stringify(readyC.body)}`).toBe(200)
-      expect(readyC.body.status).toBe('ready')
+      expectError(readyC, 422, 'baseline_not_approved', 'R12 approved stages without baseline binding')
       const reservedB = await reserve(call, taskB.taskId, (await taskVersion(call, taskB.taskId)).updatedAt)
-      expect(reservedB.status, `R14 reserve after approvals: ${JSON.stringify(reservedB.body)}`).toBe(201)
-      expect(typeof reservedB.body.attemptId).toBe('string')
+      expectError(reservedB, 422, 'baseline_not_approved', 'R14 approved stages without baseline binding')
       const consent = await deployConsent(call, id, baselineId, manifest.resultRevision, await projectVersion(call, id))
       expect({ status: consent.status, code: consent.body.code }, 'R20 deploy consent after approvals still needs a release candidate').toEqual({ status: 422, code: 'release_candidate_required' })
 
       const executing = await getFlow(call, id)
       expect((executing.gates as Gates).publishable.ok).toBe(true)
-      expect((executing.gates as Gates).dispatchable.ok, 'the reserved attempt closes dispatch until it is closed').toBe(false)
-      expect((executing.gates as Gates).dispatchable.blocking.map((blocker) => blocker.kind)).toEqual(['attempt_active'])
+      expect((executing.gates as Gates).dispatchable.ok, 'F6 stage projection is independent of the execution binding gate').toBe(true)
       expect(executing.pendingApprovals).toEqual([])
     } finally {
       await cleanupRegistry(request, token, registry)

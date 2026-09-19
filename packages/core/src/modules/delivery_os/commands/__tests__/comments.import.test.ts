@@ -53,8 +53,8 @@ const OTHER_PROJECT_ID = '12121212-7777-4777-8777-121212121212'
 const FILE_KEY = 'FIGFILE0001'
 const KEY = 'import-key-0001'
 
-type FakeTask = { id: string; staffProjectId: string; statusId: string; title: string; description: string }
-type FakeComment = { id: string; taskId: string; body: string }
+type FakeTask = { idempotencyKey?: string; id: string; staffProjectId: string; statusId: string; title: string; description: string }
+type FakeComment = { idempotencyKey?: string; id: string; taskId: string; body: string }
 type FakeStaff = { tasks: FakeTask[]; comments: FakeComment[] }
 
 const importComments = getHandler<CommentImportCommandResult>('delivery_os.comments.import')
@@ -153,11 +153,12 @@ function mockOf<TKey extends keyof KanbanAdapter>(implementation: KanbanAdapter[
   return jest.fn(implementation as (...args: unknown[]) => unknown) as unknown as jest.MockedFunction<KanbanAdapter[TKey]>
 }
 
-/** The fake shares the thread transaction the way the default adapter does: a throw restores delivery rows and staff rows. */
 function makeAdapter(): jest.Mocked<Required<DeliveryStaffKanbanAdapter>> {
   return {
     resolveDefaultStatusId: mockOf<'resolveDefaultStatusId'>(async () => STATUS_ID),
     createTask: mockOf<'createTask'>(async (input) => {
+      const replay = staff.tasks.find((task) => task.idempotencyKey === input.idempotencyKey)
+      if (replay) return { taskId: replay.id }
       const task = { id: nextId(), ...input }
       staff.tasks.push(task)
       return { taskId: task.id }
@@ -169,6 +170,8 @@ function makeAdapter(): jest.Mocked<Required<DeliveryStaffKanbanAdapter>> {
       task.description = input.description
     }),
     createComment: mockOf<'createComment'>(async (input) => {
+      const replay = staff.comments.find((comment) => comment.idempotencyKey === input.idempotencyKey)
+      if (replay) return { commentId: replay.id }
       const comment = { id: nextId(), ...input }
       staff.comments.push(comment)
       return { commentId: comment.id }
@@ -185,6 +188,7 @@ function makeAdapter(): jest.Mocked<Required<DeliveryStaffKanbanAdapter>> {
 function run(input: { batch?: CommentImportBatchV1; key?: string | null; services?: Record<string, unknown> } = {}): Promise<CommentImportCommandResult> {
   const services = input.services ?? { [DELIVERY_STAFF_KANBAN_ADAPTER_KEY]: adapter }
   const { ctx, em } = makeHarness(store, { services })
+  Object.assign(em, { getConnection: () => ({ execute: jest.fn(async () => []) }), getTransactionContext: () => ({ lock: 'file' }) })
   em.create.mockImplementation((entity: unknown, data: Row) => {
     const row = { id: nextId(), ...data }
     createdAs.set(row, entity)
@@ -196,17 +200,20 @@ function run(input: { batch?: CommentImportBatchV1; key?: string | null; service
   })
   em.flush.mockImplementation(async () => {
     const failure = flushFailures.shift()
-    if (failure) throw failure()
+    if (failure) {
+      const error = failure()
+      if (error) throw error
+    }
   })
   em.transactional.mockImplementation(async (work: (tx: typeof em) => Promise<unknown>) => {
-    const snapshot = { threads: clone(store.commentThreads), replies: clone(store.commentReplies), links: clone(store.staffLinks), staff: clone(staff) }
+    const snapshot = { threads: clone(store.commentThreads), replies: clone(store.commentReplies), links: clone(store.staffLinks), intents: clone(store.staffImportIntents) }
     try {
       return await work(em)
     } catch (error) {
       store.commentThreads = snapshot.threads
       store.commentReplies = snapshot.replies
       store.staffLinks = snapshot.links
-      staff = snapshot.staff
+      store.staffImportIntents = snapshot.intents
       onRollback?.()
       onRollback = null
       throw error
@@ -406,7 +413,7 @@ describe('delivery_os.comments.import (F11) — comment import rules', () => {
     const locked = mockFindOneWithDecryption.mock.calls
       .filter((call) => (call[3] as { lockMode?: LockMode } | undefined)?.lockMode === LockMode.PESSIMISTIC_WRITE)
       .map((call) => call[1])
-    expect(locked.slice(0, 2)).toEqual([DeliveryProject, DeliveryCommentThread])
+    expect(locked.slice(0, 4)).toEqual([DeliveryProject, DeliveryProject, DeliveryProject, DeliveryCommentThread])
   })
 
   it('emits delivery_os.comment_thread.imported per written thread with ids only', async () => {
@@ -486,7 +493,7 @@ describe('delivery_os.comments.import (F11) — idempotency, failures and the cu
 
   it('recovers a parallel import of the same thread (unique violation) as one card without a duplicate comment', async () => {
     const page = batch({ threads: [thread({ replies: [reply()] })] })
-    flushFailures.push(() => {
+    flushFailures.push(() => undefined, () => undefined, () => {
       const winnerTask = { id: nextId(), staffProjectId: STAFF_PROJECT_ID, statusId: STATUS_ID, title: 'winner', description: 'winner' }
       const winnerComment = { id: nextId(), taskId: winnerTask.id, body: 'winner' }
       const winnerThreadId = nextId()
@@ -548,7 +555,7 @@ describe('delivery_os.comments.import (F11) — idempotency, failures and the cu
 
   it('does not retry a unique violation raised after a staff write, so no second card or comment appears', async () => {
     await run({ batch: batch({ threads: [thread({ replies: [reply()] })] }) })
-    flushFailures.push(uniqueViolation)
+    flushFailures.push(() => undefined, () => undefined, uniqueViolation)
     const changed = batch({ cursor: { after: 'page-2', next: 'page-3' }, threads: [thread({ body: 'Rewritten request.', replies: [reply()] })] })
     const result = await run({ key: 'import-key-0002', batch: changed })
     expect(adapter.updateTask).toHaveBeenCalledTimes(1)
@@ -557,6 +564,34 @@ describe('delivery_os.comments.import (F11) — idempotency, failures and the cu
     expect(store.commentThreads[0].body).toBe('The booking button is hard to find on mobile.\nSecond line with detail.')
     expect(result.counts).toMatchObject({ threadsUpdated: 0, skipped: 1 })
     expect(cursor()).toMatchObject({ cursor: 'page-2', lastBatchKey: null, lastBatchHash: null })
+  })
+
+  it('recovers a crash after Staff commits but before Delivery stores the mapping', async () => {
+    const create = makeAdapter().createTask
+    adapter.createTask.mockImplementationOnce(async (input, session) => {
+      await create(input, session)
+      throw new Error('[internal] simulated lost Staff response')
+    })
+    const page = batch({ threads: [thread({ replies: [reply()] })] })
+    await run({ batch: page })
+    expect(staff.tasks).toHaveLength(1)
+    expect(store.commentThreads).toHaveLength(0)
+    expect(store.staffImportIntents).toHaveLength(3)
+    expect(cursor()?.cursor).toBeNull()
+    const retry = await run({ batch: page })
+    expect(staff.tasks).toHaveLength(1)
+    expect(staff.comments).toHaveLength(1)
+    expect(retry.threads[0].staffTaskId).toBe(staff.tasks[0].id)
+    expect(cursor()?.cursor).toBe('page-2')
+    expect(store.staffImportIntents.filter((intent) => String(intent.key).startsWith('delivery:')).every((intent) => typeof intent.resourceId === 'string')).toBe(true)
+  })
+
+  it('rejects a changed payload under the same key after partial failure', async () => {
+    adapter.createTask.mockRejectedValueOnce(new Error('[internal] outage'))
+    await run()
+    const error = await catchHttpError(() => run({ batch: batch({ threads: [thread({ body: 'Changed after failure' })] }) }))
+    expectFrozenBody(error, 409, 'idempotency_conflict')
+    expect(staff.tasks).toHaveLength(0)
   })
 
   it('never rewinds a cursor that a concurrent delivery of the same page already advanced', async () => {

@@ -1,22 +1,25 @@
+import type { DeliveryStaffKanbanAdapter } from '../../commands/staffKanbanAdapter'
 import { randomUUID } from 'node:crypto'
 import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
 import { hasAllFeatures } from '@open-mercato/shared/security/features'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
-import type { DeliveryStaffKanbanAdapter } from '../../commands/staffKanbanAdapter'
 import {
   DeliveryBaseline,
+  DeliveryReleaseCandidate,
   DeliveryCommentReply,
   DeliveryCommentThread,
-  DeliveryReleaseCandidate,
   DeliveryDecision,
   DeliveryEvidence,
   DeliveryFlowStageArtifact,
   DeliveryFlowStageDecision,
   DeliveryIntake,
+  DeliveryFlowBaselineBinding,
+  DeliveryDesignImportSession,
+  DeliveryStaffImportIntent,
   DeliveryProject,
-  DeliveryPublication,
   DeliveryStaffLink,
+  DeliveryPublication,
   DeliveryTask,
 } from '../../data/entities'
 import { deliveryErrorBodySchema } from '../../lib/contracts'
@@ -32,13 +35,11 @@ import {
   type Row,
 } from '../../commands/__tests__/baselineTestKit'
 
-/**
- * Copies of `STAFF_ACCESS_RESOLVER_KEY` (commands/staffLink.ts) and `DELIVERY_STAFF_KANBAN_ADAPTER_KEY`
- * (commands/staffKanbanAdapter.ts). They are literals here because importing the owning command module from the kit
- * would close a require cycle with the mocked encryption helpers; `staffLink.route.test.ts` asserts they still match.
- */
 export const STAFF_ACCESS_RESOLVER_KEY = 'timeTrackingAccessResolver'
 export const DELIVERY_STAFF_KANBAN_ADAPTER_KEY = 'deliveryStaffKanbanAdapter'
+export type StaffAccessResolverMock = {
+  resolveProjectAccess: (ctx: { userId: string; tenantId: string; organizationId: string }) => Promise<{ canManageAll: boolean; projectIds: string[] }>
+}
 
 export const FOREIGN_TENANT_ID = '99999999-9999-4999-8999-999999999991'
 export const TASK_ID = '7c7c7c7c-7777-4777-8777-777777777777'
@@ -47,11 +48,6 @@ export const VIEW_ONLY = ['delivery_os.projects.view']
 export const EMPLOYEE_FEATURES = ['delivery_os.projects.view', 'delivery_os.projects.manage', 'delivery_os.results.import']
 
 type AuthState = { sub: string; tenantId: string; orgId: string } | null
-
-/** Mirrors the shape `commands/staffLink.ts` resolves from DI; a `null` slot means the staff module is absent. */
-export type StaffAccessResolverMock = {
-  resolveProjectAccess: (ctx: { userId: string; tenantId: string; organizationId: string }) => Promise<{ canManageAll: boolean; projectIds: string[] }>
-}
 
 type RouteStore = {
   projects: Row[]
@@ -64,14 +60,17 @@ type RouteStore = {
   intakes: Row[]
   stageArtifacts: Row[]
   stageDecisions: Row[]
+  flowBaselineBindings: Row[]
+  designImportSessions: Row[]
+  staffImportIntents: Row[]
+  publications: Row[]
   staffLinks: Row[]
   commentThreads: Row[]
   commentReplies: Row[]
-  publications: Row[]
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [], publications: [] }
+  return { flowBaselineBindings: [], designImportSessions: [], staffImportIntents: [], projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], publications: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [] }
 }
 
 export const routeState: {
@@ -81,9 +80,10 @@ export const routeState: {
   selectionRejected: boolean
   store: RouteStore
   queryEngine: { query: jest.Mock }
+  writes: number
   staffAccess: StaffAccessResolverMock | null
   kanbanAdapter: DeliveryStaffKanbanAdapter | null
-  writes: number
+  extraServices: Record<string, unknown>
   flowTemplateProvider: unknown
 } = {
   auth: null,
@@ -92,14 +92,18 @@ export const routeState: {
   selectionRejected: false,
   store: emptyRouteStore(),
   queryEngine: { query: jest.fn() },
+  writes: 0,
   staffAccess: null,
   kanbanAdapter: null,
-  writes: 0,
+  extraServices: {},
   flowTemplateProvider: null,
 }
 
 function rowsFor(entity: unknown): Row[] {
   const { store } = routeState
+  if (entity === DeliveryFlowBaselineBinding) return store.flowBaselineBindings
+  if (entity === DeliveryDesignImportSession) return store.designImportSessions
+  if (entity === DeliveryStaffImportIntent) return store.staffImportIntents
   if (entity === DeliveryReleaseCandidate) return store.candidates
   if (entity === DeliveryProject) return store.projects
   if (entity === DeliveryBaseline) return store.baselines
@@ -117,8 +121,8 @@ function rowsFor(entity: unknown): Row[] {
   throw new Error('[internal] unexpected entity in route test store')
 }
 
-/** Stage histories, comments, publications and candidate selection honour `orderBy`; legacy v1 suites retain insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryCommentThread, DeliveryCommentReply, DeliveryPublication, DeliveryReleaseCandidate])
+/** Stage histories and candidate selection honour `orderBy`; legacy v1 suites retain insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryReleaseCandidate, DeliveryPublication, DeliveryCommentThread, DeliveryCommentReply])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()
@@ -158,6 +162,8 @@ function entityDefaults(entity: unknown): Row {
 
 export const em = {
   fork: () => em,
+  getConnection: () => ({ execute: jest.fn(async () => []) }),
+  getTransactionContext: () => undefined,
   transactional: jest.fn(async (work: (tx: unknown) => Promise<unknown>) => work(em)),
   create: (entity: unknown, data: Row) => {
     const now = new Date()
@@ -222,6 +228,13 @@ const services: Record<string, unknown> = {
 export const containerMock = {
   createRequestContainer: async () => ({
     resolve: (name: string) => {
+      if (name in routeState.extraServices) return routeState.extraServices[name]
+      if (name === STAFF_ACCESS_RESOLVER_KEY) return routeState.staffAccess ?? undefined
+      if (name === DELIVERY_STAFF_KANBAN_ADAPTER_KEY) return routeState.kanbanAdapter ?? undefined
+      if (name === 'deliveryOsCommentQueries') {
+        const { createDeliveryOsCommentQueries } = jest.requireActual('../../commands/commentQueries')
+        return createDeliveryOsCommentQueries(em)
+      }
       if (name === 'rbacService') {
         if (!routeState.rbacAvailable) throw new Error('[internal] rbacService is not registered')
         return rbacService
@@ -229,8 +242,14 @@ export const containerMock = {
       if (name === 'deliveryOsAttachmentInspector') {
         return makeAttachmentInspector(() => routeState.store.attachments)
       }
-      if (name === STAFF_ACCESS_RESOLVER_KEY) return routeState.staffAccess ?? undefined
-      if (name === DELIVERY_STAFF_KANBAN_ADAPTER_KEY) return routeState.kanbanAdapter ?? undefined
+      if (name === 'deliveryOsDesignImportQueries') {
+        const { createDeliveryOsDesignImportQueries } = jest.requireActual('../../commands/designImportQueries')
+        return createDeliveryOsDesignImportQueries(em)
+      }
+      if (name === 'deliveryOsResultQueries') {
+        const { createDeliveryOsResultQueries } = jest.requireActual('../../commands/resultQueries')
+        return createDeliveryOsResultQueries(em)
+      }
       if (name === 'deliveryOsAttemptQueries') {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
         return createDeliveryOsAttemptQueries(em)
@@ -279,9 +298,10 @@ export function resetRouteState(): void {
   routeState.rbacAvailable = true
   routeState.selectionRejected = false
   routeState.store = emptyRouteStore()
+  routeState.writes = 0
   routeState.staffAccess = null
   routeState.kanbanAdapter = null
-  routeState.writes = 0
+  routeState.extraServices = {}
   routeState.flowTemplateProvider = null
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()

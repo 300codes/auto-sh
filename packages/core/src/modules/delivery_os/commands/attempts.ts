@@ -49,7 +49,7 @@ import {
   resolveDeliveryEm,
   resolveDeliveryScope,
 } from './shared'
-import { checkProjectFlowGateV1 } from './flowGate'
+import { checkFlowExecutionGate } from './flowExecutionGate'
 import { emitTaskSideEffects, emitTaskUpdated, findProjectBaseline, loadCorrectionBudget } from './tasks'
 
 export type AttemptReserveResult = ReserveAttemptResponse & { created: boolean }
@@ -164,6 +164,14 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
       if (reservation.ok && reservation.outcome === 'existing') return { task, attempt: reservation.attempt, created: false }
       if (!reservation.ok && reservation.body.code === 'idempotency_conflict') throw deliveryHttpError(reservation)
 
+      const authority = readTrustedExecutionOption(rawInput)
+      if (!ctx.request && isIssuedTrustedExecution(authority) && (authority.requireExpectedVersion || authority.expectedUpdatedAt)) {
+        if (!authority.expectedUpdatedAt) throw deliveryHttpError(buildDeliveryError('optimistic_lock_required', 'The task version header is required'))
+        await enforceCommandOptimisticLockWithGuards(ctx.container, {
+          resourceKind: DELIVERY_TASK_RESOURCE_KIND, resourceId: task.id,
+          current: task.updatedAt, expected: authority.expectedUpdatedAt, envValue: 'all',
+        })
+      }
       if (ctx.request) {
         requireLockHeader(ctx)
         await enforceCommandOptimisticLockWithGuards(ctx.container, {
@@ -233,7 +241,7 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
         }),
       )
       if (!reservation.ok) throw deliveryHttpError(reservation)
-      assertDeliveryCheck(await checkProjectFlowGateV1(tx, project, scope))
+      assertDeliveryCheck(await checkFlowExecutionGate(tx, project, task.baselineId, scope))
 
       task.executionAttempts = reservation.register
       task.attemptNumber = reservation.register.length

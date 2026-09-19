@@ -492,6 +492,22 @@ describe('delivery_os.attempts.reserve', () => {
       expect(store.tasks[0].executionAttempts).toHaveLength(0)
     })
 
+    it('enforces the initiating HTTP version for issued automatic reservations, with replay first', async () => {
+      seed([makeTask()])
+      for (const [expectedUpdatedAt, status] of [[null, 428], [STALE_UPDATED_AT, 409]] as const) {
+        const authority = issueTrustedExecution(ACTOR_ID, { expectedUpdatedAt, requireExpectedVersion: true })
+        const error = await catchHttpError(() => reserve({ inProcess: true }, body({ mode: 'automatic', trustedExecution: authority })))
+        expect(error.status).toBe(status)
+        expect(store.tasks[0].executionAttempts).toHaveLength(0)
+      }
+      const authority = issueTrustedExecution(ACTOR_ID, { expectedUpdatedAt: UPDATED_AT.toISOString(), requireExpectedVersion: true })
+      const first = await reserve({ inProcess: true }, body({ mode: 'automatic', trustedExecution: authority }))
+      const replay = await reserve({ inProcess: true }, body({ mode: 'automatic', trustedExecution: issueTrustedExecution(ACTOR_ID, { requireExpectedVersion: true }) }))
+      expect(replay.attemptId).toBe(first.attemptId)
+      expect(replay.created).toBe(false)
+      expect(store.tasks[0].executionAttempts).toHaveLength(1)
+    })
+
     it('accepts automatic mode from the trusted in-process executor and stamps the actor', async () => {
       seed([makeTask()])
       const { ctx } = makeHarness({ inProcess: true })

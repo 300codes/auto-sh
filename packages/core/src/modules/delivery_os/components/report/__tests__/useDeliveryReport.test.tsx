@@ -23,7 +23,12 @@ const project = projectDetailSchema.parse({
 })
 
 function report() {
-  const value = deliveryReportResponseSchema.parse({ ...fixture, mode: 'legacy', flow: null, currentCandidate: null, projectUpdatedAt: project.updatedAt, decisionContextHash: 'a'.repeat(64), candidateDecisions: { deployDecisionId: null, releaseDecisionId: null } })
+  const value = deliveryReportResponseSchema.parse({
+    ...fixture,
+    mode: 'legacy', flow: null, currentCandidate: null,
+    projectUpdatedAt: project.updatedAt, decisionContextHash: 'a'.repeat(64),
+    candidateDecisions: { deployDecisionId: null, releaseDecisionId: null },
+  })
   value.decisions = [{ ...value.decisions[1], sourceRevision: value.revision, appliesToRevision: true }]
   return value
 }

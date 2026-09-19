@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { StatusBadge, type StatusMap } from '@open-mercato/ui/primitives/status-badge'
 import type { CheckStatus, DeliveryUsage, ResultManifestV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import type { AcceptedResultSummary } from '@open-mercato/core/modules/delivery_os/lib/resultReadContracts'
 import { countChecksByStatus, summarizeResultManifest, usageIsUnknown } from './resultImport'
 
 /**
@@ -13,13 +14,10 @@ import { countChecksByStatus, summarizeResultManifest, usageIsUnknown } from './
  */
 export type ResultEvidenceSource = 'adapter' | 'manual'
 
-export type ResultSummaryProps = {
-  manifest: ResultManifestV1
-  /** Which side recorded the evidence: the manual import route, or an adapter. */
-  source: ResultEvidenceSource
-  /** Set once the manifest has actually been accepted, so the caveat is about stored data. */
-  accepted?: boolean
-}
+export type ResultSummaryProps = { accepted?: boolean } & (
+  | { manifest: ResultManifestV1; source: ResultEvidenceSource; result?: never }
+  | { result: AcceptedResultSummary; manifest?: never; source?: never }
+)
 
 /** `not_run` is deliberately NOT a success colour: it reports an absent measurement. */
 export const checkStatusMap: StatusMap<CheckStatus> = {
@@ -64,7 +62,7 @@ function UsageBlock({ usage }: { usage: DeliveryUsage }) {
   )
 }
 
-function FindingList({ manifest }: { manifest: ResultManifestV1 }) {
+function FindingList({ manifest }: { manifest: Pick<ResultManifestV1, 'findings'> }) {
   const t = useT()
   if (manifest.findings.length === 0) {
     return <p className="text-xs text-muted-foreground">{t('delivery_os.task.result.findings.none')}</p>
@@ -90,10 +88,19 @@ function FindingList({ manifest }: { manifest: ResultManifestV1 }) {
  * shown as three counts, `not_run` among them, so a run that measured nothing
  * cannot read as a run that passed.
  */
-export function ResultSummary({ manifest, source, accepted = false }: ResultSummaryProps) {
+export function ResultSummary(props: ResultSummaryProps) {
   const t = useT()
-  const summary = React.useMemo(() => summarizeResultManifest(manifest), [manifest])
-  const counts = React.useMemo(() => countChecksByStatus(manifest), [manifest])
+  const manifest = props.result ?? props.manifest
+  const source = props.result?.source ?? props.source
+  const accepted = props.result !== undefined || props.accepted === true
+  const summary = props.result ? {
+    externalRunId: props.result.externalRunId,
+    changedPathCount: props.result.changedPaths.length,
+    artifactCount: props.result.artifactCount,
+    artifactBytes: props.result.artifactBytes,
+    findingCount: props.result.findings.length,
+  } : summarizeResultManifest(props.manifest)
+  const counts = countChecksByStatus(manifest)
 
   return (
     <div className="space-y-3 rounded border border-border p-3" data-testid="delivery-result-summary">
@@ -128,7 +135,9 @@ export function ResultSummary({ manifest, source, accepted = false }: ResultSumm
         <div>
           <dt className="font-medium text-muted-foreground">{t('delivery_os.task.result.artifacts')}</dt>
           <dd data-testid="result-artifact-count">
-            {t('delivery_os.task.result.artifactsValue', { count: summary.artifactCount, bytes: summary.artifactBytes })}
+            {summary.artifactBytes === null
+              ? t('delivery_os.task.result.artifactsUnknownSize', { count: summary.artifactCount })
+              : t('delivery_os.task.result.artifactsValue', { count: summary.artifactCount, bytes: summary.artifactBytes })}
           </dd>
         </div>
         <div>
@@ -143,14 +152,21 @@ export function ResultSummary({ manifest, source, accepted = false }: ResultSumm
         </ul>
       ) : null}
 
+      {props.result ? (
+        <dl className="grid gap-2 text-xs sm:grid-cols-3" data-testid="result-provenance">
+          <div><dt>{t('delivery_os.task.result.read.attempt')}</dt><dd className="break-all font-mono">{props.result.attemptId}</dd></div>
+          <div><dt>{t('delivery_os.task.result.read.evidence')}</dt><dd className="break-all font-mono">{props.result.evidenceId}</dd></div>
+          <div><dt>{t('delivery_os.task.result.read.recorded')}</dt><dd><time dateTime={props.result.createdAt}>{props.result.createdAt}</time></dd></div>
+        </dl>
+      ) : null}
       <FindingList manifest={manifest} />
 
       <div className="space-y-1">
         <h4 className="text-xs font-medium text-muted-foreground">{t('delivery_os.task.result.usage.title')}</h4>
         <UsageBlock usage={manifest.usage} />
         {accepted ? (
-          <p className="text-xs text-muted-foreground" data-testid="result-usage-not-persisted">
-            {t('delivery_os.task.result.usage.notPersisted')}
+          <p className="text-xs text-muted-foreground" data-testid="result-usage-persisted">
+            {t('delivery_os.task.result.usage.persisted')}
           </p>
         ) : null}
       </div>

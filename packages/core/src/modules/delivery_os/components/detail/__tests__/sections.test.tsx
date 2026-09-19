@@ -7,12 +7,18 @@ import { RequirementsSection } from '../RequirementsSection'
 import { DesignSection } from '../DesignSection'
 import { TasksSection } from '../TasksSection'
 import { EvidenceSection } from '../EvidenceSection'
-
+import { EvidenceSources } from '../../report/EvidenceSources'
 import { resolveActiveBaseline } from '../baselineContent'
 import type { SectionSource } from '../useProjectSections'
 
 const translate = (key: string) => key
 jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => translate, useOptionalT: () => translate }))
+jest.mock('../../report/useEvidenceRead', () => ({
+  useEvidenceList: () => ({ status: 'ready', data: { items: [], nextOffset: null }, reload: jest.fn() }),
+}))
+jest.mock('@open-mercato/ui/backend/DataTable', () => ({
+  DataTable: ({ data, emptyState }: { data: unknown[]; emptyState: React.ReactNode }) => <div>{data.length === 0 ? emptyState : null}</div>,
+}))
 
 const projectId = '11111111-1111-4111-8111-111111111111'
 const baselineId = '22222222-2222-4222-8222-222222222222'
@@ -322,8 +328,11 @@ describe('evidence section', () => {
   })
 })
 
-describe('project empty states stay disjoint', () => {
-  it('uses different messages for no baseline and a baseline without tasks', () => {
+describe('three empty states stay disjoint', () => {
+  // Comparing whole SECTIONS would pass even if all three empty states said the
+  // same thing, because the section headings differ on their own. Compare the
+  // empty-state nodes themselves.
+  it('uses a different message for no baseline, no tasks and an empty evidence collection', () => {
     const noBaseline = render(
       <RequirementsSection state={ready<BaselineDto[]>([])} onRetry={() => undefined} />,
     ).getByTestId('delivery-requirements-section-empty').textContent ?? ''
@@ -337,11 +346,15 @@ describe('project empty states stay disjoint', () => {
         onRetry={() => undefined}
       />,
     ).getByTestId('delivery-tasks-empty').textContent ?? ''
+    const noEvidence = render(<EvidenceSources projectId={projectId} baselineId={baselineId} revision={null} onEvidenceSelect={() => undefined} />).getByText('delivery_os.report.evidence.sourcesEmpty').textContent ?? ''
 
     expect(noBaseline).toContain('delivery_os.project.sections.baselines.none.title')
     expect(noTasks).toContain('delivery_os.project.sections.tasks.empty.baselineWithoutTasks')
-    for (const text of [noBaseline, noTasks]) expect(text.length).toBeGreaterThan(0)
+    expect(noEvidence).toContain('delivery_os.report.evidence.sourcesEmpty')
+    for (const text of [noBaseline, noTasks, noEvidence]) expect(text.length).toBeGreaterThan(0)
     expect(noBaseline).not.toBe(noTasks)
+    expect(noTasks).not.toBe(noEvidence)
+    expect(noBaseline).not.toBe(noEvidence)
   })
 })
 

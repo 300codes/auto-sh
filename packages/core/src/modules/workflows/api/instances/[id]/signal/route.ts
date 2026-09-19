@@ -4,6 +4,7 @@ import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { getAuthFromRequest } from '@open-mercato/shared/lib/auth/server'
 import { resolveOrganizationScopeForRequest } from '@open-mercato/core/modules/directory/utils/organizationScope'
 import { z } from 'zod'
+import { isCrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { sendSignal } from '../../../../lib/signal-handler'
 import {
   workflowsTag,
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       message: 'Signal sent successfully',
     })
   } catch (error: any) {
+    if (isCrudHttpError(error)) return NextResponse.json(error.body, { status: error.status })
     logger.error('Signal request failed', { component: 'signal', err: error })
 
     // Handle Zod validation errors
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (error.code === 'INSTANCE_NOT_FOUND') {
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
-    if (error.code === 'WORKFLOW_NOT_PAUSED' || error.code === 'NOT_WAITING_FOR_SIGNAL') {
+    if (error.code === 'WORKFLOW_NOT_PAUSED' || error.code === 'NOT_WAITING_FOR_SIGNAL' || error.code === 'DELIVERY_GUARD_UNAVAILABLE') {
       return NextResponse.json({ error: error.message }, { status: 409 })
     }
     if (error.code === 'SIGNAL_NAME_MISMATCH') {

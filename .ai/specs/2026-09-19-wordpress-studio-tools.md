@@ -2,7 +2,55 @@
 
 > **Korekta kierunku — 2026-09-19:** [dodatek produktowy](2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../../context/changes/autonomous-software-delivery/flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
 
-Status: **implemented locally; manual acceptance pending** · Created: 2026-09-19 · Owner: delivery-wordpress
+Status: **partial local implementation; Studio host and live delivery deferred by user** · Created: 2026-09-19 · Owner: delivery-wordpress
+
+## Aktualny zakres — brak WP Studio
+
+Decyzja użytkownika z 2026-09-19: dostęp do Figmy jest dostępny po jego stronie,
+WP Studio nie jest dostępne; brakującą część WordPress pozostawiamy jako
+specyfikację do późniejszego wdrożenia. Zachowujemy istniejący kod narzędzi
+i jego testy. Historyczne wyniki live poniżej nie potwierdzają obecnego środowiska.
+
+Odroczenie obejmuje produkcyjny host wykonania Studio, transport publikacji
+Preview, weryfikację zdalnej rewizji i odbiór WP-01…05. Wymagania dwóch języków,
+edycji bez kodu oraz zachowania treści po redeploy pozostają docelowym kontraktem.
+FLOW-06/07 z rzeczywistym WP i część WP pełnego demo mają status
+**deferred_by_user / not_run**, nigdy PASS. Pozostały UI, domena, integracja Figmy
+i ich niezależna weryfikacja pozostają w bieżącym zakresie. Wdrożenie OM nadal
+jest odroczone zgodnie z wcześniejszą decyzją.
+
+### Przekazanie do wznowienia
+
+1. Przygotować stanowisko Studio: operator, wersje Studio/WP/PHP/Node,
+   dozwolone katalogi i bezpieczne referencje dostępów. Potwierdzić wersje oraz
+   licencje Yoast SEO, ACF Pro i Polylang. Nie wpisywać sekretów do repo.
+2. Dostarczyć zatwierdzony handoff Figmy: file/node/version/hash, tokeny oraz
+   mapę ekran/sekcja → blok/pole → edytor → tłumaczenie → test. Braki wymagają
+   jawnego rozstrzygnięcia przed budowaniem witryny.
+3. Zaimplementować zaufany adapter hosta z core `TaskPackageV1` do
+   `ResultManifestV1`, zachowujący backend-derived scope, task/attempt/baseline,
+   immutable flow binding, allowed paths i gate przed efektem. Integracja
+   enterprise pozostaje opisana w specyfikacji Delivery Agents. Brak adaptera
+   ma blokować wykonanie; legacy stdout ani hash baseline nie zastępują
+   rzeczywistego snapshotu WP. Create/run/reconcile muszą zachować idempotencję.
+4. Po lokalnym buildzie i kontrolach wykonać run → import wyniku → review →
+   rzeczywistą poprawkę z nowym snapshotem i dowodami. Testy narzędzi nie są
+   testami produktu; unknown usage i manual_handoff pozostają jawne.
+5. Dopiero po zgodzie aktualnego kandydata wdrożyć transport na dozwolony target
+   Studio Preview. URL powstaje podczas pracy Studio, nie jest wymagany z góry.
+   Trwały intent wiąże scope, candidate/version, packageHash i target. Timeout
+   wymaga odczytu/reconcile zamiast ponownego uploadu. Verify sprawdza URL oraz
+   tożsamość wysłanej rewizji; sam HTTP 200 lub upload succeeded nie daje release.
+   Wynik trafia przez F14; końcowy release wymaga osobnej decyzji człowieka.
+6. Uruchomić FLOW-06/07 oraz WP-01…05: desktop/mobile, edycja treści, mediów/alt,
+   CTA, sekcji, menu/header/footer, pól ACF, SEO i dwóch języków; potem ponowny
+   deployment bez utraty treści, Global Styles i zapisanych szablonów. Zapisać
+   SHA, rzeczywiste IDs/hash/URL, wyniki oraz odbierającego w indeksie dowodów.
+
+Niezależna walidacja pakietu z Node 24: w `packages/delivery-wordpress` uruchomić
+`npm test`, `npm run typecheck`, `npm run build`. Instrukcje istniejących lokalnych
+operatorów są w [README pakietu](../../packages/delivery-wordpress/README.md).
+Nie ma jeszcze gotowej komendy wdrażającej cały powyższy proces.
 
 ## TLDR
 
@@ -94,6 +142,10 @@ No blocking scope decisions remain for independent tools. Future delivery DTO ma
 
 ## Changelog
 
+- 2026-09-19: User deferred the remaining Studio host, Preview transport and live WordPress acceptance because Studio is unavailable. Preserved local implementation and target requirements; added an explicit resumption sequence without claiming live completion.
+
+- 2026-09-19: Reused the additive provider implementation from `83a2d8c2d9` for UI completeness. Package-local token fixtures remove dependence on absent planning artifacts. Node 24.13.0 verification passed 259 tests, typecheck and build; no live WordPress or publication was run. The newer plan requires two languages, still pending.
+
 - 2026-09-19: Recorded removal of the WP time cap and internal theme preparation/update, native editor fixture and deployment inventory implementation; browser acceptance and integration gates remain independently tracked.
 
 - 2026-09-19: Added pending target-site requirements for Tailwind, modular CSS/PHP, Figma-driven theme.json, required plugins and editability checks WP-01…05; no implementation claimed.
@@ -103,6 +155,12 @@ No blocking scope decisions remain for independent tools. Future delivery DTO ma
 - 2026-09-19: Implemented and reviewed independent tools; live replay and HTTP passed. Human acceptance and domain integration remain pending.
 
 ## Aktualizacja zakresu demo — Polylang Free
+
+Poniższe odroczenie jest historyczną decyzją dla wcześniejszego demo. Nowszy,
+zatwierdzony [plan UI completeness](../../context/changes/autonomous-software-delivery/workstreams/ui-completeness/plan.md)
+przywraca w fazie 7 obowiązek dwóch języków, zgodności ACF–Polylang oraz zachowania
+tłumaczeń po redeploy. Dla obecnego zakresu te wymagania mają status **pending**;
+wcześniejsze `deferred_by_user` nie zwalnia ich z implementacji ani odbioru.
 
 Decyzja użytkownika z 2026-09-19: tłumaczenia odroczone poza demo. Polylang Free
 pozostaje wybraną wtyczką; nie wymagamy drugiego języka ani integracji tłumaczeń ACF

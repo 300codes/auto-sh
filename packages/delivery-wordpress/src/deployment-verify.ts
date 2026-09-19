@@ -117,7 +117,7 @@ export async function verifyOwnedDeploymentPackage(value: unknown) {
     await privateDirectory(root)
     const directory = path.join(root, input.packageId)
     await privateDirectory(directory)
-    if (JSON.stringify((await fs.readdir(directory)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify(['manifest.json', 'site'])) throw toolError('deployment_verify_inventory_mismatch')
+    if (JSON.stringify((await fs.readdir(directory)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify(['manifest.json', 'site'])) throw toolError('deployment_verify_inventory_mismatch')
     const filename = path.join(directory, 'manifest.json')
     const raw = await readFile(filename, MAX_MANIFEST_BYTES, true)
     const parsed: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw.bytes))
@@ -142,7 +142,7 @@ export async function verifyOwnedDeploymentPackage(value: unknown) {
     const walk = async (folder: string, relative: string, depth: number): Promise<void> => {
       if (depth > 35) throw toolError('deployment_verify_limit')
       await privateDirectory(folder)
-      const names = (await fs.readdir(folder)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
+      const names = (await fs.readdir(folder)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
       for (const name of names) {
         if (++entries > MAX_FILES) throw toolError('deployment_verify_limit')
         const candidate = relative ? `${relative}/${name}` : name
@@ -153,7 +153,7 @@ export async function verifyOwnedDeploymentPackage(value: unknown) {
         else if (stat.isFile() && inventory.paths.has(candidate)) observed.add(candidate)
         else throw toolError('deployment_verify_inventory_mismatch')
       }
-      if (JSON.stringify((await fs.readdir(folder)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify(names)) throw toolError('deployment_verify_changed')
+      if (JSON.stringify((await fs.readdir(folder)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify(names)) throw toolError('deployment_verify_changed')
     }
     await walk(site, '', 0)
     if (observed.size !== manifest.files.length) throw toolError('deployment_verify_inventory_mismatch')
@@ -169,7 +169,7 @@ export async function verifyOwnedDeploymentPackage(value: unknown) {
       const current = await fs.lstat(path.join(site, relative))
       if (!current.isFile() || current.isSymbolicLink() || [current.dev, current.ino, current.size, current.mtimeMs, current.ctimeMs].join(':') !== identity) throw toolError('deployment_verify_changed')
     }
-    if (JSON.stringify((await fs.readdir(directory)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify(['manifest.json', 'site'])) throw toolError('deployment_verify_inventory_mismatch')
+    if (JSON.stringify((await fs.readdir(directory)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify(['manifest.json', 'site'])) throw toolError('deployment_verify_inventory_mismatch')
     if ((await readFile(filename, MAX_MANIFEST_BYTES)).sha256 !== raw.sha256) throw toolError('deployment_verify_changed')
     return { schemaVersion: 1, status: 'passed', provenance: owner.result.provenance === 'fixture' ? 'fixture' : 'local', siteId: input.handle.siteId, packageId: input.packageId,
       packageHash, fileCount: manifest.files.length, totalBytes: inventory.totalBytes, verification: 'saved_package_bytes_only', publication: 'not_authorized', remoteRevision: 'not_verified',

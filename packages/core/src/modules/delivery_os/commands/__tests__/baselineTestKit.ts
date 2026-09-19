@@ -3,12 +3,15 @@ import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import {
+  DeliveryReleaseCandidate,
+  DeliveryStaffImportIntent,
+  DeliveryFlowBaselineBinding,
+  DeliveryDesignImportSession,
   DeliveryBaseline,
   DeliveryCommentReply,
   DeliveryCommentThread,
   DeliveryDecision,
   DeliveryProject,
-  DeliveryReleaseCandidate,
   DeliveryStaffLink,
   DeliveryTask,
 } from '../../data/entities'
@@ -36,6 +39,9 @@ export type Store = {
   decisions: DeliveryDecision[]
   tasks: DeliveryTask[]
   attachments: Row[]
+  flowBaselineBindings: Row[]
+  designImportSessions: Row[]
+  staffImportIntents: Row[]
   staffLinks: Row[]
   commentThreads: Row[]
   commentReplies: Row[]
@@ -50,10 +56,13 @@ export type EmMock = {
 }
 
 export function emptyStore(): Store {
-  return { projects: [], baselines: [], decisions: [], tasks: [], attachments: [], staffLinks: [], commentThreads: [], commentReplies: [] }
+  return { flowBaselineBindings: [], designImportSessions: [], staffImportIntents: [], projects: [], baselines: [], decisions: [], tasks: [], attachments: [], staffLinks: [], commentThreads: [], commentReplies: [] }
 }
 
 export function rowsFor(store: Store, entity: unknown): Row[] {
+  if (entity === DeliveryStaffImportIntent) return store.staffImportIntents
+  if (entity === DeliveryFlowBaselineBinding) return store.flowBaselineBindings
+  if (entity === DeliveryDesignImportSession) return store.designImportSessions
   if (entity === DeliveryReleaseCandidate) return []
   if (entity === DeliveryProject) return store.projects as unknown as Row[]
   if (entity === DeliveryBaseline) return store.baselines as unknown as Row[]
@@ -98,7 +107,10 @@ export function makeHarness(
     fork: jest.fn(),
     create: jest.fn((_entity: unknown, data: Row) => ({ id: NEW_ROW_ID, ...data })),
     persist: jest.fn((row: Row) => {
-      if ('proposalTaskKey' in row) store.tasks.push(row as unknown as DeliveryTask)
+      if ('refsHash' in row) store.flowBaselineBindings.push(row)
+      else if ('payloadHash' in row && 'key' in row) store.staffImportIntents.push(row)
+      else if ('manifestHash' in row && 'progress' in row) store.designImportSessions.push(row)
+      else if ('proposalTaskKey' in row) store.tasks.push(row as unknown as DeliveryTask)
       else if ('contentHash' in row) store.baselines.push(row as unknown as DeliveryBaseline)
       else store.decisions.push(row as unknown as DeliveryDecision)
     }),

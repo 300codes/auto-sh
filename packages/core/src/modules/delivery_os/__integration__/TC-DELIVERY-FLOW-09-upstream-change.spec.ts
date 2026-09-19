@@ -19,6 +19,7 @@ import {
   expectNothingLeft,
   getFlow,
   listArtifacts,
+  materializeApprovedBaseline,
   listDecisions,
   pinProject,
   postArtifact,
@@ -102,7 +103,8 @@ test.describe('TC-DELIVERY-FLOW-09: upstream change makes downstream stale and c
       expect(pinned.status, `F4 pin: ${JSON.stringify(pinned.body)}`).toBe(201)
       const chain = await approveAllStages(call, id)
       await expectAllApproved(call, id)
-      const task = await createReadyTask(call, id, seed.baselineId, 'Booking page')
+      const boundBaselineId = await materializeApprovedBaseline(call, id)
+      let task = await createReadyTask(call, id, boundBaselineId, 'Booking page')
       const approvedIds = await decisionIds(id)
       expect(approvedIds, 'one approval per stage').toHaveLength(4)
 
@@ -156,6 +158,10 @@ test.describe('TC-DELIVERY-FLOW-09: upstream change makes downstream stale and c
       await approveStage(call, id, 'design_system_ui', designSystemUiV2, { clientApproval: CLIENT_APPROVAL })
       await expectAllApproved(call, id)
 
+      const unbound = await reserve(call, task.taskId, (await taskVersion(call, task.taskId)).updatedAt)
+      expectError(unbound, 422, 'baseline_not_approved', 'Reapproved chain still needs a current binding')
+      const rebuiltBaselineId = await materializeApprovedBaseline(call, id)
+      task = await createReadyTask(call, id, rebuiltBaselineId, 'Booking page updated scope')
       const reserved = await reserve(call, task.taskId, (await taskVersion(call, task.taskId)).updatedAt)
       expect(reserved.status, `R14 reserve on the rebuilt chain: ${JSON.stringify(reserved.body)}`).toBe(201)
       const attemptId = reserved.body.attemptId as string

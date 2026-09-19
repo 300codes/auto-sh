@@ -170,6 +170,12 @@ export function postArtifact(call: Call, projectId: string, stageId: string, bod
 }
 
 export async function recordArtifact(call: Call, projectId: string, artifact: StageArtifactV1): Promise<ArtifactRef> {
+  if (artifact.stageId === 'design_system_ui' && artifact.content.screens.length === 0) {
+    const detail = await call('GET', `${API}/projects/${projectId}`)
+    const draft = detail.body.draftSpec as Json | undefined
+    if (Array.isArray(draft?.screens)) artifact = { ...artifact, content: { ...artifact.content, screens: draft.screens as typeof artifact.content.screens } }
+  }
+
   const created = await postArtifact(call, projectId, artifact.stageId, artifact, await projectVersion(call, projectId))
   expect(created.status, `F7 ${artifact.stageId} artifact: ${JSON.stringify(created.body)}`).toBe(201)
   return { artifactId: created.body.artifactId as string, version: created.body.version as number, contentHash: created.body.contentHash as string }
@@ -222,6 +228,22 @@ export function listArtifacts(call: Call, projectId: string, stageId: string, qu
 
 export function listDecisions(call: Call, projectId: string, stageId: string, query = ''): Promise<CallResult> {
   return call('GET', `${API}/projects/${projectId}/stages/${stageId}/decisions${query}`)
+}
+
+export async function materializeApprovedBaseline(call: Call, projectId: string): Promise<string> {
+  const materialized = await call('POST', `${API}/projects/${projectId}/flow/baseline`, { body: {}, lock: await projectVersion(call, projectId) })
+  expect(materialized.status, `materialize: ${JSON.stringify(materialized.body)}`).toBe(200)
+  expect(materialized.body.stageRefs).toHaveLength(4)
+  const frozen = await call('POST', `${API}/projects/${projectId}/baselines`, { body: { source: 'manual' }, lock: await projectVersion(call, projectId) })
+  expect([200, 201], `freeze: ${JSON.stringify(frozen.body)}`).toContain(frozen.status)
+  const { baselineId, contentHash, version } = frozen.body
+  for (const kind of ['requirements', 'design']) {
+    const approved = await call('POST', `${API}/baselines/${baselineId}/decisions`, {
+      body: { kind, verdict: 'approved', subjectHash: contentHash, subjectVersion: version }, lock: await projectVersion(call, projectId),
+    })
+    expect([200, 201], `technical approval: ${JSON.stringify(approved.body)}`).toContain(approved.status)
+  }
+  return baselineId as string
 }
 
 export type LegacyBaseline = { projectId: string; attachmentId: string; baselineId: string; contentHash: string; version: number }
@@ -400,6 +422,7 @@ export async function deliveryRowCounts(registry: Registry): Promise<number> {
     `select
        (select count(*) from delivery_projects where id = any($1::uuid[]))
      + (select count(*) from delivery_baselines where project_id = any($1::uuid[]))
+     + (select count(*) from delivery_flow_baseline_bindings where project_id = any($1::uuid[]))
      + (select count(*) from delivery_decisions where project_id = any($1::uuid[]))
      + (select count(*) from delivery_tasks where project_id = any($1::uuid[]))
      + (select count(*) from delivery_evidence where project_id = any($1::uuid[]))
@@ -447,7 +470,7 @@ export async function deleteProjectsInDb(registry: Registry): Promise<void> {
       [indexedIds],
     )
     await client.query('delete from delivery_comment_replies where thread_id in (select id from delivery_comment_threads where project_id = any($1::uuid[]))', [projectIds])
-    for (const table of ['delivery_comment_threads', 'delivery_staff_links', 'delivery_flow_stage_decisions', 'delivery_flow_stage_artifacts', 'delivery_intakes', 'delivery_evidence', 'delivery_decisions', 'delivery_tasks', 'delivery_baselines']) {
+    for (const table of ['delivery_flow_baseline_bindings', 'delivery_design_import_sessions', 'delivery_staff_import_intents', 'delivery_comment_threads', 'delivery_staff_links', 'delivery_flow_stage_decisions', 'delivery_flow_stage_artifacts', 'delivery_intakes', 'delivery_evidence', 'delivery_decisions', 'delivery_tasks', 'delivery_baselines']) {
       await client.query(`delete from ${table} where project_id = any($1::uuid[])`, [projectIds])
     }
     await client.query('delete from delivery_projects where id = any($1::uuid[])', [projectIds])

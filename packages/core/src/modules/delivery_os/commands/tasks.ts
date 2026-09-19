@@ -44,7 +44,7 @@ import {
   type PlannedStatusChange,
 } from '../lib/taskLifecycle'
 import { checkAllowedPathsForProfile, getTargetProfile, type TargetProfile } from '../lib/targetProfiles'
-import { checkProjectFlowGateV1 } from './flowGate'
+import { checkFlowExecutionGate } from './flowExecutionGate'
 import { checkProjectArchivable } from './projects'
 import {
   assertDeliveryCheck,
@@ -373,7 +373,7 @@ export async function checkReadyGate(
   )
   const readiness = readinessFailure(reasons)
   if (!readiness.ok) return readiness
-  return checkProjectFlowGateV1(tx, project, scope)
+  return checkFlowExecutionGate(tx, project, task.baselineId, scope)
 }
 
 export async function loadCorrectionBudget(

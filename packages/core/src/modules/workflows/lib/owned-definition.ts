@@ -8,6 +8,7 @@ import {
 } from '../data/entities'
 import { normalizeGrantedFeatures, syncWorkflowDefinitionPrincipal } from './definition-grant'
 import { invalidateTriggerCache } from './event-trigger-service'
+import { assertImmutableDefinitionUpdate } from './definition-edit-safety'
 
 /**
  * Create-or-update of a workflow definition that ANOTHER module authors and owns.
@@ -130,6 +131,10 @@ export function createWorkflowDefinitionAuthoring(container: AwilixContainer): W
         generatedBy: { module: input.ownerModule, ownerId: input.ownerId },
       }
 
+      if (existing) assertImmutableDefinitionUpdate(existing, {
+        definition: input.definition, metadata, grantedFeatures: grantedFeatures.length ? grantedFeatures : null,
+      })
+
       const definition =
         existing ??
         em.create(WorkflowDefinition, {
@@ -178,6 +183,7 @@ export function createWorkflowDefinitionAuthoring(container: AwilixContainer): W
       })
       if (!existing) return false
       if (!ownedBy(existing, params.ownerModule, params.ownerId)) return false
+      assertImmutableDefinitionUpdate(existing, { deletedAt: new Date() })
       existing.deletedAt = new Date()
       em.persist(existing)
       await em.flush()

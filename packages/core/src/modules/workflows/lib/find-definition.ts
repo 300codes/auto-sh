@@ -76,9 +76,10 @@ export async function findWorkflowDefinition(
     if (dbDef) return dbDef
   }
 
-  // 2. Fall back to code registry (version filter not applicable to code defs)
+  // 2. Fall back only to a matching code version.
   const codeDef = getCodeWorkflow(workflowId)
   if (!codeDef) return null
+  if (version !== undefined && codeDef.version !== version) return null
 
   // When no version was requested, mirror the DB branch's `enabled = true` filter
   // so disabled code workflows aren't silently executable.

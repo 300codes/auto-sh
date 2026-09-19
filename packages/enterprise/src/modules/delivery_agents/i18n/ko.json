@@ -1,4 +1,8 @@
 {
+  "delivery_agents.scope.description": "도우미는 제안을 준비합니다. 가져오기 확인은 제안만 저장합니다. 범위 결과물을 검토하고 고객 결정을 별도로 기록하세요.",
+  "delivery_agents.scope.open": "AI와 범위 논의",
+  "delivery_agents.scope.placeholder": "목표를 설명하거나 범위에 관해 질문하세요…",
+  "delivery_agents.scope.title": "범위 도우미",
   "delivery_agents.widget.cancel.ariaLabel": "실행 시도 취소",
   "delivery_agents.widget.cancel.cancelling": "취소 중…",
   "delivery_agents.widget.cancel.failed": "취소 실패",

@@ -1,0 +1,14 @@
+{
+  "delivery_figma.credentials.authType": "Typ uwierzytelnienia",
+  "delivery_figma.credentials.healthFileKey": "Klucz pliku do sprawdzenia połączenia",
+  "delivery_figma.credentials.personal": "Osobisty token dostępu",
+  "delivery_figma.credentials.token": "Token dostępu",
+  "delivery_figma.errors.figma_access_denied": "Figma odmówiła dostępu. Sprawdź uprawnienia połączenia.",
+  "delivery_figma.errors.figma_file_missing": "Nie znaleziono pliku Figmy.",
+  "delivery_figma.errors.figma_rate_limited": "Osiągnięto limit Figmy. Spróbuj ponownie później.",
+  "delivery_figma.errors.figma_response_invalid": "Figma zwróciła niepełny lub nieprawidłowy zestaw komentarzy.",
+  "delivery_figma.errors.figma_response_too_large": "Zestaw komentarzy przekracza obsługiwany rozmiar.",
+  "delivery_figma.errors.figma_unavailable": "Figma jest obecnie niedostępna.",
+  "delivery_figma.errors.healthFailed": "Nie można odczytać komentarzy wskazanego pliku Figmy.",
+  "delivery_figma.errors.healthUnconfigured": "Wskaż dostępny plik do sprawdzenia połączenia."
+}

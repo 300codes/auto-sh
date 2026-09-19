@@ -15,12 +15,12 @@ import {
   deliveryFlowErrorBodySchema,
   deliveryReportFlowSectionSchema,
   publicationListResponseSchema,
-  stageArtifactV1Schema,
   type BaselineContentV1,
   type ClientApproval,
   type DeliveryReportFlowSection,
   type FlowStageId,
   type PublicationResultV1,
+  type ResultManifestV1,
   type SourceRevision,
   type StageArtifactV1,
   type TaskPackageV1,
@@ -52,8 +52,7 @@ import {
 
 const FIXTURES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'fixtures')
 const baselineContent = JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'baseline-content.v1.json'), 'utf-8')) as BaselineContentV1
-const scopeArtifactFixture = stageArtifactV1Schema.parse(JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'flow', 'stage-artifact.scope.v1.json'), 'utf-8')))
-const uxArtifactFixture = stageArtifactV1Schema.parse(JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'flow', 'stage-artifact.ux.v1.json'), 'utf-8')))
+const scopeArtifactFixture = JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'flow', 'stage-artifact.scope.v1.json'), 'utf-8')) as StageArtifactV1
 const API = '/api/delivery_os'
 const LOCK_HEADER = 'x-om-ext-optimistic-lock-expected-updated-at'
 const PNG_1X1 = Buffer.from(
@@ -69,6 +68,7 @@ const INDEX_TABLES = ['entity_indexes', 'search_tokens']
 const USER_TABLES = ['sessions', 'user_acls', 'user_roles', 'password_resets']
 const PROJECT_TABLES = [
   'delivery_publications',
+  'delivery_release_candidates',
   'delivery_flow_stage_decisions',
   'delivery_flow_stage_artifacts',
   'delivery_intakes',
@@ -84,6 +84,7 @@ type Call = (method: string, path: string, options?: { body?: unknown; lock?: st
 type ArtifactRef = { artifactId: string; version: number; contentHash: string }
 type Seed = { projectId: string; attachmentId: string; baselineId: string; taskId: string }
 
+const acceptedManifests = new Map<string, ResultManifestV1>()
 const createdProjectIds: string[] = []
 const createdAttachmentIds: string[] = []
 const createdResourceIds = new Set<string>()
@@ -190,7 +191,28 @@ async function deliverResult(call: Call, seed: Seed, label: string): Promise<Sou
   const manifest = buildResultManifest(taskPackage.body as TaskPackageV1)
   const accepted = await call('POST', `${API}/tasks/${seed.taskId}/results`, { body: { attemptId, manifest } })
   expect(accepted.status, `R16 result: ${JSON.stringify(accepted.body)}`).toBe(201)
+  acceptedManifests.set(seed.projectId, manifest)
   return manifest.resultRevision
+}
+
+async function nominateCandidate(call: Call, seed: Seed, revision: SourceRevision): Promise<void> {
+  const manifest = acceptedManifests.get(seed.projectId)
+  if (!manifest) throw new Error('[internal] accepted result fixture required')
+  const review = await call('POST', `${API}/projects/${seed.projectId}/evidence`, {
+    body: { baselineId: seed.baselineId, kind: 'review', taskId: seed.taskId, sourceRevision: revision,
+      payload: { verdict: 'approved', summary: 'Candidate review', findings: [], manualCheckId: MANUAL_CHECK_ID, reviewer: { kind: 'human' } } },
+  })
+  expect(review.status, `Candidate review: ${JSON.stringify(review.body)}`).toBe(201)
+  const integration = await call('POST', `${API}/projects/${seed.projectId}/evidence`, {
+    body: { baselineId: seed.baselineId, kind: 'test', sourceRevision: revision,
+      payload: { checks: manifest.checks, rawReportHash: createHash('sha256').update(JSON.stringify(manifest.checks)).digest('hex') } },
+  })
+  expect(integration.status, `Candidate integration evidence: ${JSON.stringify(integration.body)}`).toBe(201)
+  const nomination = await call('POST', `${API}/projects/${seed.projectId}/release-candidate`, {
+    body: { baselineId: seed.baselineId, sourceRevision: revision, evidenceIds: [integration.body.evidenceId] },
+    lock: await projectVersion(call, seed.projectId),
+  })
+  expect(nomination.status, `Candidate nomination: ${JSON.stringify(nomination.body)}`).toBe(201)
 }
 
 async function deployConsent(call: Call, seed: Seed, revision: SourceRevision): Promise<string> {
@@ -247,18 +269,17 @@ function clientApproval(): ClientApproval {
 }
 
 function stageArtifact(projectId: string, stageId: FlowStageId, dependsOn: Array<ArtifactRef & { stageId: FlowStageId }>, summary: string): StageArtifactV1 {
-  if (stageId === 'scope') return stageArtifactV1Schema.parse({ ...scopeArtifactFixture, projectId, source: 'manual' })
-  if (uxArtifactFixture.stageId !== 'ux') throw new Error('[internal] stage-artifact.ux.v1.json is not a ux artifact')
-  return stageArtifactV1Schema.parse({
-    schemaVersion: uxArtifactFixture.schemaVersion,
+  if (stageId === 'scope') return { ...scopeArtifactFixture, projectId, source: 'manual' } as StageArtifactV1
+  return {
+    schemaVersion: 'delivery.stage-artifact/v1',
     projectId,
     stageId,
     source: 'manual',
     dependsOn,
     attachments: [],
     producedBy: null,
-    content: { ...uxArtifactFixture.content, summary, screens: [], resolvedThreadKeys: [] },
-  })
+    content: { summary, figmaRefs: [], screens: [], notes: null, resolvedThreadKeys: [] },
+  } as StageArtifactV1
 }
 
 async function recordArtifact(call: Call, projectId: string, artifact: StageArtifactV1): Promise<ArtifactRef> {
@@ -397,7 +418,7 @@ async function runTeardownSteps(steps: Array<() => Promise<void>>): Promise<void
 }
 
 async function cleanup(request: APIRequestContext, token: string | null, projectIds: string[], attachmentIds: string[]): Promise<void> {
-  await deleteProjectsInDb(projectIds)
+  await deleteProjectsInDb(projectIds).catch(() => undefined)
   for (const attachmentId of attachmentIds) await deleteAttachmentIfExists(request, token, attachmentId)
 }
 
@@ -547,7 +568,7 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
     }
   })
 
-  test('pinned project: deploy consent needs a release candidate and F15 flow.gate follows the re-versioned stages', async ({ request }) => {
+  test('pinned project: F14 answers 422 stage_not_approved until the re-versioned stages are approved again', async ({ request }) => {
     test.setTimeout(TEST_TIMEOUT_MS)
     let token: string | null = null
     const projectIds: string[] = []
@@ -555,6 +576,7 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
     try {
       token = await getAuthToken(request, 'admin')
       const call = caller(request, token)
+      const adapter = createFakeDeployAdapter()
       const projectId = await createProject(call, 'pinned')
       projectIds.push(projectId)
       const pin = await call('POST', `${API}/projects/${projectId}/flow/pin`, {
@@ -575,11 +597,8 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       const seed = await seedReadyTask(request, token, call, projectId, 'pinned')
       attachmentIds.push(seed.attachmentId)
       const revision = await deliverResult(call, seed, 'pinned')
-      const refusedConsent = await call('POST', `${API}/projects/${seed.projectId}/deploy-decisions`, {
-        body: { baselineId: seed.baselineId, sourceRevision: revision, verdict: 'approved' },
-        lock: await projectVersion(call, seed.projectId),
-      })
-      expect({ status: refusedConsent.status, code: refusedConsent.body.code }, 'R20 on a pinned project needs a release candidate').toEqual({ status: 422, code: 'release_candidate_required' })
+      await nominateCandidate(call, seed, revision)
+      const consentId = await deployConsent(call, seed, revision)
 
       const keyVisualV2 = await recordArtifact(
         call,
@@ -587,6 +606,13 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
         stageArtifact(projectId, 'key_visual', [{ stageId: 'ux', ...ux }], 'Key visual after client feedback'),
       )
       await approveStage(call, projectId, 'key_visual', keyVisualV2)
+      const body = publicationBody(adapter, seed, revision, consentId)
+
+      const staleUi = await publish(call, projectId, body)
+      expectFlowError(staleUi, 422, 'stage_not_approved', 'F14 with the UI approved on the old key visual')
+      expect(staleUi.body.details, 'the UI stage is named as stale').toEqual(
+        expect.arrayContaining([expect.objectContaining({ path: 'stages.design_system_ui', code: 'stage_dependency_stale' })]),
+      )
       const closedFlow = await reportFlowSection(call, projectId, revision, 'with a stale UI stage')
       expect(closedFlow.gate.ok, `F15 flow.gate while the UI stage is stale: ${JSON.stringify(closedFlow.gate)}`).toBe(false)
       expect(closedFlow.gate.blocking.map((blocker) => blocker.stageId), 'the stale UI stage blocks the report gate').toContain('design_system_ui')
@@ -597,15 +623,23 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
         projectId,
         stageArtifact(projectId, 'design_system_ui', [{ stageId: 'key_visual', ...keyVisualV2 }], 'Design system and UI on the new key visual'),
       )
-      const pendingFlow = await reportFlowSection(call, projectId, revision, 'before the last approval')
-      expect(pendingFlow.gate.ok, 'F15 flow.gate before the last approval').toBe(false)
+      const pendingUi = await publish(call, projectId, body)
+      expectFlowError(pendingUi, 422, 'stage_not_approved', 'F14 before the last approval')
+      expect(await countRows('delivery_publications', projectId), 'a refused publication writes nothing').toBe(0)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a refused publication writes no evidence').toBe(0)
 
       await approveStage(call, projectId, 'design_system_ui', uiV2)
       const openFlow = await reportFlowSection(call, projectId, revision, 'after the UI re-approval')
       expect(openFlow.gate, 'F15 flow.gate after the UI re-approval').toEqual({ ok: true, blocking: [] })
       expect(openFlow.stages.map((stage) => stage.currency), 'every approval stage is current').toEqual(['approved', 'approved', 'approved', 'approved'])
-      expect(await countRows('delivery_publications', projectId), 'no publication without a release candidate').toBe(0)
-      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'no deployment evidence without a release candidate').toBe(0)
+      const staleConsent = await publish(call, projectId, body)
+      expectFlowError(staleConsent, 422, 'deploy_decision_missing', 'F14 requires new consent after the approved flow changes')
+      const renewedConsentId = await deployConsent(call, seed, revision)
+      const published = await publish(call, projectId, publicationBody(adapter, seed, revision, renewedConsentId))
+      expect(published.status, `F14 after the last approval: ${JSON.stringify(published.body)}`).toBe(201)
+      expect(published.body.duplicate).toBe(false)
+      expect(await countRows('delivery_publications', projectId)).toBe(1)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`)).toBe(1)
     } finally {
       await cleanup(request, token, projectIds, attachmentIds)
     }

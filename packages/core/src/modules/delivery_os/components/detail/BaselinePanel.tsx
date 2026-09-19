@@ -6,7 +6,7 @@ import { Button } from '@open-mercato/ui/primitives/button'
 import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
 import { BaselineVersionBar } from './BaselineVersionBar'
 import { DecisionActions } from './DecisionActions'
-import { DesignSection } from './DesignSection'
+import { DesignSection, ScreenPreview } from './DesignSection'
 import { FreezeBaselineAction } from './FreezeBaselineAction'
 import { RequirementsSection } from './RequirementsSection'
 import { ScreenComments } from './ScreenComments'
@@ -86,6 +86,14 @@ export function BaselinePanel({
           />
         ) : undefined}
       />
+      {draft.ok && draft.draft.screens.length > 0 ? <section className="space-y-3 rounded border border-border p-4" data-testid="delivery-draft-design">
+        <h2 className="text-lg font-semibold">{t('delivery_os.designImport.draftTitle')}</h2>
+        {draft.draft.screens.map((screen) => <div key={screen.attachmentId} className="space-y-2">
+          <p className="font-medium">{screen.name} · {screen.viewport.width}×{screen.viewport.height} · {screen.figmaVersion ?? '—'}</p>
+          <ScreenPreview attachmentId={screen.attachmentId} name={screen.name} />
+          {canManage ? <ScreenComments projectId={projectId} projectUpdatedAt={projectVersion} draft={draft.draft} screenAttachmentId={screen.attachmentId} onSaved={onMutated} /> : <ul>{draft.draft.comments.filter((comment) => comment.screenAttachmentId === screen.attachmentId).map((comment) => <li key={comment.id}>{comment.body}</li>)}</ul>}
+        </div>)}
+      </section> : null}
       <DesignSection
         state={baselines}
         selectedBaselineId={selectedBaselineId}
@@ -108,15 +116,6 @@ export function BaselinePanel({
             />
           </span>
         ) : null}
-        commentsFor={canManage ? (screenAttachmentId) => (
-          <ScreenComments
-            projectId={projectId}
-            projectUpdatedAt={projectVersion}
-            draft={draft.ok ? draft.draft : null}
-            screenAttachmentId={screenAttachmentId}
-            onSaved={onMutated}
-          />
-        ) : undefined}
         decisionFor={canApprove ? (baseline) => (
           <DecisionActions
             kind="design"

@@ -207,7 +207,8 @@ describe('delivery_os module registration', () => {
       expect(host.contextContract).toBe(DELIVERY_SCHEMA_VERSIONS.executionWidgetContext)
       expect(host.family).toBe('detail')
       expect(host.supported).toEqual(['render-widget'])
-      expect(Object.keys(extensionPoints.hosts)).toEqual(['projectExecution'])
+      expect(Object.keys(extensionPoints.hosts)).toEqual(['projectScoping', 'projectExecution'])
+      expect(extensionPoints.hosts.projectScoping).toMatchObject({ spotId: 'delivery_os.project.scoping', contextContract: 'delivery-scoping-context.v1' })
     })
   })
 

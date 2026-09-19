@@ -55,3 +55,35 @@ export function shouldPollReport(report: DeliveryReportV1, historical: boolean):
 export function reportRetryDelay(failures: number): number {
   return Math.min(10_000 * 2 ** Math.min(Math.max(failures - 1, 0), 3), 60_000)
 }
+
+export type DecisionBlockerLink = { labelKey: string; reference: string | null; href: string | null }
+
+export function decisionBlockerLinks(details: unknown, report: DeliveryReportResponse): DecisionBlockerLink[] {
+  if (!Array.isArray(details)) return []
+  const projectHref = `/backend/delivery/projects/${encodeURIComponent(report.projectId)}`
+  return details.slice(0, 200).map((detail: unknown) => {
+    const unknown: DecisionBlockerLink = { labelKey: 'delivery_os.report.blocker.unknown', reference: null, href: null }
+    if (!detail || typeof detail !== 'object') return unknown
+    const { path, code } = detail as Record<string, unknown>
+    if (typeof path !== 'string' || typeof code !== 'string') return unknown
+    const [kind, ...parts] = path.split(':')
+    const id = parts.join(':')
+    if (kind === 'ac' && ['failed', 'missing', 'not_run', 'manual_pending'].includes(code) && report.acceptanceCriteria.some((criterion) => criterion.acId === id)) {
+      return { labelKey: 'delivery_os.report.blocker.ac', reference: id, href: `#${encodeURIComponent(`report-ac-${id}`)}` }
+    }
+    if (kind === 'scan' && ['failed', 'missing'].includes(code) && report.scans.some((scan) => scan.checkId === id)) {
+      return { labelKey: 'delivery_os.report.blocker.scan', reference: id, href: `#${encodeURIComponent(`report-scan-${id}`)}` }
+    }
+    if ((kind === 'deployment' || path === 'deploymentEvidenceId') && ['missing', 'unverified', 'deployment_unverified', 'deployment_revision_missing', 'not_deployment_evidence'].includes(code)) {
+      return { labelKey: 'delivery_os.report.blocker.deployment', reference: null, href: '#report-deployment' }
+    }
+    if (kind === 'revision' && code === 'missing') return { labelKey: 'delivery_os.report.blocker.revision', reference: null, href: '#report-summary' }
+    if (path.startsWith('stages.') && ['stage_not_approved', 'stage_dependency_stale', 'stage_artifact_stale', 'client_approval_required', 'blocking_comments_open'].includes(code)) {
+      const stageId = path.slice('stages.'.length)
+      if (report.flow?.stages.some((stage) => stage.stageId === stageId)) {
+        return { labelKey: `delivery_os.flow.stage.${stageId}`, reference: null, href: `${projectHref}?stage=${encodeURIComponent(stageId)}#delivery-stage-${encodeURIComponent(stageId)}` }
+      }
+    }
+    return unknown
+  })
+}

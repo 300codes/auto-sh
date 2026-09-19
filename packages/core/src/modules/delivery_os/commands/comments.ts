@@ -9,6 +9,7 @@ import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
 import { z } from 'zod'
+import { hashCanonical } from '../lib/hash'
 import { DeliveryCommentReply, DeliveryCommentThread, DeliveryFlowStageArtifact, DeliveryTask } from '../data/entities'
 import {
   commentImportCommandSchema,
@@ -45,6 +46,8 @@ import { loadStageArtifactRows } from './flowGate'
 import { DELIVERY_STAFF_LINK_RESOURCE_KIND, loadStaffLink } from './staffLink'
 import { DELIVERY_STAFF_KANBAN_ADAPTER_KEY, type DeliveryStaffKanbanAdapter, type StaffKanbanSession } from './staffKanbanAdapter'
 import { requirePinnedTemplateStage } from './stages'
+import { prepareStaffImportIntents, reconcileStaffImportIntent, staffImportKey, staffTaskIntentSchema, staffReplyIntentSchema } from './staffImportIntents'
+import type { DeliveryStaffImportIntent } from '../data/entities'
 import {
   DELIVERY_PROJECT_RESOURCE_KIND,
   deliveryFlowHttpError,
@@ -206,6 +209,7 @@ type ThreadImportInput = {
   staffProjectId: string
   statusId: string
   artifacts: readonly ArtifactFigmaBinding[]
+  intents?: Map<string, DeliveryStaffImportIntent>
 }
 
 const logger = createLogger('delivery_os')
@@ -310,11 +314,6 @@ function staffLinkRequired(detailCode: 'staff_link_required' | 'staff_module_una
   return deliveryFlowHttpError(buildDeliveryFlowError('staff_link_required', message, [{ path: 'projectId', code: detailCode }]))
 }
 
-/**
- * One transaction per thread: the project row lock serialises the import with a re-link and with stage approvals, the
- * thread row is inserted or locked first (a parallel import of the same key then waits or hits the unique index), the
- * staff writes join the same transaction through the adapter session, and the delivery rows are mutated last.
- */
 async function importThreadOnce(
   ctx: CommandRuntimeContext,
   scope: DeliveryScope,
@@ -381,7 +380,16 @@ async function importThreadOnce(
       let staffTaskId = row.staffTaskId ?? null
       if (!staffTaskId) {
         progress.staffWritten = true
-        staffTaskId = (await adapter.createTask({ staffProjectId: input.staffProjectId, statusId: input.statusId, ...plan.staff }, session)).taskId
+        const key = staffImportKey(project.id, batch.fileKey, thread.threadKey)
+        const intent = input.intents?.get(key)
+        if (!intent) throw new Error('[internal] Staff task intent missing')
+        const original = staffTaskIntentSchema.parse(intent.payload)
+        if (original.staffProjectId !== input.staffProjectId) throw new Error('[internal] Staff project changed since import intent')
+        staffTaskId = (await adapter.createTask({ ...original, idempotencyKey: key }, session)).taskId
+        await reconcileStaffImportIntent(tx, scope, project.id, key, staffTaskId)
+        if (original.title !== plan.staff.title || original.description !== plan.staff.description) {
+          await adapter.updateTask({ taskId: staffTaskId, ...plan.staff }, session)
+        }
       } else if (plan.outcome === 'updated' && existing) {
         const previous = storedStaffText(existing)
         if (previous.title !== plan.staff.title || previous.description !== plan.staff.description) {
@@ -396,7 +404,15 @@ async function importThreadOnce(
         let staffCommentId = reply.existing?.staffCommentId ?? null
         progress.staffWritten = true
         if (staffCommentId) await adapter.updateComment({ commentId: staffCommentId, body: reply.staffBody }, session)
-        else staffCommentId = (await adapter.createComment({ taskId: staffTaskId, body: reply.staffBody }, session)).commentId
+        else {
+          const key = staffImportKey(project.id, batch.fileKey, thread.threadKey, reply.commentKey)
+          const intent = input.intents?.get(key)
+          if (!intent) throw new Error('[internal] Staff comment intent missing')
+          const original = staffReplyIntentSchema.parse(intent.payload)
+          staffCommentId = (await adapter.createComment({ taskId: staffTaskId, body: original.body, idempotencyKey: key }, session)).commentId
+          await reconcileStaffImportIntent(tx, scope, project.id, key, staffCommentId)
+          if (original.body !== reply.staffBody) await adapter.updateComment({ commentId: staffCommentId, body: reply.staffBody }, session)
+        }
         replyIds.set(reply.commentKey, staffCommentId)
       }
 
@@ -466,6 +482,16 @@ async function importThread(
   adapter: DeliveryStaffKanbanAdapter,
   input: ThreadImportInput,
 ): Promise<ThreadImport> {
+  const planned = await planStoredThread(resolveDeliveryEm(ctx), scope, input)
+  if (planned.plan.outcome === 'skipped') return planned
+  const pending = [{
+    key: staffImportKey(input.batch.projectId, input.batch.fileKey, input.thread.threadKey),
+    payload: { staffProjectId: input.staffProjectId, statusId: input.statusId, ...planned.plan.staff } as Record<string, unknown>,
+  }, ...planned.plan.replies.filter((reply) => reply.draft).map((reply) => ({
+    key: staffImportKey(input.batch.projectId, input.batch.fileKey, input.thread.threadKey, reply.commentKey),
+    payload: { body: reply.staffBody } as Record<string, unknown>,
+  }))]
+  input = { ...input, intents: await prepareStaffImportIntents(ctx, scope, input.batch.projectId, pending) }
   const progress: ThreadProgress = { staffWritten: false }
   try {
     return await importThreadOnce(ctx, scope, adapter, input, progress)
@@ -532,13 +558,10 @@ async function storeSyncCursor(
 
 /**
  * F11: imports one normalized page of source comments. One thread is one staff card and one reply is one staff comment;
- * every thread commits on its own, the file cursor and the batch key move only when all of them succeeded and the stored
- * cursor still equals `cursor.after` (a concurrent delivery that already moved it is never rewound), and the staff board
- * is reached only through the `deliveryStaffKanbanAdapter` seam.
+ * every thread commits on its own, the file cursor and the batch key move only when all of them succeeded, and the staff
+ * board is reached only through the `deliveryStaffKanbanAdapter` seam.
  */
-const importCommand: CommandHandler<CommentImportCommandInput, CommentImportCommandResult> = {
-  id: 'delivery_os.comments.import',
-  async execute(rawInput, ctx) {
+async function executeCommentImport(rawInput: CommentImportCommandInput, ctx: CommandRuntimeContext): Promise<CommentImportCommandResult> {
     const scope = resolveDeliveryScope(ctx)
     requireIdempotencyKey(rawInput)
     const parsed = parseDeliveryInput(commentImportCommandSchema, rawInput)
@@ -582,6 +605,12 @@ const importCommand: CommandHandler<CommentImportCommandInput, CommentImportComm
       return assembleResult(batch, stored, [], true)
     }
 
+    const batchIntentKey = `batch:${hashCanonical(parsed.idempotencyKey)}`
+    const batchIntents = await prepareStaffImportIntents(ctx, scope, project.id, [{ key: batchIntentKey, payload: { batchHash } }])
+    if (batchIntents.get(batchIntentKey)?.payload.batchHash !== batchHash) {
+      throw deliveryHttpError(buildDeliveryError('idempotency_conflict', 'The import key was used with another comment batch', [{ path: 'idempotencyKey', code: 'idempotency_conflict' }]))
+    }
+
     const adapter = tryResolveKanbanAdapter(ctx)
     if (!adapter) throw staffLinkRequired('staff_module_unavailable', 'The staff time-tracking module is not available')
     const statusId = await adapter.resolveDefaultStatusId(link.staffProjectId, { ctx, tx: probeEm, scope })
@@ -620,6 +649,24 @@ const importCommand: CommandHandler<CommentImportCommandInput, CommentImportComm
       )
     }
     return assembleResult(batch, imports, failedThreadKeys, false)
+}
+
+const importCommand: CommandHandler<CommentImportCommandInput, CommentImportCommandResult> = {
+  id: 'delivery_os.comments.import',
+  async execute(rawInput, ctx) {
+    const scope = resolveDeliveryScope(ctx)
+    requireIdempotencyKey(rawInput)
+    const parsed = parseDeliveryInput(commentImportCommandSchema, rawInput)
+    requireActorUserId(ctx)
+    await requireScopedProject(resolveDeliveryEm(ctx), parsed.projectId, scope)
+    return resolveDeliveryEm(ctx).transactional(async (lockEm) => {
+      await lockEm.getConnection().execute(
+        'select pg_advisory_xact_lock(hashtextextended(?, 0))',
+        [JSON.stringify(['delivery.comments', scope.tenantId, scope.organizationId, parsed.projectId, parsed.batch.fileKey])],
+        'all', lockEm.getTransactionContext(),
+      )
+      return executeCommentImport(parsed, ctx)
+    })
   },
   buildLog: async ({ result, ctx }) => {
     if (result.replayed) return null

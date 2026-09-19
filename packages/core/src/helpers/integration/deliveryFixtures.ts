@@ -188,7 +188,7 @@ export async function createDeliveryFixtureSession(
     registered(roleResource, [scope.organizationId], () => cleanupDirectory(roleResource, '/api/auth/roles', `id=${roleId}&tenantId=${scope.tenantId}`), false)
     await setRoleAclFeatures(bootstrap, bootstrapToken, { roleId, features, organizations: [scope.organizationId] })
     const acl = await parsedResponse(await adminRequest('GET', `/api/auth/roles/acl?roleId=${roleId}&tenantId=${scope.tenantId}`, scope.tenantId), aclSchema)
-    if (acl.isSuperAdmin || JSON.stringify([...acl.features].sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) !== JSON.stringify([...features].sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) || JSON.stringify(acl.organizations) !== JSON.stringify([scope.organizationId])) {
+    if (acl.isSuperAdmin || JSON.stringify([...acl.features].sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) !== JSON.stringify([...features].sort((left, right) => left < right ? -1 : left > right ? 1 : 0)) || JSON.stringify(acl.organizations) !== JSON.stringify([scope.organizationId])) {
       throw new Error('[internal] Delivery fixture role ACL differs from the requested least-privilege grant')
     }
     const email = `${randomUUID()}@delivery-fixture.invalid`

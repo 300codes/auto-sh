@@ -15,6 +15,8 @@ jest.mock('@open-mercato/shared/lib/encryption/find', () => ({
 jest.mock('../../events', () => ({ emitDeliveryOsEvent: jest.fn(async () => undefined) }))
 
 import '@open-mercato/core/modules/delivery_os/commands'
+import { applyAclFeatureOverrides, resetModuleContractOverridesForTests } from '@open-mercato/shared/modules/overrides'
+import { authorizeFeatures } from '@open-mercato/shared/security/featurePolicy'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
 import { deliveryFlowErrorBodySchema, staffLinkSchema } from '../../lib/contracts'
 import type { StaffLinkCommandResult } from '../staffLink'
@@ -51,6 +53,7 @@ type Options = {
   headers?: Record<string, string>
   orgId?: string
   features?: string[] | 'throw'
+  manageAll?: boolean
   access?: Access | 'throw' | 'absent'
   staffProjects?: string[] | 'throw'
 }
@@ -78,9 +81,11 @@ function harness(options: Options = {}) {
   const services: Record<string, unknown> = {
     queryEngine: { query: probeQuery },
     rbacService: {
-      getGrantedFeatures: jest.fn(async () => {
+      userHasAllFeatures: jest.fn(async (userId, required, scope) => {
         if (features === 'throw') throw new Error('[internal] rbac unavailable')
-        return features
+        expect(userId).toBe(ACTOR_ID)
+        expect(scope).toEqual({ tenantId: TENANT_ID, organizationId: options.orgId ?? ORG_ID })
+        return options.manageAll ?? authorizeFeatures(required, { grantedFeatures: features })
       }),
     },
   }
@@ -234,4 +239,19 @@ describe('delivery_os.staff.link (F10)', () => {
   it('rejects a malformed staff project id', async () => {
     expectFrozenBody(await catchHttpError(() => run('not-a-uuid')), 400, 'validation_failed')
   })
+})
+
+it('does not turn a policy denial into manage-all from stored wildcard grants', async () => {
+  expectFrozenBody(await catchHttpError(() => run(OTHER_STAFF_PROJECT_ID, { features: ['*'], manageAll: false })), 404, 'not_found')
+  expect(resolveProjectAccess).toHaveBeenCalledWith(expect.objectContaining({ canManageAll: false }))
+})
+
+it('honors removed staff management features when the realm policy evaluates wildcard grants', async () => {
+  applyAclFeatureOverrides({ 'staff.timesheets.projects.manage': null })
+  try {
+    expectFrozenBody(await catchHttpError(() => run(OTHER_STAFF_PROJECT_ID, { features: ['*'] })), 404, 'not_found')
+    expect(resolveProjectAccess).toHaveBeenCalledWith(expect.objectContaining({ canManageAll: false }))
+  } finally {
+    resetModuleContractOverridesForTests()
+  }
 })

@@ -3,8 +3,10 @@ import * as React from 'react'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import type { ExecutionWidgetContextV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { executionWidgetContextV1Schema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
-import DeliveryProjectDetailPage from '../page'
+import { DeliveryProjectDetailClient as DeliveryProjectDetailPage } from '../DeliveryProjectDetailClient'
 import { metadata } from '../page.meta'
+
+jest.mock('@open-mercato/core/modules/delivery_os/components/detail/ProjectOverview', () => ({ ProjectOverview: () => null }))
 
 const apiCallMock = jest.fn()
 const retryLastMutationMock = jest.fn(async () => false)

@@ -33,8 +33,8 @@ function stableScheduleUuid(stableKey: string): string {
 
 export const setup: ModuleSetupConfig = {
   defaultRoleFeatures: {
-    superadmin: ['delivery_agents.execute', 'delivery_agents.monitor'],
-    admin: ['delivery_agents.execute', 'delivery_agents.monitor'],
+    superadmin: ['delivery_agents.execute', 'delivery_agents.monitor', 'delivery_agents.scope'],
+    admin: ['delivery_agents.execute', 'delivery_agents.monitor', 'delivery_agents.scope'],
   },
 
   seedDefaults: async (ctx) => {

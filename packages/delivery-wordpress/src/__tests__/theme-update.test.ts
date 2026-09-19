@@ -115,7 +115,7 @@ test('no-op new update does not pretend to perform redeploy and duplicate paths 
 
 
 test('managed design requires the exact applied mapping before source writes', async () => {
-  const design = JSON.parse(await fs.readFile(new URL('../../../../context/changes/wordpress-design-token-mapping/fixture.json', import.meta.url), 'utf8')) as Record<string, unknown>
+  const design = JSON.parse(await fs.readFile(new URL('./fixtures/design-tokens.json', import.meta.url), 'utf8')) as Record<string, unknown>
   for (const mode of ['missing', 'different', 'matching', 'prepared']) {
     const context = await fixture()
     try {

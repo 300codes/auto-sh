@@ -1124,6 +1124,7 @@ export type WorkflowEditorGroupInput = z.infer<typeof editorGroupSchema>
 
 // Workflow metadata
 export const workflowMetadataSchema = z.object({
+  immutablePolicy: z.literal('delivery').optional(),
   tags: z.array(z.string().max(50)).optional(),
   category: z.string().max(100).optional(),
   icon: z.string().max(100).optional(),

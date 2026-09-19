@@ -24,7 +24,7 @@ export type DesignSectionProps = {
  * A render whose bytes cannot be fetched is a named state, not a blank box: the
  * operator approving a design has to know they are looking at metadata only.
  */
-function ScreenPreview({ attachmentId, name }: { attachmentId: string; name: string }) {
+export function ScreenPreview({ attachmentId, name }: { attachmentId: string; name: string }) {
   const t = useT()
   const [failed, setFailed] = React.useState(false)
   if (failed) {

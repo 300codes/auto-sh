@@ -15,12 +15,12 @@ import type {
   IntakeStep,
   PlatformChoice,
   PlatformRecommendation,
-  PublicationResultV1,
   SourceRevision,
   StageArtifactDependency,
   StageArtifactV1,
   StageDecisionVerdict,
   StaffSyncCursor,
+  PublicationResultV1,
   ToolChoice,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import type { TaskStatus } from './validators'
@@ -758,6 +758,45 @@ export class DeliveryCommentReply {
   createdAt: Date = new Date()
 }
 
+@Entity({ tableName: 'delivery_release_candidates' })
+@Unique({ name: 'delivery_release_candidates_project_version_uq', properties: ['tenantId', 'organizationId', 'projectId', 'version'] })
+export class DeliveryReleaseCandidate {
+  [OptionalProps]?: 'createdAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ type: 'integer' })
+  version!: number
+
+  @Property({ name: 'baseline_id', type: 'uuid' })
+  baselineId!: string
+
+  @Property({ name: 'baseline_hash', type: 'text' })
+  baselineHash!: string
+
+  @Property({ name: 'source_revision', type: 'jsonb' })
+  sourceRevision!: SourceRevision
+
+  @Property({ name: 'evidence_ids', type: 'jsonb' })
+  evidenceIds!: string[]
+
+  @Property({ name: 'created_by', type: 'uuid' })
+  createdBy!: string
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
 export type DeliveryPublicationTarget = PublicationResultV1['target']
 export type DeliveryPublicationVerification = PublicationResultV1['verification']
 
@@ -825,9 +864,9 @@ export class DeliveryPublication {
   createdAt: Date = new Date()
 }
 
-@Entity({ tableName: 'delivery_release_candidates' })
-@Unique({ name: 'delivery_release_candidates_project_version_uq', properties: ['tenantId', 'organizationId', 'projectId', 'version'] })
-export class DeliveryReleaseCandidate {
+@Entity({ tableName: 'delivery_flow_baseline_bindings' })
+@Unique({ name: 'delivery_flow_baseline_bindings_identity_uq', properties: ['tenantId', 'organizationId', 'projectId', 'baselineId', 'templateHash', 'refsHash'] })
+export class DeliveryFlowBaselineBinding {
   [OptionalProps]?: 'createdAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
@@ -842,24 +881,93 @@ export class DeliveryReleaseCandidate {
   @Property({ name: 'project_id', type: 'uuid' })
   projectId!: string
 
-  @Property({ type: 'integer' })
-  version!: number
-
   @Property({ name: 'baseline_id', type: 'uuid' })
   baselineId!: string
 
-  @Property({ name: 'baseline_hash', type: 'text' })
-  baselineHash!: string
+  @Property({ name: 'template_hash', type: 'text' })
+  templateHash!: string
 
-  @Property({ name: 'source_revision', type: 'jsonb' })
-  sourceRevision!: SourceRevision
+  @Property({ name: 'refs_hash', type: 'text' })
+  refsHash!: string
 
-  @Property({ name: 'evidence_ids', type: 'jsonb' })
-  evidenceIds!: string[]
+  @Property({ name: 'stage_refs', type: 'jsonb' })
+  stageRefs!: StageArtifactDependency[]
 
-  @Property({ name: 'created_by', type: 'uuid' })
-  createdBy!: string
+  @Property({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy?: string | null
 
   @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
   createdAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_design_import_sessions' })
+@Unique({ name: 'delivery_design_import_sessions_identity_uq', properties: ['tenantId', 'organizationId', 'projectId', 'manifestHash'] })
+export class DeliveryDesignImportSession {
+  [OptionalProps]?: 'createdAt' | 'updatedAt' | 'status' | 'progress'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ name: 'manifest_hash', type: 'text' })
+  manifestHash!: string
+
+  @Property({ type: 'jsonb' })
+  manifest!: Record<string, unknown>
+
+  @Property({ type: 'jsonb', defaultRaw: "'{}'" })
+  progress: Record<string, unknown> = {}
+
+  @Property({ type: 'text', default: 'partial' })
+  status: 'partial' | 'complete' | 'cancelled' = 'partial'
+
+  @Property({ name: 'updated_at', type: Date, onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_staff_import_intents' })
+@Unique({ name: 'delivery_staff_import_intents_identity_uq', properties: ['tenantId', 'organizationId', 'projectId', 'key'] })
+export class DeliveryStaffImportIntent {
+  [OptionalProps]?: 'createdAt' | 'updatedAt' | 'resourceId'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ type: 'text' })
+  key!: string
+
+  @Property({ name: 'payload_hash', type: 'text' })
+  payloadHash!: string
+
+  @Property({ type: 'jsonb' })
+  payload!: Record<string, unknown>
+
+  @Property({ name: 'resource_id', type: 'uuid', nullable: true })
+  resourceId: string | null = null
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+
+  @Property({ name: 'updated_at', type: Date, onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
 }

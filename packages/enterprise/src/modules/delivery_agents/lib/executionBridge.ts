@@ -1,9 +1,12 @@
+import { sourceRevisionSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { parseDeliveryInput } from '@open-mercato/core/modules/delivery_os/commands/shared'
+import type { DeliveryOsAttemptQueries } from '@open-mercato/core/modules/delivery_os/commands/attemptQueries'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { AppContainer } from '@open-mercato/shared/lib/di/container'
 import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import type { AttemptReserveResult } from '@open-mercato/core/modules/delivery_os/commands/attempts'
-import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
+import { issueTrustedExecution, type TrustedExecutionVersion } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import { DELIVERY_AGENTS_WORKFLOW_ID, DELIVERY_AGENTS_WAIT_STEP_ID } from './attemptWorkflow'
 import { getDeliveryAgentsQueue, DELIVERY_EXECUTE_QUEUE, type ExecuteTaskJobPayload } from './queue'
 
@@ -93,6 +96,7 @@ export type ExecutionBridgeStartInput = {
   em: EntityManager
   targetProfileId?: string | null
   baseRevision?: SourceRevision | null
+  version?: TrustedExecutionVersion
 }
 
 export type ExecutionBridgeStartResult = {
@@ -107,40 +111,13 @@ async function resolveBaseRevision(
   scope: DeliveryScope,
   provided: SourceRevision | null | undefined,
 ): Promise<SourceRevision> {
-  if (provided) return provided
-  // Derive from the task's baseline: use a snapshot revision keyed by baseline hash
-  try {
-    const { DeliveryTask } = (await import('@open-mercato/core/modules/delivery_os/data/entities')) as {
-      DeliveryTask: new () => { baselineId?: string | null }
-    }
-    const task = await em.fork().findOne(DeliveryTask as never, {
-      id: taskId,
-      tenantId: scope.tenantId,
-      organizationId: scope.organizationId,
-    } as never) as { baselineId?: string | null; executionAttempts?: unknown } | null
-
-    const { DeliveryBaseline } = (await import('@open-mercato/core/modules/delivery_os/data/entities')) as {
-      DeliveryBaseline: new () => { contentHash?: string | null }
-    }
-    const baseline = task?.baselineId
-      ? await em.fork().findOne(DeliveryBaseline as never, {
-          id: task.baselineId,
-          tenantId: scope.tenantId,
-          organizationId: scope.organizationId,
-        } as never) as { contentHash?: string | null } | null
-      : null
-
-    const contentHash = (baseline as { contentHash?: string | null } | null)?.contentHash ?? 'unknown'
-    return { kind: 'snapshot', contentHash, externalWorkspaceId: taskId }
-  } catch {
-    return { kind: 'snapshot', contentHash: 'unknown', externalWorkspaceId: taskId }
-  }
+  return parseDeliveryInput(sourceRevisionSchema, provided)
 }
 
 export async function startExecution(input: ExecutionBridgeStartInput): Promise<ExecutionBridgeStartResult> {
   const { taskId, idempotencyKey, userId, scope, container, em, baseRevision } = input
   const commandBus = container.resolve('commandBus') as CommandBus
-  const trustedExecution = issueTrustedExecution(userId)
+  const trustedExecution = issueTrustedExecution(userId, input.version)
   const ctx = buildTrustedCtx(container, scope, userId)
 
   const resolvedRevision = await resolveBaseRevision(em, taskId, scope, baseRevision)
@@ -174,6 +151,8 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
     return { attemptId, workflowInstanceId: '', state: 'reserved' }
   }
 
+  const queries = container.resolve('deliveryOsAttemptQueries') as DeliveryOsAttemptQueries
+  await queries.assertExecutionReady(scope, taskId, attemptId)
   const correlationKey = attemptId
   const instance = await workflowExecutor.startWorkflow(em, {
     workflowId: DELIVERY_AGENTS_WORKFLOW_ID,
@@ -197,6 +176,7 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
   })
 
   // 4. Execute workflow to park at WAIT_FOR_SIGNAL
+  await queries.assertExecutionReady(scope, taskId, attemptId)
   await workflowExecutor.executeWorkflow(em, container, workflowInstanceId)
 
   // 5. Poll to confirm parking (max 3×500ms)
@@ -210,6 +190,7 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
     organizationId: scope.organizationId,
     actorUserId: userId,
   }
+  await queries.assertExecutionReady(scope, taskId, attemptId)
   await getDeliveryAgentsQueue(DELIVERY_EXECUTE_QUEUE).enqueue(jobPayload as Record<string, unknown>)
 
   return { attemptId, workflowInstanceId, state: 'reserved' }

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
 import { z } from 'zod'
 import type { ResultAcceptCommandResult } from '@open-mercato/core/modules/delivery_os/commands/evidence'
+import type { DeliveryOsResultQueries } from '@open-mercato/core/modules/delivery_os/commands/resultQueries'
+import { resultReadQuerySchema, resultReadResponseSchema } from '@open-mercato/core/modules/delivery_os/lib/resultReadContracts'
 import {
   DELIVERY_TASK_RESOURCE_KIND,
   parseDeliveryInput,
@@ -16,6 +18,7 @@ import {
   executeDeliveryCommand,
   readCappedRouteBody,
   readRouteId,
+  requireDeliveryFeatures,
   resolveDeliveryRouteContext,
   resolveRouteEm,
   type DeliveryRouteContext,
@@ -25,7 +28,22 @@ import { deliveryErrorBodySchema, resultAcceptResponseSchema } from '@open-merca
 const MAX_RESULT_BODY_BYTES = 8_000_000
 
 export const metadata = {
+  GET: { requireAuth: true, requireFeatures: ['delivery_os.projects.view'] },
   POST: { requireAuth: true, requireFeatures: ['delivery_os.results.import'] },
+}
+
+export async function GET(request: Request, context: DeliveryRouteContext): Promise<Response> {
+  try {
+    const ctx = await resolveDeliveryRouteContext(request)
+    const scope = resolveDeliveryScope(ctx)
+    await requireDeliveryFeatures(ctx, scope, ['delivery_os.projects.view'])
+    const taskId = await readRouteId(context)
+    const query = parseDeliveryInput(resultReadQuerySchema, Object.fromEntries(new URL(request.url).searchParams))
+    const queries = ctx.container.resolve('deliveryOsResultQueries') as DeliveryOsResultQueries
+    return NextResponse.json(await queries.read(scope, taskId, query.attemptId), { headers: { 'Cache-Control': 'private, no-store' } })
+  } catch (error) {
+    return deliveryErrorResponse(error, 'delivery_os.results.read')
+  }
 }
 
 export async function POST(request: Request, context: DeliveryRouteContext): Promise<Response> {
@@ -57,6 +75,19 @@ export const openApi: OpenApiRouteDoc = {
   summary: 'Result import',
   pathParams: z.object({ id: uuidSchema }),
   methods: {
+    GET: {
+      summary: 'Read the accepted result summary of an attempt',
+      description: 'Returns null when the scoped attempt has no accepted result. Omits raw artifacts, logs and agent declarations.',
+      query: resultReadQuerySchema,
+      responses: [{ status: 200, description: 'Versioned accepted result summary', schema: resultReadResponseSchema }],
+      errors: [
+        { status: 400, description: 'Invalid attempt query', schema: deliveryErrorBodySchema },
+        { status: 403, description: 'Missing project view permission', schema: deliveryErrorBodySchema },
+        { status: 404, description: 'Task, attempt or evidence not found in this scope', schema: deliveryErrorBodySchema },
+        { status: 409, description: 'Unreadable attempt register', schema: deliveryErrorBodySchema },
+        { status: 422, description: 'Inconsistent stored result correlation', schema: deliveryErrorBodySchema },
+      ],
+    },
     POST: {
       summary: 'Import the ResultManifest v1 of an attempt',
       description:

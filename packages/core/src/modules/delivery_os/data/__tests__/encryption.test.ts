@@ -6,9 +6,13 @@ describe('delivery_os defaultEncryptionMaps', () => {
     expect([...byEntity.keys()].sort()).toEqual([
       'delivery_os:delivery_comment_reply',
       'delivery_os:delivery_comment_thread',
+      'delivery_os:delivery_design_import_session',
       'delivery_os:delivery_flow_stage_decision',
       'delivery_os:delivery_intake',
+      'delivery_os:delivery_staff_import_intent',
     ])
+    expect(byEntity.get('delivery_os:delivery_design_import_session')).toEqual(['manifest', 'progress'])
+    expect(byEntity.get('delivery_os:delivery_staff_import_intent')).toEqual(['payload'])
     expect(byEntity.get('delivery_os:delivery_comment_thread')).toEqual(['author', 'body'])
     expect(byEntity.get('delivery_os:delivery_comment_reply')).toEqual(['author', 'body'])
     expect(byEntity.get('delivery_os:delivery_intake')).toEqual(['brief', 'questions'])

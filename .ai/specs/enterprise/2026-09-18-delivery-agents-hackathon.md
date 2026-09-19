@@ -82,6 +82,47 @@ Module files from the master plan (owned by EXEC): `packages/enterprise/src/modu
 
 ## Data Models
 
+### UI completeness integration delta (planned, 2026-09-19)
+
+Current implementation: the typed Scope agent/tools and its lazy UI widget,
+before-effect binding checks, guarded execute/cancel routes and canonical result
+acceptance are implemented locally with automated coverage. The WordPress host
+below remains planned and explicitly deferred by the user because Studio is
+unavailable. Browser/live acceptance is still pending; the original handoff
+requirements below do not themselves certify it.
+
+The approved [UI completeness plan](../../../context/changes/autonomous-software-delivery/workstreams/ui-completeness/plan.md)
+adds the following work; this section is a handoff contract, not completion evidence.
+
+- **Scope agent:** declare a typed, propose-only agent and tools in
+  `delivery_agents/ai-agents.ts` and `ai-tools.ts`, using the existing AI runtime.
+  Read the scoped project/intake through public OSS services; return
+  `ScopingProposal v1` for human review and import through
+  `delivery_os.intake.import_proposal`. It cannot approve artifacts, change the
+  frozen target profile, or dispatch execution. Preserve proposal replay before
+  optimistic-lock evaluation. Reopening the UI does not automatically rerun the
+  agent. OSS without enterprise retains manual proposal editing/import.
+- **Before-effect gate:** execute/resume workers call the shared OSS scoped flow
+  gate immediately before the external effect, including retry/resume. Compare
+  the immutable baseline binding and current template/artifact refs; the worker's
+  own correctly claimed attempt is not a conflicting attempt. Legacy projects
+  keep existing checks. A stale binding refuses the effect with the existing
+  `baseline_not_approved` error and stage details; no HTTP trusted context.
+- **WordPress host:** consume the approved task package, allowed paths and
+  task/attempt/baseline/sourceRevision correlation. Delegate to the authorized
+  WordPress host and accept results through the existing OSS command. Persist
+  real snapshot identity, never fabricate a Git SHA. An uncertain start requires
+  reconcile; tool availability is not a product ResultCheck. Preserve explicit
+  manual_handoff and unknown usage. A correction is a new correlated attempt
+  with evidence for its final revision, not a rewrite of a previous result.
+
+Owner: Marcin; receiving owners: Adam (Scope/widget UI), Mateusz (OSS gates),
+Michał (WP host/QA). Required coverage: FLOW-01/02/09, real widget host reload,
+worker stale-binding and own-claim tests, FLOW-06 run/result/review/correction,
+FLOW-08 OSS-only and legacy regression. No new enterprise HTTP contract is
+introduced by the propose-only agent; existing ACL, guarded mutation, command
+audit and trusted-context boundaries remain mandatory.
+
 Enterprise adds no columns to OSS tables. Execution fields live in the OSS `ExecutionAttempt v1` JSON: `workerRef`, `externalRunId`, `workflowRef`, `workflowStepId`, `dispatchedAt`, `resultEvidenceId`, `completionDelivery`, `lastDeliveryError`. They are written only through the commands listed above. See the OSS spec, `delivery_tasks.execution_attempts`.
 
 Enterprise-owned tables, if any: **Pending — to be completed by EXEC.**
@@ -138,4 +179,14 @@ Exact test list: **Pending — to be completed by EXEC/QA.**
 
 ## Changelog
 
+- 2026-09-19 — Planned UI completeness handoff: propose-only Scope agent, scoped before-effect binding check and correlated WordPress host. Implementation and live acceptance remain pending.
+
 - 2026-09-19 — Boundary-only draft (OSS-01, T003): consumed OSS commands/events/DI/spot/DTOs, one-directional rule, `automatic` only through the trusted internal context, planned enterprise route, TC-DELIVERY-EXEC placeholders, Migration & BC. Execution sections left pending for EXEC.
+
+### UI completeness phase 7 correctness audit (2026-09-19)
+
+Implemented: execution/cancel actions pass through scoped feature checks and mutation guards. The initiating task version travels as non-serializable metadata of the issued execution authority; missing/stale versions reject before reservation while an identical reservation replay still succeeds. Result acceptance issues the canonical trusted authority, unwraps the CommandBus result, and delegates duplicate/conflict validation to the domain. Execute accepts an explicit `baseRevision`; absence is rejected rather than deriving workspace proof from a baseline hash. A worker refuses a core task package before external execution when only the incompatible legacy Cezar executor is installed. Legacy exported executor contracts remain available.
+
+Planned, not implemented: a scoped `deliveryAgentsExecutionHost.execute({ taskPackage: TaskPackageV1, scope, actorUserId, baseDir }): Promise<ResultManifestV1>` host contract and a WordPress implementation with genuine snapshot identity, artifacts and checks. No production WordPress host/transport or successful Studio execution is claimed. The user explicitly deferred this portion to specification because Studio is unavailable. A real host must validate package correlation, repeat the current-flow gate before effects, persist/reconcile external run identity, and return verified manifest evidence; stdout or baseline hashes must never become workspace proof.
+
+Local regression coverage: canonical adapter acceptance and conflict validation; workflow park failures; initiating optimistic version plus replay; worker stale binding and resume retry gates; incompatible core package refusal. FLOW06 production host execution and FLOW07 browser publication/release remain manual acceptance work, not established by those unit tests.

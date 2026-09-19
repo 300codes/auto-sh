@@ -16,10 +16,12 @@ import { createDeliveryOsReportQueries } from '../../commands/reportQueries'
 import {
   FLOW_APPROVAL_STAGE_ORDER,
   deliveryReportFlowSectionSchema,
+  deliveryReportV1Schema,
   reportGateBlockerSchema,
+  type DeliveryReportWithFlow,
   type FlowStageId,
 } from '../../lib/contracts'
-import { deliveryReportResponseSchema, type DeliveryReportResponse } from '../../lib/reportContracts'
+import { deliveryReportResponseSchema } from '../../lib/reportContracts'
 import { hashFlowTemplate } from '../../lib/flowRules'
 import { DEFAULT_FLOW_TEMPLATE } from '../../lib/flowTemplates'
 import { seedReadyTask } from './attemptRouteKit'
@@ -28,15 +30,14 @@ import { EM_WRITE_METHODS, FOREIGN_TENANT_ID, VIEW_ONLY, em, expectFrozenError, 
 const TEMPLATE_HASH = hashFlowTemplate(DEFAULT_FLOW_TEMPLATE)
 const FROZEN_V1_BLOCKER_KINDS = ['revision', 'ac', 'scan', 'deployment', 'deploy_decision']
 const CLIENT_STAGES: readonly FlowStageId[] = ['key_visual', 'design_system_ui']
-const CLIENT_APPROVAL_EVIDENCE = { kind: 'meeting', reference: 'Client approved this fixture stage', attachment: null, recordedAt: '2026-09-19T12:00:00.000Z' }
 
 function getReport(projectId: string = PROJECT_ID): Promise<Response> {
   return GET(apiRequest('GET', `/projects/${projectId}/report`), routeParams(projectId))
 }
 
-async function readJson(response: Response): Promise<{ status: number; text: string; body: DeliveryReportResponse }> {
+async function readJson(response: Response): Promise<{ status: number; text: string; body: DeliveryReportWithFlow }> {
   const text = await response.text()
-  return { status: response.status, text, body: JSON.parse(text) as DeliveryReportResponse }
+  return { status: response.status, text, body: JSON.parse(text) as DeliveryReportWithFlow }
 }
 
 function pinStoredProject(snapshot: unknown = DEFAULT_FLOW_TEMPLATE): void {
@@ -81,20 +82,20 @@ function seedApprovedStages(): Array<{ stageId: FlowStageId; artifactId: string;
       organizationId: ORG_ID,
       projectId: PROJECT_ID,
       stageId,
+      templateHash: TEMPLATE_HASH,
       artifactId,
       subjectHash: hashFor(index + 1),
       verdict: 'approved',
       decidedAt: new Date(`2026-09-19T12:1${index}:00.000Z`),
-      templateHash: TEMPLATE_HASH,
       clientApproverName: CLIENT_STAGES.includes(stageId) ? 'Client Owner' : null,
-      clientApprovalEvidence: CLIENT_STAGES.includes(stageId) ? CLIENT_APPROVAL_EVIDENCE : null,
+      clientApprovalEvidence: CLIENT_STAGES.includes(stageId) ? 'Recorded approval' : null,
     })
     seeded.push({ stageId, artifactId, decisionId })
   })
   return seeded
 }
 
-function expectV1GatesUntouched(report: DeliveryReportResponse): void {
+function expectV1GatesUntouched(report: DeliveryReportWithFlow): void {
   for (const gate of [report.gates.publishable, report.gates.releasable]) {
     for (const blocker of gate.blocking) expect(FROZEN_V1_BLOCKER_KINDS).toContain(blocker.kind)
   }
@@ -105,21 +106,21 @@ beforeEach(() => {
 })
 
 describe('GET /projects/:id/report — F15 flow section', () => {
-  it('keeps the frozen v1 blocker enum and documents the report response schema', () => {
+  it('keeps the frozen v1 blocker enum and documents the extended answer schema', () => {
     expect(reportGateBlockerSchema.shape.kind.options).toEqual(FROZEN_V1_BLOCKER_KINDS)
     const response = openApi.methods.GET?.responses?.[0]
     expect(response?.schema).toBe(deliveryReportResponseSchema)
+    expect(Object.keys(deliveryReportResponseSchema.shape)).toEqual(expect.arrayContaining([...Object.keys(deliveryReportV1Schema.shape), 'flow', 'currentCandidate']))
   })
 
-  it('answers a legacy project in legacy mode with a null flow section', async () => {
+  it('preserves the existing legacy report response with null flow and candidate context', async () => {
     seedReadyTask()
     const { status, text, body } = await readJson(await getReport())
     expect(status).toBe(200)
-    const parsed = deliveryReportResponseSchema.parse(body)
-    expect(parsed.mode).toBe('legacy')
-    expect(parsed.flow).toBeNull()
+    expect(body).toHaveProperty('flow', null)
     const direct = await createDeliveryOsReportQueries(em as never).buildReport({ tenantId: TENANT_ID, organizationId: ORG_ID }, PROJECT_ID)
     expect(text).toBe(JSON.stringify(direct))
+    expect(deliveryReportResponseSchema.safeParse(body).success).toBe(true)
   })
 
   it('adds the flow section to a pinned project: all stages missing and the stage blockers only inside flow.gate', async () => {
@@ -130,7 +131,7 @@ describe('GET /projects/:id/report — F15 flow section', () => {
     const { status, body } = await readJson(await getReport())
     expect(status).toBe(200)
     const parsed = deliveryReportResponseSchema.parse(body)
-    expect(parsed.mode).toBe('flow')
+    expect(deliveryReportV1Schema.safeParse(body).success).toBe(true)
     expect(parsed.flow).toEqual({
       template: { templateId: DEFAULT_FLOW_TEMPLATE.templateId, version: DEFAULT_FLOW_TEMPLATE.version, hash: TEMPLATE_HASH },
       stages: FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, currency: 'missing', approvedArtifact: null, decisionId: null, clientApproved: false })),
@@ -204,11 +205,11 @@ describe('GET /projects/:id/report — F15 flow section', () => {
       organizationId: ORG_ID,
       projectId: PROJECT_ID,
       stageId: 'key_visual',
+      templateHash: TEMPLATE_HASH,
       artifactId: idFor('a', 8),
       subjectHash: hashFor(8),
       verdict: 'rejected',
       decidedAt: new Date('2026-09-19T13:10:00.000Z'),
-      templateHash: TEMPLATE_HASH,
       clientApproverName: null,
     })
     const flow = deliveryReportFlowSectionSchema.parse((await readJson(await getReport())).body.flow)
@@ -242,12 +243,12 @@ describe('GET /projects/:id/report — F15 flow section', () => {
     expect(flow.gate).toEqual({ ok: false, blocking: [{ kind: 'decision_pending', stageId: 'design_system_ui', ref: idFor('a', 3) }] })
   })
 
-  it('fails closed with 422 when the pinned snapshot no longer matches its hash instead of looking like a legacy project', async () => {
+  it('fails closed when the pinned snapshot no longer parses instead of looking like a legacy project', async () => {
     seedReadyTask()
     pinStoredProject({ schemaVersion: 'delivery.flow-template/v0' })
-    const response = await getReport()
-    const body = (await response.json()) as { code?: string }
-    expect({ status: response.status, code: body.code }).toEqual({ status: 422, code: 'flow_template_hash_mismatch' })
+    const { status, body } = await readJson(await getReport())
+    expect(status).toBe(422)
+    expect(body).toMatchObject({ code: 'flow_template_hash_mismatch' })
   })
 
   it('hides a pinned project of another tenant or organization behind 404', async () => {
@@ -259,13 +260,11 @@ describe('GET /projects/:id/report — F15 flow section', () => {
     }
   })
 
-  it('gives in-process callers of deliveryOsReportQueries the same flow section as the route', async () => {
+  it('preserves the existing in-process report context for pinned projects', async () => {
     seedReadyTask()
     pinStoredProject()
     const queries = createDeliveryOsReportQueries(em as never)
     const scope = { tenantId: TENANT_ID, organizationId: ORG_ID }
-    const report = await queries.buildReport(scope, PROJECT_ID)
-    expect(report.mode).toBe('flow')
-    expect(report).toHaveProperty('flow.gate.ok', false)
+    expect(await queries.buildReport(scope, PROJECT_ID)).toHaveProperty('flow.gate.ok', false)
   })
 })

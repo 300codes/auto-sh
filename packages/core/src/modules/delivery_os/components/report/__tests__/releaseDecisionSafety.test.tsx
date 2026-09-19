@@ -7,6 +7,7 @@ import fixture from '../../../lib/fixtures/delivery-report.v1.json'
 import { decisionBlocker, decisionFingerprint } from '../decisionInput'
 import { useReleaseDecision } from '../useReleaseDecision'
 import type { ReportSnapshot } from '../useDeliveryReport'
+import { decisionBlockerLinks } from '../reportView'
 
 const mockApi = jest.fn()
 let mockRetry: (() => Promise<unknown>) | undefined
@@ -34,6 +35,26 @@ function snapshot(): ReportSnapshot {
   return { project, report, readAt: project.updatedAt! }
 }
 beforeEach(() => { mockApi.mockReset(); mockRetry = undefined })
+
+it('links known scoped blockers and hides arbitrary server paths and messages', () => {
+  const { report } = snapshot()
+  const criterion = report.acceptanceCriteria[0]
+  const scan = report.scans[0]
+  const links = decisionBlockerLinks([
+    { path: `ac:${criterion.acId}`, code: 'failed' },
+    { path: `scan:${scan.checkId}`, code: 'missing' },
+    { path: 'deploymentEvidenceId', code: 'deployment_unverified' },
+    { path: 'ac:foreign-criterion', code: 'failed' },
+    { path: 'https://untrusted.example', code: 'failed', message: 'Private diagnostic' },
+    { path: `ac:${criterion.acId}`, code: 'unrecognized' },
+  ], report)
+  expect(links.slice(0, 3).map((link) => link.href)).toEqual([
+    `#${encodeURIComponent(`report-ac-${criterion.acId}`)}`,
+    `#${encodeURIComponent(`report-scan-${scan.checkId}`)}`,
+    '#report-deployment',
+  ])
+  for (const link of links.slice(3)) expect(link).toEqual({ labelKey: 'delivery_os.report.blocker.unknown', reference: null, href: null })
+})
 
 it('requires a nominated matching candidate and flow gate, even with green v1', () => {
   const value = snapshot()

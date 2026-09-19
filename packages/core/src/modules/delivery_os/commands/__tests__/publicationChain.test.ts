@@ -20,6 +20,7 @@ import { GET as PACKAGE } from '../../api/tasks/[id]/package/route'
 import { POST as IMPORT_RESULT } from '../../api/tasks/[id]/results/route'
 import { POST as RECORD_EVIDENCE } from '../../api/projects/[id]/evidence/route'
 import { GET as REPORT } from '../../api/projects/[id]/report/route'
+import { POST as NOMINATE } from '../../api/projects/[id]/release-candidate/route'
 import { POST as DEPLOY } from '../../api/projects/[id]/deploy-decisions/route'
 import { POST as RELEASE } from '../../api/projects/[id]/release-decisions/route'
 import { GET as LIST_PUBLICATIONS, POST as PUBLISH } from '../../api/projects/[id]/publications/route'
@@ -32,6 +33,7 @@ import {
   deliveryFlowErrorBodySchema,
   type ClientApproval,
   deliveryReportV1Schema,
+  resultManifestV1Schema,
   publicationListResponseSchema,
   type FlowStageId,
   type PublicationResultV1,
@@ -77,6 +79,13 @@ async function prepareReadyTask(projectId: string): Promise<Flow> {
     await UPDATE_PROJECT(apiRequest('PUT', '/projects', { body: { id: projectId, draftSpec: draft }, lock: await projectVersion(projectId) })),
     200,
   )
+  const project = routeState.store.projects.find((row) => row.id === projectId)
+  if (project?.flowTemplateId) {
+    project.draftSpec = { ...draft, flowBaseline: {
+      templateHash: project.flowTemplateHash, draftHash: hashCanonical(draft),
+      stageRefs: routeState.store.stageArtifacts.filter((row) => row.projectId === projectId).map((row) => ({ stageId: row.stageId, artifactId: row.id, version: row.version, contentHash: row.contentHash })),
+    } }
+  }
   const baseline = await expectStatus(
     await CREATE_BASELINE(
       apiRequest('POST', `/projects/${projectId}/baselines`, { body: { source: 'manual' }, lock: await projectVersion(projectId) }),
@@ -239,7 +248,7 @@ describe('delivery_os publication chain R20 → F14 → R21 (FLOW-07 seam)', () 
     const revisionA = await deliverResult(flow, 'wp-a')
 
     const legacyReport = await reportBody(flow, revisionA)
-    expect({ mode: legacyReport.mode, flow: legacyReport.flow }).toEqual({ mode: 'legacy', flow: null })
+    expect(legacyReport).toHaveProperty('flow', null)
     const consentA = await deploy(flow, revisionA)
 
     const unverified = await expectStatus(await publish(flow, published(flow, revisionA, consentA)), 201)
@@ -270,31 +279,39 @@ describe('delivery_os publication chain R20 → F14 → R21 (FLOW-07 seam)', () 
     expect(routeState.store.publications).toHaveLength(2)
   })
 
-  it('gates a pinned project: deploy consent needs a release candidate and the flow gate closes once the key visual is re-versioned', async () => {
+  it('gates F14 on a pinned project: 201 with every stage approved, 422 stage_not_approved once the key visual is re-versioned', async () => {
     const projectId = await createPinnedProject()
     const refs = await approveAllStages(projectId)
     const flow = await prepareReadyTask(projectId)
     const revision = await deliverResult(flow, 'wp-pinned')
 
+    await review(flow, revision, { verdict: 'approved', manualCheckId: MANUAL_CHECK_ID, reviewer: { kind: 'human' } })
+    const resultRow = routeState.store.evidence.find((row) => row.kind === 'result_manifest' && row.taskId === flow.taskId)
+    const manifest = resultManifestV1Schema.parse(resultRow?.payload)
+    const integration = await expectStatus(await recordEvidence(flow, {
+      kind: 'test', sourceRevision: revision,
+      payload: { checks: manifest.checks, rawReportHash: hashCanonical(manifest.checks) },
+    }), 201)
+    await expectStatus(await NOMINATE(apiRequest('POST', `/projects/${projectId}/release-candidate`, {
+      body: { baselineId: flow.baselineId, sourceRevision: revision, evidenceIds: [integration.evidenceId] },
+      lock: await projectVersion(projectId),
+    }), routeParams(projectId)), 201)
+
     const pinnedReport = await reportBody(flow, revision)
-    expect(pinnedReport.mode).toBe('flow')
     expect(pinnedReport.flow).toMatchObject({ gate: { ok: true } })
-    const refusedConsent = await DEPLOY(
-      apiRequest('POST', `/projects/${flow.projectId}/deploy-decisions`, {
-        body: { baselineId: flow.baselineId, sourceRevision: revision, verdict: 'approved' },
-        lock: await projectVersion(flow.projectId),
-      }),
-      routeParams(flow.projectId),
-    )
-    const refusedBody = await readBody(refusedConsent)
-    expect({ status: refusedConsent.status, code: refusedBody.code }).toEqual({ status: 422, code: 'release_candidate_required' })
+    const consent = await deploy(flow, revision)
+    const first = await expectStatus(await publish(flow, published(flow, revision, consent)), 201)
+    expect(first.duplicate).toBe(false)
 
     const revised = designArtifact(projectId, 'key_visual', [{ stageId: 'ux', ...refs.ux }])
     const keyVisualV2 = await recordArtifact(projectId, { ...revised, content: { ...revised.content, summary: 'key_visual package after client feedback' } } as typeof revised)
     await approveStage(projectId, 'key_visual', keyVisualV2, 'kv-2', { clientApproval: clientApproval() })
-    const staleReport = await reportBody(flow, revision)
-    expect(staleReport.flow).toMatchObject({ gate: { ok: false } })
-    expect(deploymentRows()).toBe(0)
-    expect(routeState.store.publications).toHaveLength(0)
+    const rowsBefore = deploymentRows()
+    const gate = await expectError(await publish(flow, published(flow, revision, consent)), 422, 'stage_not_approved')
+    expect(gate.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'stages.design_system_ui', code: 'stage_dependency_stale' })]),
+    )
+    expect(deploymentRows()).toBe(rowsBefore)
+    expect(routeState.store.publications).toHaveLength(1)
   })
 })

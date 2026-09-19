@@ -1,3 +1,4 @@
+import type { DeliveryOsAttemptQueries } from '@open-mercato/core/modules/delivery_os/commands/attemptQueries'
 import type { JobContext, QueuedJob, WorkerMeta } from '@open-mercato/queue'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
@@ -53,8 +54,10 @@ async function sendSignalWithRetry(
   container: unknown,
   scope: DeliveryScope,
   workflowRef: string,
+  beforeEffect: () => Promise<void>,
 ): Promise<boolean> {
   for (let attempt = 0; attempt < SIGNAL_RETRY_COUNT; attempt++) {
+    await beforeEffect()
     try {
       const count = await signalHandler.sendSignalByCorrelationKey(em.fork(), container, {
         correlationKey: workflowRef,
@@ -112,7 +115,8 @@ export default async function handle(job: QueuedJob<ResumeAttemptJobPayload>, _c
   }
 
   // Send evidence-ready signal with retry
-  const signaled = await sendSignalWithRetry(signalHandler, em, container, scope, workflowRef)
+  const queries = container.resolve('deliveryOsAttemptQueries') as DeliveryOsAttemptQueries
+  const signaled = await sendSignalWithRetry(signalHandler, em, container, scope, workflowRef, () => queries.assertExecutionReady(scope, taskId, attemptId, 'resume', workflowRef))
 
   if (!signaled) {
     logger.error('failed to send evidence-ready signal after all retries', { attemptId, workflowRef, ...scope })

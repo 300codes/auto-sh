@@ -1,0 +1,11 @@
+{
+  "delivery_workflows.settings.error": "No se pudo cargar la configuración del proceso.",
+  "delivery_workflows.settings.loading": "Cargando la configuración del proceso…",
+  "delivery_workflows.settings.newProjectsOnly": "Los cambios solo se aplican a proyectos nuevos. Los proyectos existentes conservan su versión publicada del proceso.",
+  "delivery_workflows.settings.openStudio": "Abrir Workflows Studio",
+  "delivery_workflows.settings.retry": "Reintentar",
+  "delivery_workflows.settings.save": "Guardar proceso predeterminado",
+  "delivery_workflows.settings.title": "Proceso de Delivery",
+  "delivery_workflows.settings.version": "Versión publicada",
+  "delivery_workflows.settings.workflow": "ID del flujo de trabajo"
+}

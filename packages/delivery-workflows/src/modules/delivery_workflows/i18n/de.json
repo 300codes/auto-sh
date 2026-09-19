@@ -1,0 +1,11 @@
+{
+  "delivery_workflows.settings.error": "Prozesseinstellungen konnten nicht geladen werden.",
+  "delivery_workflows.settings.loading": "Prozesseinstellungen werden geladen…",
+  "delivery_workflows.settings.newProjectsOnly": "Änderungen gelten nur für neue Projekte. Bestehende Projekte behalten ihre veröffentlichte Prozessversion.",
+  "delivery_workflows.settings.openStudio": "Workflows Studio öffnen",
+  "delivery_workflows.settings.retry": "Erneut versuchen",
+  "delivery_workflows.settings.save": "Standardprozess speichern",
+  "delivery_workflows.settings.title": "Delivery-Prozess",
+  "delivery_workflows.settings.version": "Veröffentlichte Version",
+  "delivery_workflows.settings.workflow": "Workflow-ID"
+}

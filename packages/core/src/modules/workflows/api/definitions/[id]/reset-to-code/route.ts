@@ -18,6 +18,8 @@ import { serializeCodeWorkflowDefinition } from '../../serialize'
 import { workflowDefinitionResetResponseSchema, workflowErrorSchema } from '../../../openapi'
 import { getCodeWorkflow } from '../../../../lib/code-registry'
 import { invalidateTriggerCache } from '../../../../lib/event-trigger-service'
+import { isCrudHttpError } from '@open-mercato/shared/lib/crud/errors'
+import { assertImmutableDefinitionUpdate } from '../../../../lib/definition-edit-safety'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 
 const logger = createLogger('workflows')
@@ -138,6 +140,8 @@ export async function POST(
       organizationId: definition.organizationId,
     }
 
+    assertImmutableDefinitionUpdate(definition, { deletedAt: new Date() })
+
     // Hard-delete the DB override row
     em.remove(definition)
     await em.flush()
@@ -202,6 +206,7 @@ export async function POST(
       message: 'Workflow definition reset to code version',
     })
   } catch (error) {
+    if (isCrudHttpError(error)) return NextResponse.json(error.body, { status: error.status })
     logger.error('Error resetting workflow definition to code', { err: error })
     return NextResponse.json(
       { error: 'Failed to reset workflow definition to code' },

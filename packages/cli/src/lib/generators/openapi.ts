@@ -514,7 +514,10 @@ process.stdout.write(JSON.stringify(deepClone(doc), (_, v) =>
           ? args.path.split('/').slice(0, 2).join('/')
           : topLevel
         const pkgDir = path.join(rootDir, 'node_modules', pkgName)
-        if (fs.existsSync(pkgDir)) return { external: true }
+        if (fs.existsSync(pkgDir)) {
+          if (path.extname(args.path) === '.json') return undefined
+          return { external: true }
+        }
 
         // Package not installed — provide CJS stub (allows any named import)
         return { path: args.path, namespace: 'missing-pkg' }

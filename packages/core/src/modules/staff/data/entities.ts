@@ -1,9 +1,37 @@
 import { OptionalProps } from '@mikro-orm/core'
-import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property } from '@mikro-orm/decorators/legacy'
+import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/decorators/legacy'
 import type { TimeEntrySource } from '../lib/time-tracking/timeEntrySources'
 import type { ReportGrouping } from '../lib/timesheets-reports/reportGroupings'
 
 export type StaffLeaveRequestStatus = 'pending' | 'approved' | 'rejected'
+
+@Entity({ tableName: 'staff_command_idempotency' })
+@Unique({ name: 'staff_command_idempotency_scope_key_unique', properties: ['tenantId', 'organizationId', 'operation', 'key'] })
+export class StaffCommandIdempotency {
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ type: 'text' })
+  operation!: string
+
+  @Property({ name: 'idempotency_key', type: 'text' })
+  key!: string
+
+  @Property({ name: 'payload_hash', type: 'text' })
+  payloadHash!: string
+
+  @Property({ name: 'resource_id', type: 'uuid' })
+  resourceId!: string
+
+  @Property({ name: 'created_at', type: Date })
+  createdAt: Date = new Date()
+}
 
 @Entity({ tableName: 'staff_teams' })
 @Index({ name: 'staff_teams_tenant_org_idx', properties: ['tenantId', 'organizationId'] })

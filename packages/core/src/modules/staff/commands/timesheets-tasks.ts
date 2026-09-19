@@ -49,6 +49,7 @@ import {
   type StaffTimeTaskUpdateInput,
 } from '../data/validators'
 import { emitStaffEvent } from '../events'
+import { staffCreateIdentity, readStaffCreateReplay, recordStaffCreate } from './createIdempotency'
 import { nextStatusPosition } from '../lib/timesheets-tasks/statusPositions'
 import {
   allocateTaskReference,
@@ -472,7 +473,7 @@ function actorUserId(ctx: CommandRuntimeContext): string | null {
   return typeof ctx.auth?.sub === 'string' ? ctx.auth.sub : null
 }
 
-const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: string }> = {
+const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: string; duplicate?: boolean }> = {
   id: staffTimeTaskCommandIds.create,
   async execute(rawInput, ctx) {
     const parsed = staffTimeTaskCreateSchema.parse(rawInput)
@@ -482,6 +483,8 @@ const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: stri
     const { translate } = await resolveTranslations()
     const baseEm = ctx.container.resolve('em') as EntityManager
     const createdByUserId = actorUserId(ctx)
+    const identity = staffCreateIdentity(staffTimeTaskCommandIds.create, parsed, parsed)
+    let duplicate = false
 
     let record: StaffTimeTask
     try {
@@ -504,6 +507,15 @@ const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: stri
           [
             async () => {
               const project = await requireProject(em, parsed.timeProjectId, scope, translate)
+              const replayId = await readStaffCreateReplay(em, identity)
+              if (replayId) {
+                created = await findOneWithDecryption(em, StaffTimeTask, {
+                  id: replayId, tenantId: parsed.tenantId, organizationId: parsed.organizationId,
+                }, undefined, scopeForDecryption(scope))
+                if (!created) throw notFoundError(translate)
+                duplicate = true
+                return
+              }
               const status = await resolveTaskStatus(em, parsed.timeProjectId, parsed.taskStatusId, scope, translate)
 
               let parentTaskId: string | null = null
@@ -530,6 +542,7 @@ const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: stri
               }
             },
             () => {
+              if (duplicate) return
               if (!plan) throw notFoundError(translate)
               const now = new Date()
               const allocation = allocateTaskReference(plan.project.code, plan.highestSequenceNumber)
@@ -553,6 +566,9 @@ const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: stri
               })
               em.persist(created)
             },
+            () => {
+              if (created && !duplicate) recordStaffCreate(em, identity, created.id)
+            },
           ],
           { transaction: true, label: staffTimeTaskCommandIds.create },
         )
@@ -565,6 +581,8 @@ const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: stri
       if (isTaskReferenceConflict(err)) throw referenceConflictError(translate)
       throw err
     }
+
+    if (duplicate) return { taskId: record.id, duplicate: true }
 
     await emitCrudSideEffects({
       dataEngine: ctx.container.resolve('dataEngine'),
@@ -584,6 +602,7 @@ const createTaskCommand: CommandHandler<StaffTimeTaskCreateInput, { taskId: stri
     return { snapshot }
   },
   buildLog: async ({ result, ctx }) => {
+    if (result.duplicate) return null
     const em = (ctx.container.resolve('em') as EntityManager).fork()
     const snapshot = await loadTaskSnapshot(em, result.taskId, staffSnapshotScopeFromContext(ctx))
     if (!snapshot) return null

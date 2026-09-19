@@ -1,4 +1,8 @@
 {
+  "delivery_agents.scope.description": "Der Assistent erstellt Vorschläge. Die Importbestätigung speichert nur den Vorschlag. Umfangsartefakt und Kundenentscheidung werden separat geprüft.",
+  "delivery_agents.scope.open": "Umfang mit KI besprechen",
+  "delivery_agents.scope.placeholder": "Ziel beschreiben oder eine Frage zum Umfang stellen…",
+  "delivery_agents.scope.title": "Umfangsassistent",
   "delivery_agents.widget.cancel.ariaLabel": "Ausführungsversuch abbrechen",
   "delivery_agents.widget.cancel.cancelling": "Wird abgebrochen…",
   "delivery_agents.widget.cancel.failed": "Abbruch fehlgeschlagen",

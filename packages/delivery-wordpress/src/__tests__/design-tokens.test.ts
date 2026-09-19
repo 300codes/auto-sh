@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { designTokenExportSchema, mapDesignTokens } from '../design-tokens.ts'
 
-const fixture = () => designTokenExportSchema.parse(JSON.parse(readFileSync(new URL('../../../../context/changes/wordpress-design-token-mapping/fixture.json', import.meta.url), 'utf8')))
+const fixture = () => designTokenExportSchema.parse(JSON.parse(readFileSync(new URL('./fixtures/design-tokens.json', import.meta.url), 'utf8')))
 
 test('maps fixture palette, typography and spacing without approval or mutation', () => {
   const input = fixture()

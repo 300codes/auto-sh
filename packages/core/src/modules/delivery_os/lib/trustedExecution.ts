@@ -1,4 +1,5 @@
-export type IssuedTrustedExecution = Readonly<{ source: 'delivery_agents'; actorUserId: string }>
+export type TrustedExecutionVersion = { expectedUpdatedAt?: string | null; requireExpectedVersion?: boolean }
+export type IssuedTrustedExecution = Readonly<{ source: 'delivery_agents'; actorUserId: string } & TrustedExecutionVersion>
 
 const REGISTRY_KEY = Symbol.for('open-mercato.delivery_os.trustedExecutions')
 
@@ -10,8 +11,8 @@ function issuedRegistry(): WeakSet<object> {
   return host[REGISTRY_KEY]
 }
 
-export function issueTrustedExecution(actorUserId: string): IssuedTrustedExecution {
-  const issued: IssuedTrustedExecution = Object.freeze({ source: 'delivery_agents', actorUserId })
+export function issueTrustedExecution(actorUserId: string, version: TrustedExecutionVersion = {}): IssuedTrustedExecution {
+  const issued: IssuedTrustedExecution = Object.freeze(Object.defineProperties({ source: 'delivery_agents' as const, actorUserId }, { expectedUpdatedAt: { value: version.expectedUpdatedAt }, requireExpectedVersion: { value: version.requireExpectedVersion } }))
   issuedRegistry().add(issued)
   return issued
 }

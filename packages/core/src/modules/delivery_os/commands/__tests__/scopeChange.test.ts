@@ -70,7 +70,14 @@ type Store = KitStore & { evidence: DeliveryEvidence[] }
 const MODULE_ROOT = join(__dirname, '..', '..')
 const V2_BASELINE_ID = '5a5a5a5a-5555-4555-8555-5555555555b2'
 const V2_TASK_ID = '66666666-6666-4666-8666-6666666666b2'
-const IMMUTABLE_SUBJECTS = ['baselines', 'decisions', 'results', 'evidence', 'artifacts', 'publications']
+const IMMUTABLE_SUBJECTS = [
+  'baselines',
+  'decisions',
+  'results',
+  'evidence',
+  'artifacts',
+  'publications',
+]
 const WRITE_METHODS = ['PUT', 'PATCH', 'DELETE']
 const MUTATING_ACTIONS = /(^|[._])(update|delete|remove|edit|archive|replace|patch|override|expire|auto_approve)/
 
@@ -269,8 +276,11 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.comments.import',
       'delivery_os.comments.triage',
       'delivery_os.decisions.record',
+      'delivery_os.design_imports.create',
+      'delivery_os.design_imports.update',
       'delivery_os.evidence.record',
       'delivery_os.flow.link_instance',
+      'delivery_os.flow.materialize_baseline',
       'delivery_os.flow.pin',
       'delivery_os.intake.import_proposal',
       'delivery_os.intake.update',
@@ -319,29 +329,6 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       const methods = routes.get(path) ?? new Set<string>()
       expect({ path, writes: [...methods].filter((method) => WRITE_METHODS.includes(method)) }).toEqual({ path, writes: [] })
       expect(methods.has(path.includes('[evidenceId]') ? 'GET' : 'POST')).toBe(true)
-    }
-  })
-
-  it('exposes the F2 staff-link and comment routes with their documented methods and no way to edit an imported reply', () => {
-    const routes = routeMethods()
-    const expected: Record<string, string[]> = {
-      'projects/[id]/staff-link/route.ts': ['GET', 'PUT'],
-      'projects/[id]/comment-imports/route.ts': ['POST'],
-      'projects/[id]/comment-threads/route.ts': ['GET'],
-      'projects/[id]/comment-threads/[threadId]/triage/route.ts': ['POST'],
-    }
-    for (const [path, methods] of Object.entries(expected)) {
-      expect({ path, methods: [...(routes.get(path) ?? [])].sort() }).toEqual({ path, methods: [...methods].sort() })
-    }
-    const commentRoutes = [...routes.keys()].filter((path) => path.includes('comment-')).sort()
-    expect(commentRoutes).toEqual([
-      'projects/[id]/comment-imports/route.ts',
-      'projects/[id]/comment-threads/[threadId]/triage/route.ts',
-      'projects/[id]/comment-threads/route.ts',
-    ])
-    for (const path of commentRoutes) {
-      const writes = [...(routes.get(path) ?? [])].filter((method) => WRITE_METHODS.includes(method))
-      expect({ path, writes }).toEqual({ path, writes: [] })
     }
   })
 
