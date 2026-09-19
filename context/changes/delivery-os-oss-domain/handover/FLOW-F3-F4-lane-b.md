@@ -12,6 +12,7 @@ Scope: F3 (`flow` section on the R22 report, `deliveryOsFlowQueries`, provider s
 | T061 F4 L20c | `13213a102` | publications route, fake deploy adapter, publication chain test |
 | T062 FLOW-07 | `63360dfe0` | publications integration spec, FLOW-08 regression rerun |
 | T064 F4 fix | `e9001c592` | bind publication verification evidence to baseline and revision |
+| T066 F4 audit fix | `06c6da26b` | fix(delivery): FLOW-F4 close audit findings on publication verification, FLOW-07 negatives and merge |
 
 T063 (this hand-over + spec status/changelog, `d321f18fc`) is docs only.
 
@@ -50,7 +51,7 @@ All gitignored under `apps/mercato/.mercato/generated/` (api-routes, api-route-m
 1. Run `yarn test:integration packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FLOW-07-publications.spec.ts` after merge, on a server running lane-B code with the F4 migration applied (the shared :3100 server ran lane A code, so it was not used).
 2. Live R22 check: `curl` the report of a pinned project after merge (`flow` section) — not run here.
 3. FLOW-07 live needs Michał's publication target and verification access.
-4. This hand-over is final for lane B at `e9001c592` (plus this docs commit); no further F3/F4 code is planned.
+4. This hand-over is final at `06c6da26b`; no further F3/F4 code is planned.
 5. Manual acceptance items in the master plan (Progress 5.1, 5.4) stay unticked; this hand-over is evidence only.
 
 ## Merge notes for lane A
@@ -71,7 +72,7 @@ F3 ≈ 4 h and F4 ≈ 4 h estimated. Actual, from task timestamps: T058 finished
 
 ## T066 audit fixes (appended; supersedes the matching statements above)
 
-- Commit: the T066 commit on `dev-mateusz-flow-b` (SHA assigned by the orchestrator; it follows `1a5bbf2bc`). Blocker 4 above now reads "final at the T066 commit".
+- Commit: `06c6da26b` on `dev-mateusz-flow-b` (follows `1a5bbf2bc`). Blocker 4 above now reads "final at `06c6da26b`".
 - F14 behaviour an adapter must know (Michał): the URL-check proof named in `verification.evidenceId` must be a `test`, `screenshot`, `scan` or `review` evidence that passed; record the HTTP check as a `scan` (`checkId: publication-url-check`, `status: passed`, `rawReportHash`, with `sourceRevision`). `deployment` (also the row F14 itself derived), `reference_material` and `result_manifest` → `422 unsupported_evidence_kind` on `verification.evidenceId`. A non-null `releaseDecisionId` must be a `release` decision of the project (`422 foreign_reference`). Detail paths now name publication fields: `deployDecisionId`, `snapshotRef.attachmentId`. Replays are matched after lowercasing uuids and normalising timestamps. `deploymentEvidenceId` may be shared by publications with identical deployment facts.
 - Fixture marker rule: `createFakeDeployAdapter` only publishes to `*.example.test` and returns `target.ref` prefixed `fixture:`. The live FLOW-07 checklist MUST reject a publication with that host or prefix; fixture output never counts as live evidence.
 - Tests: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 96 suites / 1809 tests green, 1 snapshot. `yarn turbo run typecheck --filter=@open-mercato/core --concurrency=2` green (covers `__integration__`); scoped tsc for the touched `__tests__` files shows only the known `routeTestKit.ts` TS7022/TS7024 and the path-alias TS2882 of the ad-hoc tsconfig; `npx eslint` on the changed files clean; `npx playwright test --config .ai/qa/tests/playwright.config.ts --list TC-DELIVERY-FLOW-07` lists 2 tests.
