@@ -1,5 +1,3 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { isBroadcastEvent } from '@open-mercato/shared/modules/events'
 import features from '../acl'
 import { features as indexFeatures, metadata } from '../index'
@@ -11,9 +9,9 @@ import {
   DELIVERY_EXECUTION_SPOT_ID,
   DELIVERY_SCHEMA_VERSIONS,
 } from '../lib/contracts'
+import { FORBIDDEN_IMPORT_PATTERN, findEnterpriseImports } from './enterpriseBoundary'
 
 const MODULE_ID = 'delivery_os'
-const MODULE_ROOT = path.resolve(__dirname, '..')
 
 const SPEC_FEATURE_IDS = [
   'delivery_os.projects.view',
@@ -58,17 +56,6 @@ const EXPECTED_PAYLOAD_PATHS: Record<string, string[]> = {
     'tenantId',
     'organizationId',
   ],
-}
-
-const FORBIDDEN_IMPORT_PATTERN =
-  /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire(?:\.resolve)?\s*\(\s*|\bimport\s+)['"`](?:@open-mercato\/enterprise(?:\/|['"`])|(?:\.\.\/)+(?:packages\/)?enterprise\/|[^'"`]*delivery-cezar)/
-
-function listSourceFiles(directory: string): string[] {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = path.join(directory, entry.name)
-    if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : listSourceFiles(entryPath)
-    return /\.(?:ts|tsx|js|mjs|cjs)$/.test(entry.name) ? [entryPath] : []
-  })
 }
 
 describe('delivery_os module registration', () => {
@@ -192,11 +179,7 @@ describe('delivery_os module registration', () => {
     })
 
     it('has no module file importing enterprise or delivery-cezar code', () => {
-      const offenders = listSourceFiles(MODULE_ROOT)
-        .filter((filePath) => filePath !== __filename)
-        .filter((filePath) => FORBIDDEN_IMPORT_PATTERN.test(fs.readFileSync(filePath, 'utf8')))
-        .map((filePath) => path.relative(MODULE_ROOT, filePath))
-      expect(offenders).toEqual([])
+      expect(findEnterpriseImports([__filename])).toEqual([])
     })
   })
 })
