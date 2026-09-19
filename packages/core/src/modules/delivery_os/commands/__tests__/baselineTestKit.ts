@@ -83,7 +83,11 @@ export function makeHarness(
   }
   em.fork.mockReturnValue(em)
   em.transactional.mockImplementation(async (work: (tx: EmMock) => Promise<unknown>) => work(em))
-  const services: Record<string, unknown> = { em, dataEngine: { markOrmEntityChange: jest.fn() } }
+  const services: Record<string, unknown> = {
+    em,
+    dataEngine: { markOrmEntityChange: jest.fn() },
+    deliveryOsAttachmentInspector: makeAttachmentInspector(() => store.attachments),
+  }
   const container = {
     resolve: jest.fn((name: string) => {
       if (name in services) return services[name]
@@ -159,11 +163,36 @@ export function makeBaseline(
   } as DeliveryBaseline
 }
 
+export const STORED_FILE_SIZE = 2048
+
 export function draftAttachmentRows(draft: Row, organizationId: string = ORG_ID): Row[] {
-  const screens = draft.screens as Array<{ attachmentId: string }>
-  const attachments = draft.attachments as Array<{ attachmentId: string }>
-  const ids = [...new Set([...screens, ...attachments].map((entry) => entry.attachmentId))]
-  return ids.map((id) => ({ id, tenantId: TENANT_ID, organizationId }))
+  const screens = draft.screens as Array<{ attachmentId: string; sha256: string }>
+  const attachments = draft.attachments as Array<{ attachmentId: string; sha256: string }>
+  const declared = new Map([...attachments, ...screens].map((entry) => [entry.attachmentId, entry.sha256]))
+  return [...declared].map(([id, storedSha256]) => ({
+    id,
+    tenantId: TENANT_ID,
+    organizationId,
+    mimeType: 'image/png',
+    fileSize: STORED_FILE_SIZE,
+    partitionCode: 'privateAttachments',
+    storagePath: `delivery/${id}.png`,
+    storedSha256,
+    unreadable: false,
+  }))
+}
+
+export function makeAttachmentInspector(rows: () => Row[]): jest.Mock {
+  return jest.fn(async (attachment: { id: string }) => {
+    const row = rows().find((entry) => entry.id === attachment.id)
+    if (!row || row.unreadable === true) throw new Error('[internal] stored file is not readable')
+    const mimeType = String(row.mimeType)
+    return {
+      sha256: row.storedSha256,
+      sizeBytes: row.storedSizeBytes ?? row.fileSize,
+      detectedMimeType: 'detectedMimeType' in row ? row.detectedMimeType : mimeType.startsWith('image/') ? mimeType : null,
+    }
+  })
 }
 
 export async function catchHttpError(run: () => unknown): Promise<CrudHttpError> {

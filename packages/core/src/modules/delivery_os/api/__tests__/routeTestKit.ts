@@ -18,6 +18,7 @@ import {
   PROJECT_ID,
   TENANT_ID,
   UPDATED_AT,
+  makeAttachmentInspector,
   matches,
   type Row,
 } from '../../commands/__tests__/baselineTestKit'
@@ -154,6 +155,9 @@ export const containerMock = {
       if (name === 'rbacService') {
         if (!routeState.rbacAvailable) throw new Error('[internal] rbacService is not registered')
         return rbacService
+      }
+      if (name === 'deliveryOsAttachmentInspector') {
+        return makeAttachmentInspector(() => routeState.store.attachments)
       }
       if (name === 'deliveryOsAttemptQueries') {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')

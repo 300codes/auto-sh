@@ -8,11 +8,11 @@ import type { CrudIndexerConfig } from '@open-mercato/shared/lib/crud/types'
 import type { DataEngine } from '@open-mercato/shared/lib/data/engine'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
-import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import { E } from '#generated/entities.ids.generated'
 import { DeliveryBaseline } from '../data/entities'
 import { baselineCreateSchema, draftSpecV1Schema } from '../data/validators'
 import { buildBaselineContent, nextBaselineVersion } from '../lib/baseline'
+import { applyAttachmentSnapshot, checkDesignReview, checkRawScreenRenders } from '../lib/designReview'
 import {
   buildDeliveryError,
   deliveryErrorFromZod,
@@ -20,6 +20,7 @@ import {
   type DeliveryCheckResult,
   type DeliveryErrorDetail,
 } from '../lib/contracts'
+import { verifyDraftAttachments } from './attachments'
 import {
   assertDeliveryCheck,
   DELIVERY_BASELINE_RESOURCE_KIND,
@@ -44,8 +45,6 @@ export type BaselineCommandResult = {
 }
 
 type DraftSpec = z.infer<typeof draftSpecV1Schema>
-
-type AttachmentReference = { path: string; attachmentId: string }
 
 const baselineProjectSchema = z.object({ projectId: uuidSchema })
 
@@ -73,41 +72,6 @@ export function checkDraftFreezable(draft: DraftSpec): DeliveryCheckResult {
   return hasScopeGap
     ? { ok: false, ...buildDeliveryError('missing_acceptance_criteria', 'A baseline needs requirements and acceptance criteria', details) }
     : { ok: false, ...buildDeliveryError('missing_render', 'A baseline needs a stored design render', details) }
-}
-
-function collectAttachmentReferences(draft: DraftSpec): AttachmentReference[] {
-  return [
-    ...draft.screens.map((screen, index) => ({ path: `screens.${index}.attachmentId`, attachmentId: screen.attachmentId })),
-    ...draft.attachments.map((attachment, index) => ({
-      path: `attachments.${index}.attachmentId`,
-      attachmentId: attachment.attachmentId,
-    })),
-  ]
-}
-
-async function checkAttachmentScope(
-  tx: EntityManager,
-  references: readonly AttachmentReference[],
-  scope: DeliveryScope,
-): Promise<DeliveryCheckResult> {
-  const attachmentIds = [...new Set(references.map((reference) => reference.attachmentId))]
-  if (attachmentIds.length === 0) return { ok: true }
-  const found = await findWithDecryption(
-    tx,
-    Attachment,
-    { id: { $in: attachmentIds }, tenantId: scope.tenantId, organizationId: scope.organizationId },
-    undefined,
-    scope,
-  )
-  const knownIds = new Set(found.map((attachment) => attachment.id))
-  const details = references
-    .filter((reference) => !knownIds.has(reference.attachmentId))
-    .map((reference) => ({ path: reference.path, code: 'attachment_scope_mismatch' }))
-  if (details.length === 0) return { ok: true }
-  return {
-    ok: false,
-    ...buildDeliveryError('attachment_scope_mismatch', 'Attachment is not available in this organization', details),
-  }
 }
 
 function findProjectBaselineByHash(
@@ -157,13 +121,15 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
     try {
       outcome = await em.transactional(async (tx) => {
         const project = await lockProjectForWrite(tx, ctx, projectId, scope, { force: true })
+        assertDeliveryCheck(checkRawScreenRenders((project.draftSpec as { screens?: unknown } | null)?.screens))
         const draft = draftSpecV1Schema.safeParse(project.draftSpec)
         if (!draft.success) throw deliveryHttpError(deliveryErrorFromZod(draft.error))
         assertDeliveryCheck(checkDraftFreezable(draft.data))
-        const built = buildBaselineContent(draft.data)
+        assertDeliveryCheck(checkDesignReview(draft.data))
+        const verified = await verifyDraftAttachments(tx, ctx, draft.data, scope)
+        if (!verified.ok) throw deliveryHttpError({ status: verified.status, body: verified.body })
+        const built = buildBaselineContent(applyAttachmentSnapshot(draft.data, verified.snapshots))
         if (!built.ok) throw deliveryHttpError({ status: built.status, body: built.body })
-        const references = collectAttachmentReferences(draft.data)
-        assertDeliveryCheck(await checkAttachmentScope(tx, references, scope))
         frozen.contentHash = built.contentHash
         frozen.openCommentIds = built.openCommentIds
 
@@ -186,7 +152,7 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
           source: 'manual',
           parentBaselineId: null,
           content: built.content,
-          attachmentIds: [...new Set(references.map((reference) => reference.attachmentId))],
+          attachmentIds: verified.attachmentIds,
           createdBy: createdBy.success ? createdBy.data : null,
         })
         tx.persist(baseline)

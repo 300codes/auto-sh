@@ -349,3 +349,37 @@ no error code, path, schema version, event, feature or migration changed.
 - Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 30 suites / 685 tests
   green; core typecheck exit 0; eslint clean. Rows: 2.1 (one key reserves one attempt, GET does not mutate), 2.3
   (manual flow without enterprise, real decisions); co-acceptance 2.4 stays open for humans.
+
+## Addendum — L7b design review and attachment verification (T020, OSS-03)
+
+- New: `lib/designReview.ts` (pure), `commands/attachments.ts`, DI key `deliveryOsAttachmentInspector` (additive).
+  Contract v1 additive only: optional `sizeBytes` + `mimeType` on `designScreenSchema` / `screenRefSchema` /
+  `attachmentRefSchema`. No new error code, schema version, route, migration or ORM relation.
+- `POST /projects/:id/baselines` (manual) now verifies every referenced attachment: scope (missing = foreign, identical
+  `422 attachment_scope_mismatch`), stored type (screens: png / jpeg / webp only, no SVG; `attachments[]` also pdf,
+  text/plain, text/markdown, application/json), size ≤ 10 MiB (checked on the row before bytes are read), sha256 of the
+  stored bytes, magic bytes of a render, and declared `sizeBytes` / `mimeType` when present. All 422, all problems in one
+  `details[]`; top code `attachment_scope_mismatch` > `missing_render` > `attachment_hash_mismatch`.
+  Detail codes to translate (UI): `unsupported_mime_type`, `attachment_too_large`, `empty_attachment`,
+  `render_bytes_not_image`, `sha256_mismatch`, `size_mismatch`, `mime_type_mismatch`, `attachment_unreadable`,
+  `content_type_mismatch`, `attachments_total_too_large` (the only 413: all files together > 64 MiB),
+  `duplicate_screen_attachment`, `duplicate_screen`, `unknown_screen`, `anchor_without_screen`, `invalid_token_value`,
+  `temporary_url_only`, `missing_render`.
+- The baseline content now carries the verified snapshot: `content.screens[i]` and `content.attachments[i]` have
+  `sizeBytes` and `mimeType` (stored values). They also appear in `TaskPackage.designArtifactRefs`.
+  **EXEC/UI**: if you keep a strict copy of the screen schema, allow the two optional fields.
+- **UI-03**: upload the render to `POST /api/attachments` first (`entityId: 'delivery_os:delivery_project'`,
+  `recordId: <projectId>`), compute the sha256 of the SAME bytes in the browser (`crypto.subtle.digest`) and put
+  `attachmentId` + `sha256` on the screen. A Figma temporary image URL alone is refused. Design rules (duplicate screens,
+  comments on unknown screens) are enforced at freeze, not on draft save, so a draft stays editable while screens change.
+  `validateDesignManifest(raw)` is ready for the design import path.
+- Limitation: bytes are read sequentially inside the project-lock transaction (distinct attachments once, ≤ 10 MiB each).
+  Result-manifest artifact hashes (`checkArtifactAttachments`) stay a pass-through until OSS-04; `createDeliveryAttachmentInspector`
+  is reusable there.
+- Operations note: a running dev server keeps the old command modules; restart it after pulling this change
+  (`OM_DEV_AUTO_OPEN=0 PORT=3100 yarn dev`). Done once during this task.
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 34 suites / 818 tests green;
+  core typecheck green; eslint clean on touched files; live smoke `/tmp/t020/live.ts` against http://localhost:3100 with
+  the real local storage driver → 9/9 (wrong sha256, missing attachment, text/plain screen, text bytes uploaded as
+  image/png, declared size mismatch → 422 with the codes above; valid PNG → 201; identical draft → 200 `duplicate: true`;
+  snapshot visible in R6). Rows with evidence: 3.1, 3.2 (OSS part); human co-acceptance stays open.

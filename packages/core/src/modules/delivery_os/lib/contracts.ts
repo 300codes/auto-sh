@@ -270,6 +270,11 @@ function checkRequirementsAndCriteria(
   })
 }
 
+const storedFileFactsShape = {
+  sizeBytes: z.number().int().min(0).optional(),
+  mimeType: z.string().min(1).max(200).optional(),
+}
+
 const viewportSchema = z.object({
   width: z.number().int().positive().max(16384),
   height: z.number().int().positive().max(16384),
@@ -284,6 +289,7 @@ export const designScreenSchema = z.object({
   sha256: sha256Schema,
   capturedAt: isoDateTimeSchema,
   figmaVersion: z.string().min(1).max(200).optional(),
+  ...storedFileFactsShape,
 })
 export type DesignScreen = z.infer<typeof designScreenSchema>
 
@@ -295,7 +301,7 @@ export type ScreenRef = z.infer<typeof screenRefSchema>
 
 const designTokensSchema = z.record(z.string().min(1).max(200), z.json())
 
-export const attachmentRefSchema = z.object({ attachmentId: uuidSchema, sha256: sha256Schema })
+export const attachmentRefSchema = z.object({ attachmentId: uuidSchema, sha256: sha256Schema, ...storedFileFactsShape })
 export type AttachmentRef = z.infer<typeof attachmentRefSchema>
 
 const acTestMapSchema = z.record(stableIdSchema, z.array(testIdSchema).max(200))
