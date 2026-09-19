@@ -266,6 +266,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.attempts.reserve',
       'delivery_os.baselines.create',
       'delivery_os.baselines.import_requirements',
+      'delivery_os.comments.import',
       'delivery_os.comments.triage',
       'delivery_os.decisions.record',
       'delivery_os.evidence.record',

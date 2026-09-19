@@ -83,6 +83,7 @@ describe('deliveryOsAttemptQueries', () => {
       'deliveryOsFlowQueries',
       'deliveryOsAttachmentInspector',
       'deliveryFlowTemplateProvider',
+      'deliveryStaffKanbanAdapter',
     ])
     const lazyResolve = jest.fn()
     expect(typeof registrations.deliveryOsAttachmentInspector.resolve({ resolve: lazyResolve })).toBe('function')
