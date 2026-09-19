@@ -4,6 +4,7 @@ import {
   checkTestEvidence,
   deriveDeploymentVerificationStatus,
   hashEvidenceIdentity,
+  normalizeAttachmentIds,
   type TestEvidenceInput,
 } from '../evidenceRules'
 import { loadBaselineContentFixture, loadResultManifestFixture } from '../fixtures'
@@ -40,6 +41,13 @@ function failure(result: ReturnType<typeof checkTestEvidence>): { status: number
     details: result.body.details.map((detail) => ({ path: detail.path, code: detail.code })),
   }
 }
+
+describe('normalizeAttachmentIds', () => {
+  it('lowercases, deduplicates and sorts attachment ids in code-unit order', () => {
+    expect(normalizeAttachmentIds([ATTACHMENT_B.toUpperCase(), ATTACHMENT_A, ATTACHMENT_B])).toEqual([ATTACHMENT_A, ATTACHMENT_B])
+    expect(normalizeAttachmentIds([])).toEqual([])
+  })
+})
 
 describe('hashEvidenceIdentity', () => {
   const identity = { kind: 'scan', baselineId: BASELINE_ID, payload: { checkId: 'dependency-audit', status: 'passed' } }

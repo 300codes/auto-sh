@@ -5,7 +5,7 @@ import {
   type ResultCheck,
   type SourceRevision,
 } from './contracts'
-import { hashCanonical } from './hash'
+import { compareCodeUnits, hashCanonical } from './hash'
 import { checkReportedChecks } from './resultChecks'
 import type { TargetProfile } from './targetProfiles'
 
@@ -38,7 +38,7 @@ export type DeploymentVerificationFacts = {
 const TEST_EVIDENCE_CHECKS_PATH_PREFIX = 'payload.checks.'
 
 export function normalizeAttachmentIds(attachmentIds: readonly string[]): string[] {
-  return [...new Set(attachmentIds.map((attachmentId) => attachmentId.toLowerCase()))].sort()
+  return [...new Set(attachmentIds.map((attachmentId) => attachmentId.toLowerCase()))].sort(compareCodeUnits)
 }
 
 export function hashEvidenceIdentity(identity: EvidenceIdentity): string | null {
