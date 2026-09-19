@@ -495,14 +495,14 @@ To jest **świadome ograniczenie dowodu**, nie pełna bramka. Faza 1 rusza `Deli
 
 #### Automated
 
-- [x] 1.1 Testy `attemptRegister` pokrywają trzy stany wejścia, przedziały czasu i aktywność
-- [x] 1.2 Test `AttemptRegisterTable` renderuje sześć `AttemptState`, cztery `outcome` i badge `stop_unconfirmed`
-- [x] 1.3 Test `TasksSection` potwierdza, że znacznik i link nie cofają naprawy F1 z UI-03
-- [x] 1.4 `DeliveryProjectDetailClient.tsx` i `BaselinePanel.tsx` mają poniżej 300 LOC
-- [x] 1.5 `sections.test.tsx`, `page.test.tsx` i `executionHost.test.tsx` przechodzą bez zmiany asercji
-- [x] 1.6 `i18n:check-sync`, `i18n:check-usage` i `i18n:check-hardcoded` są czyste
-- [x] 1.7 `typecheck` i `check:client-boundaries` przechodzą; brak nowego client page root
-- [x] 1.8 Granica własności `{api,commands,data}` jest pusta
+- [x] 1.1 Testy `attemptRegister` pokrywają trzy stany wejścia, przedziały czasu i aktywność — f13a36bb9c
+- [x] 1.2 Test `AttemptRegisterTable` renderuje sześć `AttemptState`, cztery `outcome` i badge `stop_unconfirmed` — f13a36bb9c
+- [x] 1.3 Test `TasksSection` potwierdza, że znacznik i link nie cofają naprawy F1 z UI-03 — f13a36bb9c
+- [x] 1.4 `DeliveryProjectDetailClient.tsx` i `BaselinePanel.tsx` mają poniżej 300 LOC — f13a36bb9c
+- [x] 1.5 `sections.test.tsx`, `page.test.tsx` i `executionHost.test.tsx` przechodzą bez zmiany asercji — f13a36bb9c
+- [x] 1.6 `i18n:check-sync`, `i18n:check-usage` i `i18n:check-hardcoded` są czyste — f13a36bb9c
+- [x] 1.7 `typecheck` i `check:client-boundaries` przechodzą; brak nowego client page root — f13a36bb9c
+- [x] 1.8 Granica własności `{api,commands,data}` jest pusta — f13a36bb9c
 
 #### Manual
 
@@ -513,12 +513,12 @@ To jest **świadome ograniczenie dowodu**, nie pełna bramka. Faza 1 rusza `Deli
 
 #### Automated
 
-- [x] 2.1 Testy `attemptKey`: stabilność, zmienność po każdej składowej, zgodność z regexem nagłówka
-- [x] 2.2 Test `ReserveAttemptAction` daje pięć różnych komunikatów dla pięciu wyników
-- [x] 2.3 Test potwierdza, że `200` jest prezentowane jako sukces, nie jako błąd
-- [x] 2.4 Test `TaskPackagePanel`: brak próby daje nazwany powód, błąd schowka nie ukrywa pobrania
-- [x] 2.5 Test gatingu: bez `delivery_os.attempts.manage` rezerwacja nie renderuje się
-- [x] 2.6 `i18n:*`, `typecheck`, `check:client-boundaries` przechodzą; granica własności pusta
+- [x] 2.1 Testy `attemptKey`: stabilność, zmienność po każdej składowej, zgodność z regexem nagłówka — f13a36bb9c
+- [x] 2.2 Test `ReserveAttemptAction` daje pięć różnych komunikatów dla pięciu wyników — f13a36bb9c
+- [x] 2.3 Test potwierdza, że `200` jest prezentowane jako sukces, nie jako błąd — f13a36bb9c
+- [x] 2.4 Test `TaskPackagePanel`: brak próby daje nazwany powód, błąd schowka nie ukrywa pobrania — f13a36bb9c
+- [x] 2.5 Test gatingu: bez `delivery_os.attempts.manage` rezerwacja nie renderuje się — f13a36bb9c
+- [x] 2.6 `i18n:*`, `typecheck`, `check:client-boundaries` przechodzą; granica własności pusta — f13a36bb9c
 
 #### Manual
 
@@ -529,15 +529,15 @@ To jest **świadome ograniczenie dowodu**, nie pełna bramka. Faza 1 rusza `Deli
 
 #### Automated
 
-- [x] 3.1 Testy `resultImport` dla pięciu ścieżek wejścia
-- [x] 3.2 Test rozróżnia `path_not_allowed`, `unknown_test_id` i `baseline_mismatch`
-- [x] 3.3 Test `ResultImportDialog` rozróżnia `201`, `200 duplicate`, `409 result_conflict`, `409 attempt_not_active` i `422`
-- [x] 3.4 Test potwierdza, że `details[]` renderują się jako lista wszystkich ścieżek
-- [x] 3.5 Test `ResultSummary`: `not_run` nie jest liczone jako przechodzące
-- [x] 3.6 Test `usage: 'unknown'` daje komunikat o braku danych, nie zero
-- [x] 3.7 Test czyta z `i18n/en.json` frazę o braku trwałego odczytu usage
-- [x] 3.8 Testy konsumują negatywne fixture `result-manifest.*`
-- [x] 3.9 `i18n:*`, `typecheck`, `check:client-boundaries` przechodzą; granica własności pusta
+- [x] 3.1 Testy `resultImport` dla pięciu ścieżek wejścia — f13a36bb9c
+- [x] 3.2 Test rozróżnia `path_not_allowed`, `unknown_test_id` i `baseline_mismatch` — f13a36bb9c
+- [x] 3.3 Test `ResultImportDialog` rozróżnia `201`, `200 duplicate`, `409 result_conflict`, `409 attempt_not_active` i `422` — f13a36bb9c
+- [x] 3.4 Test potwierdza, że `details[]` renderują się jako lista wszystkich ścieżek — f13a36bb9c
+- [x] 3.5 Test `ResultSummary`: `not_run` nie jest liczone jako przechodzące — f13a36bb9c
+- [x] 3.6 Test `usage: 'unknown'` daje komunikat o braku danych, nie zero — f13a36bb9c
+- [x] 3.7 Test czyta z `i18n/en.json` frazę o braku trwałego odczytu usage — f13a36bb9c
+- [x] 3.8 Testy konsumują negatywne fixture `result-manifest.*` — f13a36bb9c
+- [x] 3.9 `i18n:*`, `typecheck`, `check:client-boundaries` przechodzą; granica własności pusta — f13a36bb9c
 
 #### Manual
 
@@ -549,14 +549,14 @@ To jest **świadome ograniczenie dowodu**, nie pełna bramka. Faza 1 rusza `Deli
 
 #### Automated
 
-- [x] 4.1 Test `CancelAttemptAction` czyta z `i18n/en.json` frazę o niepotwierdzonym zatrzymaniu
-- [x] 4.2 Test potwierdza, że dialog uzgodnienia nie otwiera się automatycznie po anulowaniu
-- [x] 4.3 Test `ReconcileAttemptDialog` pokrywa cztery rozstrzygnięcia; `completed` bez manifestu nie wysyła żądania
-- [x] 4.4 Test `409 attempt_not_reconcilable` jest rozłączny z `attempt_not_active`
-- [x] 4.5 Testy konsumują cztery nowe fixture rejestru, w tym ścieżkę nieczytelną
-- [x] 4.6 Test dwóch nakładających się prób potwierdza jednoczesne przedziały aktywności
-- [x] 4.7 `TC-DELIVERY-UI-004` istnieje, przechodzi `typecheck` i `eslint`, teardown adresuje projekty po id
-- [x] 4.8 Testy modułu przechodzą w całości; `i18n:*`, `typecheck`, `check:client-boundaries` czyste; granica własności pusta
+- [x] 4.1 Test `CancelAttemptAction` czyta z `i18n/en.json` frazę o niepotwierdzonym zatrzymaniu — f13a36bb9c
+- [x] 4.2 Test potwierdza, że dialog uzgodnienia nie otwiera się automatycznie po anulowaniu — f13a36bb9c
+- [x] 4.3 Test `ReconcileAttemptDialog` pokrywa cztery rozstrzygnięcia; `completed` bez manifestu nie wysyła żądania — f13a36bb9c
+- [x] 4.4 Test `409 attempt_not_reconcilable` jest rozłączny z `attempt_not_active` — f13a36bb9c
+- [x] 4.5 Testy konsumują cztery nowe fixture rejestru, w tym ścieżkę nieczytelną — f13a36bb9c
+- [x] 4.6 Test dwóch nakładających się prób potwierdza jednoczesne przedziały aktywności — f13a36bb9c
+- [x] 4.7 `TC-DELIVERY-UI-004` istnieje, przechodzi `typecheck` i `eslint`, teardown adresuje projekty po id — f13a36bb9c
+- [x] 4.8 Testy modułu przechodzą w całości; `i18n:*`, `typecheck`, `check:client-boundaries` czyste; granica własności pusta — f13a36bb9c
 
 #### Manual
 
