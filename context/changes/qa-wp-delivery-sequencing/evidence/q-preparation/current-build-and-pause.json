@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "scope": "isolated Q checkout; existing OSS HTTP sources matched; later WP changes excluded",
+  "build": {
+    "at": "2026-09-19T14:22:44.527876+00:00",
+    "step": 8,
+    "command": "yarn build:app",
+    "exitCode": 0,
+    "seconds": 351.0473333830005,
+    "sourceFingerprint": "0e1fd224b211c7b0500db6af2850e93bc98424b06eb8e1fe60259002d42cd1c3",
+    "afterFingerprint": "0e1fd224b211c7b0500db6af2850e93bc98424b06eb8e1fe60259002d42cd1c3",
+    "sourceChanged": false,
+    "status": "passed",
+    "log": "resume-20260919T141651747120Z-8.log",
+    "resourceInterrupted": false,
+    "validationScope": "http_build_prerequisite",
+    "fullOrderedGate": "not_passed",
+    "skippedSteps": [
+      5,
+      6,
+      7
+    ]
+  },
+  "fullNextTypeScript": {
+    "status": "passed",
+    "duration": "2.3min",
+    "ignoreBuildErrors": false
+  },
+  "staticPages": {
+    "status": "passed",
+    "count": 6
+  },
+  "artifact": {
+    "at": "2026-09-19T14:23:17.386862+00:00",
+    "stage": "before-bootstrap",
+    "buildId": "Fd8XNyf2yq0vcyeJ2cvM6",
+    "files": [
+      {
+        "path": "next/BUILD_ID",
+        "sha256": "ddeb2570346dd844ba6c53dfca227319d0f89ed07c859ee56ed257fdb87e6f97"
+      },
+      {
+        "path": "generated/modules.generated.ts",
+        "sha256": "448931723dd4a9e26368655de0c5258165e62c8f0ddc99e997b54b4a4286073c"
+      },
+      {
+        "path": "generated/modules.app.generated.ts",
+        "sha256": "0178021b8d7011bc154b5f7e5cf1dd291e4e93f86e0664b522ceaca300923e60"
+      },
+      {
+        "path": "generated/modules.bootstrap.generated.ts",
+        "sha256": "73a12da167006635fecfda78099f5fa0fe430a20660bcd7bc505f30ff9566c5c"
+      },
+      {
+        "path": "generated/modules.cli.generated.ts",
+        "sha256": "6b431a46559b6686d89f16991414b28af517d0f3e6a12e2c1bd2a534e727d88d"
+      },
+      {
+        "path": "generated/modules.runtime.generated.ts",
+        "sha256": "262c88e4f70302249e65a56725d567dab80d5b8d33388312b793a1469cb169e3"
+      }
+    ],
+    "deliveryOsIncluded": true,
+    "enterpriseImportsAbsent": true,
+    "provenance": "isolated-q-build"
+  },
+  "fullOrderedGate": "not_passed",
+  "steps5to7": "not_run_in_resumed_path",
+  "httpExecutions": 0,
+  "bootstrap": {
+    "status": "interrupted_by_user_priority_change",
+    "exitCode": 137,
+    "databaseFreshnessReadback": {
+      "publicBaseTables": 0,
+      "extensions": [
+        "pgcrypto",
+        "plpgsql",
+        "vector"
+      ]
+    },
+    "noResetPerformed": true
+  },
+  "executionSteps": [
+    {
+      "at": "2026-09-19T14:23:18.262948+00:00",
+      "step": "import-smoke",
+      "exitCode": 0
+    },
+    {
+      "at": "2026-09-19T14:23:37.551505+00:00",
+      "step": "bootstrap",
+      "exitCode": 137
+    }
+  ],
+  "stop": {
+    "at": "2026-09-19T14:23:38.681636+00:00",
+    "status": "failed",
+    "sourceFingerprint": "0e1fd224b211c7b0500db6af2850e93bc98424b06eb8e1fe60259002d42cd1c3",
+    "afterFingerprint": "0e1fd224b211c7b0500db6af2850e93bc98424b06eb8e1fe60259002d42cd1c3",
+    "ownedRunnerStopConfirmed": true,
+    "databasePreserved": true,
+    "physicalCleanup": "pending_environment_disposal",
+    "fullOrderedGate": "not_passed"
+  },
+  "apiSentinel": "not_run",
+  "http": "not_run",
+  "physicalCleanup": "pending_environment_disposal",
+  "safeResume": "fresh root runtime slot; exact identity/headroom; start owned runner; run private monitored HTTP driver. Freshness check refuses nonempty DB. No rebuild required if source/artifact proof unchanged."
+}

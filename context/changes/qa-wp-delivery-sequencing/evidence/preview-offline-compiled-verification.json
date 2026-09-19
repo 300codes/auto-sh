@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "executedAt": "2026-09-19T14:09:47.662Z",
+  "runner": "v24.13.1",
+  "build": {
+    "command": "npm run build --prefix packages/delivery-wordpress",
+    "exitCode": 0,
+    "logHash": "c3aec988c0d19d574f2f4b5862f3363745def0aee74373de069f31c496999f05"
+  },
+  "compiledHashes": {
+    "deployment-verify": "e439e50db0aa2fc6cf2bf1992db2c9f1fd777ab40589bee282585a2a8e866dfa",
+    "preview-journal": "7ac63a64643cd591bf64bbac135c8a0c4d0db498117312e0c001e198eed92fa5"
+  },
+  "previousCompiledUnchanged": true,
+  "packageVerification": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "provenance": "local",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "packageId": "6e6e1e39-8d54-4fd8-bbe4-02ca508a3727",
+    "packageHash": "0d2b725192c60663f09e98da8ef46baf2daeae9b832588b29fef90ce9bba020c",
+    "fileCount": 3725,
+    "totalBytes": 66951346,
+    "verification": "saved_package_bytes_only",
+    "publication": "not_authorized",
+    "remoteRevision": "not_verified",
+    "runtimeIdentity": {
+      "wordpressVersion": "7.1.1",
+      "phpVersion": "8.4.23",
+      "studioVersion": "1.19.0",
+      "verification": "operator_declared"
+    },
+    "checks": {
+      "databaseSecrets": "not_evaluated",
+      "publicContentApproval": "not_evaluated",
+      "pluginLicensing": "not_evaluated"
+    },
+    "configPolicy": {
+      "wpConfig": "omitted",
+      "coreRuntime": "host_provided",
+      "hostSubstitution": "requires_verification"
+    }
+  },
+  "journal": {
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "packageId": "6e6e1e39-8d54-4fd8-bbe4-02ca508a3727",
+    "packageHash": "0d2b725192c60663f09e98da8ef46baf2daeae9b832588b29fef90ce9bba020c",
+    "journalHash": "009711d255e1cf6b245040bb60bab42a54605a287a8df18f161270aef61824ba",
+    "revision": 1,
+    "state": "prepared",
+    "publication": "not_authorized",
+    "remoteRevision": "not_verified",
+    "upload": "not_run"
+  },
+  "scope": "Actual private technical package and local prepared journal only; no remote inventory/transport, approval or final release acceptance"
+}

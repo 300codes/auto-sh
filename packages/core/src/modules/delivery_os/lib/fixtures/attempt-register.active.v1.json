@@ -1,0 +1,39 @@
+{
+  "description": "Task A: one attempt claimed by an external session and still open. Its window [10:00 → open) deliberately overlaps the stop-unconfirmed register of task B, so a component test can show two runs active at the same time.",
+  "expected": {
+    "attemptRegisterReadable": true,
+    "attemptCount": 1,
+    "activeAttemptId": "a1111111-1111-4111-8111-111111111111"
+  },
+  "document": [
+    {
+      "attemptId": "a1111111-1111-4111-8111-111111111111",
+      "idempotencyKey": "delivery_os.attempt:task-a:0:git.687670c2",
+      "payloadHash": "d46fd41a1536da8b4e36ee28cbf2540c05b22713911f97669186182e380b23d9",
+      "mode": "manual_handoff",
+      "state": "claimed",
+      "baselineId": "44444444-4444-4444-8444-444444444444",
+      "baselineHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+      "baseRevision": {
+        "kind": "git",
+        "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+      },
+      "baseCommit": "687670c20c93d6a60c2ab494419ec38636cf0a8c",
+      "reservedAt": "2026-09-19T10:00:00.000Z",
+      "claimedAt": "2026-09-19T10:02:00.000Z",
+      "workerRef": null,
+      "externalRunId": "cezar-run-a-1",
+      "workflowRef": null,
+      "workflowStepId": null,
+      "dispatchedAt": "2026-09-19T10:02:00.000Z",
+      "cancellationRequestedAt": null,
+      "stopConfirmation": null,
+      "reconciliation": null,
+      "resultEvidenceId": null,
+      "completionDelivery": null,
+      "lastDeliveryError": null,
+      "closedAt": null,
+      "outcome": null
+    }
+  ]
+}

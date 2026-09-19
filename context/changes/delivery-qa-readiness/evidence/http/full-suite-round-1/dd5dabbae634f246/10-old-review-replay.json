@@ -1,0 +1,14 @@
+{
+  "status": 422,
+  "body": {
+    "error": "The review names another attempt than the latest accepted result",
+    "code": "missing_required_tests",
+    "details": [
+      {
+        "path": "attemptId",
+        "code": "attempt_mismatch",
+        "message": "Review the attempt of the latest accepted result"
+      }
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "expectedBrowserCssHash": "44bca6bb2b5daccbbb9f1db36edb261b89c6829abe9804d081effa55d4004629",
+  "acceptanceBoundary": "Technical capture after successful browser checks and native cleanup; G1/G3/G4/G5 remain required for release",
+  "executedAt": "2026-09-19T15:25:38.503Z",
+  "execution": "real_owned_local_stopped_site",
+  "design": "fixture_not_approved",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "packageId": "10021afd-21f8-4466-9e42-bff2383998e7",
+  "packageHash": "4fc9dcbdc63559be78885b54488bbe11fd36ac90162dae50f98f948742f60a76",
+  "sourceManifestHash": "6887e560276de4ab8775ad504d8a3570eb4238b50aff2eafd33f7ddb4a5ff7f2",
+  "fileCount": 3725,
+  "totalBytes": 66951401,
+  "databaseHash": "bd3ff58dfab48b4322346542b8e4b5d4d3d93dfac5dd64257f487e0f73836e2c",
+  "runtimeIdentity": {
+    "wordpressVersion": "7.1.1",
+    "phpVersion": "8.4.23",
+    "studioVersion": "1.19.0",
+    "verification": "operator_declared"
+  },
+  "configPolicy": {
+    "wpConfig": "omitted",
+    "coreRuntime": "host_provided",
+    "hostSubstitution": "requires_verification"
+  },
+  "checks": {
+    "databaseSecrets": "not_evaluated",
+    "publicContentApproval": "not_evaluated",
+    "pluginLicensing": "not_evaluated"
+  },
+  "completeness": "captured_inventory_only",
+  "publication": "not_authorized",
+  "upload": "not_run",
+  "snapshot": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "toolExecutionId": "da9ec6b8-04d7-40e6-b2a3-529e583184aa",
+    "creationAttemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+    "sourceRevision": {
+      "kind": "snapshot",
+      "contentHash": "5e745c5fe5b17f93ae47d2ad32bab73f3ffeb418afd2feb8b5eb8cbda83244dc",
+      "externalWorkspaceId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8"
+    },
+    "themeFiles": {
+      "assets/css/base.css": "1694366ce9e16a1ffbdeafe3089a0fac2b141631b08b3856fe6b17c04cbad252",
+      "assets/css/layout.css": "69b2645603f0d4b5da7848d6032ba18f339fa6ead396e984652d01e682976990",
+      "assets/dist/tailwind.css": "44bca6bb2b5daccbbb9f1db36edb261b89c6829abe9804d081effa55d4004629",
+      "functions.php": "d55a1a04a571e5b8206d498cd1ddbc91d8c663d260738b51c97258d7e0cf7b9c",
+      "inc/assets.php": "4e69952bd94a86cdc5e9f3f0ddd8a3eb7d49ee1d49a86c30bbca3d8a1d7c65b4",
+      "inc/setup.php": "28be3ef8711d8b3397e0fe258ecbbe12c1b3972defc3a08e5d5d17efa4c1b003",
+      "parts/footer.html": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1",
+      "parts/header.html": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e",
+      "style.css": "4dcc056cd393895a9ab583b2d6b8746a64cd4466cac5502d33837ff603085703",
+      "templates/front-page.html": "b5f598e6dbee2cfc130da82fa1d7bdf08a2ba944304d0e2018f1fdc2b927c587",
+      "templates/index.html": "01c7d43bd1ffeb0d8a02d56dd6c88371f8bb6e93fe07e108762800f2d04dde8d",
+      "templates/page.html": "bc471128dd6b65df10e9aa51cbd8049db5212acc4117c7a8592e365ee1315d50",
+      "theme.json": "69d4f606e2638f2974df2f17fc259063a2a82d60599a1fc3e4c7e7922e21ce8d"
+    },
+    "databaseHash": "bd3ff58dfab48b4322346542b8e4b5d4d3d93dfac5dd64257f487e0f73836e2c",
+    "capturedAt": "2026-09-19T15:25:18.067Z"
+  },
+  "sourceHashes": {
+    "deployment-manifest": "3224394f446324058f2b8a98ff4acf8b19350f2ae61340528d9b8a9cf3c259a0",
+    "snapshot": "3ff5c28b05380be34cbe3c284938dbe0434971cfabf2501cb6f705d14cffe7aa",
+    "tools": "35e107a4356ddcbbf1f0f58dca378f453f8c7a009a7fbf0e5be8952c21285133"
+  }
+}

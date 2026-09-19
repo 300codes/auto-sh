@@ -1,0 +1,36 @@
+{
+  "observations": [
+    {
+      "index": 0,
+      "status": 201,
+      "body": {
+        "decisionId": "3190d5f5-97ad-4f4e-9b76-00135bbcbfeb",
+        "activeBaselineId": null,
+        "projectUpdatedAt": "2026-09-19T11:07:39.722Z"
+      }
+    },
+    {
+      "index": 1,
+      "status": 409,
+      "body": {
+        "error": "record_modified",
+        "code": "optimistic_lock_conflict",
+        "currentUpdatedAt": "2026-09-19T11:07:39.722Z",
+        "expectedUpdatedAt": "2026-09-19T11:07:39.547Z"
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "3190d5f5-97ad-4f4e-9b76-00135bbcbfeb",
+      "kind": "requirements",
+      "verdict": "approved",
+      "subjectHash": "5d6e02b3dc4270b37330ec5f709fe0a91c738acd8b4886101446be873a41358d",
+      "subjectVersion": 1,
+      "reason": "Contradictory fixture decisions with identical version",
+      "actorUserId": "e0d6993e-0365-49b1-adbf-e8c66b574f8c",
+      "decidedAt": "2026-09-19T11:07:39.722Z"
+    }
+  ],
+  "baselineId": "0eec6bee-9243-42c3-aca0-26a0e6440ba1"
+}

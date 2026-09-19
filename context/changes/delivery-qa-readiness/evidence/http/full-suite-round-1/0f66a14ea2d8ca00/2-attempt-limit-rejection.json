@@ -1,0 +1,38 @@
+{
+  "status": 409,
+  "body": {
+    "error": "Attempt limit reached",
+    "code": "attempt_limit_reached",
+    "details": [
+      {
+        "path": "executionAttempts",
+        "code": "attempt_limit_reached",
+        "message": "At most 16 attempts are recorded per task"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 0,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 16,
+      "resultManifests": 0
+    }
+  }
+}

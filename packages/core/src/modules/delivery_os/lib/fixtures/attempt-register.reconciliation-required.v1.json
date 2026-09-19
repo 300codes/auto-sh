@@ -1,0 +1,74 @@
+{
+  "description": "A closed first attempt followed by one the operator could not resolve: the reconciliation recorded `unknown`, so the attempt stays in reconciliation_required and the task keeps refusing a new reservation.",
+  "expected": {
+    "attemptRegisterReadable": true,
+    "attemptCount": 2,
+    "activeAttemptId": null
+  },
+  "document": [
+    {
+      "attemptId": "c1111111-1111-4111-8111-111111111111",
+      "idempotencyKey": "delivery_os.attempt:task-c:0:git.687670c2",
+      "payloadHash": "d46fd41a1536da8b4e36ee28cbf2540c05b22713911f97669186182e380b23d9",
+      "mode": "manual_handoff",
+      "state": "closed",
+      "baselineId": "44444444-4444-4444-8444-444444444444",
+      "baselineHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+      "baseRevision": {
+        "kind": "git",
+        "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+      },
+      "baseCommit": "687670c20c93d6a60c2ab494419ec38636cf0a8c",
+      "reservedAt": "2026-09-19T10:00:00.000Z",
+      "claimedAt": "2026-09-19T10:01:00.000Z",
+      "workerRef": null,
+      "externalRunId": "cezar-run-c-1",
+      "workflowRef": null,
+      "workflowStepId": null,
+      "dispatchedAt": null,
+      "cancellationRequestedAt": null,
+      "stopConfirmation": null,
+      "reconciliation": null,
+      "resultEvidenceId": "c9999999-9999-4999-8999-999999999999",
+      "completionDelivery": null,
+      "lastDeliveryError": null,
+      "closedAt": "2026-09-19T10:45:00.000Z",
+      "outcome": "result_accepted"
+    },
+    {
+      "attemptId": "c2222222-2222-4222-8222-222222222222",
+      "idempotencyKey": "delivery_os.attempt:task-c:1:git.687670c2",
+      "payloadHash": "d46fd41a1536da8b4e36ee28cbf2540c05b22713911f97669186182e380b23d9",
+      "mode": "manual_handoff",
+      "state": "reconciliation_required",
+      "baselineId": "44444444-4444-4444-8444-444444444444",
+      "baselineHash": "70b27b2edbc6536f504263492caec1e8d247b3d8a0bcb2179fe18b00e30a4a39",
+      "baseRevision": {
+        "kind": "git",
+        "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+      },
+      "baseCommit": "687670c20c93d6a60c2ab494419ec38636cf0a8c",
+      "reservedAt": "2026-09-19T11:00:00.000Z",
+      "claimedAt": "2026-09-19T11:01:00.000Z",
+      "workerRef": null,
+      "externalRunId": "cezar-run-c-2",
+      "workflowRef": null,
+      "workflowStepId": null,
+      "dispatchedAt": null,
+      "cancellationRequestedAt": "2026-09-19T11:30:00.000Z",
+      "stopConfirmation": "stop_unconfirmed",
+      "reconciliation": {
+        "resolution": "unknown",
+        "note": "The session host was unreachable; whether the run finished could not be established.",
+        "observedAt": "2026-09-19T11:40:00.000Z",
+        "actorUserId": "99999999-9999-4999-8999-999999999999",
+        "resolvedAt": "2026-09-19T11:42:00.000Z"
+      },
+      "resultEvidenceId": null,
+      "completionDelivery": null,
+      "lastDeliveryError": null,
+      "closedAt": null,
+      "outcome": null
+    }
+  ]
+}

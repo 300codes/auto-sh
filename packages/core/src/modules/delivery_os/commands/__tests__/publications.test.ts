@@ -758,12 +758,12 @@ describe('delivery_os.publications.record — flow gate (UA-48 publication path)
     expectNothingWritten()
   })
 
-  it('records the publication once all four stages are approved and current', async () => {
+  it('passes the stage gate once all four stages are approved and current, then requires a release candidate', async () => {
     store.projects[0] = pinnedProject()
     seedStages('none')
     seedApprovedDeploy()
-    await expect(run(publication())).resolves.toMatchObject({ duplicate: false })
-    expect(store.publications).toHaveLength(1)
+    await expect(run(publication())).rejects.toThrow('release_candidate_required')
+    expectNothingWritten()
   })
 
   it('fails closed when the pinned snapshot is unreadable', async () => {

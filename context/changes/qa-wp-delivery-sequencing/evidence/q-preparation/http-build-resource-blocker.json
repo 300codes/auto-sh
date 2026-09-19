@@ -1,0 +1,40 @@
+{
+  "status": "blocked_environment_resource_pressure",
+  "build": {
+    "at": "2026-09-19T14:13:51.911489+00:00",
+    "step": 8,
+    "command": "yarn build:app",
+    "exitCode": 137,
+    "seconds": 226.478130814,
+    "sourceFingerprint": "533a84333d06fa1b6aef170ce155311281a9c756bb366fd4f35dedc9b91ae07e",
+    "afterFingerprint": "0e1fd224b211c7b0500db6af2850e93bc98424b06eb8e1fe60259002d42cd1c3",
+    "sourceChanged": true,
+    "status": "failed",
+    "log": "resume-20260919T141000413530Z-8.log",
+    "resourceInterrupted": true,
+    "validationScope": "http_build_prerequisite",
+    "fullOrderedGate": "not_passed",
+    "skippedSteps": [
+      5,
+      6,
+      7
+    ]
+  },
+  "webpack": "compiled successfully in2.6min; warnings recorded privately",
+  "typescript": "started, interrupted; not_passed",
+  "http": "not_run",
+  "bootstrap": "not_run",
+  "database": "owned database preserved, no schema initialization",
+  "runnerStopConfirmed": true,
+  "oomKilled": false,
+  "exit137Reason": "operator resource monitor docker stop, not evidence of kernel OOM",
+  "minimumWindowsAvailableBytes": 3786084352,
+  "minimumLinuxAvailableBytes": 4450422784,
+  "sourceFingerprintDifference": {
+    "onlyPath": "apps/mercato/next-env.d.ts",
+    "classification": "Next generated declaration first created during build; no authored source drift"
+  },
+  "foreignServicesChanged": false,
+  "retry": "not_started; root decision required for resource capacity",
+  "fullOrderedGate": "not_passed"
+}

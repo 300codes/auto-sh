@@ -1,0 +1,30 @@
+{
+  "scenario": "cancel",
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "attemptId": "cd0232dd-2329-46e2-abf0-9e49d99890f6",
+  "resolution": "not_started",
+  "provenance": "http-fixture"
+}

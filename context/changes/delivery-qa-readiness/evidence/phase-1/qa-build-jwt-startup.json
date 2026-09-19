@@ -1,0 +1,10 @@
+{
+  "status": "environment_startup_failed",
+  "qaBuildStatus": "passed",
+  "qaBuildSeconds": 234,
+  "variant": "private ignoreBuildErrors after mandatory narrowTS; standard build remains failed/OOM",
+  "error": "Production startup rejected repository example JWT_SECRET placeholder",
+  "fix": "Ephemeral runner supplies newly generated 32-byte random private JWT_SECRET; value never logged",
+  "liveExecuted": 0,
+  "liveStatus": "not_run"
+}

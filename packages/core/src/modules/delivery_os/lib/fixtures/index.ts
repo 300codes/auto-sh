@@ -5,6 +5,7 @@ import {
   deliveryErrorCodeSchema,
   deliveryReportV1Schema,
   designManifestV1Schema,
+  executionAttemptsSchema,
   executionWidgetContextV1Schema,
   planProposalV1Schema,
   requirementsProposalV1Schema,
@@ -15,6 +16,7 @@ import {
   type DeliveryErrorBody,
   type DeliveryReportV1,
   type DesignManifestV1,
+  type ExecutionAttempt,
   type ExecutionWidgetContextV1,
   type PlanProposalV1,
   type RequirementsProposalV1,
@@ -27,8 +29,10 @@ import type { PlanProposalContext } from '../proposals'
 import { getTargetProfile } from '../targetProfiles'
 import taskPackageJson from './task-package.v1.json' with { type: 'json' }
 import taskPackageSnapshotJson from './task-package.snapshot.v1.json' with { type: 'json' }
+import taskPackageOpenMercatoJson from './task-package.open-mercato.v1.json' with { type: 'json' }
 import resultManifestJson from './result-manifest.v1.json' with { type: 'json' }
 import resultManifestSnapshotJson from './result-manifest.snapshot.v1.json' with { type: 'json' }
+import resultManifestOpenMercatoJson from './result-manifest.open-mercato.v1.json' with { type: 'json' }
 import baselineContentJson from './baseline-content.v1.json' with { type: 'json' }
 import requirementsProposalJson from './requirements-proposal.v1.json' with { type: 'json' }
 import planProposalJson from './plan-proposal.v1.json' with { type: 'json' }
@@ -55,6 +59,10 @@ import planProposalOutsideProfileRootsJson from './negative/plan-proposal.outsid
 import planProposalForeignBaselineJson from './negative/plan-proposal.foreign-baseline.v1.json' with { type: 'json' }
 import planProposalPathEscapeJson from './negative/plan-proposal.path-escape.v1.json' with { type: 'json' }
 import planProposalFalseTestMappingJson from './negative/plan-proposal.false-test-mapping.v1.json' with { type: 'json' }
+import attemptRegisterActiveJson from './attempt-register.active.v1.json' with { type: 'json' }
+import attemptRegisterStopUnconfirmedJson from './attempt-register.stop-unconfirmed.v1.json' with { type: 'json' }
+import attemptRegisterReconciliationRequiredJson from './attempt-register.reconciliation-required.v1.json' with { type: 'json' }
+import attemptRegisterUnreadableJson from './attempt-register.unreadable.v1.json' with { type: 'json' }
 
 export { buildResultManifest, deriveFakeResultRevision, type ResultManifestOverrides } from './builders'
 export type { PlanProposalContext } from '../proposals'
@@ -62,8 +70,10 @@ export type { PlanProposalContext } from '../proposals'
 export const positiveDeliveryFixtures = [
   { name: 'task-package', schema: taskPackageV1Schema, document: taskPackageJson },
   { name: 'task-package.snapshot', schema: taskPackageV1Schema, document: taskPackageSnapshotJson },
+  { name: 'task-package.open-mercato', schema: taskPackageV1Schema, document: taskPackageOpenMercatoJson },
   { name: 'result-manifest', schema: resultManifestV1Schema, document: resultManifestJson },
   { name: 'result-manifest.snapshot', schema: resultManifestV1Schema, document: resultManifestSnapshotJson },
+  { name: 'result-manifest.open-mercato', schema: resultManifestV1Schema, document: resultManifestOpenMercatoJson },
   { name: 'baseline-content', schema: baselineContentV1Schema, document: baselineContentJson },
   { name: 'requirements-proposal', schema: requirementsProposalV1Schema, document: requirementsProposalJson },
   { name: 'plan-proposal', schema: planProposalV1Schema, document: planProposalJson },
@@ -89,9 +99,17 @@ export function loadTaskPackageFixture(variant: FixtureVariant = 'git'): TaskPac
   return parseFixture(taskPackageV1Schema, document, `task-package (${variant})`)
 }
 
+export function loadOpenMercatoTaskPackageFixture(): TaskPackageV1 {
+  return parseFixture(taskPackageV1Schema, taskPackageOpenMercatoJson, 'task-package (open-mercato)')
+}
+
 export function loadResultManifestFixture(variant: FixtureVariant = 'git'): ResultManifestV1 {
   const document = variant === 'git' ? resultManifestJson : resultManifestSnapshotJson
   return parseFixture(resultManifestV1Schema, document, `result-manifest (${variant})`)
+}
+
+export function loadOpenMercatoResultManifestFixture(): ResultManifestV1 {
+  return parseFixture(resultManifestV1Schema, resultManifestOpenMercatoJson, 'result-manifest (open-mercato)')
 }
 
 export function loadBaselineContentFixture(): BaselineContentV1 {
@@ -144,6 +162,53 @@ export function buildExecutionWidgetContextFixture(
     { ...executionWidgetContextJson, retryLastMutation: async () => true, refresh: () => undefined, ...overrides },
     'execution-widget-context',
   )
+}
+
+const attemptRegisterFixtureDocuments = {
+  active: attemptRegisterActiveJson,
+  'stop-unconfirmed': attemptRegisterStopUnconfirmedJson,
+  'reconciliation-required': attemptRegisterReconciliationRequiredJson,
+  unreadable: attemptRegisterUnreadableJson,
+} as const
+
+export type AttemptRegisterFixtureName = keyof typeof attemptRegisterFixtureDocuments
+
+const attemptRegisterFixtureSchema = z.object({
+  description: z.string().min(1),
+  expected: z.object({
+    attemptRegisterReadable: z.boolean(),
+    attemptCount: z.number().int().min(0),
+    activeAttemptId: z.string().nullable(),
+  }),
+  document: z.unknown(),
+})
+
+/** What `serializeTask` hands a client: the parsed register, or an empty one flagged unreadable. */
+export type AttemptRegisterFixture = {
+  name: AttemptRegisterFixtureName
+  description: string
+  attemptRegisterReadable: boolean
+  executionAttempts: ExecutionAttempt[]
+}
+
+/**
+ * Mirrors `serializeTask`: a register that does not satisfy the contract is
+ * returned EMPTY and flagged unreadable, never as a task that had no attempts.
+ * The fixture declares which of the two it is, so a drifting document fails the
+ * fixture rather than quietly changing what the tests assert.
+ */
+export function loadAttemptRegisterFixture(name: AttemptRegisterFixtureName): AttemptRegisterFixture {
+  const wrapper = parseFixture(attemptRegisterFixtureSchema, attemptRegisterFixtureDocuments[name], `attempt-register.${name}`)
+  const parsed = executionAttemptsSchema.safeParse(wrapper.document)
+  const readable = parsed.success
+  if (readable !== wrapper.expected.attemptRegisterReadable) {
+    throw new Error(`[internal] attempt-register.${name} no longer matches its declared readability`)
+  }
+  const executionAttempts = parsed.success ? parsed.data : []
+  if (executionAttempts.length !== wrapper.expected.attemptCount) {
+    throw new Error(`[internal] attempt-register.${name} no longer carries ${wrapper.expected.attemptCount} attempts`)
+  }
+  return { name, description: wrapper.description, attemptRegisterReadable: readable, executionAttempts }
 }
 
 export const negativeFixtureStages = ['schema', 'profile', 'correlation', 'dag', 'idempotency', 'proposal', 'acceptance'] as const

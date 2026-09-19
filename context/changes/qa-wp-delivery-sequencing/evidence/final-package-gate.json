@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "delivery-wordpress_package_only",
+  "provenance": "local_native_package_gate",
+  "runner": "local",
+  "runtimeServicesStarted": false,
+  "startedAt": "2026-09-19T12:59:51.090788+00:00",
+  "finishedAt": "2026-09-19T13:00:35.421962+00:00",
+  "head": "5d485ae5e713ba9c5c6f69809b4fba5b6b2f87c0",
+  "dirtyTreeIncludedBySourceHashes": true,
+  "nodeVersion": "v24.13.1",
+  "toolchain": {
+    "root": "/tmp/auto-sh-wp-tailwind-4.3.3",
+    "tailwindcss": "4.3.3",
+    "oxide": "4.3.3"
+  },
+  "workingDirectory": "packages/delivery-wordpress",
+  "commands": [
+    {
+      "command": "WP_TAILWIND_TOOLCHAIN_ROOT=/tmp/auto-sh-wp-tailwind-4.3.3 npm test",
+      "exitCode": 0,
+      "status": "passed",
+      "summary": {
+        "tests": 184,
+        "pass": 184,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "status": "passed"
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "status": "passed"
+    }
+  ],
+  "logHashes": {
+    "test": "0174acf4c4675d4e7a0b88d546bc29ef1098138c5ffe7294001c460e628ac0b5",
+    "typecheck": "709ee0367dd71d4a7587682dd1ddecd5ee55dd49437892c4431c5668a914824e",
+    "build": "c3aec988c0d19d574f2f4b5862f3363745def0aee74373de069f31c496999f05"
+  },
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/__tests__/cli.test.ts": "0c65f6531a1873958afdd45a4fc1efb22e3f1e18c37f8d7bd9a3e6d4381d837e",
+    "packages/delivery-wordpress/src/__tests__/contracts.test.ts": "f8927ab162ac994ae1a07ca85dbb72c47e0411c9d4e0a630dec6a026abe97793",
+    "packages/delivery-wordpress/src/__tests__/demo-native.test.ts": "b3f401918cc9e0eb0f6803cad8f8a2beeb6000379df00338ffd3f9f2faeaa1ce",
+    "packages/delivery-wordpress/src/__tests__/demo-plugins.test.ts": "95430115fb7c1629f033bedfcdf431a1d6cc68efafc7ca9117747a4a5655b092",
+    "packages/delivery-wordpress/src/__tests__/demo-probe.test.ts": "9fac7cf99ed3982f68e4f6fd2d1329fa32e9ca122b6db87bbe806c8edc65cb0a",
+    "packages/delivery-wordpress/src/__tests__/deployment-manifest.test.ts": "79533805765a86d8e5bf75180a6847573eac20d8e02718348bafa7baa188a23e",
+    "packages/delivery-wordpress/src/__tests__/design-tokens.test.ts": "3ea23d6ab11e9ae3e35872fb78a1b3836fe922392d3dbce7c36b86228efe1aa0",
+    "packages/delivery-wordpress/src/__tests__/editor-fixtures.test.ts": "aff60f4146a06edeee802ad6350513f83baba8457f906d336ca5f1ef898b46ec",
+    "packages/delivery-wordpress/src/__tests__/paths.test.ts": "12baae3dfa88a75c60b71b7d8f391a20f9c61f303d9e0715229e6cc4be1fbd54",
+    "packages/delivery-wordpress/src/__tests__/prepare-theme.test.ts": "4cdc91bbe160e8006cee229859d692fed8bf9097b2cdfc8e04d0d17339594a0c",
+    "packages/delivery-wordpress/src/__tests__/preview.test.ts": "c2f86200e141064d06c56be68b2b80d090c6d2244975da1d4933722005c98f0b",
+    "packages/delivery-wordpress/src/__tests__/runner.test.ts": "6071928acd31bb9e5a3ddd34695aec3226f93e094b770dd6943eefee5f75a09f",
+    "packages/delivery-wordpress/src/__tests__/scaffold.test.ts": "afa772fe78ebe68083c26f453a6679df18c82332ea56c702cc7b1de5f199cb20",
+    "packages/delivery-wordpress/src/__tests__/snapshot.test.ts": "17edf01ae08d3a4d339bed0a5c4696305ac6118b03ddecdd853eefb07b43c21b",
+    "packages/delivery-wordpress/src/__tests__/theme-assets.test.ts": "d7c12af4d61f24af8ed4369cd8c0ff30f11a72df8f3c6454c787e84ec52d0d6b",
+    "packages/delivery-wordpress/src/__tests__/theme-build.test.ts": "c53eaf35a077dd3b9194f06008573505dd0a4bc486499a6bfc114e1d92ec5f06",
+    "packages/delivery-wordpress/src/__tests__/theme-design-apply.test.ts": "c03d460694dc6f83fed0ce448f596946db427292c965ea6b6ab5383eee45825e",
+    "packages/delivery-wordpress/src/__tests__/theme-update.test.ts": "0022af40905e08b64db68d384ffd013a4357c4f7bcec39f17fe08230a70737bb",
+    "packages/delivery-wordpress/src/__tests__/tools.test.ts": "4a18fdf6203afa8777c8bd2c273b7c4effcfbfcb3c9106132a0dd304abba2a83",
+    "packages/delivery-wordpress/src/cli-support.ts": "16bcf3412ed81eeeb92ca62efea0312cc2e8c1b99bffb2078e8f9e3990747b77",
+    "packages/delivery-wordpress/src/cli.ts": "3bf7cc51d1e5435db38968395d2989058ce5df4c26e708be934111b2dec829ca",
+    "packages/delivery-wordpress/src/contracts.ts": "9667cc5c4eb37ba92b65f955726673dad39a3ce28c5fcce4e554f462e2c6d5c6",
+    "packages/delivery-wordpress/src/demo-native.ts": "6aa88a841f9f871f699100386d95a62c042df7bca73d4e2e389451063c801655",
+    "packages/delivery-wordpress/src/demo-plugins.ts": "3c74e8dfab2ae425a901e3d52bd440c5782bf78f9412e19508f1fa1972e8fa1f",
+    "packages/delivery-wordpress/src/demo-probe.ts": "2b7e836f510b75eb901e5f53ad225112148d2c6132297191a60d72c13fb9f9b3",
+    "packages/delivery-wordpress/src/deployment-manifest.ts": "5c893acc505557c492700511c5fe9788e8d166d6e2182d71edc738d555627e44",
+    "packages/delivery-wordpress/src/design-tokens.ts": "cbdc10de73264a2a57c594845929bf647294de912e210caacb17c697f4e8f6c0",
+    "packages/delivery-wordpress/src/editor-fixtures.ts": "937a488123807a518aa3a6708932e2beb798509636eff8eb2bf02e05f543d19e",
+    "packages/delivery-wordpress/src/index.ts": "d6cf6c9be1efe02f874cd01f46b8208750a92d7dda3104ca142155798c971eae",
+    "packages/delivery-wordpress/src/ownership.ts": "6d3c4fc013968e4a89f05603770e8347587010e761b5eb981af2612f1970c793",
+    "packages/delivery-wordpress/src/paths.ts": "29078f65c411edf628ecd33721e8b0828edfab46371243142b15835caf39074d",
+    "packages/delivery-wordpress/src/prepare-theme.ts": "e9480d651a3a102a648352f1a9c3d1d1234a57fc901664f193f31622bb766d48",
+    "packages/delivery-wordpress/src/preview.ts": "47a4206c8fd414609e670f88da63fb2db616c4f84ddfcd5274c05df1c08efdb0",
+    "packages/delivery-wordpress/src/runner.ts": "9ab4f6af135e3a18ce4125a82db20b3e9c9d1db66f9643706bf4b07d03f4b7ea",
+    "packages/delivery-wordpress/src/scaffold.ts": "c06e40d3a196946773d6557cdc9633f7b2452257952877eaf59778a86bd4e8e6",
+    "packages/delivery-wordpress/src/snapshot.ts": "a553c51ce84337f36b8a2107c41035783b68076b72440f09fc864d9a1414d519",
+    "packages/delivery-wordpress/src/theme-assets.ts": "a01cd27f2e6873baf7fa982d7dfb0433caa808b9c38da14c07c7b8c009a780f2",
+    "packages/delivery-wordpress/src/theme-build.ts": "1d044e0bd11c61b3b92084bb1ce0287da4737c889a8faca3bbfee2d371b319ab",
+    "packages/delivery-wordpress/src/theme-design-apply.ts": "827cfcb9478dfb08042043a85b17f55af5ef9e738fc779d6908bb8b072a3336d",
+    "packages/delivery-wordpress/src/theme-update.ts": "9aac27ba579b3e7870f4dace9df903c0c51ade1751670e062b9b4460fc2b837f",
+    "packages/delivery-wordpress/src/tools.ts": "e08433f2e90a50d049052b86a11cc08463d147b864137a4a1be4ba24d8addf18",
+    "packages/delivery-wordpress/package.json": "4fa1d5a1ecda121929cdfa37169c2251179c11e9bb85fa487b853cd577e24287",
+    "packages/delivery-wordpress/tsconfig.json": "e7880fde7edbf0a330cee38d7f80cc32c055b36c5b7c558d71e96dbe0155a691",
+    "packages/delivery-wordpress/tsconfig.build.json": "3276249004106f210c9b762523ffdbe2a876b99dde4cf03d5311ba354a231613"
+  },
+  "sourceChangesDuringGate": [],
+  "buildManifestHash": "15424175161c14d57e720c6fb87f9a75cafd199c0818234da137383b72557be9",
+  "buildFileCount": 44,
+  "limits": [
+    "Not the full monorepo ordered gate.",
+    "No WordPress/Studio/Docker runtime started or mutated by this gate.",
+    "Unit fixtures and local native child-process checks do not prove browser editing, live retention or Preview publication."
+  ]
+}

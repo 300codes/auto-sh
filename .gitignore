@@ -201,3 +201,7 @@ starters/company/certs/
 # Local Storybook build and generated previews
 packages/ui/storybook-static/
 packages/ui/.storybook/generated/
+
+# Local WordPress plugin packages; paid archives must remain outside Git
+/hackathon/advanced-custom-fields-pro.zip
+/hackathon/polylang.zip

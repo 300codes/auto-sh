@@ -1,0 +1,49 @@
+{
+  "case": "unknown test",
+  "status": 422,
+  "body": {
+    "error": "A check is not part of the frozen test catalogue",
+    "code": "unknown_test_id",
+    "details": [
+      {
+        "path": "checks.0.testId",
+        "code": "unknown_test_id",
+        "message": "undeclared-test is not a declared test"
+      },
+      {
+        "path": "checks.0.acIds.0",
+        "code": "test_not_mapped_to_ac",
+        "message": "undeclared-test is not mapped to AC-001 in the approved baseline"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "1c1030c1-d8c2-43eb-8d81-1ab358ae406e",
+  "taskId": "25103ddc-4b19-4366-a462-b481774a6d5e",
+  "attemptId": "637125bc-e0aa-4ce2-a7d6-6970810b9afa",
+  "baselineId": "621ed296-c15b-4ffd-9ffd-371f9583e842",
+  "baselineHash": "a84bd0889a6460269f21c2b64311af1b0ed78234bde4c85f95fe1cbcbdc23be5"
+}

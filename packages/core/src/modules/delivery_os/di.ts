@@ -5,10 +5,14 @@ import { createDeliveryOsAttemptQueries } from './commands/attemptQueries'
 import { createDeliveryOsReportQueries } from './commands/reportQueries'
 import { createDeliveryOsFlowQueries } from './commands/flowQueries'
 import { createCommandBusStaffKanbanAdapter, DELIVERY_STAFF_KANBAN_ADAPTER_KEY } from './commands/staffKanbanAdapter'
+import { createDeliveryOsEvidenceQueries } from './commands/evidenceQueries'
 import { createBuiltInFlowTemplateProvider, DELIVERY_FLOW_TEMPLATE_PROVIDER_KEY } from './commands/flowTemplateProvider'
 
 export function register(container: AppContainer) {
   container.register({
+    deliveryOsEvidenceQueries: {
+      resolve: (c) => createDeliveryOsEvidenceQueries(c.resolve<EntityManager>('em')),
+    },
     deliveryOsAttemptQueries: {
       resolve: (c) => createDeliveryOsAttemptQueries(c.resolve<EntityManager>('em')),
     },

@@ -1,0 +1,43 @@
+{
+  "case": "oversized body",
+  "status": 413,
+  "body": {
+    "error": "Request body is too large",
+    "code": "payload_too_large",
+    "details": [
+      {
+        "path": "body",
+        "code": "payload_too_large"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "effe82dc-59f9-419b-9bd8-3e552bbf1ff3",
+  "taskId": "2b3ff23f-09c1-419b-83be-b8d5367198ea",
+  "attemptId": "9012d6e8-48d8-4264-9b37-3dc46ec42bbb",
+  "baselineId": "35e85f63-a128-4d29-881f-c9d573eac4bd",
+  "baselineHash": "59c90fbed466e7a104ea8facdfbf0f4f9fabeacae8853a1f753b627d7c725b61"
+}

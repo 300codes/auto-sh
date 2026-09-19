@@ -1,0 +1,65 @@
+FAIL packages/shared/src/lib/commands/__tests__/registry.test.ts
+  command registry registration
+    ✓ throws on duplicate command ids outside development (5 ms)
+    ✓ overwrites duplicate command ids in development to tolerate HMR re-evaluation (2 ms)
+    ✕ reuses the identical exact loader across API and full bootstrap (10 ms)
+    ✕ reuses the identical fallback loader across API and full bootstrap (1 ms)
+    ✓ rejects a distinct exact loader even with the same key (1 ms)
+    ✓ rejects a distinct fallback loader even with the same key (1 ms)
+    ✓ loads a command handler on demand from a registered loader (1 ms)
+    ✓ exposes exact lazy command IDs through list and has before loading
+    ✓ returns the outputSchema for a registered handler that declares one and null otherwise (3 ms)
+    ✓ does not trigger lazy loaders when resolving output schemas (1 ms)
+    ✓ loads sibling module command files with an exact lazy command
+
+  ● command registry registration › reuses the identical exact loader across API and full bootstrap
+
+    expect(received).not.toThrow()
+
+    Error name:    "Error"
+    Error message: "Duplicate command loader registration for id test.command.shared"
+
+          44 |       if (loader.id) {
+          45 |         if (this.loadersById.has(loader.id) && process.env.NODE_ENV !== 'development') {
+        > 46 |           throw new Error(`Duplicate command loader registration for id ${loader.id}`)
+             |                 ^
+          47 |         }
+          48 |         if (this.loadersById.has(loader.id) && process.env.NODE_ENV === 'development' && !this.didWarnAboutDevelopmentLoaderReregistration) {
+          49 |           logger.debug('Command loaders re-registered (this may occur during HMR)')
+
+      at CommandRegistry.registerLoaders (src/lib/commands/registry.ts:46:17)
+      at registerCommandLoaders (src/lib/commands/registry.ts:174:19)
+      at src/lib/commands/__tests__/registry.test.ts:78:40
+      at Object.<anonymous> (../../node_modules/expect/build/index.js:1824:9)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:2235:93)
+      at src/lib/commands/__tests__/registry.test.ts:78:56
+      at src/lib/commands/__tests__/registry.test.ts:78:56
+
+  ● command registry registration › reuses the identical fallback loader across API and full bootstrap
+
+    expect(received).not.toThrow()
+
+    Error name:    "Error"
+    Error message: "Duplicate command loader registration for key test:commands:shared"
+
+          57 |       const existing = this.fallbackLoadersByModule.get(loader.moduleId) ?? new Map<string, CommandLoader>()
+          58 |       if (existing.has(key) && process.env.NODE_ENV !== 'development') {
+        > 59 |         throw new Error(`Duplicate command loader registration for key ${key}`)
+             |               ^
+          60 |       }
+          61 |       if (existing.has(key) && process.env.NODE_ENV === 'development' && !this.didWarnAboutDevelopmentLoaderReregistration) {
+          62 |         logger.debug('Command loaders re-registered (this may occur during HMR)')
+
+      at CommandRegistry.registerLoaders (src/lib/commands/registry.ts:59:15)
+      at registerCommandLoaders (src/lib/commands/registry.ts:174:19)
+      at src/lib/commands/__tests__/registry.test.ts:78:40
+      at Object.<anonymous> (../../node_modules/expect/build/index.js:1824:9)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:2235:93)
+      at src/lib/commands/__tests__/registry.test.ts:78:56
+      at src/lib/commands/__tests__/registry.test.ts:78:56
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 9 passed, 11 total
+Snapshots:   0 total
+Time:        2.702 s
+Ran all test suites within paths "packages/shared/src/lib/commands/__tests__/registry.test.ts".

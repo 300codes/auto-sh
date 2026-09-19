@@ -1,0 +1,44 @@
+{
+  "case": "unknown version",
+  "status": 422,
+  "body": {
+    "error": "Unsupported schema version",
+    "code": "unsupported_schema_version",
+    "details": [
+      {
+        "path": "schemaVersion",
+        "code": "unsupported_schema_version",
+        "message": "Received delivery.result-manifest/v99; supported: delivery.result-manifest/v1"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "0c74db36-bca9-44cc-bf14-667bb1f1409e",
+  "taskId": "b5b53e05-d8d5-4c0b-83ff-69603eea6fbf",
+  "attemptId": "e919fa8f-fc18-4103-a5c9-78a93c6fa9b6",
+  "baselineId": "1ef6da1c-141f-4e52-8ba3-d4b76b5c7533",
+  "baselineHash": "9c517d2e4fef49d254ee19b3f01a4a4e715160aea25856950c92ec1bc8f54c0f"
+}

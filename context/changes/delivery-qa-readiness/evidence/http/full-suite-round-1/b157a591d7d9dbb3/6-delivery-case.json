@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "suiteRunId": "87b4fffd-b361-457b-991d-53ba708a7c6d",
+  "testId": "2ffe48fbd28e59dc00f8-01f7355587f988c93a87",
+  "title": "project updates and archive reject stale versions and accept the current version",
+  "provenance": "http-fixture",
+  "codeRevision": null,
+  "appRevision": null,
+  "environmentId": "auto-sh-delivery-qa-4gb",
+  "namespace": "87b4fffd-b36-2ffe48fbd28e59dc00-retry0-b5e8acd8-91d8-4079-ba32-31540da5ffc0",
+  "scopes": {
+    "A1": {
+      "tenantId": "3a4aee8f-f2eb-4059-8b0f-1be22b19d967",
+      "organizationId": "1530f417-7983-4a9d-8dca-cb0b582d0145"
+    }
+  },
+  "timestamp": "2026-09-19T11:07:58.330Z",
+  "cleanup": {
+    "resources": [
+      {
+        "kind": "tenant",
+        "id": "3a4aee8f-f2eb-4059-8b0f-1be22b19d967",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "tenantId": "3a4aee8f-f2eb-4059-8b0f-1be22b19d967",
+        "organizationId": "1530f417-7983-4a9d-8dca-cb0b582d0145",
+        "id": "1530f417-7983-4a9d-8dca-cb0b582d0145",
+        "kind": "organization",
+        "state": "cleaned",
+        "retained": true
+      },
+      {
+        "tenantId": "3a4aee8f-f2eb-4059-8b0f-1be22b19d967",
+        "organizationId": "1530f417-7983-4a9d-8dca-cb0b582d0145",
+        "id": "53f5e5ae-70e0-46d3-8899-64c142852521",
+        "kind": "role",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "tenantId": "3a4aee8f-f2eb-4059-8b0f-1be22b19d967",
+        "organizationId": "1530f417-7983-4a9d-8dca-cb0b582d0145",
+        "id": "1bd52d6a-fbe1-4443-b884-b671c032a1cd",
+        "kind": "user",
+        "state": "cleaned",
+        "retained": false
+      },
+      {
+        "kind": "project",
+        "id": "6cc91892-6dab-41eb-84ed-f78d75395d87",
+        "tenantId": "3a4aee8f-f2eb-4059-8b0f-1be22b19d967",
+        "organizationId": "1530f417-7983-4a9d-8dca-cb0b582d0145",
+        "state": "cleaned",
+        "retained": true
+      }
+    ],
+    "failures": [],
+    "retainedHistory": [],
+    "physicalCleanup": "pending_environment_disposal"
+  },
+  "cleanupStatus": "pending_environment_disposal",
+  "unmanagedMutations": [],
+  "assertionOutcome": "see-native-playwright-result"
+}

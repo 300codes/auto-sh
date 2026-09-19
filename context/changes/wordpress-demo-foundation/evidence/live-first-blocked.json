@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "provenance": "live",
+  "status": "blocked",
+  "executionMode": "standalone_tools",
+  "omIntegration": "not_connected",
+  "baselineId": null,
+  "scope": {
+    "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+    "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+    "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+  },
+  "attemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "site": {
+    "schemaVersion": 1,
+    "provenance": "live",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "scope": {
+      "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+      "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+      "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+    },
+    "attemptId": "339684f7-0ad5-41cb-9284-61ce9abed103",
+    "toolExecutionId": "a431b204-8f77-4e8d-b04a-3cbd888109cb",
+    "studioSiteId": "2b27bf16-b421-4968-b915-ef5a472c5345",
+    "localUrl": "http://localhost:8885",
+    "themeSlug": "delivery-demo-foundation",
+    "themeCommit": "4b23a871fb055ea0e18aed0b5df54ac1872e01c8",
+    "createdAt": "2026-09-19T11:55:25.657Z",
+    "checks": [
+      {
+        "checkId": "studio.create",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      },
+      {
+        "checkId": "theme.scaffold",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      },
+      {
+        "checkId": "theme.git",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      },
+      {
+        "checkId": "theme.activate",
+        "status": "passed",
+        "checkedAt": "2026-09-19T11:55:25.657Z"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "checkId": "site.create",
+      "status": "passed",
+      "checkedAt": "2026-09-19T11:55:25.660Z"
+    },
+    {
+      "checkId": "plugins.prepare",
+      "status": "failed",
+      "code": "COMMAND_FAILED",
+      "checkedAt": "2026-09-19T11:55:43.485Z"
+    },
+    {
+      "checkId": "site.stop",
+      "status": "failed",
+      "code": "site_busy_or_reconciliation_required",
+      "checkedAt": "2026-09-19T11:55:43.487Z"
+    },
+    {
+      "checkId": "native.edit_and_replay",
+      "status": "not_run",
+      "checkedAt": "2026-09-19T11:55:43.487Z"
+    },
+    {
+      "checkId": "snapshot.capture",
+      "status": "not_run",
+      "checkedAt": "2026-09-19T11:55:43.487Z"
+    },
+    {
+      "checkId": "http.local",
+      "status": "not_run",
+      "checkedAt": "2026-09-19T11:55:43.487Z"
+    }
+  ],
+  "acceptanceCriteria": "not_evaluated",
+  "preview": {
+    "status": "not_published",
+    "verified": false
+  },
+  "remaining": [
+    "approved_design",
+    "tailwind_theme",
+    "browser_editor",
+    "redeploy_persistence",
+    "om_roundtrip",
+    "studio_preview"
+  ],
+  "translations": "deferred_by_user",
+  "reconciliationRequired": true
+}

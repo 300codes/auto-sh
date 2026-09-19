@@ -26,9 +26,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Person', subtitle: entityId }
+      } else {
+        const { loadCustomerPersonPreview } = await import('./lib/messageObjectPreviews')
+        return loadCustomerPersonPreview(entityId, ctx)
       }
-      const { loadCustomerPersonPreview } = await import('./lib/messageObjectPreviews')
-      return loadCustomerPersonPreview(entityId, ctx)
     },
   },
   {
@@ -53,9 +54,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Company', subtitle: entityId }
+      } else {
+        const { loadCustomerCompanyPreview } = await import('./lib/messageObjectPreviews')
+        return loadCustomerCompanyPreview(entityId, ctx)
       }
-      const { loadCustomerCompanyPreview } = await import('./lib/messageObjectPreviews')
-      return loadCustomerCompanyPreview(entityId, ctx)
     },
   },
   {
@@ -80,9 +82,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
     loadPreview: async (entityId, ctx) => {
       if (typeof window !== 'undefined') {
         return { title: 'Deal', subtitle: entityId }
+      } else {
+        const { loadCustomerDealPreview } = await import('./lib/messageObjectPreviews')
+        return loadCustomerDealPreview(entityId, ctx)
       }
-      const { loadCustomerDealPreview } = await import('./lib/messageObjectPreviews')
-      return loadCustomerDealPreview(entityId, ctx)
     },
   },
 ]

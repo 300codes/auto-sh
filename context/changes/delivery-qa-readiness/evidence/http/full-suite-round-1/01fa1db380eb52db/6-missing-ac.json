@@ -1,0 +1,16 @@
+{
+  "inputMode": "from_design",
+  "status": 422,
+  "body": {
+    "error": "A baseline needs requirements and acceptance criteria",
+    "code": "missing_acceptance_criteria",
+    "details": [
+      {
+        "path": "acceptanceCriteria",
+        "code": "missing_acceptance_criteria",
+        "message": "Add at least one acceptance criterion"
+      }
+    ]
+  },
+  "baselineCount": 0
+}

@@ -130,7 +130,7 @@ test('TC-DELIVERY-UI-002: an operator walks the manual flow from the sidebar to 
     const searchResponse = page.waitForResponse((response) =>
       response.url().includes('/api/delivery_os/projects?') && response.url().includes('search='),
     )
-    await fillControlledInput(page.getByRole('textbox').first(), name)
+    await fillControlledInput(page.getByRole('searchbox', { name: 'Search projects by name' }), name)
     await searchResponse
     const projectLinkSelector = `a[href="${LIST_PATH}/${projectId}"]`
     const projectLink = page.locator(projectLinkSelector).first()

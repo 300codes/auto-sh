@@ -1,0 +1,21 @@
+✓ Compiled successfully in 2.7min
+  Skipping validation of types
+  Finished TypeScript config validation in 380ms ...
+  Collecting page data using 1 worker ...
+Error: Failed to collect configuration for /start
+    at ignore-listed frames {
+  [cause]: Error: Duplicate command loader registration for key auth:commands:acl
+      at CommandRegistry.registerLoaders (.mercato/next/server/chunks/90981.js:10649:23)
+      at registerCommandLoaders (.mercato/next/server/chunks/90981.js:10740:21)
+      at bootstrap (.mercato/next/server/chunks/7708.js:66572:101)
+      at <unknown> (.mercato/next/server/app/start/page.js:7036:55)
+      at __webpack_require__.a (.mercato/next/server/webpack-runtime.js:97:13)
+      at 667643 (.mercato/next/server/app/start/page.js:6981:21)
+      at __webpack_require__ (.mercato/next/server/webpack-runtime.js:25:43)
+}
+
+> Build error occurred
+Error: Failed to collect page data for /start
+    at ignore-listed frames {
+  type: 'Error'
+}

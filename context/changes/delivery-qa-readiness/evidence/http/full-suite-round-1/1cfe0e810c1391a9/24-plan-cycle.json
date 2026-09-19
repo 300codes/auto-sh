@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Dependency graph contains a cycle",
+    "code": "cycle",
+    "details": [
+      {
+        "path": "tasks",
+        "code": "cycle",
+        "message": "service-list -> service-filter -> service-list"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "d4c92a2a-6870-4998-ac3e-68436cf33b38"
+}

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "provenance": "fixture",
+  "executionId": "41bb224e-fe8e-4ccf-9203-cb4ca15f4243",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "scope": {
+    "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+    "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+    "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+  },
+  "design": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "action": "applied",
+    "provenance": "fixture",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "beforeHash": "ce90b7c9fefc81fbe2016373abca036b9b756cb8be592148b72ca17c8f68ef62",
+    "afterHash": "69d4f606e2638f2974df2f17fc259063a2a82d60599a1fc3e4c7e7922e21ce8d",
+    "inputHash": "1f516cce3858d4ac117d6fd796bc3bb27962d1bb49d4ac314c768107cb479125",
+    "artifactsHash": "673e3dc57443f6503ad3abe8fe49b689fba7c41401a938a6f4d933c9ec385d82",
+    "approvalVerification": "not_evaluated",
+    "managedPresetCount": 6,
+    "journalRevisionHash": "398112c1272ac54202b7e0200302675c65dd83b0d1fd9e957b610f453a72b5e0",
+    "database": "not_modified"
+  },
+  "enqueue": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "provenance": "local",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "action": "installed",
+    "files": {
+      "functions.php": "d55a1a04a571e5b8206d498cd1ddbc91d8c663d260738b51c97258d7e0cf7b9c",
+      "inc/assets.php": "4e69952bd94a86cdc5e9f3f0ddd8a3eb7d49ee1d49a86c30bbca3d8a1d7c65b4"
+    },
+    "cssPath": "assets/dist/tailwind.css",
+    "hook": "enqueue_block_assets",
+    "urlVersion": "runtime_sha256",
+    "frontend": "not_verified",
+    "editorIframe": "not_verified",
+    "database": "not_modified"
+  },
+  "build": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "provenance": "fixture",
+    "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+    "scope": {
+      "tenantId": "8a55f937-fabd-4238-addd-9c422741fab4",
+      "organizationId": "62b71e4b-9f5c-49df-93d3-4687e37f604d",
+      "projectId": "33ee9f74-37e6-4870-a3bb-c9e4cb08cc54"
+    },
+    "compilation": "real_local_tailwind",
+    "sourceHash": "02a2b9b76364518968c23b554fdee8a7e9c3ffd4ad9940ea7e51e0aa4f7119b1",
+    "sources": [
+      {
+        "path": "functions.php",
+        "sha256": "d55a1a04a571e5b8206d498cd1ddbc91d8c663d260738b51c97258d7e0cf7b9c"
+      },
+      {
+        "path": "inc/assets.php",
+        "sha256": "4e69952bd94a86cdc5e9f3f0ddd8a3eb7d49ee1d49a86c30bbca3d8a1d7c65b4"
+      },
+      {
+        "path": "inc/setup.php",
+        "sha256": "28be3ef8711d8b3397e0fe258ecbbe12c1b3972defc3a08e5d5d17efa4c1b003"
+      },
+      {
+        "path": "parts/footer.html",
+        "sha256": "2e2c910df25beb8d6a11e513fa97d51afc84e13d6dcdc84bf2f03fa78ba63bb1"
+      },
+      {
+        "path": "parts/header.html",
+        "sha256": "0c94e1263229d1984a9762f1ad4c1cb6db51fe8641da184fcde7a831babbcc6e"
+      },
+      {
+        "path": "templates/front-page.html",
+        "sha256": "b5f598e6dbee2cfc130da82fa1d7bdf08a2ba944304d0e2018f1fdc2b927c587"
+      },
+      {
+        "path": "templates/index.html",
+        "sha256": "01c7d43bd1ffeb0d8a02d56dd6c88371f8bb6e93fe07e108762800f2d04dde8d"
+      }
+    ],
+    "output": {
+      "path": "assets/dist/tailwind.css",
+      "sha256": "06c83183e6ef46d7f0f40f8272a57350096eed574a75eed6ac6f79da5b68a1ab",
+      "sizeBytes": 92
+    },
+    "toolchain": {
+      "compiler": {
+        "version": "4.3.3",
+        "entryHash": "8ebfd51c44d6cca0ef675007e97e6aa918944df2b662c2d7bfa50fdfaa98bb64"
+      },
+      "scanner": {
+        "version": "4.3.3",
+        "entryHash": "311f226094e81c0e8d85c6ec02b453b1c0e1239999ae65e78a0d5e02bc005db5"
+      },
+      "defaultThemeHash": "443d7af364200f8ec8352dc78e39485a118a1840d498c97967bf0ae402b39167"
+    },
+    "candidateCount": 75,
+    "preflight": "excluded",
+    "design": {
+      "provenance": "fixture",
+      "approvalVerification": "not_evaluated",
+      "inputHash": "1f516cce3858d4ac117d6fd796bc3bb27962d1bb49d4ac314c768107cb479125",
+      "artifactsHash": "673e3dc57443f6503ad3abe8fe49b689fba7c41401a938a6f4d933c9ec385d82"
+    },
+    "enqueue": "not_run",
+    "browserEditor": "not_run",
+    "preview": "not_published",
+    "database": "not_modified"
+  },
+  "database": "not_modified",
+  "preview": "not_published",
+  "browserFrontend": "not_run",
+  "browserEditor": "not_run",
+  "executionEnvironment": "real owned local Studio site, stopped during preparation",
+  "designInput": "fixture; no design acceptance implied",
+  "compiledSourceHashes": {
+    "packages/delivery-wordpress/dist/prepare-theme.js": "6515c982e866c5466572a567f13bdaa77af7d54c1fb190e1f4061b1fcbf076d1",
+    "packages/delivery-wordpress/dist/theme-assets.js": "ff47e0d345333e8917ce002508ae72afd2d017e4e6544998bd17758dbe8b71c4",
+    "packages/delivery-wordpress/dist/theme-design-apply.js": "6b1f50c52384cd7d83bdd43d81eeaa72592c56c26dc8d361e73230860143994f",
+    "packages/delivery-wordpress/dist/theme-build.js": "c8897eaa6019cc50135b745eab84fdb6b9115de3321fee9ab4de49cea041e5f7"
+  }
+}

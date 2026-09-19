@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 422,
+    "code": "foreign_reference"
+  },
+  "actual": {
+    "status": 422,
+    "body": {
+      "code": "foreign_reference",
+      "details": [
+        {
+          "path": "baselineId",
+          "code": "foreign_baseline"
+        }
+      ]
+    }
+  }
+}

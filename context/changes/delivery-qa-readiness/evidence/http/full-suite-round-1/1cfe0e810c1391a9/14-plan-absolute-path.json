@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Path must be repository-relative without parent segments",
+    "code": "path_not_allowed",
+    "details": [
+      {
+        "path": "tasks.0.allowedPaths.0",
+        "code": "path_not_allowed",
+        "message": "Path must be repository-relative without parent segments"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "d4c92a2a-6870-4998-ac3e-68436cf33b38"
+}

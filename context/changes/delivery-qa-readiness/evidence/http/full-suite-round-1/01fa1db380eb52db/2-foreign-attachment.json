@@ -1,0 +1,15 @@
+{
+  "inputMode": "from_design",
+  "status": 422,
+  "body": {
+    "error": "Attachment is not available in this organization",
+    "code": "attachment_scope_mismatch",
+    "details": [
+      {
+        "path": "screens.0.attachmentId",
+        "code": "attachment_scope_mismatch"
+      }
+    ]
+  },
+  "baselineCount": 0
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "localRequestId": "70a65b3d-476f-489c-ba11-b732c273ca29",
+    "serverRequestId": null,
+    "status": 201,
+    "body": {
+      "evidenceId": "978d21ac-2f4d-4517-ba77-0e7421ce7c36",
+      "duplicate": false,
+      "taskStatus": "awaiting_review",
+      "taskUpdatedAt": "2026-09-19T11:08:56.544Z"
+    }
+  },
+  {
+    "localRequestId": "97f177b8-56ab-4827-a61a-1472c5e82f1e",
+    "serverRequestId": null,
+    "status": 200,
+    "body": {
+      "evidenceId": "978d21ac-2f4d-4517-ba77-0e7421ce7c36",
+      "duplicate": true,
+      "taskStatus": "awaiting_review",
+      "taskUpdatedAt": "2026-09-19T11:08:56.544Z"
+    }
+  }
+]

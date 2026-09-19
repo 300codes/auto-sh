@@ -313,7 +313,8 @@ Podłączenie prawdziwych komend, vertical run z prawdziwym CLI.
 | Phase | Status | Date | Notes |
 |-------|--------|------|-------|
 | Faza 1 — Fixture bridge (Steps 1–9) | Done | 2026-09-19 | All files implemented, build + typecheck + 1985 tests passing |
-| Faza 2 — Live (Steps 10–12) | Not Started | — | Blocked on OSS-04 (Mateusz) + UI-03 (Adam) |
+| UI-03 integration (widget contract) | Done | 2026-09-19 | Merged feature/design-ui; widget updated to ExecutionWidgetContextV1 + refresh wired; 61 suites / 1257 tests green |
+| Faza 2 — Live (Steps 10–12) | Not Started | — | Blocked on OSS-04 (Mateusz) — UI-03 unblocked |
 
 ### Faza 1 — Detailed Progress
 - [x] Step 1: `lib/attemptWorkflow.ts` + `di.ts` (CezarTaskExecutor/FakeTaskExecutor) + `setup.ts` (seedDefaults)

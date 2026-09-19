@@ -25,17 +25,11 @@ import {
   reconcileSelectedBaselineId,
   resolveActiveBaseline,
 } from '@open-mercato/core/modules/delivery_os/components/detail/baselineContent'
-import { BaselineVersionBar } from '@open-mercato/core/modules/delivery_os/components/detail/BaselineVersionBar'
-import { DecisionActions } from '@open-mercato/core/modules/delivery_os/components/detail/DecisionActions'
-import { RequirementsSection } from '@open-mercato/core/modules/delivery_os/components/detail/RequirementsSection'
-import { DesignSection } from '@open-mercato/core/modules/delivery_os/components/detail/DesignSection'
+import { BaselinePanel } from '@open-mercato/core/modules/delivery_os/components/detail/BaselinePanel'
 import { TasksSection } from '@open-mercato/core/modules/delivery_os/components/detail/TasksSection'
 import { EvidenceSection } from '@open-mercato/core/modules/delivery_os/components/detail/EvidenceSection'
 import { ProposalImportDialog } from '@open-mercato/core/modules/delivery_os/components/detail/ProposalImportDialog'
 import { ScreenImportDialog } from '@open-mercato/core/modules/delivery_os/components/detail/ScreenImportDialog'
-import { ScreenComments } from '@open-mercato/core/modules/delivery_os/components/detail/ScreenComments'
-import { FreezeBaselineAction } from '@open-mercato/core/modules/delivery_os/components/detail/FreezeBaselineAction'
-import { readDraftSpec } from '@open-mercato/core/modules/delivery_os/components/detail/draftSpec'
 
 const TASK_QUERY_PARAM = 'taskId'
 const BASELINE_QUERY_PARAM = 'baselineId'
@@ -163,13 +157,13 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
     refreshAllRef.current = async () => { await Promise.all([refreshProject(), reloadSections()]) }
   }, [refreshProject, reloadSections])
 
-  // The draft is the editable surface behind the frozen baselines; the section
-  // renders the baseline, the comment thread edits the draft the next freeze
-  // will carry forward.
-  const draft = React.useMemo(
-    () => (state.status === 'ready' ? readDraftSpec(state.project.draftSpec) : null),
-    [state],
-  )
+  // Every project mutation answers with the next version; taking it from the
+  // response keeps the following request's header current without waiting for
+  // the refetch it also triggers.
+  const onMutated = React.useCallback((projectUpdatedAt: string) => {
+    setProjectVersion(projectUpdatedAt)
+    void refreshAllRef.current()
+  }, [])
 
   const activeBaselineKind = sections.baselines.status === 'ready'
     ? resolveActiveBaseline(sections.baselines.data).kind
@@ -211,74 +205,20 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
           context={widgetContext ?? state.context}
         />
         <div className="space-y-6">
-          <BaselineVersionBar
-            baselines={sections.baselines.status === 'ready' ? sections.baselines.data : []}
-            selectedId={selectedBaselineId}
-            onSelect={selectBaseline}
-          />
-          <RequirementsSection
-            state={sections.baselines}
+          <BaselinePanel
+            projectId={params.id}
+            baselines={sections.baselines}
             selectedBaselineId={selectedBaselineId}
-            onRetry={() => void sections.reloadBaselines()}
-            action={canImport ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                data-testid="delivery-import-requirements"
-                onClick={() => setImportOpen(true)}
-              >
-                {t('delivery_os.project.import.requirements.action')}
-              </Button>
-            ) : null}
-            decisionFor={canApprove ? (baseline) => (
-              <DecisionActions
-                kind="requirements"
-                baseline={baseline}
-                projectUpdatedAt={projectVersion}
-                onDecided={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
-              />
-            ) : undefined}
-          />
-          <DesignSection
-            state={sections.baselines}
-            selectedBaselineId={selectedBaselineId}
-            onRetry={() => void sections.reloadBaselines()}
-            action={canManage ? (
-              <span className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  data-testid="delivery-add-screen"
-                  onClick={() => setScreenOpen(true)}
-                >
-                  {t('delivery_os.project.screens.action')}
-                </Button>
-                <FreezeBaselineAction
-                  projectId={params.id}
-                  projectUpdatedAt={projectVersion}
-                  onFrozen={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
-                />
-              </span>
-            ) : null}
-            commentsFor={canManage ? (screenAttachmentId) => (
-              <ScreenComments
-                projectId={params.id}
-                projectUpdatedAt={projectVersion}
-                draft={draft?.ok ? draft.draft : null}
-                screenAttachmentId={screenAttachmentId}
-                onSaved={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
-              />
-            ) : undefined}
-            decisionFor={canApprove ? (baseline) => (
-              <DecisionActions
-                kind="design"
-                baseline={baseline}
-                projectUpdatedAt={projectVersion}
-                onDecided={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
-              />
-            ) : undefined}
+            onSelectBaseline={selectBaseline}
+            onRetryBaselines={() => void sections.reloadBaselines()}
+            projectVersion={projectVersion}
+            draftSpec={state.project.draftSpec}
+            canImport={canImport}
+            canManage={canManage}
+            canApprove={canApprove}
+            onImportRequirements={() => setImportOpen(true)}
+            onAddScreen={() => setScreenOpen(true)}
+            onMutated={onMutated}
           />
           <TasksSection
             state={sections.tasks}
@@ -300,6 +240,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
             ) : null}
           />
           <EvidenceSection
+            projectId={params.id}
             progress={state.project.progress}
             taskCounts={state.project.taskCounts}
             attention={state.project.attention}
@@ -313,7 +254,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
         onOpenChange={setImportOpen}
         projectId={params.id}
         projectUpdatedAt={projectVersion}
-        onImported={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
+        onImported={onMutated}
       />
       <ProposalImportDialog
         open={planOpen}
@@ -321,14 +262,14 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
         variant="plan"
         projectId={params.id}
         projectUpdatedAt={projectVersion}
-        onImported={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
+        onImported={onMutated}
       />
       <ScreenImportDialog
         open={screenOpen}
         onOpenChange={setScreenOpen}
         projectId={params.id}
         projectUpdatedAt={projectVersion}
-        onSaved={(updatedAt) => { setProjectVersion(updatedAt); void refreshAllRef.current() }}
+        onSaved={onMutated}
       />
     </Page>
   )

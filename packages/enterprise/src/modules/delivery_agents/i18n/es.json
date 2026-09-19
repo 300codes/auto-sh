@@ -1,0 +1,12 @@
+{
+  "delivery_agents.widget.cancel.ariaLabel": "Cancelar el intento de ejecución",
+  "delivery_agents.widget.cancel.cancelling": "Cancelando…",
+  "delivery_agents.widget.cancel.failed": "No se pudo cancelar",
+  "delivery_agents.widget.cancel.label": "Cancelar",
+  "delivery_agents.widget.cancel.requested": "Cancelación solicitada",
+  "delivery_agents.widget.execute.ariaLabel": "Ejecutar la tarea de entrega mediante Cezar",
+  "delivery_agents.widget.execute.failed": "La ejecución falló",
+  "delivery_agents.widget.execute.label": "Ejecutar",
+  "delivery_agents.widget.execute.started": "Ejecución iniciada",
+  "delivery_agents.widget.execute.starting": "Iniciando…"
+}

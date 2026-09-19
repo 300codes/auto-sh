@@ -1,0 +1,19 @@
+{
+  "command": "node node_modules/jest/bin/jest.js --config packages/shared/jest.config.cjs --runInBand --runTestsByPath packages/shared/src/lib/commands/__tests__/registry.test.ts packages/shared/src/lib/bootstrap/__tests__/factory.test.ts",
+  "before": {
+    "failed": 2,
+    "passed": 9,
+    "total": 11
+  },
+  "after": {
+    "passed": 15,
+    "failed": 0,
+    "suites": 2
+  },
+  "sourceHashes": {
+    "packages/shared/src/lib/commands/registry.ts": "db82c436ba42f31b668ce285b4e30f33894196b32e936778d806475e99e73c21",
+    "packages/shared/src/lib/commands/__tests__/registry.test.ts": "55bfec7dd9cad3e305f5b2371cc9dfb40370f803ac8c809035d4768015b76e80",
+    "packages/shared/src/lib/bootstrap/__tests__/factory.test.ts": "d48c15ba4a36ad57c4d8e846d5c490a03aeeca7fccc2de6638149bfe277c79e3"
+  },
+  "provenance": "real command registry within mocked bootstrap dependencies; api/full both orders"
+}

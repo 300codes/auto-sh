@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 422,
+    "code": "path_not_allowed"
+  },
+  "actual": {
+    "status": 422,
+    "body": {
+      "code": "path_not_allowed",
+      "details": [
+        {
+          "path": "0",
+          "code": "outside_profile_roots"
+        }
+      ]
+    }
+  }
+}

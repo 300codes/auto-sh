@@ -1,0 +1,9 @@
+
+Running 4 tests using 1 worker
+
+  ✓  1 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts:66:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › scopes real actors and cleans a reserved manual attempt without changing another fixture (12.7s)
+  ✓  2 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts:146:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › cleans every registered resource after setup fails midway (2.2s)
+  ✓  3 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts:66:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › scopes real actors and cleans a reserved manual attempt without changing another fixture (12.6s)
+  ✓  4 packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts:146:3 › TC-DELIVERY-FIXTURE-001: isolated fixture lifecycle › cleans every registered resource after setup fails midway (2.9s)
+
+  4 passed (36.6s)

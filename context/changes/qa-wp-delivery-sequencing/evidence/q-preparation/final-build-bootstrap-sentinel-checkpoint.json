@@ -1,0 +1,148 @@
+{
+  "status": "build_bootstrap_sentinel_passed_http_in_progress",
+  "head": "68361d16342074eb5b3a1c57f86187f428509aca",
+  "sourceFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+  "buildLatest": {
+    "at": "2026-09-19T15:44:03.210012+00:00",
+    "step": 8,
+    "command": "Next build --webpack with NODE_OPTIONS heap7168 (same full Next TS)",
+    "exitCode": 0,
+    "seconds": 356.14047561999973,
+    "sourceFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+    "afterFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+    "sourceChanged": false,
+    "status": "passed",
+    "log": "resume-20260919T153805571901Z-8.log",
+    "resourceInterrupted": false,
+    "validationScope": "final_source_build_prerequisite",
+    "fullOrderedGate": "not_passed",
+    "skippedSteps": [
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "buildProfile": {
+    "enterpriseModules": true,
+    "enterpriseAgents": true,
+    "heapMiB": 7168,
+    "containerGiB": 9,
+    "nextFullTypeScript": "passed",
+    "ignoreBuildErrors": false
+  },
+  "fullOrderedGate": "not_passed",
+  "bootstrapSteps": [
+    {
+      "at": "2026-09-19T15:44:29.185283+00:00",
+      "step": "import-smoke",
+      "exitCode": 0
+    },
+    {
+      "at": "2026-09-19T15:45:44.803442+00:00",
+      "step": "bootstrap",
+      "exitCode": 0
+    },
+    {
+      "at": "2026-09-19T15:45:44.956970+00:00",
+      "step": "app_started",
+      "hostChildPid": 36210,
+      "ownerContainerId": "7406885c54f990cde4e26f3f17aaab3638f6c0d1642e42366553bcb908cf8744"
+    }
+  ],
+  "artifactProof": [
+    {
+      "at": "2026-09-19T15:44:28.247057+00:00",
+      "stage": "before-bootstrap",
+      "buildId": "EES5WTgfApvWszBdOs43z",
+      "files": [
+        {
+          "path": "next/BUILD_ID",
+          "sha256": "25bce0101e56e223835f5850c391a4c97f063544d7aa4ebbaa47a8bfbebe0c77"
+        },
+        {
+          "path": "generated/modules.generated.ts",
+          "sha256": "10df2775f4cc4933651f23ec1e5c500ae941ed12d0103522077985115ec0cf33"
+        },
+        {
+          "path": "generated/modules.app.generated.ts",
+          "sha256": "b67647ac448a492fc3111d0b9375c8e65fda9602bb09c8b234bb7957fc8faa76"
+        },
+        {
+          "path": "generated/modules.bootstrap.generated.ts",
+          "sha256": "c8839a1599f4fba75619c73d71d4d5f2a7eb2a8ef1f3cceedf5701f3e434f160"
+        },
+        {
+          "path": "generated/modules.cli.generated.ts",
+          "sha256": "ba88770f6ea48f0bfb6e0888dc5d221ab2d7f063de306857a87a18b1e7d62805"
+        },
+        {
+          "path": "generated/modules.runtime.generated.ts",
+          "sha256": "661ec4de2aa36730acd414ff15279c5ca4e6ba7c823e8a77eecbdf187d17e70c"
+        }
+      ],
+      "deliveryOsIncluded": true,
+      "enterpriseAgentsIncluded": true,
+      "agentOrchestratorIncluded": true,
+      "provenance": "isolated-q-build"
+    },
+    {
+      "at": "2026-09-19T15:45:44.955749+00:00",
+      "stage": "after-bootstrap",
+      "buildId": "EES5WTgfApvWszBdOs43z",
+      "files": [
+        {
+          "path": "next/BUILD_ID",
+          "sha256": "25bce0101e56e223835f5850c391a4c97f063544d7aa4ebbaa47a8bfbebe0c77"
+        },
+        {
+          "path": "generated/modules.generated.ts",
+          "sha256": "10df2775f4cc4933651f23ec1e5c500ae941ed12d0103522077985115ec0cf33"
+        },
+        {
+          "path": "generated/modules.app.generated.ts",
+          "sha256": "b67647ac448a492fc3111d0b9375c8e65fda9602bb09c8b234bb7957fc8faa76"
+        },
+        {
+          "path": "generated/modules.bootstrap.generated.ts",
+          "sha256": "c8839a1599f4fba75619c73d71d4d5f2a7eb2a8ef1f3cceedf5701f3e434f160"
+        },
+        {
+          "path": "generated/modules.cli.generated.ts",
+          "sha256": "ba88770f6ea48f0bfb6e0888dc5d221ab2d7f063de306857a87a18b1e7d62805"
+        },
+        {
+          "path": "generated/modules.runtime.generated.ts",
+          "sha256": "661ec4de2aa36730acd414ff15279c5ca4e6ba7c823e8a77eecbdf187d17e70c"
+        }
+      ],
+      "deliveryOsIncluded": true,
+      "enterpriseAgentsIncluded": true,
+      "agentOrchestratorIncluded": true,
+      "provenance": "isolated-q-build"
+    }
+  ],
+  "sentinel": {
+    "ok": true,
+    "projects": 1,
+    "allOtherCounts": 0,
+    "cleanupResources": 5,
+    "cleanupFailures": 0,
+    "unmanagedMutations": 0
+  },
+  "fixtureRepeat": {
+    "passed": 4,
+    "planned": 4,
+    "durationSeconds": 34.4
+  },
+  "domainHttp": {
+    "planned": 84,
+    "status": "running_with_failures",
+    "firstObservedCause": "upstream admin helper uses hardcoded demo credentials while dedicated production-mode bootstrap uses explicit/random credentials; final assertion reports pending"
+  },
+  "url": "http://localhost:5001/login",
+  "loginHttpStatus": 200,
+  "workerAutoStart": false,
+  "execTestsRun": false,
+  "physicalCleanup": "pending_environment_disposal"
+}

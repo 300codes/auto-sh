@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "studioSiteId": "2b27bf16-b421-4968-b915-ef5a472c5345",
+  "registeredOwnerMatched": true,
+  "targetPluginsAbsent": true,
+  "noindexUnchanged": true,
+  "stopCommandSucceeded": true,
+  "lockRetained": false,
+  "reason": "private_host_archive_not_mounted_in_studio_sandbox",
+  "operatorReconciliationCompleted": true,
+  "siteConfirmedStopped": true,
+  "checkedAt": "2026-09-19T11:58:00.317975+00:00"
+}

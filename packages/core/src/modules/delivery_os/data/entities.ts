@@ -369,6 +369,15 @@ export class DeliveryDecision {
   @Property({ name: 'source_revision', type: 'jsonb', nullable: true })
   sourceRevision?: SourceRevision | null
 
+  @Property({ name: 'release_candidate_id', type: 'uuid', nullable: true })
+  releaseCandidateId?: string | null
+
+  @Property({ name: 'release_candidate_version', type: 'integer', nullable: true })
+  releaseCandidateVersion?: number | null
+
+  @Property({ name: 'candidate_context_hash', type: 'text', nullable: true })
+  candidateContextHash?: string | null
+
   @Property({ type: 'text' })
   verdict!: DeliveryDecisionVerdict
 
@@ -811,6 +820,45 @@ export class DeliveryPublication {
 
   @Property({ name: 'recorded_by', type: 'uuid', nullable: true })
   recordedBy?: string | null
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_release_candidates' })
+@Unique({ name: 'delivery_release_candidates_project_version_uq', properties: ['tenantId', 'organizationId', 'projectId', 'version'] })
+export class DeliveryReleaseCandidate {
+  [OptionalProps]?: 'createdAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ type: 'integer' })
+  version!: number
+
+  @Property({ name: 'baseline_id', type: 'uuid' })
+  baselineId!: string
+
+  @Property({ name: 'baseline_hash', type: 'text' })
+  baselineHash!: string
+
+  @Property({ name: 'source_revision', type: 'jsonb' })
+  sourceRevision!: SourceRevision
+
+  @Property({ name: 'evidence_ids', type: 'jsonb' })
+  evidenceIds!: string[]
+
+  @Property({ name: 'created_by', type: 'uuid' })
+  createdBy!: string
 
   @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
   createdAt: Date = new Date()

@@ -1,0 +1,44 @@
+{
+  "case": "malformed manifest",
+  "status": 400,
+  "body": {
+    "error": "Validation failed",
+    "code": "validation_failed",
+    "details": [
+      {
+        "path": "checks",
+        "code": "invalid_type",
+        "message": "Invalid input: expected array, received string"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "a6b40672-4296-4629-9ac6-1b79ae78b89c",
+  "taskId": "34cd4532-bfb1-4e28-9c1c-90978985ba09",
+  "attemptId": "7a30eaee-7966-4739-8837-3011a3c6b01a",
+  "baselineId": "926cd009-3ded-48e9-8ca7-a3a83edd0e0e",
+  "baselineHash": "22214768e2a7ae5b914f639d0be0064c5cf6ba694671f13c9f2d31ced1eb111a"
+}

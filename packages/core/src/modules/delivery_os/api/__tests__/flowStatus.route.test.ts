@@ -252,10 +252,10 @@ describe('GET /projects/:id/flow (F6)', () => {
     const before = structuredClone(routeState.store)
     for (const method of EM_WRITE_METHODS) em[method].mockClear()
     const status = await createDeliveryOsFlowQueries(em as never).flowStatus(PROJECT_ID, QUERY_SCOPE)
-    const report = await createDeliveryOsReportQueries(em as never).buildReport(QUERY_SCOPE, PROJECT_ID, { includeFlow: true })
+    const reportError = await catchHttpError(() => createDeliveryOsReportQueries(em as never).buildReport(QUERY_SCOPE, PROJECT_ID))
     expect(status.gates.dispatchable.ok).toBe(false)
     expect(status.gates.publishable.ok).toBe(false)
-    expect(report.flow?.gate.ok).toBe(false)
+    expect({ status: reportError.status, code: reportError.body.code }).toEqual({ status: 422, code: 'flow_template_hash_mismatch' })
     expectNoWrites()
     expect(routeState.writes).toBe(0)
     expect(routeState.store).toEqual(before)
@@ -359,7 +359,7 @@ async function expectFlowGateRefusal(response: Response): Promise<void> {
 }
 
 describe('frozen v1 routes on a pinned project without approved stages (C21, UA-48)', () => {
-  it('refuses task ready, attempt reserve and the deploy decision with 422 baseline_not_approved and stage details', async () => {
+  it('refuses task ready and attempt reserve with 422 baseline_not_approved and stage details, and the deploy decision without a release candidate', async () => {
     seedPinnedProjectWithClosedGate()
     const projectLock = (routeState.store.projects[0].updatedAt as Date).toISOString()
 
@@ -367,7 +367,7 @@ describe('frozen v1 routes on a pinned project without approved stages (C21, UA-
       await UPDATE_TASK(apiRequest('PUT', '/tasks', { body: { id: DRAFT_TASK_ID, status: 'ready' }, lock: UPDATED_AT })),
     )
     await expectFlowGateRefusal(await reserve({ key: 'flow-gate-v1-edge' }))
-    await expectFlowGateRefusal(
+    const deploy = await expectStatus(
       await DEPLOY(
         apiRequest('POST', `/projects/${PROJECT_ID}/deploy-decisions`, {
           body: { baselineId: BASELINE_ID, sourceRevision: REVISION, verdict: 'approved' },
@@ -375,7 +375,9 @@ describe('frozen v1 routes on a pinned project without approved stages (C21, UA-
         }),
         routeParams(PROJECT_ID),
       ),
+      422,
     )
+    expect(deploy.code).toBe('release_candidate_required')
 
     expect(routeState.store.tasks.map((task) => task.status)).toEqual(['ready', 'draft'])
     expect(routeState.store.tasks[0].executionAttempts).toEqual([])

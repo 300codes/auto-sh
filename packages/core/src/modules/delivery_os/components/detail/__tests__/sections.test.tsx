@@ -7,6 +7,7 @@ import { RequirementsSection } from '../RequirementsSection'
 import { DesignSection } from '../DesignSection'
 import { TasksSection } from '../TasksSection'
 import { EvidenceSection } from '../EvidenceSection'
+
 import { resolveActiveBaseline } from '../baselineContent'
 import type { SectionSource } from '../useProjectSections'
 
@@ -306,9 +307,10 @@ describe('evidence section', () => {
     expect(screen.getByText('delivery_os.project.sections.evidence.declaredTests')).toBeTruthy()
   })
 
-  it('names the missing read endpoint rather than implying there is no evidence', () => {
+  it('links the project summary to its report', () => {
     render(
       <EvidenceSection
+        projectId="project-report"
         progress={progressWithoutCriteria}
         taskCounts={{}}
         attention={noAttention}
@@ -316,16 +318,12 @@ describe('evidence section', () => {
         onRetry={() => undefined}
       />,
     )
-    const notice = screen.getByTestId('delivery-evidence-list-unavailable')
-    expect(notice.textContent).toContain('delivery_os.project.sections.evidence.listUnavailableDescription')
+    expect(screen.getByTestId('delivery-report-link').getAttribute('href')).toBe('/backend/delivery/projects/project-report/report')
   })
 })
 
-describe('three empty states stay disjoint', () => {
-  // Comparing whole SECTIONS would pass even if all three empty states said the
-  // same thing, because the section headings differ on their own. Compare the
-  // empty-state nodes themselves.
-  it('uses a different message for no baseline, no tasks and no evidence endpoint', () => {
+describe('project empty states stay disjoint', () => {
+  it('uses different messages for no baseline and a baseline without tasks', () => {
     const noBaseline = render(
       <RequirementsSection state={ready<BaselineDto[]>([])} onRetry={() => undefined} />,
     ).getByTestId('delivery-requirements-section-empty').textContent ?? ''
@@ -339,23 +337,11 @@ describe('three empty states stay disjoint', () => {
         onRetry={() => undefined}
       />,
     ).getByTestId('delivery-tasks-empty').textContent ?? ''
-    const noEvidenceEndpoint = render(
-      <EvidenceSection
-        progress={{ proven: 0, total: 0, unit: 'ac', percent: null }}
-        taskCounts={{}}
-        attention={noAttention}
-        baselines={ready([baseline()])}
-        onRetry={() => undefined}
-      />,
-    ).getByTestId('delivery-evidence-list-unavailable').textContent ?? ''
 
     expect(noBaseline).toContain('delivery_os.project.sections.baselines.none.title')
     expect(noTasks).toContain('delivery_os.project.sections.tasks.empty.baselineWithoutTasks')
-    expect(noEvidenceEndpoint).toContain('delivery_os.project.sections.evidence.listUnavailable')
-    for (const text of [noBaseline, noTasks, noEvidenceEndpoint]) expect(text.length).toBeGreaterThan(0)
+    for (const text of [noBaseline, noTasks]) expect(text.length).toBeGreaterThan(0)
     expect(noBaseline).not.toBe(noTasks)
-    expect(noTasks).not.toBe(noEvidenceEndpoint)
-    expect(noBaseline).not.toBe(noEvidenceEndpoint)
   })
 })
 

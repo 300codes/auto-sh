@@ -1,0 +1,36 @@
+{
+  "inputMode": "from_brief",
+  "projectId": "933ae536-1170-4990-b8bc-17d430e33b76",
+  "requirementsManifestId": "requirements-2e4deb45-4266-45d9-b0fe-58c0a3f0c1ea",
+  "planManifestId": "plan-bb491603-a531-4ab1-b5d4-16c2bcffe5a4",
+  "originalBaseline": {
+    "baselineId": "3b0c5fbb-3f4f-487f-b814-1cb82c9d68ac",
+    "version": 1,
+    "contentHash": "f90f69326cfd3d48aad746c5f661156a2b2ff749caeaa7e4044308d9afe81767",
+    "duplicate": false,
+    "openCommentIds": [],
+    "projectUpdatedAt": "2026-09-19T11:07:42.095Z"
+  },
+  "mergedBaseline": {
+    "baselineId": "10e831bf-d9c8-4db5-b2ca-46d64a5e0df0",
+    "version": 2,
+    "contentHash": "ac4470931671fae3d49503a01e21dcd868bf6b080f3bc6f8076f817868bdfbe7",
+    "duplicate": false,
+    "tasks": [
+      {
+        "id": "813f3934-b896-4b2b-9ee6-b2588a81f9d1",
+        "proposalTaskKey": "service-list",
+        "updatedAt": "2026-09-19T11:07:42.710Z"
+      },
+      {
+        "id": "511adb4f-9fa6-4d43-b36b-944670daf717",
+        "proposalTaskKey": "service-filter",
+        "updatedAt": "2026-09-19T11:07:42.710Z"
+      }
+    ],
+    "projectUpdatedAt": "2026-09-19T11:07:42.710Z"
+  },
+  "taskId": "813f3934-b896-4b2b-9ee6-b2588a81f9d1",
+  "attemptId": "4f98abfe-f891-4669-a47e-27ab90731276",
+  "provenance": "http-fixture"
+}

@@ -1,0 +1,14 @@
+{
+  "expected": {
+    "status": 409,
+    "code": "optimistic_lock_conflict"
+  },
+  "actual": {
+    "status": 409,
+    "body": {
+      "code": "optimistic_lock_conflict",
+      "currentUpdatedAt": "2026-09-19T11:08:03.518Z",
+      "expectedUpdatedAt": "2026-09-19T11:08:03.355Z"
+    }
+  }
+}

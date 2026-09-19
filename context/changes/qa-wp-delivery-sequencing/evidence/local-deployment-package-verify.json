@@ -1,0 +1,34 @@
+{
+  "executedAt": "2026-09-19T13:52:36.694Z",
+  "runner": "v24.13.1",
+  "sourceHash": "6b1659e912bfbe942cbaca50ad7362b23449ab2290a0ccad36d5ca4ac581560d",
+  "packageCapture": "local-deployment-package.json",
+  "acceptanceBoundary": "Technical saved-package verification; not final release or remote proof",
+  "schemaVersion": 1,
+  "status": "passed",
+  "provenance": "local",
+  "siteId": "84a8f204e5febd71dfd2cb51135529e7b578e3304b43ba6ecf25852bf19bbed8",
+  "packageId": "6e6e1e39-8d54-4fd8-bbe4-02ca508a3727",
+  "packageHash": "0d2b725192c60663f09e98da8ef46baf2daeae9b832588b29fef90ce9bba020c",
+  "fileCount": 3725,
+  "totalBytes": 66951346,
+  "verification": "saved_package_bytes_only",
+  "publication": "not_authorized",
+  "remoteRevision": "not_verified",
+  "runtimeIdentity": {
+    "wordpressVersion": "7.1.1",
+    "phpVersion": "8.4.23",
+    "studioVersion": "1.19.0",
+    "verification": "operator_declared"
+  },
+  "checks": {
+    "databaseSecrets": "not_evaluated",
+    "publicContentApproval": "not_evaluated",
+    "pluginLicensing": "not_evaluated"
+  },
+  "configPolicy": {
+    "wpConfig": "omitted",
+    "coreRuntime": "host_provided",
+    "hostSubstitution": "requires_verification"
+  }
+}

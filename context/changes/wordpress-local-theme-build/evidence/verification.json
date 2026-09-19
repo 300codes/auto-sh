@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "provenance": "fixture",
+  "status": "passed",
+  "runner": "local Node 24.13.1; native subprocess tests outside sandbox",
+  "toolchainScope": "private dev toolchain exact existing yarn.lock compiler/scanner versions; no production/repository dependency changes",
+  "toolchain": {
+    "compiler": {
+      "version": "4.3.3",
+      "entryHash": "8ebfd51c44d6cca0ef675007e97e6aa918944df2b662c2d7bfa50fdfaa98bb64"
+    },
+    "scanner": {
+      "version": "4.3.3",
+      "entryHash": "311f226094e81c0e8d85c6ec02b453b1c0e1239999ae65e78a0d5e02bc005db5"
+    },
+    "defaultThemeHash": "443d7af364200f8ec8352dc78e39485a118a1840d498c97967bf0ae402b39167"
+  },
+  "packageTests": {
+    "command": "WP_TAILWIND_TOOLCHAIN_ROOT=<private-toolchain> npm test",
+    "cwd": "packages/delivery-wordpress",
+    "passed": 93,
+    "failed": 0,
+    "skipped": 0
+  },
+  "focusedBuilderTests": 11,
+  "typecheck": {
+    "command": "npm run typecheck",
+    "exitCode": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "exitCode": 0
+  },
+  "compiledWorkerSmoke": {
+    "status": "passed",
+    "generatedSelectors": [
+      ".flex",
+      ".p-4",
+      ".grid",
+      ".font-bold"
+    ],
+    "sha256": "bf99b91c349ca14663eb53ca0d8cff1672d70563138cd42b10c6ad64b9695d44"
+  },
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/theme-build.ts": "f9c133a0aaca95a173108ebc10f7ca942ae5317e3e6b215cdfa45c5da9ae0bf2",
+    "packages/delivery-wordpress/src/__tests__/theme-build.test.ts": "c53eaf35a077dd3b9194f06008573505dd0a4bc486499a6bfc114e1d92ec5f06",
+    "packages/delivery-wordpress/src/design-tokens.ts": "cbdc10de73264a2a57c594845929bf647294de912e210caacb17c697f4e8f6c0"
+  },
+  "logHashes": {
+    "build.log": "c3aec988c0d19d574f2f4b5862f3363745def0aee74373de069f31c496999f05",
+    "typecheck.log": "709ee0367dd71d4a7587682dd1ddecd5ee55dd49437892c4431c5668a914824e",
+    "tests.log": "3dee7a6f7750bca9204b67599b4d5365adb87585bfe4d64406f579eb4f517fe1"
+  },
+  "scope": {
+    "actualStudioBuild": "passed: see local-site-build.json and built-site-snapshot.json",
+    "enqueue": "not_run",
+    "browserEditor": "not_run",
+    "preview": "not_published",
+    "fullWP01": "not_accepted"
+  },
+  "budget": {
+    "measuredInterval": "2026-09-19T12:05:52Z/2026-09-19T12:10:54Z",
+    "measuredMinutes": 5.03,
+    "initialResearchUnmeasured": true,
+    "conservativeChargeMinutes": 10,
+    "parentOwnsSharedBudget": true
+  },
+  "limitations": [
+    "Toolchain entry hashes do not attest transitive native/compiler files",
+    "Sandbox nested subprocess output was empty; final native test run completed outside sandbox",
+    "Fixtures compiled actual PHP/HTML/JS utility candidates; no runtime CDN or theme code execution"
+  ],
+  "toolchainLocation": "private operator configuration; not included in public evidence",
+  "localSiteEvidence": {
+    "build": "local-site-build.json",
+    "snapshot": "built-site-snapshot.json",
+    "generatedCssIncluded": true,
+    "siteRemainsStopped": true,
+    "frontendEnqueue": "not_run"
+  }
+}

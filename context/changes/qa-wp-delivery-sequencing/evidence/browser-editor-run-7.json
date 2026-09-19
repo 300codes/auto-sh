@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "639e3d6d-b33c-48c1-aece-064d8137b6b1",
+  "journalBeforeHash": "2d7607261caa8e3014642eb78d3369ca8f082f3749c5f68ae7cd03a6c39ec327",
+  "runtimeBefore": {
+    "running": false
+  },
+  "footerIds": [
+    128
+  ],
+  "actorPostIds": [
+    124,
+    125,
+    126,
+    127,
+    128
+  ],
+  "actorIdentityVerified": true,
+  "footerPredicatesVerified": true,
+  "run": 7,
+  "result": "interrupted_host_failure",
+  "lastCheckpoint": "native_prepare",
+  "cleanup": "passed",
+  "acceptance": "not_run",
+  "ownedDependencySymlinkRemoved": true
+}

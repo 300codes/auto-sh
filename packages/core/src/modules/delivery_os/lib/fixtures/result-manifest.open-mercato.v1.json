@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "delivery.result-manifest/v1",
+  "projectId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "taskId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "attemptId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "baselineId": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "baselineHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "targetProfileVersion": 1,
+  "externalRunId": "manual-poc-run-open-mercato-001",
+  "baseRevision": {
+    "kind": "git",
+    "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+  },
+  "resultRevision": {
+    "kind": "git",
+    "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+  },
+  "baseCommit": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1",
+  "resultCommit": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1",
+  "changedPaths": [],
+  "artifacts": [
+    {
+      "path": "packages/core/src/modules/delivery_os/lib/__tests__/jest-report.json",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "checks": [
+    {
+      "checkId": "unit-tests-1",
+      "testId": "open-mercato-module AC-OM-001: profile validates against schema",
+      "acIds": ["AC-OM-001"],
+      "commandProfileId": "jest-module",
+      "validationProfileVersion": 1,
+      "testDefinitionHash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "rawReportHash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3200,
+      "sourceRevision": {
+        "kind": "git",
+        "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+      }
+    },
+    {
+      "checkId": "unit-tests-2",
+      "testId": "open-mercato-module AC-OM-002: OM profile uses git revision",
+      "acIds": ["AC-OM-002"],
+      "commandProfileId": "jest-module",
+      "validationProfileVersion": 1,
+      "testDefinitionHash": "3333333333333333333333333333333333333333333333333333333333333333",
+      "rawReportHash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3200,
+      "sourceRevision": {
+        "kind": "git",
+        "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+      }
+    },
+    {
+      "checkId": "typecheck",
+      "testId": "typecheck",
+      "acIds": [],
+      "commandProfileId": "typecheck",
+      "validationProfileVersion": 1,
+      "testDefinitionHash": "5555555555555555555555555555555555555555555555555555555555555555",
+      "rawReportHash": "6666666666666666666666666666666666666666666666666666666666666666",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 18000,
+      "sourceRevision": {
+        "kind": "git",
+        "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+      }
+    },
+    {
+      "checkId": "dependency-audit",
+      "testId": "dependency-audit",
+      "acIds": [],
+      "commandProfileId": "yarn-audit",
+      "validationProfileVersion": 1,
+      "testDefinitionHash": "7777777777777777777777777777777777777777777777777777777777777777",
+      "rawReportHash": "8888888888888888888888888888888888888888888888888888888888888888",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 4100,
+      "sourceRevision": {
+        "kind": "git",
+        "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+      }
+    }
+  ],
+  "agentDeclaration": {
+    "summary": "Manual PoC run: yarn jest + yarn typecheck + yarn npm audit --severity high on delivery_os lib",
+    "claimedAcIds": ["AC-OM-001", "AC-OM-002"]
+  },
+  "findings": [],
+  "usage": {
+    "source": "manual",
+    "values": "unknown"
+  }
+}

@@ -10,7 +10,7 @@
 
 ## Kroki
 
-1. F0: probe Studio, świeża witryna i motyw, snapshot, możliwości wykonania kodu i kontroli. Oddzielnie zapisz konkretny cel publikacji, dostęp i sposób sprawdzenia URL. Brak celu/dostępu oznacza blocker publikacji, nie gotowe demo. Podaj estymatę rozszerzenia; dawny limit 6 h nie daje automatycznej zgody na więcej pracy.
+1. F0: probe Studio, świeża witryna i motyw, snapshot, możliwości wykonania kodu i kontroli. Oddzielnie zapisz konkretny cel publikacji, dostęp i sposób sprawdzenia URL. Brak celu/dostępu oznacza blocker publikacji, nie gotowe demo. Użytkownik zniósł cap WP: kontynuujemy wszystkie niezależne lokalne prace do bramki kodu zespołu; estymaty pozostają orientacyjne.
 2. Uzupełnij spec WP o implementację zatwierdzonego designu i publikację — obecny pakiet create/status/start/stop/captureSnapshot nie zapewnia całej ścieżki. Ustal ograniczony, typowany adapter deploy dla wybranego celu, credential refs, scope, retry, weryfikację rewizji i procedurę odzyskania/rollback. Nie dodawaj dowolnego shella ani starego orchestratora jako zależności.
 3. Z Marcinem wykonaj OM→WP→OM na aktualnym baseline: zapis przed/po, rzeczywiste checks, ResultManifest, review/poprawka i ponowna walidacja. Retry istniejącego projektu używa jego handle, nie tworzy kolejnej witryny. Timeout nie daje automatycznego ponowienia side effect.
 4. Testuj cały zestaw FLOW-01…09 z dodatku. Deterministyczne integration przy API/UI shipping razem z funkcją; live Figma/Studio osobno z jawną provenance. Izolacja tenant/org, ACL, konflikty, stale approvals i retry mają testy negatywne.
@@ -35,3 +35,21 @@ Do wyniku F4 dołącz WP-01…05: build/clean code, mapowanie tokenów, aktywne 
 Czytaj [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) oraz [README](README.md). Kierunek z dodatku ma pierwszeństwo nad wcześniejszym React-first/WP-PoC. To zadania do wykonania, nie raport ukończenia. Zachowaj istniejące zmiany innych osób. Nie zmieniaj samodzielnie zamrożonych DTO v1 ani kontraktów innego właściciela.
 
 Przekazanie: commit SHA, lista plików, wersja kontraktu/fixture, wykonane testy i runner, dowody oraz jawne blockery. Testy integracyjne danej funkcji dostarcz razem z nią; nie odkładaj ich na końcowy QA. Generacja po zmianach auto-discovery. Migracje przygotuj z snapshotem, nie aplikuj ich bez zgody. Nie wprowadzaj sekretów do artefaktów.
+
+## Aktualizacja zakresu demo — Polylang Free
+
+Decyzja użytkownika z 2026-09-19: tłumaczenia odroczone poza demo. Polylang Free
+pozostaje wybraną wtyczką; nie wymagamy drugiego języka ani integracji tłumaczeń ACF
+na odbiór demo. Ten zakres ma status deferred_by_user, nie PASS ani blocker.
+Edycja treści/ACF/SEO w jednym języku oraz zachowanie treści i Global Styles po
+redeploy nadal należą do odbioru. To doprecyzowanie zastępuje wcześniejsze wymaganie
+wielojęzycznego probe przed demo.
+
+## Doprecyzowanie użytkownika: build lokalny przed Preview
+
+Cała instalacja, konfiguracja, build i testy odbywają się lokalnie. Dopiero gotowa,
+zweryfikowana i zatwierdzona rewizja/snapshot trafia do Studio Preview jako deployment.
+Na Preview nie instalujemy wtyczek ani zależności i nie uruchamiamy builda; wykonujemy
+odczytową weryfikację wysłanej rewizji. Poprawki przygotowujemy lokalnie i wysyłamy jako
+kolejny deployment po lokalnych kontrolach. Obecny probe F0 działa wyłącznie lokalnie;
+nie jest dowodem pełnego builda systemu ani wykonanej publikacji Preview.

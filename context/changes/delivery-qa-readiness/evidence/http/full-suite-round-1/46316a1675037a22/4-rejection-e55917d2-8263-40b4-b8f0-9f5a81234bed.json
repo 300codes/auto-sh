@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 409,
+    "code": "invalid_transition"
+  },
+  "actual": {
+    "status": 409,
+    "body": {
+      "code": "invalid_transition",
+      "details": [
+        {
+          "path": "status",
+          "code": "not_user_settable"
+        }
+      ]
+    }
+  }
+}

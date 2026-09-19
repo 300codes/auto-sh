@@ -8,6 +8,7 @@ import {
   DeliveryBaseline,
   DeliveryCommentReply,
   DeliveryCommentThread,
+  DeliveryReleaseCandidate,
   DeliveryDecision,
   DeliveryEvidence,
   DeliveryFlowStageArtifact,
@@ -58,6 +59,7 @@ type RouteStore = {
   decisions: Row[]
   tasks: Row[]
   evidence: Row[]
+  candidates: Row[]
   attachments: Row[]
   intakes: Row[]
   stageArtifacts: Row[]
@@ -69,7 +71,7 @@ type RouteStore = {
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [], publications: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [], publications: [] }
 }
 
 export const routeState: {
@@ -98,6 +100,7 @@ export const routeState: {
 
 function rowsFor(entity: unknown): Row[] {
   const { store } = routeState
+  if (entity === DeliveryReleaseCandidate) return store.candidates
   if (entity === DeliveryProject) return store.projects
   if (entity === DeliveryBaseline) return store.baselines
   if (entity === DeliveryDecision) return store.decisions
@@ -114,8 +117,8 @@ function rowsFor(entity: unknown): Row[] {
   throw new Error('[internal] unexpected entity in route test store')
 }
 
-/** Only the stage history, comment and publication entities honour `orderBy`; the v1 suites rely on insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryCommentThread, DeliveryCommentReply, DeliveryPublication])
+/** Stage histories, comments, publications and candidate selection honour `orderBy`; legacy v1 suites retain insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryCommentThread, DeliveryCommentReply, DeliveryPublication, DeliveryReleaseCandidate])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()

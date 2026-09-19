@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "delivery.task-package/v1",
+  "projectId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "taskId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "attemptId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "baselineId": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "baselineHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "targetProfileId": "open-mercato-module",
+  "targetProfileVersion": 1,
+  "title": "Validate delivery_os target profile for OM",
+  "description": "Run the jest, typecheck and audit checks on the delivery_os lib to demonstrate the open-mercato-module target profile end-to-end.",
+  "requirements": [
+    {
+      "id": "REQ-OM-1",
+      "title": "OM target profile contract",
+      "description": "The open-mercato-module target profile must validate correctly and use a git revision."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-OM-001",
+      "requirementId": "REQ-OM-1",
+      "description": "The open-mercato-module@1 profile passes targetProfileSchema validation with a non-empty test catalogue."
+    },
+    {
+      "id": "AC-OM-002",
+      "requirementId": "REQ-OM-1",
+      "description": "assertRevisionKind returns ok:true for a git revision and ok:false for a snapshot revision."
+    }
+  ],
+  "designArtifactRefs": [],
+  "repositoryRef": "auto-sh",
+  "baseRevision": {
+    "kind": "git",
+    "commitSha": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1"
+  },
+  "baseCommit": "f0e1d2c3b4a5f0e1d2c3b4a5f0e1d2c3b4a5f0e1",
+  "allowedPaths": [
+    "packages/core/src/modules/delivery_os/lib/**"
+  ],
+  "validationProfile": {
+    "version": 1,
+    "requiredTests": {
+      "AC-OM-001": [
+        "open-mercato-module AC-OM-001: profile validates against schema"
+      ],
+      "AC-OM-002": [
+        "open-mercato-module AC-OM-002: OM profile uses git revision"
+      ]
+    },
+    "checks": [
+      {
+        "checkId": "unit-tests",
+        "commandProfileId": "jest-module",
+        "kind": "test",
+        "required": true
+      },
+      {
+        "checkId": "typecheck",
+        "commandProfileId": "typecheck",
+        "kind": "typecheck",
+        "required": true
+      },
+      {
+        "checkId": "dependency-audit",
+        "commandProfileId": "yarn-audit",
+        "kind": "scan",
+        "required": true
+      }
+    ]
+  },
+  "limits": {
+    "maxParallelTasks": 2,
+    "maxCorrectionRounds": 2,
+    "attemptTimeoutMinutes": 20
+  },
+  "idempotencyKey": "reserve-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb-1"
+}

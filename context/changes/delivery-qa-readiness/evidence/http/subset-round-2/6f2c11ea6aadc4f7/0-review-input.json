@@ -1,0 +1,45 @@
+{
+  "scenario": "manual_agent",
+  "manifest": {
+    "schemaVersion": "delivery.result-manifest/v1",
+    "projectId": "796e86e4-d644-45c4-b424-39a7b813fd50",
+    "taskId": "8692c0c2-5d55-42dc-837d-ccbac8e2de46",
+    "attemptId": "12e7223d-5cad-4571-9ff1-330da7f0fd57",
+    "baselineId": "fc269a9a-7274-49c0-a5b7-5cf5247e3082",
+    "baselineHash": "db29c61145270fc0b4f6a1340fc73328e0b52f84a9a91140dc0f63caea11743c",
+    "targetProfileVersion": 1,
+    "externalRunId": "fake-run-12e7223d-5cad-4571-9ff1-330da7f0fd57",
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "c780b2454808c10c7e9704e3feef647d25f265d4"
+    },
+    "resultRevision": {
+      "kind": "git",
+      "commitSha": "a5ea9a1bf20601d9e9641cd9a6b70c923ad5eb92"
+    },
+    "baseCommit": "c780b2454808c10c7e9704e3feef647d25f265d4",
+    "resultCommit": "a5ea9a1bf20601d9e9641cd9a6b70c923ad5eb92",
+    "changedPaths": [],
+    "artifacts": [],
+    "checks": [],
+    "agentDeclaration": {
+      "summary": "Deterministic fake executor result",
+      "claimedAcIds": [
+        "AC-003"
+      ]
+    },
+    "findings": [],
+    "usage": {
+      "source": "runner",
+      "values": "unknown"
+    }
+  },
+  "status": 201,
+  "body": {
+    "evidenceId": "e86a282e-252d-4c50-b180-f258fde035bf",
+    "duplicate": false,
+    "taskStatus": "awaiting_review",
+    "taskUpdatedAt": "2026-09-19T11:12:24.276Z"
+  },
+  "provenance": "synthetic-executor-over-http"
+}

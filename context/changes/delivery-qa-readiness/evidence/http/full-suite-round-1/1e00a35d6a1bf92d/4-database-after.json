@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "counts": {
+    "projects": 1,
+    "baselines": 1,
+    "tasks": 1,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 1,
+    "resultManifests": 0
+  }
+}

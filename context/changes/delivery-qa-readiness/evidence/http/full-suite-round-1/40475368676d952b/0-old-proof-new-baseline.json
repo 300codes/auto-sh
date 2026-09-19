@@ -1,0 +1,19 @@
+{
+  "projectId": "81109cf7-e42a-4835-8fca-37616ab8da07",
+  "originalBaselineId": "6c79be17-5380-45c4-8a36-f40d82066edb",
+  "currentBaselineId": "b9826297-a085-4035-b75b-923a5e558077",
+  "before": {
+    "proven": 1,
+    "total": 3,
+    "unit": "ac",
+    "percent": 33
+  },
+  "after": {
+    "proven": 0,
+    "total": 3,
+    "unit": "ac",
+    "percent": 0
+  },
+  "oldTaskId": "765b4735-36fd-46b1-92d3-69bb5737fc65",
+  "oldAttemptId": "d5686abe-5eb4-449f-a360-f1efc3b89a36"
+}

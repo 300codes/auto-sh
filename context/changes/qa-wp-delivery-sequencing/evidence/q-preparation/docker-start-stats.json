@@ -1,0 +1,150 @@
+{
+  "at": "2026-09-19T14:10:53.186513+00:00",
+  "containers": [
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.02%",
+      "Container": "a9f3365a9a0e",
+      "ID": "a9f3365a9a0e",
+      "MemPerc": "4.76%",
+      "MemUsage": "24.35MiB / 512MiB",
+      "Name": "auto-sh-q-current-db",
+      "NetIO": "1.29kB / 0B",
+      "PIDs": "6"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "184.66%",
+      "Container": "528c91115955",
+      "ID": "528c91115955",
+      "MemPerc": "34.18%",
+      "MemUsage": "2.734GiB / 8GiB",
+      "Name": "auto-sh-q-current",
+      "NetIO": "15.8kB / 7.01kB",
+      "PIDs": "76"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.00%",
+      "Container": "bdfd057dc163",
+      "ID": "bdfd057dc163",
+      "MemPerc": "1.71%",
+      "MemUsage": "273.7MiB / 15.63GiB",
+      "Name": "supabase_studio_fitapp",
+      "NetIO": "1.7kB / 0B",
+      "PIDs": "11"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.39%",
+      "Container": "bf903abe78ec",
+      "ID": "bf903abe78ec",
+      "MemPerc": "0.83%",
+      "MemUsage": "132.2MiB / 15.63GiB",
+      "Name": "supabase_pg_meta_fitapp",
+      "NetIO": "1.46kB / 0B",
+      "PIDs": "12"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.00%",
+      "Container": "32e707a82db7",
+      "ID": "32e707a82db7",
+      "MemPerc": "1.81%",
+      "MemUsage": "290.3MiB / 15.63GiB",
+      "Name": "supabase_storage_fitapp",
+      "NetIO": "12.6kB / 3.95kB",
+      "PIDs": "12"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.06%",
+      "Container": "4af23a5a8bb6",
+      "ID": "4af23a5a8bb6",
+      "MemPerc": "0.07%",
+      "MemUsage": "10.67MiB / 15.63GiB",
+      "Name": "supabase_rest_fitapp",
+      "NetIO": "147kB / 62.6kB",
+      "PIDs": "13"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.23%",
+      "Container": "2bfa6a57b014",
+      "ID": "2bfa6a57b014",
+      "MemPerc": "1.50%",
+      "MemUsage": "240.1MiB / 15.63GiB",
+      "Name": "supabase_realtime_fitapp",
+      "NetIO": "154kB / 90.6kB",
+      "PIDs": "32"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.00%",
+      "Container": "7e55613c6b76",
+      "ID": "7e55613c6b76",
+      "MemPerc": "0.13%",
+      "MemUsage": "20.18MiB / 15.63GiB",
+      "Name": "supabase_inbucket_fitapp",
+      "NetIO": "1.7kB / 0B",
+      "PIDs": "8"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.02%",
+      "Container": "37d0d23c852e",
+      "ID": "37d0d23c852e",
+      "MemPerc": "0.07%",
+      "MemUsage": "11.06MiB / 15.63GiB",
+      "Name": "supabase_auth_fitapp",
+      "NetIO": "20.6kB / 17.6kB",
+      "PIDs": "10"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.01%",
+      "Container": "d4742ab6880f",
+      "ID": "d4742ab6880f",
+      "MemPerc": "0.67%",
+      "MemUsage": "106.5MiB / 15.63GiB",
+      "Name": "supabase_kong_fitapp",
+      "NetIO": "1.46kB / 0B",
+      "PIDs": "3"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.77%",
+      "Container": "2ad3d7a12494",
+      "ID": "2ad3d7a12494",
+      "MemPerc": "0.47%",
+      "MemUsage": "75.79MiB / 15.63GiB",
+      "Name": "supabase_vector_fitapp",
+      "NetIO": "65.3kB / 241kB",
+      "PIDs": "6"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.73%",
+      "Container": "38b1cef46ca0",
+      "ID": "38b1cef46ca0",
+      "MemPerc": "3.63%",
+      "MemUsage": "580.3MiB / 15.63GiB",
+      "Name": "supabase_analytics_fitapp",
+      "NetIO": "719kB / 864kB",
+      "PIDs": "37"
+    },
+    {
+      "BlockIO": "0B / 0B",
+      "CPUPerc": "0.23%",
+      "Container": "92a4852b10db",
+      "ID": "92a4852b10db",
+      "MemPerc": "1.05%",
+      "MemUsage": "168.6MiB / 15.63GiB",
+      "Name": "supabase_db_fitapp",
+      "NetIO": "976kB / 808kB",
+      "PIDs": "34"
+    }
+  ],
+  "fitappBytes": 2002151014.3999999,
+  "actionsOnForeignServices": []
+}

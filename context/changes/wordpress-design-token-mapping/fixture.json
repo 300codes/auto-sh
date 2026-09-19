@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "provenance": "fixture",
+  "source": { "designRef": "fixture:wp02:not-figma", "revision": "fixture-v1" },
+  "tokens": {
+    "colors": [
+      { "id": "paper", "name": "Paper", "value": "#f5f3eb" },
+      { "id": "ink", "name": "Ink", "value": "#172d2b" }
+    ],
+    "fonts": [{ "id": "body", "name": "Body", "families": ["Example Sans", "system-ui", "sans-serif"] }],
+    "fontSizes": [{ "id": "reading", "name": "Reading", "value": "1rem" }],
+    "spacing": [
+      { "id": "section", "name": "Section", "value": "2rem" },
+      { "id": "none", "name": "None", "value": "0px" }
+    ]
+  }
+}

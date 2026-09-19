@@ -1,0 +1,23 @@
+{
+  "projectId": "8afd5cc0-6c0f-4310-893f-1e7e4c3c1276",
+  "taskId": "ff6e5577-dfdd-4a8f-9209-9cdfd0353bd9",
+  "baselineId": "ed3b90a7-8252-4953-8e2a-b889e1ab0ef6",
+  "baselineHash": "1747c4bf149092af87c1d9a6ce4937c75b9f3fb1a2d329864c0a9207f316bbd8",
+  "history": [
+    {
+      "attemptId": "66309791-494c-43d4-ad28-344cd35e1a76",
+      "resultEvidenceId": "771872ef-ae68-4741-b86e-0f5c6b0b261c",
+      "reviewEvidenceId": "7b5d823f-9cab-45d9-9c36-85a29e717bcc",
+      "verdict": "changes_requested"
+    },
+    {
+      "attemptId": "604c76c2-fb49-4b5b-84d6-84128575d4fa",
+      "resultEvidenceId": "46cb6863-8d84-4784-8f8d-74bb2d0ba6f7",
+      "reviewEvidenceId": "fb8558d2-9fb3-4ada-96da-7ef88da338dd",
+      "verdict": "approved"
+    }
+  ],
+  "dependentTaskId": "53807c25-be29-4483-b7dc-ef536ad01988",
+  "provenance": "http-fixture",
+  "liveExecutor": false
+}

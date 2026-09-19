@@ -1,0 +1,85 @@
+Open Mercato client-boundary report
+- scanned TS/TSX files: 11877
+- top-level "use client" files: 1508
+- page-root "use client" files: 263
+- backend page-root "use client" files: 244
+- frontend page-root "use client" files: 19
+- unallowlisted backend page-root "use client" files: 244
+- client page roots over 300 LOC: 124
+- heavy browser library import hits: 239
+
+Largest client page roots:
+- packages/core/src/modules/sales/backend/sales/documents/[id]/page.tsx (4975 LOC)
+- packages/core/src/modules/workflows/backend/definitions/visual-editor/page.tsx (3807 LOC)
+- packages/core/src/modules/catalog/backend/catalog/products/[id]/page.tsx (3426 LOC)
+- packages/core/src/modules/customers/backend/customers/deals/pipeline/page.tsx (3042 LOC)
+- packages/core/src/modules/warranty_claims/backend/warranty_claims/[id]/page.tsx (2600 LOC)
+- packages/core/src/modules/catalog/backend/catalog/products/create/page.tsx (2115 LOC)
+- packages/core/src/modules/warranty_claims/backend/warranty_claims/settings/page.tsx (1904 LOC)
+- packages/core/src/modules/workflows/frontend/checkout-demo/page.tsx (1840 LOC)
+- packages/enterprise/src/modules/agent_orchestrator/backend/caseload/page.tsx (1762 LOC)
+- packages/core/src/modules/integrations/backend/integrations/[id]/page.tsx (1593 LOC)
+- packages/core/src/modules/warranty_claims/backend/warranty_claims/create/page.tsx (1535 LOC)
+- packages/core/src/modules/staff/backend/staff/time-tracking/projects/[id]/page.tsx (1421 LOC)
+- packages/core/src/modules/warranty_claims/frontend/[orgSlug]/portal/claims/new/page.tsx (1410 LOC)
+- packages/enterprise/src/modules/agent_orchestrator/backend/traces/[id]/page.tsx (1384 LOC)
+- packages/core/src/modules/customers/backend/customers/deals/page.tsx (1346 LOC)
+- packages/core/src/modules/warranty_claims/backend/page.tsx (1307 LOC)
+- packages/core/src/modules/staff/backend/staff/time-tracking/projects/page.tsx (1255 LOC)
+- packages/core/src/modules/staff/backend/staff/time-tracking/entries/page.tsx (1230 LOC)
+- packages/core/src/modules/data_sync/backend/data-sync/page.tsx (1128 LOC)
+- packages/enterprise/src/modules/sso/backend/sso/config/[id]/page.tsx (1053 LOC)
+- ... 104 more
+
+Unallowlisted backend page roots:
+- packages/channel-discord/src/modules/channel_discord/backend/channel_discord/channels/[id]/ai-auto-reply/page.tsx
+- packages/checkout/src/modules/checkout/backend/checkout/pay-links/page.tsx
+- packages/checkout/src/modules/checkout/backend/checkout/templates/page.tsx
+- packages/checkout/src/modules/checkout/backend/checkout/transactions/[id]/page.tsx
+- packages/checkout/src/modules/checkout/backend/checkout/transactions/page.tsx
+- packages/core/src/modules/api_keys/backend/api-keys/create/page.tsx
+- packages/core/src/modules/api_keys/backend/api-keys/page.tsx
+- packages/core/src/modules/attachments/backend/storage/attachments/page.tsx
+- packages/core/src/modules/audit_logs/backend/audit-logs/page.tsx
+- packages/core/src/modules/auth/backend/auth/profile/page.tsx
+- packages/core/src/modules/auth/backend/profile/change-password/page.tsx
+- packages/core/src/modules/auth/backend/profile/page.tsx
+- packages/core/src/modules/auth/backend/roles/[id]/edit/page.tsx
+- packages/core/src/modules/auth/backend/roles/create/page.tsx
+- packages/core/src/modules/auth/backend/roles/page.tsx
+- packages/core/src/modules/auth/backend/settings/page.tsx
+- packages/core/src/modules/auth/backend/sidebar-customization/page.tsx
+- packages/core/src/modules/auth/backend/users/[id]/edit/page.tsx
+- packages/core/src/modules/auth/backend/users/create/page.tsx
+- packages/core/src/modules/auth/backend/users/page.tsx
+- packages/core/src/modules/business_rules/backend/logs/[id]/page.tsx
+- packages/core/src/modules/business_rules/backend/logs/page.tsx
+- packages/core/src/modules/business_rules/backend/rules/[id]/page.tsx
+- packages/core/src/modules/business_rules/backend/rules/create/page.tsx
+- packages/core/src/modules/business_rules/backend/rules/page.tsx
+- packages/core/src/modules/business_rules/backend/sets/[id]/page.tsx
+- packages/core/src/modules/business_rules/backend/sets/create/page.tsx
+- packages/core/src/modules/business_rules/backend/sets/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/categories/[id]/edit/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/categories/create/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/categories/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/products/[id]/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/products/[productId]/variants/[variantId]/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/products/[productId]/variants/create/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/products/create/page.tsx
+- packages/core/src/modules/catalog/backend/catalog/products/page.tsx
+- packages/core/src/modules/communication_channels/backend/communication_channels/channels/[id]/page.tsx
+- packages/core/src/modules/communication_channels/backend/communication_channels/channels/page.tsx
+- packages/core/src/modules/communication_channels/backend/profile/communication-channels/page.tsx
+- packages/core/src/modules/currencies/backend/currencies/[id]/page.tsx
+- packages/core/src/modules/currencies/backend/currencies/create/page.tsx
+- packages/core/src/modules/currencies/backend/currencies/page.tsx
+- packages/core/src/modules/currencies/backend/exchange-rates/[id]/page.tsx
+- packages/core/src/modules/currencies/backend/exchange-rates/create/page.tsx
+- packages/core/src/modules/currencies/backend/exchange-rates/page.tsx
+- packages/core/src/modules/customer_accounts/backend/customer_accounts/roles/[id]/page.tsx
+- packages/core/src/modules/customer_accounts/backend/customer_accounts/roles/create/page.tsx
+- packages/core/src/modules/customer_accounts/backend/customer_accounts/roles/page.tsx
+- packages/core/src/modules/customer_accounts/backend/customer_accounts/settings/domain/page.tsx
+- packages/core/src/modules/customers/backend/config/customers/deals/page.tsx
+- ... 194 more

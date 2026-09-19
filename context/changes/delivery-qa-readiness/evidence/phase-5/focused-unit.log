@@ -1,0 +1,7 @@
+PASS reconcile.test.ts
+PASS executorFlow.test.ts
+PASS acProof.test.ts
+Test Suites: 3 passed, 3 total
+Tests: 44 passed, 44 total
+Time: 4.058 s
+Captured summary of native Jest output; unit mocks, not live HTTP.

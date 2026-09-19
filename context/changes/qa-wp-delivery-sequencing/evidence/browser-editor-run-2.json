@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "interrupted",
+  "reason": "Additional topbar Save absent after successful Save draft; observed draft UI variant",
+  "nativeFixtureCleanup": {
+    "nativeFixtureCleanup": "cleaned",
+    "browserCloseFailed": false,
+    "themeUpdate": "retained_intentionally"
+  },
+  "firstBuild": {
+    "status": "passed",
+    "action": "updated",
+    "cssHash": "6dbfb0fcad9a319ca54480b688764c628a6c9c8d67a410a56cd195ece50b76f7",
+    "files": [
+      {
+        "path": "templates/page.html",
+        "sha256": "739f8a9de1b73ed59817940c1160e8858ebde0728b1cfbc0fbe57f80eab20a15"
+      }
+    ]
+  },
+  "sourceHashes": {
+    "packages/core/src/helpers/integration/wordpressBrowserFixtures.ts": "b509257f777d8b2e52b0777d6272fc67500a2dcb87c99d80b65663d4245cd87c",
+    "packages/core/src/modules/delivery_os/__integration__/wordpress/TC-DELIVERY-WP-EDITOR-001.spec.ts": "85a652742d1948a972ac4b2682b84c2560d89546c0f8dd553a1693bcfe5abff2"
+  },
+  "rawReportHash": "4bbd4bcfc8e182f1d9040959ac5d0b94da140f1e13002af8fb9d3e777683c245",
+  "correction": "Conditional additional-entity Save dialog; mandatory persisted readback assertions unchanged",
+  "finalSourceDelta": "Cleanup diagnostic write failure cannot bypass cleanup; reviewed separately, not exercised in run2"
+}

@@ -8,6 +8,7 @@ import {
   DeliveryCommentThread,
   DeliveryDecision,
   DeliveryProject,
+  DeliveryReleaseCandidate,
   DeliveryStaffLink,
   DeliveryTask,
 } from '../../data/entities'
@@ -53,6 +54,7 @@ export function emptyStore(): Store {
 }
 
 export function rowsFor(store: Store, entity: unknown): Row[] {
+  if (entity === DeliveryReleaseCandidate) return []
   if (entity === DeliveryProject) return store.projects as unknown as Row[]
   if (entity === DeliveryBaseline) return store.baselines as unknown as Row[]
   if (entity === DeliveryDecision) return store.decisions as unknown as Row[]

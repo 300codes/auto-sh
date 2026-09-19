@@ -1,0 +1,45 @@
+✖ message object browser bundles exclude server loaders while preserving preview fallbacks (411.817622ms)
+✔ message object server bundles retain preview loaders and forward entity and tenant context (137.777474ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1019.829405
+
+✖ failing tests:
+
+test at scripts/__tests__/message-object-client-boundary.test.mjs:77:1
+✖ message object browser bundles exclude server loaders while preserving preview fallbacks (411.817622ms)
+  AssertionError [ERR_ASSERTION]: ERROR in node:fs
+  Module build failed: UnhandledSchemeError: Reading from "node:fs" is not handled by plugins (Unhandled scheme).
+  Webpack supports "data:" and "file:" URIs by default.
+  You may need an additional plugin to handle "node:" URIs.
+      at /qa/node_modules/next/dist/compiled/webpack/bundle5.js:29:408401
+      at Hook.eval [as callAsync] (eval at create (/qa/node_modules/next/dist/compiled/webpack/bundle5.js:14:9222), <anonymous>:6:1)
+      at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/qa/node_modules/next/dist/compiled/webpack/bundle5.js:14:6376)
+      at Object.processResource (/qa/node_modules/next/dist/compiled/webpack/bundle5.js:29:408326)
+      at processResource (/qa/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5306)
+      at iteratePitchingLoaders (/qa/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4665)
+      at runLoaders (/qa/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8588)
+      at NormalModule._doBuild (/qa/node_modules/next/dist/compiled/webpack/bundle5.js:29:408188)
+      at NormalModule.build (/qa/node_modules/next/dist/compiled/webpack/bundle5.js:29:410201)
+      at /qa/node_modules/next/dist/compiled/webpack/bundle5.js:29:82494
+  
+  
+  true !== false
+  
+      at compileDefinitions (file:///qa/scripts/__tests__/message-object-client-boundary.test.mjs:73:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///qa/scripts/__tests__/message-object-client-boundary.test.mjs:81:19)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

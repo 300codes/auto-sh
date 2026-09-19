@@ -1,0 +1,31 @@
+{
+  "projectId": "5d7bc1f5-a2f3-49a3-b5ae-a68b1495e570",
+  "taskId": "a9241b14-83c4-4e52-ae8a-e6e7c6e6e9f3",
+  "attemptId": "6b1f15bc-11b5-448e-b92a-086690cdc1cc",
+  "baselineId": "78cb8f92-272c-43fb-b0a2-bc3595ea911e",
+  "beforeCounts": {
+    "projects": 1,
+    "baselines": 1,
+    "tasks": 1,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 1,
+    "resultManifests": 0
+  },
+  "afterCounts": {
+    "projects": 1,
+    "baselines": 1,
+    "tasks": 1,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 1,
+    "resultManifests": 0
+  },
+  "routes": [
+    "baseline",
+    "decision",
+    "reserve",
+    "cancel",
+    "reconcile"
+  ]
+}

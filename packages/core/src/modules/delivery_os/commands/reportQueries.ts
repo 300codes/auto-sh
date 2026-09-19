@@ -1,44 +1,29 @@
+import { candidateConsentHash, loadReportContext } from './reportContext'
+import { hashCanonical } from '../lib/hash'
+import type { DeliveryReportResponse } from '../lib/reportContracts'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { DeliveryDecision, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../data/entities'
-import { createLogger } from '@open-mercato/shared/lib/logger'
 import {
   buildDeliveryError,
   sourceRevisionSchema,
-  type DeliveryReportFlowSection,
-  type DeliveryReportV1,
-  type DeliveryReportWithFlow,
   type SourceRevision,
 } from '../lib/contracts'
 import { buildDeliveryReport } from '../lib/deliveryReport'
-import { buildDeliveryReportFlowSection, buildUnreadableReportFlowSection } from '../lib/flowStatus'
 import { getTargetProfile } from '../lib/targetProfiles'
 import { MAX_TRACEABILITY_ROWS } from '../lib/traceability'
 import { requireVerifiedBaselineContent } from './evidence'
 import { deliveryHttpError, type DeliveryScope } from './shared'
 import { findProjectBaseline } from './tasks'
-import {
-  isFlowPinned,
-  loadStageArtifactRows,
-  loadStageDecisionRows,
-  readPinnedTemplate,
-  readPinnedTemplateRef,
-  toStageArtifactRecord,
-  toStageDecisionRecord,
-} from './flowGate'
-
-const logger = createLogger('delivery_os')
 
 export type ReportOptions = {
   baselineId?: string | null
   revision?: string | SourceRevision | null
   limit?: number
-  /** F15: attach the optional `flow` section for pinned projects. Off by default so in-process callers keep the v1 object. */
-  includeFlow?: boolean
 }
 
 export type DeliveryOsReportQueries = {
-  buildReport(scope: DeliveryScope, projectId: string, options?: ReportOptions): Promise<DeliveryReportWithFlow>
+  buildReport(scope: DeliveryScope, projectId: string, options?: ReportOptions): Promise<DeliveryReportResponse>
 }
 
 function assertQueryScope(scope: DeliveryScope | null | undefined): DeliveryScope {
@@ -89,32 +74,17 @@ function resolveRevision(raw: ReportOptions['revision']): SourceRevision | null 
   throw invalidRevision('revision_unparsable', 'Revision must be git:<commitSha> or snapshot:<sha256>:<externalWorkspaceId>')
 }
 
-async function loadReportFlowSection(em: EntityManager, project: DeliveryProject, scope: DeliveryScope): Promise<DeliveryReportFlowSection> {
-  const templateRef = readPinnedTemplateRef(project)
-  const template = readPinnedTemplate(project)
-  if (!template || !templateRef) {
-    logger.warn('pinned flow template snapshot is unreadable; report flow section fails closed', { projectId: project.id, templateId: project.flowTemplateId })
-    return buildUnreadableReportFlowSection(templateRef)
-  }
-  const artifacts = (await loadStageArtifactRows(em, project.id, scope)).map(toStageArtifactRecord)
-  const decisions = (await loadStageDecisionRows(em, project.id, scope)).map(toStageDecisionRecord)
-  const section = buildDeliveryReportFlowSection({
-    project: { projectId: project.id, template, templateRef, workflowInstanceId: null, updatedAt: project.updatedAt.toISOString() },
-    artifacts,
-    decisions,
-  })
-  return section ?? buildUnreadableReportFlowSection(templateRef)
-}
-
-export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOsReportQueries {
+export function createDeliveryOsReportQueries(rootEm: EntityManager, useTransaction = false): DeliveryOsReportQueries {
   return {
     async buildReport(rawScope, projectId, options = {}) {
       const scope = assertQueryScope(rawScope)
-      const em = rootEm.fork()
+      const em = useTransaction ? rootEm : rootEm.fork()
       const scoped = { tenantId: scope.tenantId, organizationId: scope.organizationId }
       const project = await findOneWithDecryption(em, DeliveryProject, { id: projectId, ...scoped }, undefined, scope)
       if (!project) throw notFound('projectId', 'not_found')
-      const revision = resolveRevision(options.revision)
+      const context = await loadReportContext(em, scope, project)
+      const selectedBaselineId = options.baselineId ?? project.activeBaselineId ?? null
+      const revision = resolveRevision(options.revision) ?? (selectedBaselineId === context.currentCandidate?.baselineId ? context.currentCandidate.sourceRevision : null)
 
       const profile = getTargetProfile(project.targetProfileId, project.targetProfileVersion)
       if (!profile) {
@@ -144,7 +114,7 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
       )
       const decisions = await findWithDecryption(em, DeliveryDecision, where, { orderBy: { decidedAt: 'asc', id: 'asc' } }, scope)
 
-      const report: DeliveryReportV1 = buildDeliveryReport({
+      const report = buildDeliveryReport({
         projectId: project.id,
         baseline: { id: baseline.id, projectId: baseline.projectId, contentHash: baseline.contentHash, content },
         tasks: tasks.map((task) => ({
@@ -182,8 +152,16 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
         revision,
         limit: options.limit ?? MAX_TRACEABILITY_ROWS,
       })
-      if (!options.includeFlow || !isFlowPinned(project)) return report
-      return { ...report, flow: await loadReportFlowSection(em, project, scope) }
+      return {
+        ...report,
+        ...context,
+        candidateDecisions: {
+          deployDecisionId: decisions.filter((decision) => decision.kind === 'deploy' && decision.releaseCandidateId === context.currentCandidate?.id && decision.releaseCandidateVersion === context.currentCandidate?.version && decision.candidateContextHash === candidateConsentHash({ ...context, baselineHash: baseline.contentHash })).at(-1)?.id ?? null,
+          releaseDecisionId: decisions.filter((decision) => decision.kind === 'release' && decision.releaseCandidateId === context.currentCandidate?.id && decision.releaseCandidateVersion === context.currentCandidate?.version && decision.candidateContextHash === candidateConsentHash({ ...context, baselineHash: baseline.contentHash })).at(-1)?.id ?? null,
+        },
+        projectUpdatedAt: project.updatedAt.toISOString(),
+        decisionContextHash: hashCanonical({ projectUpdatedAt: project.updatedAt, baselineHash: baseline.contentHash, revision: report.revision, context, evidence: evidence.map((row) => ({ id: row.id, payloadHash: row.payloadHash, rawReportHash: row.rawReportHash ?? null, revision: row.sourceRevision ?? null })), decisions: decisions.map((row) => ({ id: row.id, verdict: row.verdict, decidedAt: row.decidedAt })), tasks: tasks.map((row) => ({ id: row.id, updatedAt: row.updatedAt, status: row.status })) }),
+      }
     },
   }
 }
