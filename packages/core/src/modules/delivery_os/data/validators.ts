@@ -1,4 +1,5 @@
 import { decisionPreflightShape } from '../lib/reportContracts'
+import { extractedBriefSchema } from '../lib/briefStructuring'
 import { designImportManifestSchema } from '../lib/designImportContracts'
 import { z } from 'zod'
 import { parseBooleanWithDefault } from '@open-mercato/shared/lib/boolean'
@@ -290,6 +291,12 @@ export const markAttemptDeliveryCommandSchema = z.discriminatedUnion('outcome', 
   z.object({ ...internalAttemptShape, outcome: z.literal('failed'), error: z.string().min(1).max(8000) }),
 ])
 export type MarkAttemptDeliveryCommandInput = z.infer<typeof markAttemptDeliveryCommandSchema>
+
+export const intakeSeedCommandSchema = z.object({
+  projectId: uuidSchema,
+  extracted: extractedBriefSchema,
+})
+export type IntakeSeedCommandInput = z.infer<typeof intakeSeedCommandSchema>
 
 export const packageQuerySchema = z.object({ attemptId: uuidSchema })
 export type PackageQuery = z.infer<typeof packageQuerySchema>

@@ -283,6 +283,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.flow.materialize_baseline',
       'delivery_os.flow.pin',
       'delivery_os.intake.import_proposal',
+      'delivery_os.intake.seed_from_brief',
       'delivery_os.intake.update',
       'delivery_os.projects.create',
       'delivery_os.projects.delete',

@@ -6,6 +6,7 @@ import { enforceCommandOptimisticLockWithGuards } from '@open-mercato/shared/lib
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { DeliveryIntake, type DeliveryProject } from '../data/entities'
 import {
+  intakeSeedCommandSchema,
   intakeUpdateCommandSchema,
   scopingProposalImportCommandSchema,
   type IntakeUpdateCommandInput,
@@ -14,6 +15,7 @@ import {
 import {
   DELIVERY_FLOW_SCHEMA_VERSIONS,
   buildDeliveryError,
+  buildDeliveryFlowError,
   scopingProposalImportResponseSchema,
   uuidSchema,
   type AttachmentRef,
@@ -21,7 +23,8 @@ import {
   type IntakeResponse,
   type IntakeV1,
 } from '../lib/contracts'
-import { applyIntakeUpdate, mergeScopingProposal, type IntakeProjectContext } from '../lib/intakeRules'
+import { applyIntakeUpdate, defaultIntake, mergeScopingProposal, type IntakeProjectContext } from '../lib/intakeRules'
+import { applyExtractedBrief } from '../lib/briefStructuring'
 import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/trustedExecution'
 import { verifyAttachmentReferences } from './attachments'
 import {
@@ -313,5 +316,48 @@ const importProposalCommand: CommandHandler<ScopingProposalImportCommandInput, S
   },
 }
 
+function inProcessSeedRequired(): ReturnType<typeof deliveryFlowHttpError> {
+  return deliveryFlowHttpError(buildDeliveryFlowError('forbidden', 'The intake seeding command runs in-process only', [
+    { path: 'projectId', code: 'in_process_only' },
+  ]))
+}
+
+const seedIntakeFromBriefCommand: CommandHandler<unknown, IntakeUpdateCommandResult> = {
+  id: 'delivery_os.intake.seed_from_brief',
+  async execute(rawInput, ctx) {
+    if (ctx.request) throw inProcessSeedRequired()
+    const scope = resolveDeliveryScope(ctx)
+    const parsed = parseDeliveryInput(intakeSeedCommandSchema, rawInput)
+    const em = resolveDeliveryEm(ctx)
+    return await em.transactional(async (tx) => {
+      const project = await lockScopedProject(tx, parsed.projectId, scope)
+      const intakeRow = await findScopedIntake(tx, project.id, scope, { lock: true })
+      const seeded = defaultIntake(project.id, project.brief)
+      const candidate = applyExtractedBrief(intakeRow ? toIntakeDocument(intakeRow) : seeded, parsed.extracted)
+      const applied = applyIntakeUpdate({
+        stored: intakeRow ? toIntakeDocument(intakeRow) : null,
+        request: { schemaVersion: candidate.schemaVersion, step: candidate.step, brief: candidate.brief, questions: candidate.questions, platform: candidate.platform, tools: candidate.tools },
+        project: projectContext(project),
+      })
+      if (!applied.ok) throw deliveryFlowHttpError(applied)
+      const written = writeIntake(tx, scope, project, intakeRow, { intake: applied.intake }, null, new Date())
+      return toIntakeResponse(applied.intake, project, written.updatedAt)
+    })
+  },
+  buildLog: async ({ result, ctx }) => {
+    const scope = resolveDeliveryScope(ctx)
+    const { translate } = await resolveTranslations()
+    return {
+      actionLabel: translate('delivery_os.audit.intake.seed_from_brief', 'Structure delivery brief into the intake'),
+      resourceKind: DELIVERY_INTAKE_RESOURCE_KIND,
+      resourceId: result.intake.projectId,
+      tenantId: scope.tenantId,
+      organizationId: scope.organizationId,
+      snapshotAfter: auditSnapshot(scope, result),
+    }
+  },
+}
+
 registerCommand(updateIntakeCommand)
+registerCommand(seedIntakeFromBriefCommand)
 registerCommand(importProposalCommand)
