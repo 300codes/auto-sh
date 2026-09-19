@@ -38,7 +38,7 @@ fi
 
 render_name="${op}-$(printf '%s' "$node_id" | tr -c 'A-Za-z0-9._-' '-').png"
 
-curl --fail --silent --show-error --location --max-time 60 --output "$render_name" "$render_url"
+curl --fail --silent --show-error --location --remove-on-error --max-time 60 --output "$render_name" "$render_url"
 
 if ! file --brief --mime-type "$render_name" | grep -qx 'image/png'; then
   echo "error: $render_name nie jest plikiem PNG ($(file --brief "$render_name"))" >&2
@@ -61,7 +61,10 @@ prompt_text=""
 [[ -f manifest.json ]] || printf '{"schemaVersion":%d,"steps":[]}\n' "$SCHEMA_VERSION" > manifest.json
 
 client_name=${MCP_CLIENT:-claude-code}
-client_version=$(claude --version 2>/dev/null | awk '{print $1}')
+# Wersja klienta jest polem opisowym, nie warunkiem zapisu. Render jest w tym miejscu już pobrany,
+# a jego adres wygasa, więc brak `claude` w PATH (np. gdy klientem jest Codex CLI) nie może
+# przerwać skryptu przed wpisem do manifestu — pod `set -e` bez `|| true` kończy się to kodem 127.
+client_version=$(claude --version 2>/dev/null | awk '{print $1}' || true)
 
 jq \
   --arg workstation "${WORKSTATION:-$(hostname)}" \
@@ -115,9 +118,11 @@ for existing in ./*.png; do
 done
 shopt -u nullglob
 
-render_count=$(ls -1 ./*.png 2>/dev/null | wc -l)
-if (( render_count > MAX_RENDERS )); then
-  echo "warn: $render_count plików renderu, deklarowany limit to $MAX_RENDERS" >&2
+shopt -s nullglob
+remaining=(./*.png)
+shopt -u nullglob
+if (( ${#remaining[@]} > MAX_RENDERS )); then
+  echo "warn: ${#remaining[@]} plików renderu, deklarowany limit to $MAX_RENDERS" >&2
 fi
 
 echo "zapisano $op  nodeId=$node_id  $render_name  ${bytes} B  sha256=${sha:0:16}…"

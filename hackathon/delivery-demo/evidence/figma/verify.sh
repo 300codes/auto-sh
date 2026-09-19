@@ -12,7 +12,7 @@ readonly MAX_RENDERS=4
 readonly SECRET_PATTERN="(fig[du]_|Bea""rer |acc""ess_token|ref""resh_token|cli""ent_secret)"
 
 cd "$(dirname "$0")"
-repo_root=$(git rev-parse --show-toplevel)
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || repo_root=""
 
 failures=0
 
@@ -114,11 +114,21 @@ else
                                       || check "liczba renderów w limicie $MAX_RENDERS" fail "${#renders[@]}"
 fi
 
-if git -C "$repo_root" grep -nIE "$SECRET_PATTERN" -- hackathon/delivery-demo >/dev/null 2>&1; then
+# git grep zwraca 0 przy trafieniu, 1 przy jego braku i >=2 przy błędzie. Kod błędu nie może
+# oznaczać "czysto" — nieudany skan sekretów musi wyglądać jak porażka, nie jak przejście.
+if [[ -z $repo_root ]]; then
   check "brak wzorców sekretów w hackathon/delivery-demo" fail \
-    "$(git -C "$repo_root" grep -nIE "$SECRET_PATTERN" -- hackathon/delivery-demo | head -3 | tr '\n' ' ')"
+    "skan nie wykonał się — katalog nie jest repozytorium git"
 else
-  check "brak wzorców sekretów w hackathon/delivery-demo" ok
+  scan_hits=$(git -C "$repo_root" grep -nIE "$SECRET_PATTERN" -- hackathon/delivery-demo 2>&1)
+  scan_status=$?
+  case $scan_status in
+    0) check "brak wzorców sekretów w hackathon/delivery-demo" fail \
+         "$(printf '%s' "$scan_hits" | head -3 | tr '\n' ' ')" ;;
+    1) check "brak wzorców sekretów w hackathon/delivery-demo" ok ;;
+    *) check "brak wzorców sekretów w hackathon/delivery-demo" fail \
+         "skan nie wykonał się (git grep zakończył się kodem $scan_status): $(printf '%s' "$scan_hits" | head -1)" ;;
+  esac
 fi
 
 echo
