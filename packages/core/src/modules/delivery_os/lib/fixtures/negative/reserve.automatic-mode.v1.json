@@ -1,0 +1,16 @@
+{
+  "description": "The public reserve route accepts only manual_handoff.",
+  "expected": {
+    "stage": "schema",
+    "code": "validation_failed",
+    "status": 400
+  },
+  "documentType": "reserve-request",
+  "document": {
+    "mode": "automatic",
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "687670c20c93d6a60c2ab494419ec38636cf0a8c"
+    }
+  }
+}

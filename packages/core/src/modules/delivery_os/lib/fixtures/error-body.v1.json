@@ -1,0 +1,11 @@
+{
+  "error": "taskId does not match the reserved attempt",
+  "code": "correlation_mismatch",
+  "details": [
+    {
+      "path": "taskId",
+      "code": "correlation_mismatch",
+      "message": "taskId does not match the reserved attempt"
+    }
+  ]
+}

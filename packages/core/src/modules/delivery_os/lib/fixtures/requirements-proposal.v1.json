@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "delivery.requirements-proposal/v1",
+  "projectId": "11111111-1111-4111-8111-111111111111",
+  "manifestId": "requirements-from-brief-2026-09-19-001",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "title": "Service catalogue list",
+      "description": "Visitors see every offered service with its price."
+    },
+    {
+      "id": "REQ-2",
+      "title": "Filter services by category"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001",
+      "requirementId": "REQ-1",
+      "description": "The list renders all seeded services."
+    },
+    {
+      "id": "AC-002",
+      "requirementId": "REQ-2",
+      "description": "Choosing a category shows only services of that category."
+    },
+    {
+      "id": "AC-003",
+      "requirementId": "REQ-1",
+      "description": "The list matches the approved desktop screen."
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-1",
+      "text": "Should prices include VAT?",
+      "answer": "Yes, gross prices."
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-1",
+      "text": "Seed data may not cover every category.",
+      "mitigation": "Add one service per category."
+    }
+  ],
+  "producedBy": {
+    "tool": "claude-code",
+    "sessionRef": null
+  }
+}

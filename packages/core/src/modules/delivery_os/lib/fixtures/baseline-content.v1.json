@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "delivery.baseline-content/v1",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "title": "Service catalogue list",
+      "description": "Visitors see every offered service with its price."
+    },
+    {
+      "id": "REQ-2",
+      "title": "Filter services by category"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001",
+      "requirementId": "REQ-1",
+      "description": "The list renders all seeded services."
+    },
+    {
+      "id": "AC-002",
+      "requirementId": "REQ-2",
+      "description": "Choosing a category shows only services of that category."
+    },
+    {
+      "id": "AC-003",
+      "requirementId": "REQ-1",
+      "description": "The list matches the approved desktop screen."
+    }
+  ],
+  "screens": [
+    {
+      "fileKey": "FigmaDeliveryDemo",
+      "nodeId": "12:34",
+      "name": "Service catalogue - desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "attachmentId": "55555555-5555-4555-8555-555555555555",
+      "sha256": "238ec85f8984fd50cb8bb854c5400e8e260d310d7dd672618f6edcc27f2777f8",
+      "capturedAt": "2026-09-19T08:00:00.000Z",
+      "figmaVersion": "2150470001"
+    }
+  ],
+  "tokens": {
+    "color.primary": "#1f6feb",
+    "space.md": 16
+  },
+  "architectureSummary": "Single-page React app; services come from a typed seed module.",
+  "planSummary": "Two tasks: list first, then category filter.",
+  "acTestMap": {
+    "AC-001": [
+      "service catalogue AC-001: service list renders seeded services"
+    ],
+    "AC-002": [
+      "service catalogue AC-002: category filter narrows the list"
+    ]
+  },
+  "manualChecks": {
+    "AC-003": "MC-visual-001"
+  },
+  "declaredTests": [
+    {
+      "testId": "service catalogue AC-001: service list renders seeded services",
+      "file": "src/__tests__/service-catalogue.test.tsx"
+    },
+    {
+      "testId": "service catalogue AC-002: category filter narrows the list",
+      "file": "src/__tests__/service-catalogue.test.tsx"
+    }
+  ],
+  "attachments": [
+    {
+      "attachmentId": "55555555-5555-4555-8555-555555555555",
+      "sha256": "238ec85f8984fd50cb8bb854c5400e8e260d310d7dd672618f6edcc27f2777f8"
+    }
+  ],
+  "resolvedComments": [
+    {
+      "id": "C-1",
+      "screenAttachmentId": "55555555-5555-4555-8555-555555555555",
+      "anchor": {
+        "x": 0.25,
+        "y": 0.4
+      },
+      "body": "Price should be right-aligned.",
+      "resolution": "Accepted; captured in AC-003."
+    }
+  ],
+  "importedManifestHashes": []
+}
