@@ -39,6 +39,7 @@ export const deliveryErrorCodes = {
   invalid_transition: 409,
   result_conflict: 409,
   subject_hash_mismatch: 409,
+  correction_limit_reached: 409,
   payload_too_large: 413,
   unsupported_schema_version: 422,
   unknown_target_profile: 422,
@@ -140,6 +141,23 @@ export function deliveryErrorFromZod(error: z.ZodError): DeliveryErrorResult {
   }
   return buildDeliveryError(firstCode, firstIssue.message, details)
 }
+
+export const taskStatusSchema = z.enum([
+  'draft',
+  'ready',
+  'executing',
+  'awaiting_review',
+  'changes_requested',
+  'verified',
+  'blocked',
+  'cancelled',
+])
+export type TaskStatus = z.infer<typeof taskStatusSchema>
+
+export const USER_SETTABLE_TASK_STATUSES: readonly TaskStatus[] = ['draft', 'ready', 'blocked', 'cancelled']
+
+export const TASK_STATUS_REASONS = ['reconciliation_required', 'dependency_blocked', 'correction_limit_reached'] as const
+export type TaskStatusReason = (typeof TASK_STATUS_REASONS)[number]
 
 export const uuidSchema = z.uuid()
 export const sha256Schema = z.string().regex(SHA256_HEX_PATTERN)

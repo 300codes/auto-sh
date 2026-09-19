@@ -668,6 +668,7 @@ describe('delivery_os contracts v1', () => {
         invalid_transition: 409,
         result_conflict: 409,
         subject_hash_mismatch: 409,
+        correction_limit_reached: 409,
         payload_too_large: 413,
         unsupported_schema_version: 422,
         unknown_target_profile: 422,

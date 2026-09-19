@@ -25,8 +25,11 @@ import {
   sha256Schema,
   sourceRevisionSchema,
   stableIdSchema,
+  taskStatusSchema,
+  USER_SETTABLE_TASK_STATUSES,
   uuidSchema,
   type DeliveryErrorResult,
+  type TaskStatus,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 
 const nameSchema = z.string().trim().min(1).max(200)
@@ -78,19 +81,7 @@ function requireReasonWhenRejected(
 
 export const deliveryInputModeSchema = z.enum(['from_brief', 'from_design'])
 
-export const taskStatusSchema = z.enum([
-  'draft',
-  'ready',
-  'executing',
-  'awaiting_review',
-  'changes_requested',
-  'verified',
-  'blocked',
-  'cancelled',
-])
-export type TaskStatus = z.infer<typeof taskStatusSchema>
-
-export const USER_SETTABLE_TASK_STATUSES: readonly TaskStatus[] = ['draft', 'ready', 'blocked', 'cancelled']
+export { taskStatusSchema, USER_SETTABLE_TASK_STATUSES, type TaskStatus }
 
 export const decisionVerdictSchema = z.enum(['approved', 'rejected'])
 
