@@ -44,7 +44,7 @@ Wyeksportować pakiet dla przygotowanego modułu/przykładu OM, uruchomić realn
 
 **Okna/nakład:** H28–30 i H34–36, 4 h. Odtworzyć retry/restart/cancel/manual_handoff na finalnym commicie, naprawić wykryte błędy i uczestniczyć w próbie demo. Pełny gate prowadzi QA. Progress: 6.1–6.2, 6.4–6.5.
 
-Numer EXEC-03 celowo nie występuje: faza 3 nie ma osobnego przydziału wykonania. **Dostęp WP:** niepotrzebny w całym strumieniu; OM PoC nie wymaga orchestratora WordPressa.
+Numer EXEC-03 celowo nie występuje: faza 3 nie ma osobnego przydziału wykonania. **Dostęp WP:** niepotrzebny w całym strumieniu; OM PoC nie wymaga Studio. Późniejsze podłączenie WP używa własnego pakietu `delivery-wordpress` zgodnie z [planem narzędzi](../../wordpress-studio-tools/plan.md), bez starego runtime/API/DB/kolejki. Sam lokalny smoke pakietu nie zalicza PoC OM→WP.
 
 ## Zasady wykonania
 

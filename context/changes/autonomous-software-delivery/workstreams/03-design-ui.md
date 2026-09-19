@@ -42,7 +42,7 @@ Nadzorować task formularza/potwierdzenia w osobnym worktree równolegle do task
 
 **Okno/nakład:** H24–26, 2 h. **Wejście:** model evidence; endpoint OSS-05 rozwijany równolegle na zamrożonym DTO.
 
-EvidenceTable i DeliveryReport łączą wymaganie→AC→task→rewizję→test→deployment. Odróżnić missing/not_run/failed/unverified. Pokazać zgodę na publikację i osobny odbiór po preview. UI ma obsłużyć również snapshot WP na zanonimizowanym fixture dostarczonym przez Michała; nie wymaga połączenia do jego orchestratora.
+EvidenceTable i DeliveryReport łączą wymaganie→AC→task→rewizję→test→deployment. Odróżnić missing/not_run/failed/unverified. Pokazać zgodę na publikację i osobny odbiór po preview. UI ma obsłużyć snapshot WP na fixture kontraktu własnych narzędzi Studio; nie wymaga starego orchestratora. Fixture nie zalicza PoC, a dane rzeczywiste wymagają podłączenia OSS/enterprise.
 
 **Odbiór:** operator przechodzi do źródłowego dowodu, konflikt wersji jest widoczny, niepełne dane nie stają się PASS. Progress: 5.1, 5.4.
 

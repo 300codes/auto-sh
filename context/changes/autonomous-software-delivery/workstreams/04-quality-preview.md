@@ -34,7 +34,7 @@ H8–H10 przygotować harness testów AC i negatywny fixture bez generowania apl
 
 Uruchomić przygotowany profil publikacji, zweryfikować URL desktop/mobile, build ID i commit; zapisać deployment evidence, następnie zebrać release approval. Czas oczekiwania na hosting nie jest dowodem powodzenia. Przy braku celu lub opóźnieniu rejestrować blocker przed freeze H28.
 
-Dołączyć dowód OM PoC od EXEC-05 oraz świeży, zanonimizowany raport WP od Michała. Sam import/normalizacja w OM nie wymaga dostępu do orchestratora; wykonanie świeżego runa i sprawdzanie jego preview wymagają Michała.
+Dołączyć dowód OM PoC od EXEC-05 oraz świeży skorelowany manifest własnych narzędzi WP, jeśli podłączenie OSS/enterprise jest gotowe. Lokalny smoke nowej witryny i fixture nie zaliczają OM→WP PoC. Wykonanie Studio wymaga WP-ACCESS; stary orchestrator nie jest zależnością. Przy braku dowodu odnotować niezaliczony zakres WP.
 
 **Odbiór:** 5.1–5.5 z właściwymi właścicielami; React PASS tylko na aktualnym URL i finalnej rewizji.
 

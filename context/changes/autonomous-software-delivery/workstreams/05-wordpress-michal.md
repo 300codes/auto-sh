@@ -1,43 +1,35 @@
-# Pakiet WP — Michał, wymagany dostęp do ai-wordpress-orchestrator
+# Pakiet WP — własne narzędzia Studio i nowa witryna
 
-**Wykonawca: Michał.** Wszystkie poniższe zadania oznaczone `WP-ACCESS` wymagają dostępu do `/var/www/html/ai-tools/ai-wordpress-orchestrator`, jego lokalnej sesji lub witryny Studio. Nie delegować ich osobie posiadającej tylko checkout OM.
+**Decyzja użytkownika 2026-09-19:** własny pakiet `@open-mercato/delivery-wordpress` w OM, bez runtime, API, DB, kolejki, sesji i projektów starego ai-wordpress-orchestrator. Dawny wariant importu jego raportów jest **superseded**; źródła mogą pozostać referencją historyczną.
 
-**Łączny limit: 6 osobogodzin wszystkich osób**, obejmujący readiness, debug, eksport, import/normalizację, testy i ewentualny bonus. Dwie godziny H0–2 i do czterech H22–26 są rezerwacją zespołu, nie dodatkowym piątym etatem. Michał może przejąć cały strumień QA albo tylko pakiet WP. Przy wyborze innego strumienia zastosować zamianę opisaną w harmonogramie.
+**Wykonawca dostępu:** Michał lub upoważniony agent. `WP-ACCESS` oznacza dostęp do Studio CLI i nowego dedykowanego katalogu witryny. Nie wymaga dostępu do starej sesji. Kod i testy z atrapami można wykonywać bez tego dostępu.
+
+**Łączny limit: 6 osobogodzin wszystkich osób**, obejmujący readiness, narzędzia, debug, testy, wykonanie i dokumentację. Jest budżetem, nie zapewnieniem ukończenia WP-M01…03. Rezerwacje H0–2 i H22–26 nie tworzą dodatkowego etatu. Niezależne prace można wykonać wcześniej; zależne podłączenie nie blokuje ich wykonania. Po wyczerpaniu limitu przekazać faktyczny stan i braki.
 
 ## WP-M01 — Sprawdzić dostępność i kontrakt raportu [WP-ACCESS]
 
-**Okno/nakład:** H0–2, maks. 2 h. **Zależności:** przygotowana lokalna witryna i istniejąca sesja Michała; równolegle do OSS-01, EXEC-01 i UI-01.
+**Okno/nakład:** H0–2, maks. 2 h readiness w ramach wspólnego limitu. **Zależności:** Studio CLI, uprawnienie do utworzenia nowej witryny i własny katalog roboczy; bez przygotowanej starej witryny.
 
-Sprawdzić aktualne API startu/reportu i Studio preview, bez modyfikowania kodu orchestratora, odczytu plików sekretów i otwierania prywatnego serwera na sieć. Zapisać wersję/stan oraz świeżość dostępnych dowodów. Historyczne wygasłe preview nie jest aktualnym sukcesem.
+Szczegółowy plan WP-M01 oraz dalszych niezależnych prac znajduje się w [wordpress-studio-tools/plan.md](../../wordpress-studio-tools/plan.md). Kolejność: plan → review → implement → impl-review. Sprawdzić wersje i gotowość, opisać własny kontrakt narzędzi oraz manifestu. W pozostałym budżecie wdrożyć pakiet, realny lokalny caller, nową witrynę i motyw, baseline/snapshot, testy i przekazanie. Nie używać starego serwera, jego sekretów ani workerów; nie przerywać wcześniej autoryzowanych runów wyłącznie na potrzeby testu.
 
-Przygotować zanonimizowany przykład raportu z polami potrzebnymi importerowi: run ID, rewizja/snapshot, host checks, statusy, hashe artefaktów i sposób korelacji. Usunąć tokeny, cookies, prywatne dane i podpisane URL; sekretów nie commitować. Fixture oznaczyć jako fixture, nie dowód zaliczenia nowego AC.
+Manifest rozróżnia wykonanie narzędzia, host checks, rzeczywiste hashe plików i danych oraz nieprzeprowadzone kontrole. Fixture oznaczyć jako fixture; nie jest dowodem nowego AC. Lokalny smoke nowej witryny dowodzi samodzielności narzędzi, nie OM→WP E2E.
 
-**Przekazanie H3:** `hackathon/delivery-demo/wordpress-reuse.md`, bezpieczny fixture w `adapters/wordpress/fixtures/`, stan ready/blocked i dokładny warunek nowego runa. Pozostałe osoby mogą na tym budować normalizację bez dostępu WP. Progress: 1.5.
+**Przekazanie:** `hackathon/delivery-demo/wordpress-reuse.md`, kontrakt pakietu, bezpieczne fixture i autentyczne dowody lokalnej próby, stan ready/blocked oraz warunek podłączenia OSS/enterprise. Progress 1.5 pozostaje historycznym identyfikatorem; nie zaliczać go samą aktualizacją planu.
 
 ## WP-M02 — Wykonać świeży PoC export/import [WP-ACCESS]
 
-**Okno/nakład:** H22–26, do 4 h łącznie z WP-M03 i pracą nad importerem. **Wejście:** gotowe API prób/evidence OSS, zatwierdzony baseline/pakiet targetu WP i WP-M01. Nie zależy od React preview, ale nie może zabrać zasobów krytycznemu odbiorowi Reacta.
+**Okno:** pierwotnie H22–26; wyłącznie w pozostałym budżecie 6 h. **Wejście:** gotowe API prób/evidence OSS, zatwierdzony baseline/pakiet targetu WP oraz podłączenie własnych narzędzi do wykonania enterprise. Jeśli zależności nie istnieją, przekazać gotowy interfejs i testy; PoC pozostaje niezaliczony.
 
-Wyeksportować pakiet z OM, wykonać dozwolony run w istniejącym narzędziu i pobrać świeży raport. Zachować korelację task/attempt/baseline/externalRunId. Dla repo bez commitów użyć rzeczywistego hasha snapshotu motywu i danych; nie wymyślać SHA. Znormalizować/importować wynik do OM, przejść contract test. Partial/not_run/expired preview nie mogą stać się PASS/verified. Historyczny raport bez korelacji jest tylko referencją.
+Wyeksportować pakiet z OM, wykonać świeżą próbę przez własny adapter Studio i odebrać wynik w OM. Zachować korelację task/attempt/baseline/identyfikator operacji. Używać rzeczywistego commitu lub hasha snapshotu motywu i danych; nie wymyślać SHA. Partial/not_run/expired preview nie mogą stać się PASS/verified. Nie importować starych raportów jako ścieżki wykonania.
 
-**Część bez WP-ACCESS:** implementację mapowania z fixture, testy schematu i sam import w OM może zrobić dowolna osoba. Jej czas również odejmuje się od limitu 6 h. Michał odpowiada za pozyskanie i autentyczność świeżego raportu; nie trzeba przyznawać innym dostępu do jego sesji.
-
-**Odbiór H26:** działający export/import i świeży skorelowany dowód, jawny stan preview; QA może sprawdzić manifest bez prywatnego środowiska. Progress: część WP 5.3 i 5.5. Blocker po limicie oznacza niezaliczony PoC, nie zaliczenie fixture.
+**Odbiór:** contract test i rzeczywista wymiana OM→WP→OM ze świeżym skorelowanym dowodem; część WP Progress 5.3 i 5.5. Samodzielne narzędzia, fixture i lokalna witryna nie zaliczają tego odbioru. Mapowanie i testy OSS nie wymagają prywatnej sesji Studio; cały nakład pozostaje w limicie WP.
 
 ## WP-M03 — Opcjonalne pełne E2E lub odtworzenie awarii [WP-ACCESS]
 
-**Okno:** tylko pozostały czas rezerwacji WP-M02, bez dodatkowej estymaty. **Warunek:** obowiązkowy PoC gotowy, główny React niezagrożony i niewyczerpany limit 6 h.
-
-Michał wykonuje świeże Apply → upload → verify desktop/mobile na zatwierdzonym target preview, zapisuje dowody wersji i URL. Sam run w kopii Studio nie dowodzi wdrożenia. Ten sam wymóg dostępu obejmuje dodatkowy live retest WP podczas stabilizacji; jeśli nie ma już budżetu, raportować ograniczenie i uzgodnić zmianę zakresu zamiast obiecywać nowe godziny.
-
-**Odbiór:** bonus jawnie nazwany i udokumentowany. Brak bonusu nie blokuje odbioru obowiązkowego PoC; nie jest to osobne wymagane kryterium.
+Tylko po działającym PoC, z dostępnym budżetem i bez zagrożenia Reacta. Publikacja jest odrębnym zakresem wymagającym autoryzowanego targetu. Świeży upload i verify desktop/mobile muszą dotyczyć zatwierdzonej rewizji; lokalna witryna nie dowodzi deploymentu. Brak bonusu nie blokuje odbioru PoC.
 
 ## Rejestr czasu i bezpieczne przekazanie
 
-W `wordpress-reuse.md` zapisywać zadanie, wykonawcę, czas aktywnej pracy, pozostały limit, hash raportu i wynik. Inna osoba nie przejmuje loginów/sekretów Michała. Pliki źródłowe orchestratora pozostają poza zmianami tego repo. Commitować wyłącznie bezpieczne adaptery/fixture i dokumentację w OM.
+W `wordpress-reuse.md` zapisać zadanie, wykonawcę, czas aktywnej pracy, pozostały limit, hashe i wynik. Sekretów nie przenosić. Kod starego orchestratora pozostaje bez zmian; w OM commitować własny pakiet, bezpieczne fixture i dokumentację. Podłączenie domeny i enterprise jest jawnym kolejnym krokiem, zależnym od właścicieli tych powierzchni.
 
-## Zasady wykonania
-
-Źródłem architektury i kryteriów jest [plan główny](../plan.md); kolejność między strumieniami określa [harmonogram](README.md). Nazwa strumienia nie przypisuje osoby. Wybierzcie wykonawców przed H0; wyjątek stanowią wskazane zadania WP wymagające Michała. H to godziny od wspólnego startu.
-
-Przy przekazaniu podać commit, wersję DTO/baseline, wynik testów i ograniczenia. Testy danej funkcji dostarczać wraz ze zmianą, nie odkładać całego coverage do H28. Nie zmieniać cudzych plików bez uzgodnienia; przekazać patch właścicielowi powierzchni. Postęp odbioru aktualizować wyłącznie w Progress planu głównego, po dostarczeniu dowodów. Numer zadania w komunikacie commitu pozwala odtworzyć historię.
+Źródłem kryteriów jest [plan główny](../plan.md), harmonogram zespołu opisuje [README](README.md). Przy przekazaniu podać commit, wersję kontraktu, testy i ograniczenia. Zachować istniejące tytuły Progress; zaznaczać odbiór dopiero po rzeczywistych dowodach.

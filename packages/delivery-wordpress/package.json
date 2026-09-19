@@ -1,0 +1,30 @@
+{
+  "name": "@open-mercato/delivery-wordpress",
+  "version": "0.8.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "test": "node --test src/__tests__/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "studio": "node dist/cli.js"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "typescript": "7.0.2"
+  }
+}

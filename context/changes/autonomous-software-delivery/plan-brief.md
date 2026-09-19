@@ -10,7 +10,7 @@ Budujemy demonstrację kontrolowanego delivery: brief albo zatwierdzone ekrany t
 
 ## Starting Point
 
-OM ma już workflow, ACL, komendy, audit, załączniki i UI. Cezar ma headless CLI; Figma ma zapis przez oficjalny MCP. Lokalny orchestrator WordPressa zawiera wykonanie, raporty i Studio Preview — wykorzystujemy go bez przepisywania silnika.
+OM ma już workflow, ACL, komendy, audit, załączniki i UI. Cezar ma headless CLI; Figma ma zapis przez oficjalny MCP. Własny pakiet `delivery-wordpress` korzysta bezpośrednio ze Studio CLI i tworzy nową witrynę; stary orchestrator jest wyłącznie źródłem referencyjnym.
 
 ## Desired End State
 
@@ -25,12 +25,14 @@ Dwa wejścia prowadzą do wspólnego zatwierdzonego baseline. Agent tworzy desig
 | Design | Agent pisze do Figmy, człowiek zatwierdza | Zachowanie wymogu demonstracji | Użytkownik |
 | Cezar | Bez zmian kodu; wrapper lub manual_handoff | Ograniczenie kosztu integracji | Użytkownik |
 | Targety | React E2E, OM/WP PoC | Domknięcie głównego przebiegu w 36 h | Użytkownik |
-| WordPress | Reuse istniejącego narzędzia, max 6 h pracy | Gotowe wykonanie i preview | Research + użytkownik |
+| WordPress | Własne narzędzia Studio + nowa witryna, max 6 h łącznie | Samodzielne wykonanie; podłączenie OSS/enterprise później | Korekta użytkownika 2026-09-19 |
 | Koszty | Posiadane subskrypcje, limit czasu i iteracji | Bez nieuzgodnionego budżetu API | Użytkownik + plan |
 | Model | 5 encji OSS; wymagania/AC w wersjonowanym baseline | Mniej CRUD-ów przy zachowaniu traceability | Plan |
 | Odbiór | Dowody hosta i człowiek; LLM review pomocniczy | Deklaracja modelu nie jest wynikiem testu | Research + plan |
 
 ## Scope
+
+Szczegóły WP-M01 i niezależnych prac: [plan narzędzi Studio](../wordpress-studio-tools/plan.md). Limit 6 h jest budżetem, nie zapewnieniem wykonania całego pakietu WP.
 
 **W zakresie:** projekty, wymagania/AC, agentowy design, komentarz do snapshotu, akceptacja wymagań, designu, publikacji i odbioru, dwa równoległe zadania, correction loop, traceability, preview i raport.
 
@@ -38,11 +40,11 @@ Dwa wejścia prowadzą do wspólnego zatwierdzonego baseline. Agent tworzy desig
 
 ## Architecture / Approach
 
-`delivery_os` w core przechowuje domenę, baseline i dowody. `delivery_agents` w enterprise zarządza wykonaniem przez istniejący workflow. Dedykowany pakiet `delivery-cezar` wywołuje CLI. OSS nie zależy od enterprise. Figma działa przez sesję MCP; lokalny WordPress zwraca raport do importu. Każda próba jest przypięta do konkretnego baseline i rewizji: commitu dla React/OM, hasha snapshotu dla WP PoC.
+`delivery_os` w core przechowuje domenę, baseline i dowody. `delivery_agents` w enterprise zarządza wykonaniem przez istniejący workflow. Dedykowany pakiet `delivery-cezar` wywołuje CLI. OSS nie zależy od enterprise. Figma działa przez sesję MCP; własne narzędzia Studio zwracają manifest; odbiór przez domenę wymaga późniejszego podłączenia OSS/enterprise. Każda próba jest przypięta do konkretnego baseline i rewizji: commitu dla React/OM, hasha snapshotu dla WP PoC.
 
 Automatyczna próba ma osobny workflow: najpierw trwałe oczekiwanie na wynik, potem kolejka i CLI. Worker zapisuje wynik wewnętrznie; rejestr próby umożliwia ponawialne wznowienie po awarii. Bez publicznego callbacku. OSS-only rezerwuje próbę przez API przed eksportem, a wynik importuje przez uwierzytelniony endpoint. Dwa równoległe runy wymagają kolejki async/Redis sprawdzonej już w H0–H3 i workera o efektywnej współbieżności 2 po zaciśnięciu budżetem połączeń DB.
 
-PASS wymaga zatwierdzonego mapowania AC do testów oraz dowodów na finalnej rewizji integracyjnej. Historyczny raport WP nie zalicza nowej próby. Agentowe propozycje wymagań i planu mają jawny, walidowany import i akceptację przed implementacją. Osobne features pokrywają uzgodnienie próby, publikację i końcowy odbiór.
+PASS wymaga zatwierdzonego mapowania AC do testów oraz dowodów na finalnej rewizji integracyjnej. Historyczny raport WP nie jest ścieżką integracji. Lokalny smoke narzędzi nie zalicza PoC OM→WP ani Progress. Agentowe propozycje wymagań i planu mają jawny, walidowany import i akceptację przed implementacją. Osobne features pokrywają uzgodnienie próby, publikację i końcowy odbiór.
 
 ## Phases at a Glance
 
@@ -63,7 +65,7 @@ PASS wymaga zatwierdzonego mapowania AC do testów oraz dowodów na finalnej rew
 
 - Figma write musi działać na stanowisku używanym w demo; brak tej możliwości blokuje wymaganie FROM_BRIEF. Professional bez właściwego seat/klienta nie wystarcza.
 - Nieudana automatyczna integracja Cezara uruchamia zatwierdzony tryb ręczny, jawnie oznaczony w raporcie.
-- Historyczne WP preview wygasło; potrzebna nowa publikacja i weryfikacja. Limit reuse to 6 osobogodzin łącznie.
+- Nowa witryna i własne narzędzia wymagają świeżego smoke. Publiczna publikacja jest osobnym zakresem; limit WP to 6 osobogodzin łącznie, bez gwarancji całego PoC.
 - Subskrypcje nie gwarantują nieograniczonej dostępności. Nieznane usage nie jest kosztem 0; Extra Credits nie uruchamiają się automatycznie.
 - To plan hackathonowy dla kontrolowanych repo; produkcyjne izolowanie obcego kodu i pełny dispatch mają osobną kontynuację bez dat.
 

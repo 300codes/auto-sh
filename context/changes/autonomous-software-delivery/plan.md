@@ -10,7 +10,7 @@ Dostarczyć kontrolowany przebieg od briefu lub zaakceptowanych ekranów do dzia
 
 Open Mercato dostarcza już uwierzytelnianie, ACL, komendy, załączniki, workflow, audit i podstawy UI. Wykorzystanie tych elementów jest warunkiem harmonogramu. Nie wyceniać ponownie całej koncepcji z 35 encjami jako pracy hackathonowej.
 
-React jest obowiązkowym E2E. OM i WordPress są mierzalnymi PoC adapterów. WordPress wykorzystuje istniejący lokalny projekt użytkownika; pełny przebieg WordPressa jest bonusem po świeżej weryfikacji, bez zmiany głównego celu.
+React jest obowiązkowym E2E. OM i WordPress są mierzalnymi PoC adapterów. WordPress otrzymuje własne narzędzia Studio w OM i całkowicie nową witrynę. Szczegóły WP-M01 oraz prac niezależnych od pozostałych strumieni zawiera [plan narzędzi Studio](../wordpress-studio-tools/plan.md). Podłączenie OSS/enterprise i PoC OM→WP pozostają późniejszym, zależnym odbiorem; lokalny smoke go nie zalicza.
 
 ## Current State Analysis
 
@@ -24,7 +24,7 @@ React jest obowiązkowym E2E. OM i WordPress są mierzalnymi PoC adapterów. Wor
 | Dispatch | Pełny trwały pull worker obejmuje fazy 1–4 specyfikacji dispatchu. Hackathon używa adaptera nad istniejącym CLI lub jawnego przekazania ręcznego. |
 | Cezar | Oficjalne README dokumentuje headless `cezar-cli run`, worktree i zalogowane CLI. Dokładna wersja, output i odzyskanie runa wymagają próby H0–H3. |
 | Figma | Oficjalne MCP umożliwia zapis `use_figma` przez Codex/Claude Code. Wymaga Full seat i prawa edycji. To zastępuje założenie o konieczności budowy własnej integracji zapisu. |
-| WordPress | Istnieją lokalne API, idempotentny start, raporty, izolowane Studio i preview. Integracja lokalna nie jest publicznym API wielotenantowym. |
+| WordPress | Własny pakiet delivery-wordpress wywołuje Studio CLI; stary serwer, API, DB, kolejka i projekty nie są zależnościami. |
 | Dowody WP | Dokumentacja opisuje udany cykl z 2026-09-08, ale wskazane preview wygasło 2026-09-15. Potrzebny nowy pomiar; historyczne PASS nie wystarcza. |
 | Koszty | Użytkownik wybrał posiadane subskrypcje. Nie zakładamy płatnych kluczy API ani raportu kosztu w USD, jeśli źródło go nie dostarcza. |
 
@@ -33,7 +33,7 @@ React jest obowiązkowym E2E. OM i WordPress są mierzalnymi PoC adapterów. Wor
 - Granicę OSS/enterprise realizować jednokierunkowo: enterprise konsumuje publiczne kontrakty OSS; OSS nie importuje ani nie rozwiązuje serwisów swojego konsumenta. Wzorzec: `packages/core/AGENTS.md`, Cross-Module Coupling.
 - `WorkflowInstance` jest właścicielem lifecycle wykonania; `ProcessInstance` to projekcja. Nie tworzyć drugiego silnika przez kolumnę status projektu: `packages/enterprise/src/modules/agent_orchestrator/AGENTS.md`, The Process Model.
 - `/trace/ingest` zapisuje telemetrię; sam ingest nie jest akceptacją pracy ani wznowieniem workflow. Nie dodajemy znaczenia biznesowego do istniejącego kontraktu HMAC.
-- WordPress ma `POST /api/projects/:id/runs` i `GET /api/runs/:id/report`: `/var/www/html/ai-tools/ai-wordpress-orchestrator/src/server/app.js:167` i `:169`.
+- Historyczne źródło, **superseded jako integracja runtime**: WordPress ma `POST /api/projects/:id/runs` i `GET /api/runs/:id/report`: `/var/www/html/ai-tools/ai-wordpress-orchestrator/src/server/app.js:167` i `:169`.
 - WordPress oddziela deklarację modelu od kontroli hosta: `docs/orchestration-evidence.md:19` w tym samym repo. Ten podział zachowujemy w raportach OM.
 
 ## Desired End State
@@ -54,7 +54,7 @@ Wariant awaryjny ma oznaczenie `manual_handoff`: operator uruchamia Cezara i imp
 | Cezar | Adapter OM; ręczne przekazanie/import jako awaria | Użytkownik, odpowiedź 4 |
 | Design | Tworzy agent podczas demo, zatwierdza człowiek | Użytkownik, odpowiedź 5 |
 | Finansowanie | Istniejące subskrypcje; Extra Credits tylko po osobnej decyzji | Użytkownik, odpowiedź 6 |
-| Platformy | React E2E; OM/WP PoC; reuse lokalnego WordPressa | Użytkownik, odpowiedź 7 i doprecyzowanie |
+| Platformy | React E2E; OM/WP PoC; własne narzędzia Studio i nowa witryna | Użytkownik, odpowiedź 7 i doprecyzowanie |
 | Koniec | Preview/staging, dowody, akceptacja; dalsze etapy bez dat | Użytkownik, odpowiedź 8 |
 | Harmonogram | Sześć etapów; H28–H36 stabilizacja; WP max 6 osobogodzin | Zatwierdzony układ planu |
 
@@ -65,7 +65,7 @@ Wariant awaryjny ma oznaczenie `manual_handoff`: operator uruchamia Cezara i imp
 - Nie traktujemy pixel diff Figma–przeglądarka jako bramki; screenshoty są dowodem dla człowieka, testy DOM i zachowania są obiektywną kontrolą.
 - Nie budujemy ogólnego edytora grafu, canvasu z zoomem, automatycznego przenoszenia komentarzy między wersjami, katalogu 35 CRUD-ów ani retrieval repozytoriów.
 - Nie wdrażamy produkcji, samonaprawy incydentów, rozliczeń wielowalutowych, wspólnego magazynu poświadczeń klientów ani bezpiecznego SaaS dla dowolnego obcego kodu.
-- Nie kopiujemy silnika WordPressa ani jego SQLite do OM. Nie usuwamy jego ochrony localhost, sesji, CSRF ani prywatnego preview.
+- Nie używamy starego runtime WordPressa, jego sesji, API, kolejki, DB ani istniejących projektów. Źródła są wyłącznie referencją; własny pakiet OM korzysta bezpośrednio ze Studio CLI.
 - Nie zmieniamy pipeline PR, etykiet, governance DS, publicznych kontraktów istniejących modułów ani wskaźnika official-modules.
 
 ## Implementation Approach
@@ -82,11 +82,11 @@ Wariant awaryjny ma oznaczenie `manual_handoff`: operator uruchamia Cezara i imp
 | Kontrakty OSS | `delivery_os/lib/contracts.ts` | Wersjonowane DTO task/result/adapter, Zod, dostępne bez enterprise. |
 | Deskryptory targetów | `delivery_os/lib/targetProfiles.ts` | Dane o React, OM i WordPress: możliwości, wymagane dowody, wersja profilu. Bez kodu zewnętrznych providerów. |
 | Figma | Sesja obsługiwanego klienta MCP + import baseline do OSS | Zapis agenta na stanowisku designera. Nie powstaje nowy serwer proxy Figma. |
-| WordPress PoC | Istniejące narzędzie + import wspólnego manifestu | Reuse wykonania; automatyczny lokalny mostek tylko jeśli zmieści się w timeboxie. |
+| WordPress PoC | Własny `packages/delivery-wordpress/` + wspólny manifest | Nowa witryna przez Studio CLI; integracja OSS/enterprise po gotowości ich kontraktów. Lokalny smoke nie zalicza PoC. |
 
 UI enterprise dodaje akcję uruchomienia przez istniejący mechanizm widget injection. OSS udostępnia import/export i zadeklarowany spot `delivery_os.project.execution`; nie rozwiązuje tokena DI należącego do enterprise. Dostępność funkcji wynika z aktywnego rozszerzenia i ACL, nie z hardcoded roli.
 
-Publiczny backend pozostaje autorytatywny dla danych i decyzji. Cezar zarządza lokalnymi krokami jednego zadania; WordPress zarządza lokalnym runem WP. Żaden z nich nie zatwierdza projektu w OM. Powiązania do innych modułów to ID i snapshot, bez relacji ORM między modułami.
+Publiczny backend pozostaje autorytatywny dla danych i decyzji. Cezar zarządza lokalnymi krokami jednego zadania; własne narzędzia Studio wykonują operacje WP, a ich wywołaniami docelowo zarządza orchestrator OM. Żaden z nich nie zatwierdza projektu w OM. Powiązania do innych modułów to ID i snapshot, bez relacji ORM między modułami.
 
 Host OSS rzeczywiście renderuje `InjectionSpot` z `spotId="delivery_os.project.execution"` na szczegółach projektu. Typowany kontekst zawiera projectId, opcjonalne taskId/baselineId, updatedAt i retryLastMutation; wynik mutacji odświeża dane hosta. Enterprise deklaruje widget w `widgets/injection-table.ts`. Sama deklaracja spotu nie renderuje rozszerzenia.
 
@@ -120,7 +120,7 @@ Traceability jest projekcją jawnych relacji wewnątrz `delivery_os`; nie wymaga
 
 Każda kontrola ma trwałe `checkId`, `testId`, `acIds[]`, `validationProfileVersion` i `testDefinitionHash`, a wynik testu również `sourceRevision` i hash surowego raportu. W profilu zatwierdzonym przed wykonaniem utrwalić `acId → requiredTestIds[]`; model nie może sam dopisywać brakujących mapowań jako dowodu pokrycia. PASS dla AC wymaga wszystkich obowiązkowych testów tego AC na odbieranej wersji, bez failed/skipped/not_run. Pusty zbiór wymaganych testów oznacza missing. Kryteria oceniane manualnie wskazują osobny `manualCheckId` i decyzję człowieka, nigdy fikcyjny test automatyczny.
 
-Rewizja źródła to unia `sourceRevision = { kind: 'git', commitSha } | { kind: 'snapshot', contentHash, externalWorkspaceId }`. React i OM wymagają wariantu git; WP PoC może użyć hasha zamrożonego motywu i snapshotu danych. Nie wymyślać commit SHA dla raportu WordPressa. `baseCommit/resultCommit` są wymagane dla git, nieobecne dla snapshot; odpowiednia rewizja bazowa i wynikowa pozostaje obowiązkowa. Historyczny raport WP bez korelacji do nowego task/baseline zapisuje się wyłącznie jako materiał referencyjny, nie jako wynik nowej próby ani dowód jej AC. PoC musi zaimportować świeży raport skorelowany z wyeksportowanym pakietem.
+Rewizja źródła to unia `sourceRevision = { kind: 'git', commitSha } | { kind: 'snapshot', contentHash, externalWorkspaceId }`. React i OM wymagają wariantu git; WP PoC może użyć hasha zamrożonego motywu i snapshotu danych. Nie wymyślać commit SHA dla raportu WordPressa. `baseCommit/resultCommit` są wymagane dla git, nieobecne dla snapshot; odpowiednia rewizja bazowa i wynikowa pozostaje obowiązkowa. Historyczny raport WP bez korelacji do nowego task/baseline zapisuje się wyłącznie jako materiał referencyjny, nie jako wynik nowej próby ani dowód jej AC. PoC musi odebrać świeży wynik własnych narzędzi skorelowany z wyeksportowanym pakietem; import starych raportów nie jest ścieżką wykonania.
 
 ### Publiczne operacje prób i decyzji
 
@@ -152,7 +152,7 @@ Własny wrapper mierzy exit code i wywołuje zapisane walidacje. Raport LLM nie 
 
 ## Harmonogram, zasoby i ścieżka krytyczna
 
-Rozpiska zadań na równoległe strumienie, przekazania i bloki pracy: [workstreams/README.md](workstreams/README.md). Zespół sam obsadza strumienie; zadania wymagające dostępu do lokalnego ai-wordpress-orchestrator wykonuje Michał, według [pakietu WP](workstreams/05-wordpress-michal.md). Pakiet pozostaje w limicie 6 h, wydzielonym z poniższego przydziału D; nie dodaje piątej osoby. Używamy Markdown i commitów, bez GitHub Issues.
+Rozpiska zadań na równoległe strumienie, przekazania i bloki pracy: [workstreams/README.md](workstreams/README.md). Zespół sam obsadza strumienie; zadania wymagające dostępu do lokalnego Studio wykonuje Michał lub upoważniony agent, według [pakietu WP](workstreams/05-wordpress-michal.md). Pakiet pozostaje w limicie 6 h, wydzielonym z poniższego przydziału D; nie dodaje piątej osoby. Używamy Markdown i commitów, bez GitHub Issues.
 
 | Etap | Okno | A: OSS/backend | B: wykonanie | C: design/UI | D: QA/adapters | Razem h pracy |
 |---|---|---:|---:|---:|---:|---:|
@@ -177,7 +177,7 @@ Pierwsze trzy godziny są twardym sprawdzeniem wykonalności, z limitem 60–90 
 | H3 | Cezar start/result; Figma write/render; uruchomiony host OM; kolejka async/Redis | Dla Cezara przejść na uzgodnione manual_handoff. Brak Figma write oznacza niezaliczony wymóg FROM_BRIEF i eskalację; nie zastępować go ręcznym designem. Brak async/Redis odbiera etapowi 4 dwa równoległe runy. Na koniec okna obowiązkowo skorygować tabelę 87 osobogodzin zmierzonym czasem prób i pełnego gate, zapisać nową liczbę i ciąć zakres — bez przesuwania freeze H28. |
 | H10 | OSS działa bez enterprise, DTO v1 zamrożone | Zatrzymać dodatki; A/B naprawiają kontrakt. Nie odraczać tenancy ani testu OSS-only. |
 | H16 | Oba wejścia dają zatwierdzony baseline | Nie rozpoczynać implementacji na niezatwierdzonym snapshotcie. |
-| H24 | React działa, correction loop ma dowody | Zakończyć rozwijanie dodatkowych funkcji i użyć bufora. WP pozostaje PoC importu. |
+| H24 | React działa, correction loop ma dowody | Zakończyć rozwijanie dodatkowych funkcji i użyć bufora. WP pozostaje osobno raportowanym PoC; sam pakiet narzędzi nie zalicza integracji. |
 | H28 | Preview i raport skorelowane z commit | Feature freeze; dalsza praca tylko nad kryteriami odbioru i błędami. |
 | H34 | Próba demo + gate walidacyjny | Czerwone kryterium oznaczyć jako niezaliczone; nie zmieniać definicji PASS dla prezentacji. |
 
@@ -211,11 +211,11 @@ H0–H3. Usunąć niepewność dotyczącą sesji, Figma write, CLI i preview prz
 
 **Contract:** Dwa specy odwołują się do tego planu, zawierają model/API, integration coverage oraz Migration & Backward Compatibility. Readiness zapisuje `automatic/manual_handoff`, wersję Cezara i profile stanowisk bez sekretów. Hosting jest parametrem środowiska `previewTargetRef`; nie budujemy nowego providera hostingu. Brak gotowego targetu to blocker, nie zgoda na nowy płatny hosting. Readiness zapisuje także rozstrzygniętą kolejkę: `QUEUE_STRATEGY`, obecność `QUEUE_REDIS_URL`/`REDIS_URL` oraz `DB_POOL_MAX`/`OM_WORKERS_DB_CONNECTION_BUDGET`. Lokalna strategia przetwarza sekwencyjnie, więc nie dowodzi dwóch równoległych runów etapu 4; rozstrzygnięcie należy do tego okna, nie do H8.
 
-**Files:** reuse lokalnego WordPressa: `docs/studio-preview.md`, `src/server/app.js`; nowy `hackathon/delivery-demo/wordpress-reuse.md`.
+**Files:** `packages/delivery-wordpress/`, nowy `hackathon/delivery-demo/wordpress-reuse.md`; szczegóły: [plan narzędzi Studio](../wordpress-studio-tools/plan.md).
 
-**Intent:** Maksymalnie 2 h sprawdzenia przygotowanej witryny Studio, raportu i możliwości preview w ramach całego limitu 6 h.
+**Intent:** WP-M01: maksymalnie 2 h readiness Studio i kontraktu własnych narzędzi. Dalej wykonywać niezależne narzędzia i nową witrynę w pozostałym budżecie 6 h łącznie; limit nie gwarantuje ukończenia całego pakietu WP.
 
-**Contract:** Bez odczytu plików sekretów i bez zmian kodu WP. Zapis stanu `ready/blocked`, referencji do aktualnego dowodu i dopuszczalnego importu. Stare preview nie spełnia kryterium świeżości.
+**Contract:** Bez odczytu plików sekretów, zmian starego orchestratora i użycia jego runtime. Zapis `ready/blocked`, kontraktu narzędzi i nowego manifestu. Test samodzielności: odmowa wszystkich wywołań HTTP podczas testu narzędzi. Fixture i lokalna witryna nie zaliczają PoC OM→WP ani preview.
 
 ### Success Criteria
 
@@ -229,7 +229,7 @@ H0–H3. Usunąć niepewność dotyczącą sesji, Figma write, CLI i preview prz
 #### Manual Verification
 
 - Zespół ogląda utworzony przez agenta ekran, potwierdza login/Full seat i prawa edycji oraz rozumie automatyczny lub ręczny tryb Cezara.
-- D potwierdza wykonalność WP reuse lub zapisuje blocker i wybiera PoC importu, bez przekraczania timeboxu.
+- D potwierdza gotowość własnych narzędzi Studio albo zapisuje blocker w timeboxie; historyczny tytuł Progress 1.5 zachowano, jego kryterium należy interpretować zgodnie z tą korektą.
 
 **Implementation Note:** Po testach właściciel etapu potwierdza manualne kryteria. Zadania zależne czekają na wynik; niezależne przygotowanie kontraktów może trwać.
 
@@ -382,11 +382,11 @@ H20–H28. Połączyć dowody z realnym URL i pokazać wymienność targetów be
 
 **Files:** `hackathon/delivery-demo/adapters/{open-mercato,wordpress}/`, fixture manifestów i testy ich normalizacji.
 
-**Intent:** OM PoC eksportuje pakiet dla przygotowanego modułu/przykładu i importuje rzeczywisty wynik walidacji, pokazując brak zaszytego React w DTO. WP PoC importuje raport istniejącego runa i powiązanie preview ze wskazanego lokalnego narzędzia.
+**Intent:** OM PoC eksportuje pakiet dla przygotowanego modułu/przykładu i importuje rzeczywisty wynik walidacji, pokazując brak zaszytego React w DTO. WP PoC wywołuje własny pakiet Studio z nowego orchestratora OM na nowej witrynie i odbiera świeży skorelowany manifest. Wymaga gotowych API OSS i podłączenia enterprise; niezależna próba lokalna nie zalicza tego kryterium.
 
-**Contract:** PoC to działający export/import + walidacja schematu, nie sama karta platformy. Dane przykładowe są oznaczone fixture i nie zaliczają rzeczywistych AC. Opcjonalny automatyczny WP bridge może używać tylko istniejącej lokalnej sesji; nie czyta plików tokenów i nie otwiera serwera na sieć. Jeżeli wymaga nowego kodu providera w OM, umieścić go w osobnym pakiecie `packages/delivery-wordpress/`; przy limicie czasu wybrać już dopuszczony import zamiast scaffoldingu integracji.
+**Contract:** PoC to działający export/import + walidacja schematu, nie sama karta platformy. Fixture nie zalicza AC. Własny provider mieści się w `packages/delivery-wordpress/`; nie buduje kolejki ani nie korzysta ze starego API/sesji/raportów. Przy braku zależnych modułów przekazać interfejs, testy i ograniczenia, bez deklarowania PoC.
 
-Reuse WP: API startu/reportu i gotowe Studio Apply/Preview pozostają w `/var/www/html/ai-tools/ai-wordpress-orchestrator`. D ma maksymalnie 4 h dalszej pracy po próbie 2 h. Do bonusowego WP E2E wymagane są świeże Apply → upload → verify desktop/mobile; sam zakończony run w kopii nie jest deploymentem.
+Budżet WP: maksymalnie 6 h łącznie, z readiness, narzędziami, testami i przekazaniem. Nie jest obietnicą realizacji całego WP-M01…03. Źródła starego projektu są referencją historyczną, nie zależnością runtime. Publiczne upload/verify są osobnym zakresem; lokalna nowa witryna nie jest deploymentem.
 
 ### Success Criteria
 
@@ -483,7 +483,7 @@ Ponadto uruchomić lint zmienionego zakresu zgodnie z pakietem i nowe integracje
 
 Po zmianach discovery uruchomić `yarn generate`. Generować migracje i przejrzeć SQL/snapshot, nie aplikować `yarn db:migrate` bez odrębnej zgody. Istniejący schemat bazy nie jest traktowany jako gotowy dla nowych tabel. Konfiguracja środowiska/migracji jest warunkiem startu prób integracyjnych.
 
-WordPress: dostępne `npm run lint`, `npm run test:unit`, `npm run test:orchestration`; live preview scripts faktycznie publikują — nie uruchamiać ich jako niewinnego testu jednostkowego. Działać tylko na wybranej witrynie demo i autoryzowanym target preview.
+WordPress: uruchamiać walidację własnego pakietu i testy opisane w dokumencie [plan narzędzi Studio](../wordpress-studio-tools/plan.md). Live smoke tworzy wyłącznie nową witrynę bez wywołań starego serwera; nie uruchamiać skryptów starego projektu ani publicznego uploadu jako testu jednostkowego.
 
 ## Performance Considerations
 
@@ -516,7 +516,7 @@ Jeżeli przyszły etap wymaga nowego publicznego kontraktu lub zmiany istniejąc
 | Limity kont | Osobne autoryzowane sesje, ograniczone iteracje/czas | Nie zakładać ilości tokenów ani dostępności po samym nazwaniu planu. |
 | AI ocenia AI | Host checks, negatywne testy AC, niezależny kontekst review, człowiek | LLM review nadal nie jest dowodem poprawności. |
 | Powtórzenie efektu | Rezerwacja przed spawn, idempotentny import, jawne recovery | Zewnętrzne CLI nie zapewnia exactly-once. |
-| WP reuse zajmuje cały hackathon | 6 h łącznie, import zamiast nowego serwera | Obecna dostępność Studio i preview wymaga świeżej próby. |
+| Własne narzędzia WP przekraczają budżet | 6 h łącznie; zakończyć udokumentowanym stanem i przekazaniem | Narzędzia nie gwarantują gotowości zależnego PoC ani preview. |
 | Przeciek danych/kodu | Tenant/org, scoped attachments, trusted demo repo, bez publicznego WP API | Hackathon nie udowadnia izolacji systemowej wykonywania kodu klientów. |
 
 Nie pozostają nierozstrzygnięte wybory produktowe. Readiness środowiska jest bramką z określonym wynikiem i działaniem przy błędzie, a nie obietnicą, że integracje zostały już wykonane.
@@ -531,7 +531,7 @@ Nie pozostają nierozstrzygnięte wybory produktowe. Readiness środowiska jest 
 - `.ai/specs/enterprise/agent-orchestrator/next/2026-06-19-agent-dispatch.md` — docelowy dispatch, nie gotowy komponent hackathonu.
 - [Cezar README](https://github.com/open-mercato/cezar) — headless CLI i własne loginy, sprawdzone 2026-09-18.
 - [Figma write to canvas](https://developers.figma.com/docs/figma-mcp-server/write-to-canvas/), [dostęp i limity](https://developers.figma.com/docs/figma-mcp-server/rate-limits-access/) — sprawdzone 2026-09-18.
-- `/var/www/html/ai-tools/ai-wordpress-orchestrator/{AGENTS.md,docs/orchestration-evidence.md,docs/studio-preview.md,src/server/app.js}` — lokalne źródła reuse WP.
+- `/var/www/html/ai-tools/ai-wordpress-orchestrator/{AGENTS.md,docs/orchestration-evidence.md,docs/studio-preview.md,src/server/app.js}` — historyczne źródła referencyjne (**superseded**: integracja z ich runtime/API).
 
 ## Progress
 

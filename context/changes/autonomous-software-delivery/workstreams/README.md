@@ -12,10 +12,10 @@ Drzewo kolejności i rozgałęzień: [task-tree.md](task-tree.md).
 | [EXEC](02-execution.md) | Enterprise, Cezar, workflow, recovery, PoC OM | 22 h | Nie |
 | [UI](03-design-ui.md) | Figma, oba wejścia, ekran zadań i raportu | 22 h | Nie |
 | [QA](04-quality-preview.md) | Testy kontraktów/AC, preview React, gate i odbiór | 14 h | Nie, korzysta z przekazanych artefaktów |
-| [WP — Michał](05-wordpress-michal.md) | Dostęp lokalny, świeży run/raport, PoC; opcjonalnie E2E | **6 h max** | **WP-M01, WP-M02, WP-M03: Michał — wymagany dostęp** |
+| [WP — Michał](05-wordpress-michal.md) | Własne narzędzia Studio, nowa witryna; zależny PoC później | **6 h max** | **WP-M01, WP-M02, WP-M03: Michał — wymagany dostęp** |
 | **Razem** | Cztery równoległe stanowiska; WP wydzielone z dawnego przydziału QA | **87 h** | Bez piątej osoby |
 
-Nazwy OSS/EXEC/UI/QA są strumieniami, nie przypisaniem osób. Wyjątkiem jest pakiet WP: czynności dostępu wykonuje Michał. Zanonimizowany fixture pozwala innym pisać normalizację, testy i UI bez dostępu do orchestratora. Ich czas też zalicza się do limitu WP.
+Nazwy OSS/EXEC/UI/QA są strumieniami, nie przypisaniem osób. Wyjątkiem jest pakiet WP: czynności dostępu do Studio wykonuje Michał lub upoważniony agent. Własny pakiet i fixture pozwalają innym pisać mapowanie, testy i UI bez sesji Studio. Ich czas też zalicza się do limitu WP. Szczegół niezależnych prac: [własne narzędzia Studio](../../wordpress-studio-tools/plan.md). Limit 6 h nie gwarantuje całego PoC; podłączenie OSS/enterprise pozostaje zależne i lokalny smoke go nie zalicza.
 
 87 h to przeniesiona estymata planu, nie potwierdzenie wykonalności po review. Po H3 zespół zapisuje ponowną estymatę na podstawie prób i czasu gate. Dodatkowe recovery/testy mogą wymagać bufora. 57 h różnicy do nominalnych 144 obejmuje odpoczynek, oczekiwanie i komunikację; nie traktować jej jako 57 h gwarantowanej dodatkowej pracy. Obowiązkowego zakresu nie usuwać bez decyzji użytkownika; pierwsze rezygnacje dotyczą już opcjonalnego WP E2E i automatycznego mostka WP.
 
@@ -47,8 +47,8 @@ Czas oznacza aktywne bloki pracy. Narzędzia/build mogą działać w przerwach, 
 | QA-04 | 8–10, 19–22 | 5 | Najpierw harness, potem review/poprawka/test finalnego commitu |
 | QA-05 | 26–27 | 1 | Publikacja po zgodzie i weryfikacja React preview |
 | QA-06 | 28–30, 34–36 | 4 | Finalny gate, raport i odbiór |
-| **WP-M01 — Michał** | **0–2** | **2** | **Readiness i bezpieczny fixture z lokalnego WP** |
-| **WP-M02 — Michał** | **22–26** | **4 max** | **Świeży skorelowany raport i działający PoC** |
+| **WP-M01 — Michał** | **0–2** | **2** | **Readiness Studio i kontrakt własnych narzędzi** |
+| **WP-M02 — Michał** | **22–26** | **4 max** | **Pozostały budżet: narzędzia; PoC po gotowości OSS/enterprise** |
 | **WP-M03 — Michał** | **W pozostałym czasie WP-M02** | **0 dodatkowych** | **Opcjonalne E2E/retest, tylko w limicie 6 h** |
 
 Najprostsze obsadzenie: Michał wybiera QA + WP; trzy pozostałe osoby wybierają OSS, EXEC i UI. To przykład, nie przydział. Jeśli Michał wybierze OSS/EXEC/UI, osoba obsadzająca QA ma wolne rezerwacje H0–2 i H22–26: przejmuje w tych godzinach zadania jego strumienia, a Michał robi WP. Dla EXEC/UI kończy on własne readiness H2–3; dla OSS/UI przekazuje też odpowiedni raport H24–26. Uzgodnić dostęp Figma/CLI i kompetencje zastępcy przed H0. Zapisać zamianę wraz z własnością plików; nie dodawać WP na wierzch równoczesnej pracy Michała. Jeśli taka zamiana nie jest możliwa, zespół musi przeplanować obsadę przed startem.
@@ -61,7 +61,7 @@ Najprostsze obsadzenie: Michał wybiera QA + WP; trzy pozostałe osoby wybieraj�
 | H4–H10 | Domena OSS, adapter enterprise, UI i harness na DTO/fixture | Uznania fixture za realny wynik; integracja czeka na działające API |
 | H10–H16 | Backend baseline, Figma/UI, bridge na fake executorze, następnie QA wejść | Generowania aplikacji przed zgodą na bieżący baseline |
 | H16–H22 | Dwa taski React w osobnych worktree, obsługa wykonania i UI; potem review/merge/test | Testu końcowej rewizji przed merge; niezależność tasków wymaga rozłącznych allowedPaths |
-| H20–H28 | OM PoC niezależnie od React; WP PoC od H22; API/UI raportu od H24 | Publikacji przed testami i deploy approval; release przed verify URL |
+| H20–H28 | OM PoC niezależnie od React; WP PoC od H22 tylko po gotowości zależności i w pozostałym budżecie; API/UI raportu od H24 | Publikacji przed testami i deploy approval; release przed verify URL |
 | H28–H36 | Gate oraz niezależne poprawki OSS/EXEC/UI; wspólna próba od H34 | Nowych funkcji po H28; PASS na starszym commicie po poprawce |
 
 Dwa taski generowane przez Cezara to demonstracja produktu. Cztery strumienie z tego katalogu budują samą platformę delivery. Ich zależności nie są tym samym grafem.
