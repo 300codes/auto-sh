@@ -273,11 +273,11 @@ Total: ~2 h (matches EXEC-05 workstream window H20–H22).
 
 | Phase | Status | Date | Notes |
 |-------|--------|------|-------|
-| Phase 1 — target selection | Not started | — | ⚠ Human must confirm: `example` module or `delivery_os` lib tests |
-| Phase 1 — `allowedPathRoots` fix | Not started | — | One-line change to `targetProfiles.ts`; no version bump |
-| Phase 1 — testCatalogue | Not started | — | Depends on target selection |
-| Phase 1 — fixtures | Not started | — | |
-| Phase 1 — contract tests | Not started | — | |
-| Phase 2 — PoC run + `checks[]` | Not started | — | Gated on Phase 1 completion |
-| Phase 2 — QA evidence | Not started | — | |
-| Phase 2 — TC-DELIVERY-009 | Not started | — | OSS directory: `delivery_os/__integration__/TC-DELIVERY-009.spec.ts` |
+| Phase 1 — target selection | Done | 2026-09-19 | Target: `delivery_os` lib tests (AC-OM-001, AC-OM-002) |
+| Phase 1 — `allowedPathRoots` fix | Done | 2026-09-19 | `packages/core/src/modules/**`; allowedPaths.test.ts updated |
+| Phase 1 — testCatalogue | Done | 2026-09-19 | 2 entries in openMercatoModuleV1 |
+| Phase 1 — fixtures | Done | 2026-09-19 | task-package.open-mercato.v1.json + result-manifest.open-mercato.v1.json registered in positiveDeliveryFixtures |
+| Phase 1 — contract tests | Done | 2026-09-19 | targetProfiles.open-mercato.test.ts — 11 tests all passing |
+| Phase 2 — PoC run + `checks[]` | Not started | — | Operational step; requires running app + Cezar or manual manifest |
+| Phase 2 — QA evidence | Not started | — | Gated on PoC run |
+| Phase 2 — TC-DELIVERY-009 | Done | 2026-09-19 | 5 integration test cases; typecheck clean; pre-existing unit failures are unrelated |
