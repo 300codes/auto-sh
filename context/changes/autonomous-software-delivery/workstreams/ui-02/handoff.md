@@ -4,8 +4,8 @@
 > [planu głównego](../../plan.md#progress) — 2.3 i 2.4 są współodbiorem OSS-02, EXEC-02, UI-02 i QA-02
 > i zaznacza je jedna wyznaczona osoba po dowodach od wszystkich czterech stron.
 
-- **Rewizja, na której przechodzi pełny zestaw testów modułu:** `c83163ae2c` (Faza 2).
-  Spec integracyjny `TC-DELIVERY-UI-002` ląduje commitem Fazy 3 na tej samej gałęzi (`feature/design-ui`).
+- **Rewizja, na której przechodzi pełny zestaw testów modułu (52 suity / 1174 testy):** `0e9f1d6d69` (Faza 3,
+  gałąź `feature/design-ui`). Fazy poprzedzające: `effc41b072` (Faza 1), `c83163ae2c` (Faza 2).
 - **Runner walidacji:** **local**. W `docker ps` działają tylko `mercato-postgres` i `mercato-meilisearch`;
   kontenera `app` nie ma, więc tryb Docker nie ma zastosowania.
 - **Uwaga o środowisku:** drzewo nie miało `node_modules` — przed pierwszą bramką wykonano

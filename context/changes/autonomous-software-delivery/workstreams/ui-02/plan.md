@@ -383,8 +383,8 @@ Ostatnia komenda ma nie zwrócić nic. Runner (local albo Docker) wybrać raz dl
 
 - [ ] 3.1 `TC-DELIVERY-UI-002` przechodzi i sprząta rekordy także przy niepowodzeniu asercji.
 - [ ] 3.2 Scenariusz przechodzi na świeżym tenancie, bez danych demo.
-- [ ] 3.3 Pełny zestaw testów modułu przechodzi na rewizji zapisanej w `handoff.md`.
-- [x] 3.4 `handoff.md` zawiera SHA, zakres dostarczony, zakres pominięty i obie prośby do OSS.
+- [x] 3.3 Pełny zestaw testów modułu przechodzi na rewizji zapisanej w `handoff.md`. — 0e9f1d6d69
+- [x] 3.4 `handoff.md` zawiera SHA, zakres dostarczony, zakres pominięty i obie prośby do OSS. — 0e9f1d6d69
 
 #### Manual
 
