@@ -286,7 +286,7 @@ Ustalone przed H0, poza tym planem:
 #### Automated
 
 - [ ] 1.1 Krok 0 zapisany: `whoami` zwrócił tożsamość, seat i plan zgodne z kontem demo; wynik `create_new_file` zapisany.
-- [x] 1.2 `figma-readiness.md` i `evidence/figma/` istnieją; pola stanowiska, konta i wersji klientów wypełnione. — d669e82732
+- [x] 1.2 `figma-readiness.md` i `evidence/figma/` istnieją; pola stanowiska, konta i wersji klientów wypełnione. — d7834d82b7
 - [x] 1.3 `git grep` po wzorcach sekretów w `hackathon/delivery-demo` nie zwraca trafień. — d669e82732
 - [ ] 1.4 Klient podstawowy listuje narzędzie zapisu Figmy; wynik i wskazanie klienta podstawowego zapisane w artefakcie.
 
@@ -312,9 +312,9 @@ Ustalone przed H0, poza tym planem:
 
 #### Automated
 
-- [x] 3.1 `figma-readiness.md` ma statusy `write` i `update` oraz osobną sekcję headless z wynikiem i przyczyną. — dcadbf3e6b
+- [x] 3.1 `figma-readiness.md` ma statusy `write` i `update` oraz osobną sekcję headless z wynikiem i przyczyną. — d669e82732
 - [x] 3.2 `readiness.md` zawiera jedną linię ze statusami `write` i `update` oraz działającym odnośnikiem. — dcadbf3e6b
-- [x] 3.3 Wynik drugiego klienta zapisany jako osobny fakt (`ok` / `failed` z przyczyną / `not_attempted`). — dcadbf3e6b
+- [x] 3.3 Wynik drugiego klienta zapisany jako osobny fakt (`ok` / `failed` z przyczyną / `not_attempted`). — d669e82732
 - [x] 3.4 Skan `git grep` na komplecie artefaktów nie zwraca trafień. — dcadbf3e6b
 
 #### Manual
