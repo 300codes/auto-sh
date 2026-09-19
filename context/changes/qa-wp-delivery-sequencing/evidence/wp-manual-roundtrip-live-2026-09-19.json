@@ -1,0 +1,55 @@
+{
+  "check": "TC-DELIVERY-WP-MANUAL-001 live manual WP technical roundtrip",
+  "date": "2026-09-19",
+  "codeRevision": "f75accbfe + manualRoundtrip unique checkId fix (this commit)",
+  "environment": "macOS arm64, Node 24.15.0, local OM dev :3100 + Postgres omhack, Studio CLI 1.19.0 (standalone wp-studio), PHP 8.5.10, Composer 2.10.3, Tailwind 4.3.3, @playwright/test 1.62.1; TMPDIR outside symlinked /var and /tmp",
+  "result": "passed (1/1, 1.6m, retries 0, workers 1)",
+  "status": "passed",
+  "proofScope": "manual technical frozen-byte checks; no visual design, FLOW, automated executor or release proof",
+  "runId": "69b1bc70-6180-48d7-819c-d91312ba6e45",
+  "projectId": "df1182ce-e564-4e07-a4f3-a760ff8abeb3",
+  "taskId": "e657fa93-4358-4685-8ca5-618b0abffad4",
+  "attempts": [
+    "302df36f-55d3-4d72-ab7d-7f882e8f753a",
+    "b20433d3-ed60-4662-92a4-6c8428f01308"
+  ],
+  "finalRevision": {
+    "kind": "snapshot",
+    "contentHash": "25de656c62a65e68af2ca15828f825b15780704b1b2684c06341a23412e0352b",
+    "externalWorkspaceId": "6b29da2097e1e7e63d00dce46e5607ae09889b726ed363acef4ed86f895ec541"
+  },
+  "attemptTaskStatuses": [
+    "awaiting_review",
+    "awaiting_review"
+  ],
+  "evidenceHashes": {
+    "outcome.json": "c8acd8faf0a3df6063cccbbf92799c1ce04d518a261898cb039c9dd5c3fe8d78",
+    "ledger.json": "7a78bd3ee3b873fc6e4907b9bb509d1f7216f2c45f117420cccaa72da9ebace5",
+    "cleanup.json": "e03e4499914cf05ab97993d061683b744c7044a1b1860239339318ca11f29d62",
+    "attempt-1-manifest.json": "73f9ac3a4fcced398e03b1a09bef79abad4e8a843971c92894c40d9d348e6a9e",
+    "attempt-2-manifest.json": "d0eda0a9d97358a38840f1536db70a511ef6d1a999bdb30c226a8217b3b6949b",
+    "attempt-1-receipts.json": "817c885e7402b8b9e315973c4e7c27e281dd06dadb234bf9bd6f0588222869f5",
+    "attempt-2-receipts.json": "71d4d93f86ab0301604525f34d981c60a930364eda260400ec234144bec18f7b"
+  },
+  "cleanup": {
+    "failures": [],
+    "physicalSiteCleanup": "pending_explicit_disposal",
+    "resources": [
+      {
+        "resource": "6b29da2097e1e7e63d00dce46e5607ae09889b726ed363acef4ed86f895ec541",
+        "state": "stopped_retained_for_explicit_disposal"
+      },
+      {
+        "resource": "df1182ce-e564-4e07-a4f3-a760ff8abeb3",
+        "state": "owned_domain_rows_removed_audit_history_retained"
+      },
+      {
+        "resource": "cb417cf1-c3f8-49c0-b84c-17953ab1c99f",
+        "state": "deleted"
+      }
+    ]
+  },
+  "previousRun": "first live run failed before import: roundtrip test emitted two checks with checkId smoke-tests; frozen result-manifest/v1 requires unique checkIds (duplicate_stable_id). Fixed to smoke-tests-1/-2 like the canonical fixtures. Cleanup of that run had no failures; its stopped site also awaits explicit disposal.",
+  "notProven": "visual design acceptance, FLOW stages, automated EXEC, recovery, Preview upload, release",
+  "rawEvidence": "kept privately on the operator machine (contains local filesystem paths)"
+}

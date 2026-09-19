@@ -167,7 +167,7 @@ export async function runFrozenChecks(config: RoundtripConfig, directory: string
   await fs.writeFile(path.join(work, 'lint-proof.json'), lintReport, { mode: 0o600 })
   const common = { validationProfileVersion: taskPackage.validationProfile.version, sourceRevision: frozen.snapshot.sourceRevision, status: 'passed' as const, exitCode: 0 }
   const checks: WordpressResultMappingInput['checks'] = smokeTestIds.map((testId, index) => ({
-    check: { ...common, checkId: 'smoke-tests', testId, acIds: [`AC-00${index + 1}`], commandProfileId: 'playwright-smoke', durationMs: smokeProcess.durationMs, testDefinitionHash: sha256(smokeDefinition), rawReportHash: sha256(smokeReport) },
+    check: { ...common, checkId: `smoke-tests-${index + 1}`, testId, acIds: [`AC-00${index + 1}`], commandProfileId: 'playwright-smoke', durationMs: smokeProcess.durationMs, testDefinitionHash: sha256(smokeDefinition), rawReportHash: sha256(smokeReport) },
     definition: { path: `${prefix}/smoke-definition.json`, bytes: smokeDefinition }, report: { path: `${prefix}/smoke-proof.json`, bytes: smokeReport },
   }))
   checks.push({ check: { ...common, checkId: 'lint', testId: 'lint', acIds: [], commandProfileId: 'php-lint', durationMs: lintProcess.durationMs, testDefinitionHash: sha256(lintDefinition), rawReportHash: sha256(lintReport) }, definition: { path: `${prefix}/lint-definition.json`, bytes: lintDefinition }, report: { path: `${prefix}/lint-proof.json`, bytes: lintReport } })
