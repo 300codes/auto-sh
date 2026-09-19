@@ -343,13 +343,13 @@ Ostatnia komenda ma nie zwrócić nic. Runner (local albo Docker) wybrać raz dl
 
 #### Automated
 
-- [x] 1.1 `yarn build:packages && yarn generate` przechodzi; rejestr zawiera nową stronę listy.
-- [x] 1.2 `yarn workspace @open-mercato/core test --testPathPatterns='delivery_os' --maxWorkers=4` przechodzi.
-- [x] 1.3 `yarn typecheck` i `yarn lint` przechodzą.
-- [x] 1.4 `yarn i18n:check-sync` i `yarn i18n:check-usage` bez braków; brak nowych literałów użytkownika.
-- [x] 1.5 `git diff --stat` nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`.
-- [x] 1.6 Testy pokrywają odpowiedzi 200/409/404 archiwizacji i obecność nagłówka optimistic lock.
-- [x] 1.7 Test potwierdza, że wiersz bez `updatedAt` nie wysyła DELETE.
+- [x] 1.1 `yarn build:packages && yarn generate` przechodzi; rejestr zawiera nową stronę listy. — effc41b072
+- [x] 1.2 `yarn workspace @open-mercato/core test --testPathPatterns='delivery_os' --maxWorkers=4` przechodzi. — effc41b072
+- [x] 1.3 `yarn typecheck` i `yarn lint` przechodzą. — effc41b072
+- [x] 1.4 `yarn i18n:check-sync` i `yarn i18n:check-usage` bez braków; brak nowych literałów użytkownika. — effc41b072
+- [x] 1.5 `git diff --stat` nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`. — effc41b072
+- [x] 1.6 Testy pokrywają odpowiedzi 200/409/404 archiwizacji i obecność nagłówka optimistic lock. — effc41b072
+- [x] 1.7 Test potwierdza, że wiersz bez `updatedAt` nie wysyła DELETE. — effc41b072
 
 #### Manual
 
@@ -361,15 +361,15 @@ Ostatnia komenda ma nie zwrócić nic. Runner (local albo Docker) wybrać raz dl
 
 #### Automated
 
-- [ ] 2.1 Siedem istniejących testów szczegółów przechodzi bez zmiany ich asercji.
-- [ ] 2.2 Trzy rozłączne komunikaty: brak baseline'u, brak zadań, brak endpointu dowodów.
-- [ ] 2.3 `percent: null` nie renderuje się jako wartość procentowa.
-- [ ] 2.4 `attemptRegisterReadable: false` daje komunikat inny niż brak prób.
-- [ ] 2.5 Wybór zadania trafia do `context.taskId` walidowanego schematem; zniknięcie zadania po refetchu czyści wybór.
-- [ ] 2.6 Błąd jednego źródła sekcji nie odmontowuje `InjectionSpot`.
-- [ ] 2.7 Węzeł `[data-testid="delivery-execution-action"]` obecny z właściwym `data-task-id` i nieobecny po odebraniu `delivery_agents.execute`.
-- [ ] 2.8 `yarn i18n:check-sync`, `yarn i18n:check-usage`, `yarn lint`, `yarn typecheck` przechodzą.
-- [ ] 2.9 `git diff --stat` nadal nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`.
+- [x] 2.1 Siedem istniejących testów szczegółów przechodzi bez zmiany ich asercji.
+- [x] 2.2 Trzy rozłączne komunikaty: brak baseline'u, brak zadań, brak endpointu dowodów.
+- [x] 2.3 `percent: null` nie renderuje się jako wartość procentowa.
+- [x] 2.4 `attemptRegisterReadable: false` daje komunikat inny niż brak prób.
+- [x] 2.5 Wybór zadania trafia do `context.taskId` walidowanego schematem; zniknięcie zadania po refetchu czyści wybór.
+- [x] 2.6 Błąd jednego źródła sekcji nie odmontowuje `InjectionSpot`.
+- [x] 2.7 Węzeł `[data-testid="delivery-execution-action"]` obecny z właściwym `data-task-id` i nieobecny po odebraniu `delivery_agents.execute`.
+- [x] 2.8 `yarn i18n:check-sync`, `yarn i18n:check-usage`, `yarn lint`, `yarn typecheck` przechodzą.
+- [x] 2.9 `git diff --stat` nadal nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`.
 
 #### Manual
 
