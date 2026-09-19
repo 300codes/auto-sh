@@ -493,7 +493,7 @@ test.describe('TC-DELIVERY-002: baseline input modes on the real database', () =
       // Baseline POST by org B against org A's project must return 404
       const foreignBaseline = await foreignCall('POST', `${API}/projects/${projectId}/baselines`, {
         body: { source: 'manual' },
-        lock: 'stale-lock',
+        lock: new Date().toISOString(),
       })
       expect(foreignBaseline.status, `org B baseline POST: ${JSON.stringify(foreignBaseline.body)}`).toBe(404)
       expect(JSON.stringify(foreignBaseline.body)).not.toContain(projectId)

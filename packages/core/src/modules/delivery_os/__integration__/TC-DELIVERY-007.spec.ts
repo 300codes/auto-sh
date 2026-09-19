@@ -299,12 +299,18 @@ async function createRestrictedUser(
 }
 
 test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', () => {
+  let cachedAdminToken: string | null = null
+
+  test.beforeAll(async ({ request }) => {
+    cachedAdminToken = await getAuthToken(request, 'admin')
+  })
+
   test.afterAll(async ({ request }) => {
     await deleteProjectsInDb(createdProjectIds)
     for (const table of INDEX_TABLES) {
       await sql(`delete from ${table} where entity_type = 'auth:user' and entity_id = any($1::text[])`, [createdUserIds])
     }
-    const token = await getAuthToken(request, 'admin')
+    const token = cachedAdminToken ?? await getAuthToken(request, 'admin')
     for (const attachmentId of createdAttachmentIds) await deleteAttachmentIfExists(request, token, attachmentId)
     const leftAttachments = await sql<{ total: string }>('select count(*) as total from attachments where id = any($1::uuid[])', [createdAttachmentIds])
     expect(leftAttachments[0]?.total, 'no attachment of this spec is left behind').toBe('0')
@@ -317,7 +323,7 @@ test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', (
     let seed: SeededTask | null = null
     const fixtureUsers: FixtureUser[] = []
     try {
-      token = await getAuthToken(request, 'admin')
+      token = cachedAdminToken ?? await getAuthToken(request, 'admin')
       const superadminToken = await getAuthToken(request, 'superadmin')
       const call = caller(request, token)
       seed = await seedReadyTask(request, token, call, 'acl-cancel')
@@ -367,7 +373,7 @@ test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', (
     let seed: SeededTask | null = null
     const fixtureUsers: FixtureUser[] = []
     try {
-      token = await getAuthToken(request, 'admin')
+      token = cachedAdminToken ?? await getAuthToken(request, 'admin')
       const superadminToken = await getAuthToken(request, 'superadmin')
       const call = caller(request, token)
       seed = await seedReadyTask(request, token, call, 'acl-reconcile')
@@ -426,13 +432,18 @@ test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', (
     let token: string | null = null
     let seed: SeededTask | null = null
     try {
-      token = await getAuthToken(request, 'admin')
+      token = cachedAdminToken ?? await getAuthToken(request, 'admin')
       const call = caller(request, token)
       seed = await seedReadyTask(request, token, call, 'late-result')
       const { taskId } = seed
 
       const attemptId = await reserveAttempt(call, taskId, seed.taskUpdatedAt)
       await flipAttemptToClaimed(taskId, attemptId)
+
+      // Fetch the task package BEFORE cancelling — the package endpoint may reject cancelled attempts.
+      const taskPackage = await call('GET', `${API}/tasks/${taskId}/package?attemptId=${attemptId}`)
+      expect(taskPackage.status, `package before cancel: ${JSON.stringify(taskPackage.body)}`).toBe(200)
+      const manifest = buildResultManifest(taskPackage.body as TaskPackageV1)
 
       const lock = (await taskVersion(call, taskId)).updatedAt
       const cancelled = await call('POST', `${API}/tasks/${taskId}/attempts/${attemptId}/cancel`, {
@@ -442,14 +453,7 @@ test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', (
       expect(cancelled.status, `cancel: ${JSON.stringify(cancelled.body)}`).toBe(200)
       expect(cancelled.body.state).toBe('cancel_requested')
 
-      // Attempt to deliver a result after cancel — the attempt is cancel_requested and not
-      // accepting results. The domain must reject this with a 409.
-      const taskPackage = await call('GET', `${API}/tasks/${taskId}/package?attemptId=${attemptId}`)
-      // Package read may still work on a cancel_requested attempt (read-only endpoint)
-      const manifest = taskPackage.status === 200
-        ? buildResultManifest(taskPackage.body as TaskPackageV1)
-        : { attemptId, schemaVersion: 'delivery.result-manifest/v1', projectId: seed.projectId, taskId, baselineId: seed.baselineId }
-
+      // Attempt to deliver a result after cancel — the domain must reject this with 409.
       const lateResult = await call('POST', `${API}/tasks/${taskId}/results`, { body: { attemptId, manifest } })
       expect(lateResult.status, `late result after cancel: ${JSON.stringify(lateResult.body)}`).toBe(409)
       // The code is one of: attempt_closed, attempt_cancelled, attempt_not_active
@@ -479,7 +483,7 @@ test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', (
     let token: string | null = null
     let seed: SeededTask | null = null
     try {
-      token = await getAuthToken(request, 'admin')
+      token = cachedAdminToken ?? await getAuthToken(request, 'admin')
       const call = caller(request, token)
       seed = await seedReadyTask(request, token, call, 'bad-resolution')
       const { taskId } = seed
@@ -531,7 +535,7 @@ test.describe('TC-DELIVERY-007: cancel and reconcile ACL + state transitions', (
     let token: string | null = null
     let seed: SeededTask | null = null
     try {
-      token = await getAuthToken(request, 'admin')
+      token = cachedAdminToken ?? await getAuthToken(request, 'admin')
       const call = caller(request, token)
       seed = await seedReadyTask(request, token, call, 'state-transition')
       const { taskId, projectId, baselineId } = seed

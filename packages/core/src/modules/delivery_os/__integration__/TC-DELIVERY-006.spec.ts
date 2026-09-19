@@ -423,6 +423,11 @@ test.describe('TC-DELIVERY-006: evidence recording edge cases', () => {
       const attemptId = await reserveAttempt(call, taskId, seed.taskUpdatedAt)
       await flipAttemptToClaimed(taskId, attemptId)
 
+      // Fetch the task package BEFORE cancelling — the package endpoint may reject cancelled attempts.
+      const taskPackage = await call('GET', `${API}/tasks/${taskId}/package?attemptId=${attemptId}`)
+      expect(taskPackage.status, `package before cancel: ${JSON.stringify(taskPackage.body)}`).toBe(200)
+      const manifest = buildResultManifest(taskPackage.body as TaskPackageV1)
+
       const lock = (await taskVersion(call, taskId)).updatedAt
       const cancelled = await call('POST', `${API}/tasks/${taskId}/attempts/${attemptId}/cancel`, {
         body: { reason: 'TC-DELIVERY-006 cancelled attempt test' },
@@ -431,15 +436,7 @@ test.describe('TC-DELIVERY-006: evidence recording edge cases', () => {
       expect(cancelled.status, `cancel: ${JSON.stringify(cancelled.body)}`).toBe(200)
       expect(cancelled.body.state).toBe('cancel_requested')
 
-      // Now attempt to deliver a result for the cancelled attempt. The attempt is
-      // cancel_requested (not yet closed via reconcile), so the domain treats it as
-      // non-accepting. The expected code is attempt_closed or attempt_cancelled.
-      const taskPackage = await call('GET', `${API}/tasks/${taskId}/package?attemptId=${attemptId}`)
-      // Package read on a cancel_requested attempt may still succeed (read-only)
-      const manifest = taskPackage.status === 200
-        ? buildResultManifest(taskPackage.body as TaskPackageV1)
-        : { attemptId, schemaVersion: 'delivery.result-manifest/v1', projectId: seed.projectId, taskId, baselineId: seed.baselineId }
-
+      // Now attempt to deliver a result for the cancelled attempt. Domain must reject it.
       const lateResult = await call('POST', `${API}/tasks/${taskId}/results`, { body: { attemptId, manifest } })
       expect(lateResult.status, `late result after cancel: ${JSON.stringify(lateResult.body)}`).toBe(409)
       expect(['attempt_closed', 'attempt_cancelled', 'attempt_not_active']).toContain(lateResult.body.code)
