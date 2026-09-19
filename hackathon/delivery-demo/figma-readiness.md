@@ -110,6 +110,14 @@ pierwsza próba w tym oknie, zanim uprawnienia nadano jawnie.
 dwóch rzeczy: utrwalonej autoryzacji w profilu klienta oraz jawnej listy dozwolonych narzędzi w
 komendzie uruchamiającej. Nie kopiowano żadnych plików sesji ani poświadczeń.
 
+**Ryzyko nierozwiązane — trwałość autoryzacji.** Nie wiadomo, jak długo żyje uzyskany token i czy
+odnawia się sam. Zmierzyć się tego nie da inaczej niż upływem czasu, więc pozostaje jako znane
+ryzyko, nie jako fakt. Konsekwencja przy wygaśnięciu jest natomiast pewna: odnowienie wymaga
+człowieka wykonującego `/mcp` i logowania w przeglądarce, a proces nieinteraktywny — w tym Cezar —
+tego nie zrobi i zatrzyma się na odmowie narzędzia. Objaw do rozpoznania w trakcie demo: serwer
+`figma` wraca do stanu `Needs authentication`, a narzędzia znikają z listy. Kto prowadzi próbę,
+powinien mieć dostęp do przeglądarki na koncie `michal.strzesniewski@300.codes`.
+
 ## Wynik drugiego klienta
 
 `not_attempted` — Codex CLI nie jest zainstalowany na stanowisku demo. Zgodnie z kontraktem Fazy 1
