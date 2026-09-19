@@ -2,6 +2,8 @@
 
 Data: 2026-09-19. Baza checkoutu: `658a7b4f63`. Zakres zatwierdzony w tej sesji: **UI z jawnymi blokadami D1/D2/D3**, bez przejmowania API/komend OSS. Nie jest to pełny odbiór UI-05 ani FLOW-07. `change.md` pozostaje `implementing`; kanoniczny Progress planu głównego nie został zaliczony.
 
+Commit implementacji i testów: `b4bfdac601` — `feat(delivery): UI-05 add revision reports and explicit OSS dependency blocks` (31 plików).
+
 ## Dostarczone zachowanie
 
 | Faza | Dostarczony zakres | Pozostałe warunki |
