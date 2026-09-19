@@ -1,5 +1,18 @@
 # Uzupełnienie researchu do planu domknięcia
 
+## Aktualizacja przy implementacji — 2026-09-19
+
+Pierwszy inwentarz implementacji na `4a88394432` znalazł dostawy poza checkoutem:
+F1 HTTP/gate na `origin/main` (`ee369f72da`), F2 na `origin/dev-mateusz`
+(`f8eb5651d8`) oraz F3/F4 na `origin/dev-mateusz-flow-b` (`749b93fa2d`).
+`origin/main` zawiera także nowe narzędzia WP (`83a2d8c2d9`). Poniższe historyczne
+określenia „brak” dotyczą wyłącznie bazy planowania, nie wszystkich branchy.
+Nie wykonano fetch; aktualność serwera pozostaje niepotwierdzona.
+
+Dokładna delta, konflikty D1–D3/F4, decyzja o dostosowaniu recovery Staff do planu,
+ledger kontraktów i aktualny probe środowiska: [handoff.md](handoff.md).
+Testy dostawców nie stanowią PASS po integracji. Manualny odbiór pozostaje pending.
+
 Data: 2026-09-19. Odczyty checkoutu, bez testów, migracji, uruchomienia aplikacji,
 usług zewnętrznych i porównywania branchy. Trzy równoległe analizy uzupełniały
 konkretne luki planowania; nie zastępują [audytu](research.md).

@@ -10,7 +10,7 @@ Provide a private, standalone OM package that creates a new local WordPress Stud
 
 ## Overview
 
-This implements the authorized independent portion of WP-M01 and the [Studio tools plan](../../context/changes/wordpress-studio-tools/plan.md). Total work, including prior analysis, reviews and validation, has a six-hour budget. This is not a promise to complete the later OM→WP integration within that budget. Readiness and live results belong in [the handoff](../../hackathon/delivery-demo/wordpress-reuse.md).
+This implements the authorized independent portion of WP-M01 and the [Studio tools plan](../../context/changes/wordpress-studio-tools/plan.md). The user removed the original six-hour cap on 2026-09-19. Continue all independent local work under the QA/WP sequencing plan (`context/changes/qa-wp-delivery-sequencing/plan.md`, source revision `83a2d8c2d9`), stopping integration at concrete dependencies on the team's code or required approvals. Readiness and live results belong in [the handoff](../../hackathon/delivery-demo/wordpress-reuse.md).
 
 ## Problem Statement
 
@@ -64,7 +64,7 @@ Validation uses the package's `npm test`, `npm run typecheck` and `npm run build
 | Snapshot races with writes | High / evidence | Site lock, confirmed stop, backup API and frozen bytes | External filesystem writers must be excluded by the operator |
 | CLI output contains credentials | High / confidentiality | Bounded subprocess output and safe error codes; no raw output in evidence | Private state and runtime access remain sensitive |
 | Studio/Git unavailable or incompatible | Medium / availability | Explicit runtime, registration checks, tested tool versions | No fallback to the old runtime; report a blocker |
-| Six-hour budget expires | Medium / delivery | Deliver actual state and remaining integration work | Full OM→WP PoC may remain incomplete |
+| Required EXEC/OSS/design implementation is absent | Medium / delivery | Complete independent local branches and identify exact integration inputs | Full OM→WP acceptance remains pending until those inputs exist |
 
 ## Migration & Backward Compatibility
 
@@ -94,8 +94,134 @@ No blocking scope decisions remain for independent tools. Future delivery DTO ma
 
 ## Changelog
 
+- 2026-09-19: Reused the additive provider implementation from `83a2d8c2d9` for UI completeness. Package-local token fixtures remove dependence on absent planning artifacts. Node 24.13.0 verification passed 259 tests, typecheck and build; no live WordPress or publication was run. The newer plan requires two languages, still pending.
+
+- 2026-09-19: Recorded removal of the WP time cap and internal theme preparation/update, native editor fixture and deployment inventory implementation; browser acceptance and integration gates remain independently tracked.
+
 - 2026-09-19: Added pending target-site requirements for Tailwind, modular CSS/PHP, Figma-driven theme.json, required plugins and editability checks WP-01…05; no implementation claimed.
 
 - 2026-09-19: Added implementing specification for independent Studio tools, new-site ownership, snapshot evidence and the boundary to future delivery integration.
 
 - 2026-09-19: Implemented and reviewed independent tools; live replay and HTTP passed. Human acceptance and domain integration remain pending.
+
+## Aktualizacja zakresu demo — Polylang Free
+
+Poniższe odroczenie jest historyczną decyzją dla wcześniejszego demo. Nowszy,
+zatwierdzony [plan UI completeness](../../context/changes/autonomous-software-delivery/workstreams/ui-completeness/plan.md)
+przywraca w fazie 7 obowiązek dwóch języków, zgodności ACF–Polylang oraz zachowania
+tłumaczeń po redeploy. Dla obecnego zakresu te wymagania mają status **pending**;
+wcześniejsze `deferred_by_user` nie zwalnia ich z implementacji ani odbioru.
+
+Decyzja użytkownika z 2026-09-19: tłumaczenia odroczone poza demo. Polylang Free
+pozostaje wybraną wtyczką; nie wymagamy drugiego języka ani integracji tłumaczeń ACF
+na odbiór demo. Ten zakres ma status deferred_by_user, nie PASS ani blocker.
+Edycja treści/ACF/SEO w jednym języku oraz zachowanie treści i Global Styles po
+redeploy nadal należą do odbioru. To doprecyzowanie zastępuje wcześniejsze wymaganie
+wielojęzycznego probe przed demo.
+
+## 2026-09-19 — internal demo-readiness operator
+
+Additive local operator implementation: F0 plan (`context/changes/wordpress-demo-foundation/plan.md`, source revision `83a2d8c2d9`)
+and implementation adaptations (`context/changes/wordpress-demo-foundation/implementation-notes.md`, source revision `83a2d8c2d9`).
+Existing public createSite v1 and exports stay unchanged. Trusted local config pins the
+three user-selected plugins by version/hash; ownership and inventory are checked under
+the existing operation lock. Frozen verified ZIP bytes are transported via temporary
+loopback HTTP because the Studio sandbox cannot mount arbitrary private host paths.
+No paid archive is staged in the served site. Native draft/content/meta/noindex replay,
+cleanup, snapshot, HTTP and owned-site stop produce bounded standalone evidence.
+Generic native metadata is not an ACF field/editor or SEO acceptance test. No translation,
+Tailwind, Figma approval, redeploy, OM roundtrip or public preview completion is implied.
+
+## Doprecyzowanie użytkownika: build lokalny przed Preview
+
+Cała instalacja, konfiguracja, build i testy odbywają się lokalnie. Dopiero gotowa,
+zweryfikowana i zatwierdzona rewizja/snapshot trafia do Studio Preview jako deployment.
+Na Preview nie instalujemy wtyczek ani zależności i nie uruchamiamy builda; wykonujemy
+odczytową weryfikację wysłanej rewizji. Poprawki przygotowujemy lokalnie i wysyłamy jako
+kolejny deployment po lokalnych kontrolach. Obecny probe F0 działa wyłącznie lokalnie;
+nie jest dowodem pełnego builda systemu ani wykonanej publikacji Preview.
+
+## 2026-09-19 — local build and token fixture preparation
+
+Internal Tailwind builder (`context/changes/wordpress-local-theme-build/plan.md`, source revision `83a2d8c2d9`)
+compiles real pinned Tailwind 4.3.3 locally from bounded owned PHP/HTML/JS sources,
+without executing theme code or fetching build dependencies. Only generated CSS is
+written atomically; native content, theme.json and Global Styles are preserved.
+Frontend/editor enqueue was pending at this preparation stage; see the subsequent
+implementation below. Complete WP-01 still requires its full acceptance evidence.
+
+Internal token mapper (`context/changes/wordpress-design-token-mapping/plan.md`, source revision `83a2d8c2d9`)
+validates a small versioned fixture/operator export subset and deterministically emits
+WordPress preset settings plus matching Tailwind variables. Actual authenticated design
+approval, applying the settings fragment, layout/radii/variants and browser fidelity are
+not proven by fixture tests. Complete WP-02 is not accepted. Public createSite v1 and
+exports remain unchanged; neither operator performs remote installation/build/upload.
+
+A future deployment must inventory the complete prepared site, including required
+plugins/media/configuration as well as built theme and DB. Existing theme+DB v1 snapshot
+hashes alone do not attest every uploaded file; full artifact binding is a separate
+Preview adapter requirement before publishing the approved local result.
+
+## 2026-09-19 — internal QA/WP sequencing implementation
+
+The sequencing plan (`context/changes/qa-wp-delivery-sequencing/plan.md`, source revision `83a2d8c2d9`) now owns
+the remaining work. Internal `prepare-theme.ts` applies controlled preset settings,
+installs native frontend/editor enqueue and builds CSS under one site lock.
+`theme-update.ts` changes only bounded, expected-hash theme files and rebuilds locally;
+native content and the database are not restored. Private journals retain before-images
+and uncertain failures retain the lock for explicit operator reconciliation.
+
+`editor-fixtures.ts` provisions an owned non-administrator actor, native content,
+two separate media assets, navigation, template parts, Global Styles and ACF fields.
+The repository-native `TC-DELIVERY-WP-EDITOR-001` exercises browser editing, real
+ACF/Yoast persistence, administrative access denial and retention across a real
+theme update. Its passing status must come from the recorded live run, not the
+presence of the spec or unit tests. Temporary native objects are cleaned up;
+the explicitly authorized theme update remains in the local demo.
+
+`deployment-manifest.ts` captures private wp-content inventory and a consistent
+SQLite backup. Its manifest states `captured_inventory_only`: core/runtime and
+configuration substitution, content approval and database-secret checks remain
+explicit host requirements. `preview.ts` supplies scoped read-only inventory and
+a transition reducer, not a working upload transport or authenticated approval.
+Studio's registered-site upload interface must be reconciled with a frozen approved
+package by the host integration. No public API, createSite v1 or snapshot v1 hash
+semantics change. No Preview upload or final release acceptance is implied.
+
+## 2026-09-19 — WP-M02 internal result mapping preparation
+
+`delivery_os/lib/wordpressResultMapper.ts` maps an authoritative reserved TaskPackage,
+backend-derived scope/execution binding, two provider snapshots and byte-backed
+artifacts/checks to the existing ResultManifestV1. It validates both workspace IDs,
+creation versus execution attempt identity, snapshot aggregate and artifact hashes,
+changedPaths against profile/package scope and canonical reported-check constraints.
+It preserves missing/failed/not_run checks without manufacturing acceptance proof.
+
+The function has no filesystem access, provider runtime dependency, API endpoint or
+new public WordPress export. The caller remains responsible for authentication and
+private artifact ownership/access. Existing snapshot v1 hashes and OSS DTOs are unchanged.
+The internal mapper rejects more than 200 unique artifact references, check artifacts
+over 8 MiB each / 64 MiB total, and inputs over 1216 MiB before hashing. It does not truncate
+evidence; a larger transport representation requires a separate contract decision.
+
+Verification: 35 focused unit tests and narrow TypeScript passed; independent review
+closed inventory-scope and resource-bound findings. A recorded provider capture pins
+the hash algorithm. Live store binding, result/review import and full E2E remain pending;
+no production endpoint or UI path was added in this preparation. Evidence and review:
+mapper (`context/changes/qa-wp-delivery-sequencing/evidence/wp-result-mapper.json`, source revision `83a2d8c2d9`),
+review (`context/changes/qa-wp-delivery-sequencing/reviews/impl-review-phase-4-preparation.md`, source revision `83a2d8c2d9`).
+
+
+## 2026-09-19 — Original capture receipts and offline handoff
+
+Internal `capture-owned-snapshot.ts` binds each new successful capture to a private
+original receipt. One ownership lock covers confirmed stop, SQLite/theme capture,
+confirmed restoration and durable receipt creation. Errors retain reconciliation locks.
+`readCapturedOwnedSnapshot` requires the original receipt hash and derives metadata
+from that receipt before checking actual snapshot bytes. Historical captures cannot
+be assigned retrospective original receipts. Public exports and v1 contracts are unchanged.
+
+Eleven focused tests and package TypeScript passed; the full pre-staging WP suite
+passed244 tests. Studio commands are explicitly simulated in receipt unit tests.
+Full OM build and live integration acceptance move to the second computer; see
+handoff (`context/changes/qa-wp-delivery-sequencing/offline-handoff.md`, source revision `83a2d8c2d9`).

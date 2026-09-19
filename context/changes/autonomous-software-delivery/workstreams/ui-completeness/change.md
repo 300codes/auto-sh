@@ -1,7 +1,7 @@
 ---
 id: delivery-design-ui-completeness
 title: Audyt kompletności strumienia UI i podplanów UI-01–06
-status: planned
+status: implementing
 created: 2026-09-19
 updated: 2026-09-19
 ---

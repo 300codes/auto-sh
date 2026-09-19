@@ -1,5 +1,18 @@
 # UI-01 — gotowość agentowego zapisu w Figmie
 
+## Aktualny probe Codex — 2026-09-19
+
+O 17:21:51 UTC operator techniczny (agent Codex 0.155.1) wykonał read-only
+`whoami` i `get_metadata` historycznego pliku `5wOkFtN959W4MFmgRuaU8S`, node `3:2`.
+Oba wywołania zwróciły `USER_NOT_LOGGED_IN` / connector not connected.
+W tej sesji identity/read są **blocked**, write/render/comments **not_run**.
+Nie wykonano żadnego zapisu ani nie zmieniono historycznego pliku.
+
+Adam musi połączyć konto w aktualnym kliencie i powtórzyć probe read/render/write;
+odczyt komentarzy/odpowiedzi wymaga osobnego połączenia i probe. Historyczny sukces
+Claude opisany niżej pozostaje dowodem tamtej sesji, nie aktualnej gotowości Codex.
+Szczegóły: [handoff UI completeness](../../context/changes/autonomous-software-delivery/workstreams/ui-completeness/handoff.md).
+
 > Artefakt dowodowy zadania [UI-01](../../context/changes/autonomous-software-delivery/workstreams/ui-01/plan.md).
 > Statusy kryteriów 1.2 i 1.4 **planu głównego** prowadzi wyłącznie
 > [Progress planu głównego](../../context/changes/autonomous-software-delivery/plan.md#progress) — ten plik dostarcza fakty, nie zalicza bramek.

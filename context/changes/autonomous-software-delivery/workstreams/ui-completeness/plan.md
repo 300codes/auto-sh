@@ -546,12 +546,12 @@ Oczekiwanie na konta/licencje/operatorów i renderowanie live może wydłużyć 
 
 #### Automated
 
-- [ ] 1.1 Inwentarz SHA i plików oraz kontrola referencji dokumentów potwierdzają mapę istniejących i brakujących dostaw bez odtwarzania D1–D3.
-- [ ] 1.2 Kontrakty delty i ledger wskazują request/response, scope, ACL, lock, idempotencję, błędy, testy i właściciela każdego nowego punktu integracji.
+- [x] 1.1 Inwentarz SHA i plików oraz kontrola referencji dokumentów potwierdzają mapę istniejących i brakujących dostaw bez odtwarzania D1–D3.
+- [x] 1.2 Kontrakty delty i ledger wskazują request/response, scope, ACL, lock, idempotencję, błędy, testy i właściciela każdego nowego punktu integracji.
 
 #### Manual
 
-- [ ] 1.3 Właściciele potwierdzają przekazanie kontraktów i readiness z dowodami albo nazwanymi blockerami; ustalają operatorów, odbierającego i ponowną estymatę.
+- [x] 1.3 Właściciele potwierdzają przekazanie kontraktów i readiness z dowodami albo nazwanymi blockerami; ustalają operatorów, odbierającego i ponowną estymatę.
 
 ### Phase 2: Stabilizacja istniejącego UI
 
