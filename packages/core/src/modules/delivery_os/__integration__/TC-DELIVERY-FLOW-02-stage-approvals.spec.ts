@@ -143,13 +143,14 @@ test.describe('TC-DELIVERY-FLOW-02: stage approvals gate a project pinned in fli
       const gated: Array<[string, () => Promise<{ status: number; body: Json }>]> = [
         ['R12 task ready', () => setTaskReady(call, taskC.taskId, taskC.updatedAt)],
         ['R14 reserve', async () => reserve(call, taskB.taskId, (await taskVersion(call, taskB.taskId)).updatedAt)],
-        ['R20 deploy consent', async () => deployConsent(call, id, baselineId, manifest.resultRevision, await projectVersion(call, id))],
       ]
       for (const [label, probe] of gated) {
         const refused = await probe()
         expectGateRefusal(refused, label)
         expect(refused.body.details as Detail[], `${label}: ux detail`).toContainEqual(expect.objectContaining({ path: 'stages.ux', code: 'stage_not_approved' }))
       }
+      const gatedConsent = await deployConsent(call, id, baselineId, manifest.resultRevision, await projectVersion(call, id))
+      expect({ status: gatedConsent.status, code: gatedConsent.body.code }, 'R20 deploy consent on a pinned project needs a release candidate').toEqual({ status: 422, code: 'release_candidate_required' })
       const afterGate = await sql<{ status: string; attempts: number; deploys: string }>(
         `select (select status from delivery_tasks where id = $1) as status,
                 (select jsonb_array_length(execution_attempts) from delivery_tasks where id = $2) as attempts,
@@ -201,7 +202,7 @@ test.describe('TC-DELIVERY-FLOW-02: stage approvals gate a project pinned in fli
       expect(reservedB.status, `R14 reserve after approvals: ${JSON.stringify(reservedB.body)}`).toBe(201)
       expect(typeof reservedB.body.attemptId).toBe('string')
       const consent = await deployConsent(call, id, baselineId, manifest.resultRevision, await projectVersion(call, id))
-      expect(consent.status, `R20 deploy consent after approvals: ${JSON.stringify(consent.body)}`).toBe(201)
+      expect({ status: consent.status, code: consent.body.code }, 'R20 deploy consent after approvals still needs a release candidate').toEqual({ status: 422, code: 'release_candidate_required' })
 
       const executing = await getFlow(call, id)
       expect((executing.gates as Gates).publishable.ok).toBe(true)

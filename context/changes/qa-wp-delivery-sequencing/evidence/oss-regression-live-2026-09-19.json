@@ -1,0 +1,31 @@
+{
+  "check": "offline-handoff steps 4-5: discovery, fixture twice, OSS regression, FLOW/UI/HTTP specs",
+  "date": "2026-09-19",
+  "codeRevision": "ed0670ad7 (+ FLOW-02/FLOW-07 spec adaptation in this commit)",
+  "buildId": "R2V34BLregJJRWDxDjEiC (yarn build:app at b190a37c6; same app code)",
+  "environment": {
+    "id": "local-omhack-3100-ed0670ad7",
+    "app": "local next dev on :3100, Postgres omhack :5442, OSS-only registry (0 enterprise modules in generated registry; enterprise routes 404)",
+    "rateLimit": "RATE_LIMIT_ENABLED=false in the dev server process env for the QA run only (fixture logs in many actors; with the limit on the repeat hit 429 on bootstrap login); .env unchanged",
+    "bootstrap": "local superadmin; restricted per-test actors created and removed by the fixture ledger"
+  },
+  "discovery": { "tests": 120, "files": 30, "grep": "TC-DELIVERY" },
+  "results": {
+    "fixture TC-DELIVERY-FIXTURE-001 --repeat-each=2": "4/4 passed",
+    "runbook OSS regression TC-DELIVERY-(FIXTURE-001|00[1-8]|010)": "80 passed + 2 skipped (TC-DELIVERY-010 requires OSS-only)",
+    "TC-DELIVERY-010 with OM_DELIVERY_QA_OSS_ONLY=verified on the OSS-only server": "2/2 passed",
+    "runbook total": "82/82 passed, retries 0, workers 1",
+    "TC-DELIVERY-(009|OSS-001|FLOW-|UI-)": "38 tests: 31 passed after adaptation; 7 not passed (see failures)"
+  },
+  "adapted": [
+    "TC-DELIVERY-FLOW-02 and FLOW-07 pinned scenario: after the main merge (Adam's UI-06 contract kept) deploy consent on a pinned project needs a release candidate -> 422 release_candidate_required; F15 flow.gate assertions kept. Re-run 7/7 passed."
+  ],
+  "failures": [
+    { "spec": "TC-DELIVERY-009 (5 tests: 1 failed, 4 did not run)", "class": "test defect (pre-existing)", "cause": "manual baseline freeze with screens: [] -> 422 missing_render; the render rule exists since OSS-03 (06:38), the spec was written later (19:34) and never passed against the real API", "owner": "EXEC-05 (Marcin)" },
+    { "spec": "TC-DELIVERY-UI-008 react-vite variant", "class": "test defect (pre-existing)", "cause": "posts reference_material evidence, which react-vite@1 never permitted (422 unsupported_evidence_kind); wordpress-theme variant passes", "owner": "UI-06 (Adam)" },
+    { "spec": "TC-DELIVERY-UI-002", "class": "environment", "cause": "next dev 'Runtime degraded' banner (no tenant email channel configured) covers the Design section; 20s timeout. Needs a configured email channel or a production build", "owner": "environment" }
+  ],
+  "cleanup": "fixture ledger cleanup reported no failures; retained audit history stays in the local dev DB",
+  "notProven": "automated EXEC, REC01-10, Preview upload, design acceptance",
+  "rawEvidence": "kept privately on the operator machine"
+}
