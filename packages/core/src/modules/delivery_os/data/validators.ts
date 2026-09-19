@@ -32,6 +32,7 @@ import {
   type DeliveryErrorResult,
   type TaskStatus,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { MAX_TRACEABILITY_ROWS } from '@open-mercato/core/modules/delivery_os/lib/traceability'
 
 const nameSchema = z.string().trim().min(1).max(200)
 const titleSchema = z.string().trim().min(1).max(300)
@@ -275,6 +276,13 @@ export type MarkAttemptDeliveryCommandInput = z.infer<typeof markAttemptDelivery
 
 export const packageQuerySchema = z.object({ attemptId: uuidSchema })
 export type PackageQuery = z.infer<typeof packageQuerySchema>
+
+export const reportQuerySchema = z.object({
+  baselineId: uuidSchema.optional(),
+  revision: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_TRACEABILITY_ROWS).optional(),
+})
+export type ReportQuery = z.infer<typeof reportQuerySchema>
 
 export const resultsImportSchema = z.object({
   attemptId: uuidSchema,

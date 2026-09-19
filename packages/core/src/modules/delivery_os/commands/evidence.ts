@@ -437,7 +437,7 @@ function assertTaskPins(task: DeliveryTask, input: RecordEvidenceInput): void {
   }
 }
 
-function requireVerifiedBaselineContent(baseline: DeliveryBaseline): BaselineContentV1 {
+export function requireVerifiedBaselineContent(baseline: DeliveryBaseline): BaselineContentV1 {
   const content = readBaselineContent(baseline)
   if (!content) throw deliveryHttpError(unreadableBaselineError())
   if (hashCanonical(baseline.content) !== baseline.contentHash) {
