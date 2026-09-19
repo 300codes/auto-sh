@@ -4,7 +4,7 @@ import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
 import { DeliveryIntake, DeliveryProject } from '../data/entities'
-import { BRIEF_STRUCTURING_SYSTEM_PROMPT, buildBriefStructuringPrompt, extractedBriefSchema } from '../lib/briefStructuring'
+import { BRIEF_STRUCTURING_SYSTEM_PROMPT, buildBriefStructuringPrompt, extractedBriefSchema, tryResolveBriefStructurer } from '../lib/briefStructuring'
 
 const logger = createLogger('delivery_os').child({ subscriber: 'project-brief-intake' })
 
@@ -30,7 +30,7 @@ function buildContext(container: Container, scope: Scope): CommandRuntimeContext
   }
 }
 
-async function structureBrief(container: Container, brief: string, targetProfileId: string): Promise<unknown | null> {
+async function structureWithModel(container: Container, brief: string, targetProfileId: string): Promise<unknown | null> {
   const [{ createModelFactory }, { generateObject }] = await Promise.all([
     import('@open-mercato/ai-assistant/modules/ai_assistant/lib/model-factory'),
     import('@open-mercato/ai-assistant/modules/ai_assistant/lib/ai-sdk'),
@@ -56,7 +56,11 @@ export default async function handle(payload: ProjectCreatedPayload, container: 
 
   let extracted: unknown
   try {
-    extracted = await structureBrief(container, brief, project.targetProfileId)
+    const structurer = tryResolveBriefStructurer(container)
+    extracted = structurer
+      ? await structurer.structure({ brief, targetProfileId: project.targetProfileId })
+      : await structureWithModel(container, brief, project.targetProfileId)
+    if (extracted === null && structurer) extracted = await structureWithModel(container, brief, project.targetProfileId)
   } catch (error) {
     logger.info('brief structuring unavailable; the wizard keeps the plain brief', {
       projectId: project.id,

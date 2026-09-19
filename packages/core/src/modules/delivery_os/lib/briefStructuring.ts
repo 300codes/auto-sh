@@ -83,3 +83,42 @@ export function applyExtractedBrief(intake: IntakeV1, extracted: ExtractedBrief)
 export function hasStructuredContent(intake: IntakeV1, seeded: IntakeV1): boolean {
   return JSON.stringify(intake.brief) !== JSON.stringify(seeded.brief)
 }
+
+export const DELIVERY_BRIEF_STRUCTURER_KEY = 'deliveryBriefStructurer'
+
+export type BriefStructuringRequest = { brief: string; targetProfileId: string }
+
+/**
+ * Optional peer that structures a brief with something other than a configured API model — the enterprise module
+ * registers one that drives the operator's logged-in agent CLI. Returning null means "not available here".
+ */
+export type DeliveryBriefStructurer = {
+  structure(request: BriefStructuringRequest): Promise<unknown | null>
+}
+
+export function tryResolveBriefStructurer(container: { resolve: (name: string) => unknown }): DeliveryBriefStructurer | null {
+  try {
+    const service = container.resolve(DELIVERY_BRIEF_STRUCTURER_KEY) as DeliveryBriefStructurer | null
+    return service && typeof service.structure === 'function' ? service : null
+  } catch {
+    return null
+  }
+}
+
+/** Pulls the first JSON object out of an agent answer that may wrap it in prose or a fenced block. */
+export function readJsonObject(output: string): unknown | null {
+  const fenced = output.match(/```(?:json)?\s*([\s\S]*?)```/)
+  const candidates = [fenced?.[1], output]
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const start = candidate.indexOf('{')
+    const end = candidate.lastIndexOf('}')
+    if (start < 0 || end <= start) continue
+    try {
+      return JSON.parse(candidate.slice(start, end + 1))
+    } catch {
+      continue
+    }
+  }
+  return null
+}

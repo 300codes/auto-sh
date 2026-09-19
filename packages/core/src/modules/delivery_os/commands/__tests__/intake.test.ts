@@ -63,6 +63,7 @@ const WORDPRESS_PROFILE = { targetProfileId: 'wordpress-theme', targetProfileVer
 
 const update = getHandler<IntakeUpdateCommandResult>('delivery_os.intake.update')
 const importProposal = getHandler<ScopingProposalImportCommandResult>('delivery_os.intake.import_proposal')
+const seedFromBrief = getHandler<IntakeUpdateCommandResult>('delivery_os.intake.seed_from_brief')
 
 let store: IntakeStore
 
@@ -370,5 +371,37 @@ describe('delivery_os.intake.import_proposal (F3)', () => {
     expect(result.duplicate).toBe(true)
     expect(store.intakes).toHaveLength(1)
     expect(store.intakes[0].importedManifests).toHaveLength(1)
+  })
+})
+
+describe('delivery_os.intake.seed_from_brief', () => {
+  const extracted = { businessGoal: 'Sell three services', audience: null, problem: null, content: null, features: ['Contact form'], integrations: [], constraints: [], unknowns: [] }
+
+  it('writes the structured brief and prefers it over the raw project brief', async () => {
+    store.projects[0].brief = 'Raw operator brief'
+    const { ctx } = harness({ inProcess: true })
+    const result = await seedFromBrief.execute({ projectId: store.projects[0].id, extracted }, ctx)
+    expect(result.intake.brief).toMatchObject({ businessGoal: 'Sell three services', features: ['Contact form'] })
+    expect(store.intakes).toHaveLength(1)
+  })
+
+  it('keeps the raw project brief as the goal when the extraction has none', async () => {
+    store.projects[0].brief = 'Raw operator brief'
+    const { ctx } = harness({ inProcess: true })
+    const result = await seedFromBrief.execute({ projectId: store.projects[0].id, extracted: { ...extracted, businessGoal: null } }, ctx)
+    expect(result.intake.brief.businessGoal).toBe('Raw operator brief')
+  })
+
+  it('never overwrites a draft the operator already saved', async () => {
+    store.projects[0].brief = 'Raw operator brief'
+    await update.execute({ projectId: store.projects[0].id, intake: intakeRequest({ brief: { ...loadIntakeFixture().brief, materials: [], businessGoal: 'Operator wording', features: ['Kept'] } }) }, harness({ headers: firstWriteHeader() }).ctx)
+    const { ctx } = harness({ inProcess: true })
+    const result = await seedFromBrief.execute({ projectId: store.projects[0].id, extracted }, ctx)
+    expect(result.intake.brief).toMatchObject({ businessGoal: 'Operator wording', features: ['Kept'] })
+  })
+
+  it('refuses to run through an HTTP request', async () => {
+    const { ctx } = harness({ headers: firstWriteHeader() })
+    await expect(seedFromBrief.execute({ projectId: store.projects[0].id, extracted }, ctx)).rejects.toMatchObject({ status: 403 })
   })
 })

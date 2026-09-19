@@ -332,10 +332,13 @@ const seedIntakeFromBriefCommand: CommandHandler<unknown, IntakeUpdateCommandRes
     return await em.transactional(async (tx) => {
       const project = await lockScopedProject(tx, parsed.projectId, scope)
       const intakeRow = await findScopedIntake(tx, project.id, scope, { lock: true })
-      const seeded = defaultIntake(project.id, project.brief)
-      const candidate = applyExtractedBrief(intakeRow ? toIntakeDocument(intakeRow) : seeded, parsed.extracted)
+      const stored = intakeRow ? toIntakeDocument(intakeRow) : null
+      const structured = applyExtractedBrief(stored ?? defaultIntake(project.id), parsed.extracted)
+      const candidate = structured.brief.businessGoal === null
+        ? { ...structured, brief: { ...structured.brief, businessGoal: defaultIntake(project.id, project.brief).brief.businessGoal } }
+        : structured
       const applied = applyIntakeUpdate({
-        stored: intakeRow ? toIntakeDocument(intakeRow) : null,
+        stored,
         request: { schemaVersion: candidate.schemaVersion, step: candidate.step, brief: candidate.brief, questions: candidate.questions, platform: candidate.platform, tools: candidate.tools },
         project: projectContext(project),
       })
