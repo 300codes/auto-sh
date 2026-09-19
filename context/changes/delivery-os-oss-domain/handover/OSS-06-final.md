@@ -88,10 +88,12 @@ under `packages/core/src/modules/delivery_os/` (given as `src/modules/delivery_o
 | 5.1 AC not passed without test on right commit/baseline; missing scan/preview blocks | `commands/__tests__/publicationFlow.test.ts`, `lib/__tests__/deliveryReport.test.ts`, `api/__tests__/report.route.test.ts`, `deployDecision.route.test.ts`, `releaseDecision.route.test.ts` | same |
 | 6.1 gate and runner recorded | `OSS-06-gate.md` + section 3 (**not green**, see failures) | — |
 | 6.2 OSS-only, cross-tenant, stale approval, duplicate callback, restart, manual_handoff | `api/__tests__/finalRegression.route.test.ts` (five `6.2` describes) + gate steps 9–13 | `src/modules/delivery_os/api/__tests__/finalRegression.route.test.ts` |
+| 6.2 (real DB, T050) | `__integration__/TC-DELIVERY-OSS-001.spec.ts` — v1 manual flow to R21, foreign org + foreign tenant 404 on every id, stale lock 409, `(project, content_hash)` uniqueness under parallel freezes, cancel → reconcile of a claimed attempt; green twice in a row, no rows left, red when the org filter of `findScopedProject` is removed (`OSS-06-polish.md` §6) | `BASE_URL=http://localhost:3100 npx playwright test --config .ai/qa/tests/playwright.config.ts packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-OSS-001.spec.ts --retries=0` (not the jest prefix) |
 | 6.3 no hidden unknown/failure; history intact | `commands/__tests__/appendOnly.test.ts`; `lib/__tests__/deliveryReport.test.ts` (FAIL/skipped/not_run never PASS); migration review in `OSS-06-migration-and-history.md` | `src/modules/delivery_os/commands/__tests__/appendOnly.test.ts` |
 
-Only what unit/route tests with an in-memory store and the live smokes in the H9/H14/H21/H26 hand-overs prove is claimed. Real-DB
-concurrency is QA's (TC-DELIVERY-006).
+Only what unit/route tests with an in-memory store, the live smokes in the H9/H14/H21/H26 hand-overs and the real-database spec
+`TC-DELIVERY-OSS-001` (T050; parallel baseline freezes only) prove is claimed. Broader real-DB concurrency (parallel replay) stays with QA
+(TC-DELIVERY-006).
 
 ## 5. Manual rows deliberately left unticked
 
@@ -105,10 +107,10 @@ present": the acceptance mark stays with the human.
 - **Deployment evidence is fixture-level.** The publication chain (`publicationFlow.test.ts`, H26 smoke) uses recorded
   `deployment` evidence rows; there is no real preview target and no live probe by OSS (EXEC/QA record real ones).
 - **No preview target** was available to OSS; row 5.2/5.3 are not OSS rows.
-- **Playwright coverage is with QA** (`TC-DELIVERY-*`); OSS delivered jest route tests only.
+- **Playwright coverage is mostly with QA** (`TC-DELIVERY-UI-*` / `TC-DELIVERY-EXEC-*`); OSS owns one real-database API spec, `TC-DELIVERY-OSS-001` (T050).
 - **Workflow side is with EXEC:** OSS exposes `link_workflow`, `mark_delivery`, `listPendingDeliveries` and no workflow engine import.
   There is no `listOpenAttempts` query (request it from OSS if needed).
-- Route tests use an in-memory store: SQL-level rewrites are covered by the static scan and the migration review, not by runtime.
+- Route tests use an in-memory store. Since T050 the SQL level of the v1 manual flow (scoping filters, the baseline unique index, row locks behind the 409, JSONB register writes, the report query) is also proven at runtime by `TC-DELIVERY-OSS-001` on the local stack; it is not run in CI by OSS (the shared Playwright config's discovery costs ≈2 min), and FLOW F1 routes are not covered by it.
 - **Polish (T049):** the reviewer findings of OSS-01…06 are triaged in `OSS-06-polish.md` (fixed / acceptable / limitation). Kept as v1 limitations because a fix would change a frozen wire format or hash: integer-like key order in canonical JSON, `react-vite@1` roots without config files, double `base_revision_mismatch` detail, R18 `completed` without `results.import`, project-level evidence outside basic traceability, a new dependent of a blocked task staying `draft`; full list in the spec section “Known limitations after the OSS-06 polish”. The built `dist` fixtures still need the build-target patch P5 to load under plain Node ESM.
 - FLOW addendum: only F0 (contracts, schemas, fixtures, `checkFlowGate`) is done. **F1–F4 are not implemented**; fresh estimate in
   `FLOW-F0-contracts.md` (F1 ≈10 h, F2 ≈8 h, F3 ≈4 h, F4 ≈4 h). The v1 routes do not yet call `checkFlowGate`.

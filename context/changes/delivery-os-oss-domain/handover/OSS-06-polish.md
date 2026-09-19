@@ -200,3 +200,62 @@ Legend: **earlier** = already fixed before T049 · **now** = fixed in T049 · **
 - Full-repo gate not re-run (memory rule); the scoped set above is the evidence. `warranty_claims/quantity` (locale) and
   `create-mercato-app/release-upgrade-skill-contract` (changelog date) failures of the OSS-06 gate are unrelated to OSS.
 - Dev server on :3100 was not restarted; the live smoke exercised the frozen v1 routes, which this task did not change.
+
+## 6. Real-database API integration spec (T050, `asd-oss-t050-oss-06-add-a-self-contained-api-inte`)
+
+Closes the gap named in `OSS-06-final.md` §6 (route tests on an in-memory store). New file
+`packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-OSS-001.spec.ts` (OSS-owned, API-only, self-contained:
+every fixture is created through the API or the shared DB fixtures in the test, and removed in `finally`; no seeded record
+other than the login accounts `admin@acme.com` / `superadmin@acme.com`).
+
+| Test | What the real database proves |
+|---|---|
+| manual flow | project → real PNG upload (`POST /api/attachments`) → draft → manual baseline (attachment id in the `attachment_ids` JSON column) → requirements + design decisions (`activeBaselineId` set) → task AC-001/AC-002 → ready → reserve 201 / same-key replay 200 same `attemptId` / same key + other `baseRevision` 409 `idempotency_conflict` / one entry in the JSONB register → GET package twice, identical, row and register unchanged → result 201 / duplicate 200 same `evidenceId` / one `result_manifest` row → human review approved → task `verified` → R22 parsed with `deliveryReportV1Schema`, AC-001 row `passed` with the result `evidenceId`, publishable → R20 consent 201 → unverified deployment → R21 `422 deployment_unverified`, no release row |
+| foreign scope | a second organisation in the owner's tenant and a second tenant (both created in the DB, users created by superadmin, `delivery_os.*` ACL written before the first login) probe R3–R22 with every owner id (project, baseline, task, attempt, deployment evidence): all `404`, nothing contains the project id, the R1 list hides it, owner rows (`updated_at`, attempt register, decision and evidence counts) unchanged, no project created in a foreign org. R3/R4/R12/R13 with a lock header answer the documented platform "record gone" `409 optimistic_lock_conflict`, byte-identical to a never-existing id and echoing the caller's own token |
+| stale lock + unique index | stale project and task headers → platform `409` (`code`, `error`), the stale write did not land; identical freeze → `200 duplicate` same `baselineId`; three parallel freezes of new content → no 5xx, exactly one `201`, the others `200 duplicate` of the winner or `409` (row lock + header check run first), one row per `(project, content_hash)` |
+| cancel + reconcile | attempt flipped to `claimed` in the register by SQL (claim has no HTTP route), cancel without header `428`, cancel `200 cancel_requested / stop_unconfirmed` (worker ref kept), reserve `409 attempt_active`, reconcile `stopped` → task `ready`, attempt `closed / cancelled / stopped`, new reservation 201 |
+
+**Runner:** local stack, not Docker mode (no compose `app` container) and not the ephemeral runner — the task mandates the real
+dev database and the 16 GB rule forbids a second app. The app on `:3100` and the DB fixtures share `apps/mercato/.env`
+(`DATABASE_URL` → postgres `:5442`).
+
+```bash
+BASE_URL=http://localhost:3100 npx playwright test --config .ai/qa/tests/playwright.config.ts \
+  packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-OSS-001.spec.ts --retries=0
+```
+
+| Run | Result | Duration |
+|---|---|---|
+| 1 (first draft) | 3 passed, 1 failed — R3 with the lock header answered 409, not 404: the documented "record gone" contract (spec changelog T036), not a defect; the spec now asserts it explicitly | 2 min 20 s wall |
+| 2, 3 | 4 passed, twice in a row | 2 min 18 s / 2 min 19 s wall |
+| mutation | organisation filter removed from `commands/shared.ts#findScopedProject`, watcher rebuilt `dist` (≈10 s): **1 failed** — `R3 project update as org B user: {"ok":true,…}` (the foreign org wrote the owner's project); source restored (empty `git diff`), `dist` rebuilt | 2 min 24 s wall |
+| 4 (after restore) | 4 passed | 2 min 20 s wall |
+| 5, 6 (final file: no `any`, report parsed with the v1 schema) | 4 passed, twice in a row | 2 min 20 s / 2 min 24 s wall |
+| 7, 8 (after the implementation review: `afterAll` cleans projects/attachments left by a failed seed and counts audit rows; exact stale-write assertion) | 4 passed, twice in a row, counts identical | ≈2 min 20 s wall each |
+| 9, 10 (after the independent review: teardown also removes `entity_indexes` / `search_tokens` rows; counted in `afterAll`) | 4 passed, twice in a row, counts identical including the index tables | ≈2 min 20 s wall each |
+
+The tests themselves take ≈7 s (1.8 s + 3.3 s + 1.0 s + 0.8 s); the rest is the shared config's spec discovery
+(≈130 s CPU on this machine for the whole-repo `discoverIntegrationSpecFiles`).
+
+**No rows left behind (corrected after review):** the first version hard-deleted domain rows with SQL, which skips the
+query-index sync, so every run left orphan `entity_indexes` / `search_tokens` rows (delivery_os types and `auth:user`). The
+earlier count did not include those tables, so its "identical" claim was incomplete. Teardown now also deletes
+`entity_indexes` and `search_tokens` rows of every owned delivery_os id (`entity_type like 'delivery_os:%'`) and of the
+created users (`auth:user`), and `afterAll` counts them. Orphans accumulated by earlier local runs and smokes (index/token rows whose
+source row no longer existed: 441 index + 27 337 token delivery_os rows, 21 + 1 248 `auth:user`, 2 + 548 `attachments:%`)
+were deleted once from the local dev DB before re-measuring. Count over delivery_* tables, `attachments`, `users`,
+`organizations`, `tenants`, `user_acls`, delivery_os `action_logs`, and `entity_indexes` + `search_tokens` for
+delivery_os, `auth:user` and `attachments:%`, before and after two consecutive green runs (also re-checked 20 s after the
+run, for late asynchronous indexing): identical,
+`projects=9 baselines=20 decisions=18 tasks=8 evidence=0 intakes=0 artifacts=0 stage_decisions=0 attachments=25 users=3 orgs=1 tenants=1 user_acls=0 delivery_action_logs=380 idx_delivery=46 idx_users=3 idx_attachments=25 tok_delivery=3204 tok_users=202 tok_attachments=7054`.
+`afterAll` asserts zero domain, audit, index and token rows for every id the spec created. Teardown hard-deletes by id because v1
+baselines, decisions and evidence are append-only and have no delete route.
+
+**Regression:** `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 66 suites / 1477 tests PASS
+(the first run caught the spec comment naming an internal command id — `scopeChange.test.ts` scans module sources; reworded);
+`yarn turbo run typecheck --filter=@open-mercato/core --concurrency=2` → PASS (core's tsconfig includes `__integration__`);
+`npx eslint` on the spec → 0 findings.
+
+**Defects found in delivery_os:** none. Observed, not changed: `PUT /api/auth/users/acl` called by the superadmin stores the
+ACL row under the caller's tenant, not the target user's — the spec writes the foreign-tenant ACL with `setUserAclInDb`
+instead (auth module, not OSS; worth a look by its owner).
