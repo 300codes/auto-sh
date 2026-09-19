@@ -33,13 +33,17 @@ function fail(result: DeliveryFlowErrorResult): IntakeFailure {
   return { ok: false, ...result }
 }
 
-export function defaultIntake(projectId: string): IntakeV1 {
+const SEEDED_BUSINESS_GOAL_LIMIT = 8000
+
+/** The project brief is free text captured at creation; it seeds the wizard's business goal when it fits the field. */
+export function defaultIntake(projectId: string, projectBrief?: string | null): IntakeV1 {
+  const seeded = typeof projectBrief === 'string' ? projectBrief.trim() : ''
   return {
     schemaVersion: DELIVERY_FLOW_SCHEMA_VERSIONS.intake,
     projectId,
     step: 'brief',
     brief: {
-      businessGoal: null,
+      businessGoal: seeded.length > 0 && seeded.length <= SEEDED_BUSINESS_GOAL_LIMIT ? seeded : null,
       audience: null,
       problem: null,
       content: null,

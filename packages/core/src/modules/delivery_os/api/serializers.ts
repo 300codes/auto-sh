@@ -141,7 +141,7 @@ export function serializeTask(task: DeliveryTask): TaskDto {
 /** F1: the stored draft (decrypted by the caller's loader) or the empty default whose version is the project `createdAt`. */
 export function serializeIntakeResponse(project: DeliveryProject, intake: DeliveryIntake | null): IntakeResponse {
   if (intake) return toIntakeResponse(toIntakeDocument(intake), project, intake.updatedAt)
-  return toIntakeResponse(defaultIntake(project.id), project, project.createdAt)
+  return toIntakeResponse(defaultIntake(project.id, project.brief), project, project.createdAt)
 }
 
 export function serializeStageArtifact(row: DeliveryFlowStageArtifact): StageArtifactListItem {

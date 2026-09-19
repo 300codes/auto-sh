@@ -289,3 +289,15 @@ describe('mergeScopingProposal', () => {
     if (!parsed.ok) expect(parsed.body.code).toBe('manifest_required')
   })
 })
+
+describe('defaultIntake seeding', () => {
+  it('uses the trimmed project brief as the business goal and keeps every other field empty', () => {
+    const intake = defaultIntake('11111111-1111-4111-8111-111111111111', ' Sell three services from the front page. ')
+    expect(intake.brief.businessGoal).toBe('Sell three services from the front page.')
+    expect({ ...intake.brief, businessGoal: null }).toEqual(defaultIntake('11111111-1111-4111-8111-111111111111').brief)
+  })
+
+  it.each([undefined, null, '   ', 'x'.repeat(8001)])('leaves the business goal empty for %p', (brief) => {
+    expect(defaultIntake('11111111-1111-4111-8111-111111111111', brief).brief.businessGoal).toBeNull()
+  })
+})

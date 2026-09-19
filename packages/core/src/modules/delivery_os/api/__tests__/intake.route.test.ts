@@ -101,6 +101,24 @@ describe('GET/PUT /projects/:id/intake (F1/F2)', () => {
     expect(routeState.store.intakes).toHaveLength(0)
   })
 
+  it('seeds the business goal of the first draft from the project brief', async () => {
+    const projectId = await createWordpressProject()
+    const row = routeState.store.projects.find((project) => project.id === projectId)
+    row.brief = '  Launch a small studio site that sells three services.  '
+    const intake = await readIntake(projectId)
+    expect(intake.intake.brief.businessGoal).toBe('Launch a small studio site that sells three services.')
+    expect(routeState.store.intakes).toHaveLength(0)
+  })
+
+  it('leaves the business goal empty when the project brief is blank or too long for the field', async () => {
+    const projectId = await createWordpressProject()
+    const row = routeState.store.projects.find((project) => project.id === projectId)
+    for (const brief of ['   ', 'x'.repeat(8001), null]) {
+      row.brief = brief
+      expect((await readIntake(projectId)).intake.brief.businessGoal).toBeNull()
+    }
+  })
+
   it('saves and resumes the draft; a proposals key in the body is ignored', async () => {
     const projectId = await createWordpressProject()
     const forged = loadIntakeFixture().proposals
