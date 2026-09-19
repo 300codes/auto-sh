@@ -18,9 +18,9 @@ import { type BaselineContentV1, type TaskPackageV1 } from '../lib/contracts'
  *
  * 1. Unknown `kind` discriminator → 422 with `unsupported_evidence_kind`.
  * 2. Missing required per-discriminator fields:
- *    - `screenshot` without the required `payload.attachmentId`/`sha256`/`name`/`viewport`/`capturedAt` → 422.
- *    - `scan` without `payload.checkId`/`scanner`/`status`/`rawReportHash` → 422.
- * 3. Declared SHA-256 hash that doesn't match the real attachment content → 422 (`attachment_hash_mismatch`).
+ *    - `screenshot` without the required `payload.attachmentId`/`sha256`/`name`/`viewport`/`capturedAt` → 400.
+ *    - `scan` without `payload.checkId`/`scanner`/`status`/`rawReportHash` → 400.
+ * 3. Declared SHA-256 hash that doesn't match the real attachment content → 422 (`hash_mismatch`).
  * 4. Partial AC coverage keeps task in `reviewing` (i.e. `awaiting_review`) — approving a review that covers
  *    only one of the task's ACs must not transition the task to `verified`; `missing_required_tests` is
  *    returned instead.
@@ -205,7 +205,7 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
           payload: { whatever: true },
         },
       })
-      expect([400, 422], `answered ${JSON.stringify(result.body)}`).toContain(result.status)
+      expect(result.status, `answered ${JSON.stringify(result.body)}`).toBe(422)
       expect(result.body.code).toBe('unsupported_evidence_kind')
       const details = result.body.details as Array<{ path?: string; code: string }>
       expect(details.some((detail) => detail.path === 'kind')).toBe(true)
@@ -214,7 +214,7 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
     }
   })
 
-  test('screenshot kind without required payload fields → 422 validation_failed', async ({ request }) => {
+  test('screenshot kind without required payload fields → 400 validation_failed', async ({ request }) => {
     let token: string | null = null
     let seed: SeededTask | null = null
     try {
@@ -231,16 +231,14 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
           payload: {},
         },
       })
-      expect([400, 422], `answered ${JSON.stringify(result.body)}`).toContain(result.status)
-      // The route returns 422 for shape validation failures — code is `validation_failed` when zod shape issues are detected.
-      const validationCodes = ['validation_failed', 'unsupported_evidence_kind']
-      expect(validationCodes).toContain(result.body.code)
+      expect(result.status, `answered ${JSON.stringify(result.body)}`).toBe(400)
+      expect(result.body.code).toBe('validation_failed')
     } finally {
       await cleanupSeed(request, token, seed)
     }
   })
 
-  test('scan kind without required AC mapping fields → 422 validation_failed', async ({ request }) => {
+  test('scan kind without required AC mapping fields → 400 validation_failed', async ({ request }) => {
     let token: string | null = null
     let seed: SeededTask | null = null
     try {
@@ -258,13 +256,14 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
           payload: {},
         },
       })
-      expect([400, 422], `answered ${JSON.stringify(result.body)}`).toContain(result.status)
+      expect(result.status, `answered ${JSON.stringify(result.body)}`).toBe(400)
+      expect(result.body.code).toBe('validation_failed')
     } finally {
       await cleanupSeed(request, token, seed)
     }
   })
 
-  test('scan kind with sourceRevision missing → 422 (sourceRevision required for scan)', async ({ request }) => {
+  test('scan kind with sourceRevision missing → 400 (sourceRevision required for scan)', async ({ request }) => {
     let token: string | null = null
     let seed: SeededTask | null = null
     try {
@@ -288,7 +287,7 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
           },
         },
       })
-      expect([400, 422], `answered ${JSON.stringify(result.body)}`).toContain(result.status)
+      expect(result.status, `answered ${JSON.stringify(result.body)}`).toBe(400)
       expect(result.body.code).toBe('validation_failed')
       const details = result.body.details as Array<{ path?: string }>
       expect(details.some((detail) => detail.path === 'sourceRevision')).toBe(true)
@@ -297,11 +296,11 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
     }
   })
 
-  test('screenshot evidence with declared sha256 not matching attachment content → 422 attachment_hash_mismatch', async ({ request }) => {
+  test('screenshot evidence with declared sha256 not matching attachment content → 422 hash_mismatch', async ({ request }) => {
     /**
      * The evidence route resolves the attachment and verifies the declared sha256 against the stored
      * file digest. Posting a sha256 that differs from the actual attachment content returns
-     * 422 `attachment_hash_mismatch`.
+     * 422 `hash_mismatch`.
      */
     let token: string | null = null
     let seed: SeededTask | null = null
@@ -327,25 +326,14 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
         },
       })
       // The route rejects when the hash doesn't match the stored attachment content.
-      expect([400, 422], `answered ${JSON.stringify(result.body)}`).toContain(result.status)
-      expect(['attachment_hash_mismatch', 'hash_mismatch']).toContain(result.body.code)
+      expect(result.status, `answered ${JSON.stringify(result.body)}`).toBe(422)
+      expect(result.body.code).toBe('hash_mismatch')
     } finally {
       await cleanupSeed(request, token, seed)
     }
   })
 
   test('partial AC coverage keeps task in awaiting_review after result and review', async ({ request }) => {
-    /**
-     * The review command transitions a task from `awaiting_review` to `verified` ONLY when every
-     * acceptance criterion of the task is proven on the result revision. The task here has two ACs
-     * (AC-001, AC-002) but the result manifest only proves AC-001. Posting an `approved` review must
-     * return 422 `missing_required_tests` and leave the task in `awaiting_review`.
-     *
-     * Note: The baseline content fixture's `acTestMap` must map at least one test to AC-001 for the
-     * result manifest's checks to prove it. If the fixture has no test mappings (empty acTestMap), the
-     * review gate is satisfied by the absence of required tests, and this case degrades to a scope check.
-     * We verify the task is not `verified` regardless.
-     */
     test.slow()
     let token: string | null = null
     let seed: SeededTask | null = null
@@ -369,24 +357,21 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
       const taskPackage = await call('GET', `${API}/tasks/${taskId}/package?attemptId=${attemptId}`)
       expect(taskPackage.status, 'package').toBe(200)
 
-      // Build a result manifest — buildResultManifest creates a minimal valid manifest.
       const manifest = buildResultManifest(taskPackage.body as TaskPackageV1, { changedPaths: ['src/ServiceList.tsx'] })
+      expect(manifest.checks.some((check) => check.acIds.includes('AC-002'))).toBe(true)
+      manifest.checks = manifest.checks.filter((check) => !check.acIds.includes('AC-002'))
+      expect(manifest.checks.some((check) => check.acIds.includes('AC-001'))).toBe(true)
 
       const accepted = await call('POST', `${API}/tasks/${taskId}/results`, { body: { attemptId, manifest } })
       expect(accepted.status, `result answered ${JSON.stringify(accepted.body)}`).toBe(201)
       expect(accepted.body.taskStatus).toBe('awaiting_review')
 
-      // Post an `approved` review. The manifest may or may not cover all ACs depending on
-      // how the baseline fixture maps tests. We assert the task does NOT become `verified`
-      // when coverage is partial, and either:
-      //   a) the server returns 422 `missing_required_tests`, or
-      //   b) the server accepts the review but the task stays in `awaiting_review` if the
-      //      acTestMap in the fixture maps no tests at all (vacuously satisfied).
       const review = await call('POST', `${API}/projects/${projectId}/evidence`, {
         body: {
           baselineId,
           kind: 'review',
           taskId,
+          attemptId,
           sourceRevision: manifest.resultRevision,
           payload: {
             verdict: 'approved',
@@ -397,34 +382,16 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
         },
       })
 
-      if (review.status === 422) {
-        // Expected when the baseline has acTestMap entries that are not all satisfied.
-        expect(review.body.code).toBe('missing_required_tests')
-        const taskAfter = await taskVersion(call, taskId)
-        expect(taskAfter.status).toBe('awaiting_review')
-      } else {
-        // When acTestMap is empty the review is accepted but the task status reflects
-        // whether all ACs were proven. Regardless, the task must NOT be `verified` if
-        // AC coverage was truly partial. We accept either `awaiting_review` or `verified`
-        // here depending on the fixture's acTestMap, but we must confirm no 5xx.
-        expect(review.status, `review answered ${JSON.stringify(review.body)}`).toBeLessThan(500)
-      }
+      expect(review.status, `review answered ${JSON.stringify(review.body)}`).toBe(422)
+      expect(review.body.code).toBe('missing_required_tests')
+      const taskAfter = await taskVersion(call, taskId)
+      expect(taskAfter.status).toBe('awaiting_review')
     } finally {
       await cleanupSeed(request, token, seed)
     }
   })
 
   test('changes_requested review does not move task to verified; deploy gate blocks when report not green', async ({ request }) => {
-    /**
-     * A review with verdict `changes_requested` moves the task from `awaiting_review` to
-     * `changes_requested`. The task never reaches `verified`.
-     *
-     * After a `changes_requested` review, the deploy-decisions route should return 422
-     * `report_not_green` because the delivery report is not publishable (not all ACs verified).
-     *
-     * The deploy-decisions route is at POST /api/delivery_os/projects/:id/deploy-decisions and
-     * requires `delivery_os.deploy.approve` (also held by admin via `delivery_os.*`).
-     */
     test.slow()
     let token: string | null = null
     let seed: SeededTask | null = null
@@ -445,7 +412,7 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
 
       const taskPackage = await call('GET', `${API}/tasks/${taskId}/package?attemptId=${attemptId}`)
       expect(taskPackage.status).toBe(200)
-      const manifest = buildResultManifest(taskPackage.body as TaskPackageV1, { changedPaths: ['src/ServiceList.tsx'] })
+      const manifest = buildResultManifest(taskPackage.body as TaskPackageV1, { changedPaths: ['src/ServiceList.tsx'], checkStatus: 'failed' })
 
       const accepted = await call('POST', `${API}/tasks/${taskId}/results`, { body: { attemptId, manifest } })
       expect(accepted.status, `result answered ${JSON.stringify(accepted.body)}`).toBe(201)
@@ -457,6 +424,7 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
           baselineId,
           kind: 'review',
           taskId,
+          attemptId,
           sourceRevision: manifest.resultRevision,
           payload: {
             verdict: 'changes_requested',
@@ -472,21 +440,22 @@ test.describe('TC-DELIVERY-008: evidence discriminator validation and review gat
       const taskAfter = await taskVersion(call, taskId)
       expect(taskAfter.status, 'task must not be verified').not.toBe('verified')
 
-      // The deploy-decisions route exists (confirmed from route file) and gates behind `report_not_green`
-      // when not all tasks are verified. Attempt a deploy decision — it must be rejected.
+      const report = await call('GET', `${API}/projects/${projectId}/report`)
+      expect(report.status).toBe(200)
+      expect((report.body.gates as { publishable: { ok: boolean } }).publishable.ok).toBe(false)
+      const projectUpdatedAt = await projectVersion(call, projectId)
       const deployDecision = await call('POST', `${API}/projects/${projectId}/deploy-decisions`, {
         body: {
           baselineId,
           sourceRevision: manifest.resultRevision,
           verdict: 'approved',
         },
-        lock: await projectVersion(call, projectId),
+        lock: projectUpdatedAt,
       })
-      // Behavior: the deploy-decision route accepts the deploy request and returns 201 with a
-      // decisionId regardless of the current evidence/review state. The gate is advisory —
-      // the deploy is recorded but the overall project status reflects the evidence coverage.
-      // This documents observed behavior; a hard gate may be added in a future spec.
-      expect([201, 400, 422], `deploy decision answered ${JSON.stringify(deployDecision.body)}`).toContain(deployDecision.status)
+      expect(deployDecision.status, `deploy decision answered ${JSON.stringify(deployDecision.body)}`).toBe(422)
+      expect(deployDecision.body.code).toBe('report_not_green')
+      expect(await projectVersion(call, projectId)).toBe(projectUpdatedAt)
+      expect((await taskVersion(call, taskId)).status).toBe('changes_requested')
     } finally {
       await cleanupSeed(request, token, seed)
     }

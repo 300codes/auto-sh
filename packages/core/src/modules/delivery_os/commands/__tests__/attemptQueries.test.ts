@@ -78,8 +78,10 @@ describe('deliveryOsAttemptQueries', () => {
     const registrations: Record<string, { resolve: (container: { resolve: (name: string) => unknown }) => unknown }> = {}
     register({ register: (entries: typeof registrations) => Object.assign(registrations, entries) } as never)
     expect(Object.keys(registrations)).toEqual([
+      'deliveryOsEvidenceQueries',
       'deliveryOsAttemptQueries',
       'deliveryOsReportQueries',
+      'deliveryOsFlowQueries',
       'deliveryOsAttachmentInspector',
       'deliveryFlowTemplateProvider',
     ])
@@ -90,6 +92,8 @@ describe('deliveryOsAttemptQueries', () => {
     expect(Object.keys(service).sort()).toEqual(['buildTaskPackage', 'getAttempt', 'listPendingDeliveries'])
     const reports = registrations.deliveryOsReportQueries.resolve({ resolve: () => em }) as Record<string, unknown>
     expect(Object.keys(reports)).toEqual(['buildReport'])
+    const flows = registrations.deliveryOsFlowQueries.resolve({ resolve: () => em }) as Record<string, unknown>
+    expect(Object.keys(flows)).toEqual(['flowStatus'])
   })
 
   it('throws an internal error when the scope is missing', async () => {

@@ -1,0 +1,115 @@
+{
+  "status": "blocked_environment",
+  "attempt": "explicitly_authorized_4gb_heap",
+  "limits": {
+    "jsHeapMiB": 4096,
+    "runtimeMemoryMiB": 6144,
+    "additionalSwapMiB": 0,
+    "runtimeCpus": 2,
+    "databaseMemoryMiB": 512,
+    "databaseAdditionalSwapMiB": 0,
+    "databaseCpus": 1
+  },
+  "runner": {
+    "cli": "node --require /qa/qa-ops/resource-guard.cjs packages/cli/dist/bin.js test:integration TC-DELIVERY-FIXTURE-001 --no-reuse-env",
+    "playwright": "yarn run test:integration TC-DELIVERY-FIXTURE-001 --workers=1 --repeat-each=2 --retries=0",
+    "timeoutMs": 20000,
+    "build": "node --max-old-space-size=4096 /qa/node_modules/next/dist/bin/next build --webpack",
+    "deviations": [
+      "Webpack",
+      "experimental.cpus=1",
+      "experimental.webpackMemoryOptimizations=true",
+      "RAYON_NUM_THREADS=1",
+      "fresh PostgreSQL17 instead of default16"
+    ],
+    "standardProductionBuildGate": false
+  },
+  "preparation": {
+    "install": "immutable dependencies completed successfully in 1m59s",
+    "packageBuilds": "both passes39/39 successful",
+    "generate": "passed with pre-existing OpenAPI static fallback warning",
+    "outerEntrypointExit": 127,
+    "outerEntrypointIssue": "Recipe was edited while preparation shell was awaiting Docker; after PREPARATION_COMPLETE shell resumed at changed byte offset and interpreted a fragment. Container preparation had succeeded; artifacts verified before fresh run. Not a cold/warm verified entrypoint."
+  },
+  "nativeStages": [
+    "[integration] Initializing application data completed in 81s.",
+    "[integration] Building packages completed in 182s.",
+    "[integration] Regenerating module artifacts completed in 28s.",
+    "[integration] Rebuilding packages after generation completed in 1s."
+  ],
+  "result": {
+    "liveTestsExecuted": 0,
+    "passed": 0,
+    "failedHttpAssertions": 0,
+    "skipped": 0,
+    "status": "not_run/environment",
+    "buildFailure": "Webpack client compilation cannot resolve Node built-ins fs, tls and net imported via gRPC/OpenTelemetry server dependencies in messages.client.generated.ts import graph.",
+    "appBuildElapsedSecondsApprox": 186,
+    "dockerOomObserved": false,
+    "observedPeakSampleBytes": 3720527872,
+    "diagnostic": {
+      "status": "failed_compile",
+      "isolatedNetwork": "none",
+      "database": "closed loopback URL; no running database",
+      "sameResourceCaps": true,
+      "firstFatal": "@grpc/grpc-js/build/src/certificate-provider.js: Module not found: Can't resolve fs",
+      "additionalFatalBuiltins": [
+        "tls",
+        "net"
+      ],
+      "trace": [
+        "@grpc/grpc-js",
+        "@opentelemetry/sdk-node",
+        "packages/telemetry/dist/provider/otlp-provider.js",
+        "packages/queue/dist/worker/runner.js",
+        "packages/events/dist/bus.js",
+        "packages/core/dist/bootstrap.js",
+        "packages/shared/dist/lib/di/container.js",
+        "packages/core/dist/modules/customers/lib/messageObjectPreviews.js",
+        "packages/core/dist/modules/customers/message-objects.js",
+        "apps/mercato/.mercato/generated/messages.client.generated.ts",
+        "apps/mercato/src/components/ClientBootstrap.tsx",
+        "apps/mercato/src/components/AppProviders.tsx"
+      ],
+      "evidence": "retry-4gb-webpack-error.log",
+      "scope": "Observed with QA-only Webpack fallback; standard Turbopack did not complete under prior memory cap. No production-source fix applied."
+    }
+  },
+  "ownership": {
+    "label": "openmercato.qa.run=auto-sh-delivery-qa-4gb",
+    "session": "132cd8f0f570",
+    "database": "cf83ed5d088e",
+    "reaper": "aab8a5ea61e4",
+    "actualDockerMemoryBytes": 536870912,
+    "actualDockerMemorySwapBytes": 536870912,
+    "actualDockerNanoCpus": 1000000000
+  },
+  "cleanup": {
+    "services": "verified_absent",
+    "runtimeData": "scrubbed_and_absence_verified",
+    "physicalCleanup": "completed_for_runtime_data",
+    "safeToolchain": "retained_machine_local_inactive",
+    "retainedLogicalBytes": 4111512734,
+    "retainedContents": "source snapshot, immutable dependencies, generated module registries, package builds and build cache; no app runtime data or private logs",
+    "verifiedAbsent": [
+      "apps/mercato/storage",
+      "apps/mercato/.env",
+      "apps/mercato/.mercato/next",
+      "apps/mercato/.mercato/cache",
+      "apps/mercato/.mercato/queue",
+      ".ai/qa/ephemeral-env.json",
+      ".ai/qa/ephemeral-cache.sqlite",
+      ".ai/qa/email-capture.jsonl",
+      "runtime.log",
+      "qa-ops/next-diagnostic-private.log"
+    ],
+    "retainedAllocatedBytes": 4882436096
+  },
+  "recipe": "Machine-local gitignored .ai/scripts/test-env-delivery-4gb.sh; not yet cold/warm verified.",
+  "recipeRepair": [
+    "Immutable per-invocation script snapshot prevents executing modified shell offsets",
+    "Future app build wrapper preserves private full output until sanitization",
+    "Freshness compares source HEAD, root config hashes, tracked product diff, and four fixture contents",
+    "Testcontainers preload labels and caps both DB and reaper before creation; actual caps verified"
+  ]
+}

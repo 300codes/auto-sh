@@ -1,0 +1,202 @@
+{
+  "status": 201,
+  "body": {
+    "evidenceId": "771872ef-ae68-4741-b86e-0f5c6b0b261c",
+    "duplicate": false,
+    "taskStatus": "awaiting_review",
+    "taskUpdatedAt": "2026-09-19T11:09:36.581Z"
+  },
+  "taskPackage": {
+    "schemaVersion": "delivery.task-package/v1",
+    "projectId": "8afd5cc0-6c0f-4310-893f-1e7e4c3c1276",
+    "taskId": "ff6e5577-dfdd-4a8f-9209-9cdfd0353bd9",
+    "attemptId": "66309791-494c-43d4-ad28-344cd35e1a76",
+    "baselineId": "ed3b90a7-8252-4953-8e2a-b889e1ab0ef6",
+    "baselineHash": "1747c4bf149092af87c1d9a6ce4937c75b9f3fb1a2d329864c0a9207f316bbd8",
+    "targetProfileId": "react-vite",
+    "targetProfileVersion": 1,
+    "title": "020f1321-60d-9f70ae95949b14d187-retry0-b378e92a-0b35-4c7c-acbf-73416a18ed1b-task",
+    "requirements": [
+      {
+        "id": "REQ-1",
+        "title": "Service catalogue list",
+        "description": "Visitors see every offered service with its price."
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "AC-001",
+        "requirementId": "REQ-1",
+        "description": "The list renders all seeded services."
+      }
+    ],
+    "designArtifactRefs": [
+      {
+        "fileKey": "FigmaDeliveryDemo",
+        "nodeId": "12:34",
+        "name": "Service catalogue - desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "attachmentId": "3b7e952e-9bf4-422f-abc4-eac416a62cc7",
+        "sha256": "5e3d382db4dd83d59aa5742793ad6b7903409e865c83bcbc54835049f043bc15",
+        "capturedAt": "2026-09-19T11:09:35.718Z",
+        "figmaVersion": "2150470001",
+        "sizeBytes": 68,
+        "mimeType": "image/png"
+      }
+    ],
+    "repositoryRef": null,
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "c2e31ca2ebb0629043b3c42640b84c2772ce68a1"
+    },
+    "baseCommit": "c2e31ca2ebb0629043b3c42640b84c2772ce68a1",
+    "allowedPaths": [
+      "src/**"
+    ],
+    "validationProfile": {
+      "version": 1,
+      "requiredTests": {
+        "AC-001": [
+          "service catalogue AC-001: service list renders seeded services"
+        ]
+      },
+      "checks": [
+        {
+          "checkId": "unit-tests",
+          "commandProfileId": "vitest-report",
+          "kind": "test",
+          "required": true
+        },
+        {
+          "checkId": "build",
+          "commandProfileId": "vite-build",
+          "kind": "build",
+          "required": true
+        },
+        {
+          "checkId": "lint",
+          "commandProfileId": "oxlint",
+          "kind": "lint",
+          "required": true
+        },
+        {
+          "checkId": "dependency-audit",
+          "commandProfileId": "npm-audit",
+          "kind": "scan",
+          "required": true
+        }
+      ]
+    },
+    "limits": {
+      "maxParallelTasks": 2,
+      "maxCorrectionRounds": 2,
+      "attemptTimeoutMinutes": 20
+    },
+    "idempotencyKey": "fixture-ef0d8f67-2412-40cb-94f7-abf757e2f5c8"
+  },
+  "manifest": {
+    "schemaVersion": "delivery.result-manifest/v1",
+    "projectId": "8afd5cc0-6c0f-4310-893f-1e7e4c3c1276",
+    "taskId": "ff6e5577-dfdd-4a8f-9209-9cdfd0353bd9",
+    "attemptId": "66309791-494c-43d4-ad28-344cd35e1a76",
+    "baselineId": "ed3b90a7-8252-4953-8e2a-b889e1ab0ef6",
+    "baselineHash": "1747c4bf149092af87c1d9a6ce4937c75b9f3fb1a2d329864c0a9207f316bbd8",
+    "targetProfileVersion": 1,
+    "externalRunId": "fake-run-66309791-494c-43d4-ad28-344cd35e1a76",
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "c2e31ca2ebb0629043b3c42640b84c2772ce68a1"
+    },
+    "resultRevision": {
+      "kind": "git",
+      "commitSha": "a7de576319078489b44fa3c9f968f6f3ec1032a2"
+    },
+    "baseCommit": "c2e31ca2ebb0629043b3c42640b84c2772ce68a1",
+    "resultCommit": "a7de576319078489b44fa3c9f968f6f3ec1032a2",
+    "changedPaths": [],
+    "artifacts": [],
+    "checks": [
+      {
+        "checkId": "unit-tests-1",
+        "testId": "service catalogue AC-001: service list renders seeded services",
+        "acIds": [
+          "AC-001"
+        ],
+        "commandProfileId": "vitest-report",
+        "testDefinitionHash": "ace813de0011021d2ba47f784677ff4553df144fa3383451be501305e4356bee",
+        "rawReportHash": "1476e99ebb6eb650e7240f764387b57d1b8a3dc6a7bf8f9e81c1faea3a13f400",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "a7de576319078489b44fa3c9f968f6f3ec1032a2"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "build",
+        "testId": "build",
+        "acIds": [],
+        "commandProfileId": "vite-build",
+        "testDefinitionHash": "77a3702aa3eda202b1ff61bc262f520783e47221197b5f4794af1b5313bdd350",
+        "rawReportHash": "1a3afca4d1684348e937a3f63a7fef1a181805ce3000f876bab52059c8780b36",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "a7de576319078489b44fa3c9f968f6f3ec1032a2"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "lint",
+        "testId": "lint",
+        "acIds": [],
+        "commandProfileId": "oxlint",
+        "testDefinitionHash": "f10fa12f829abd17b955c268ce19d24a0386aead9472e613959620c406748923",
+        "rawReportHash": "cef6486b140a8d79949f038841614085bf842531f8dba442cb69351f237e952d",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "a7de576319078489b44fa3c9f968f6f3ec1032a2"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "dependency-audit",
+        "testId": "dependency-audit",
+        "acIds": [],
+        "commandProfileId": "npm-audit",
+        "testDefinitionHash": "074fbe2b55421206ff31267d3c911ce4c0579aab53e3f79413f7bf4eaf1c93e1",
+        "rawReportHash": "5d91b3950dbc951930633ae50f1b9ebb1a2a2c537442447a78a812ec50d63f7b",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "a7de576319078489b44fa3c9f968f6f3ec1032a2"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      }
+    ],
+    "agentDeclaration": {
+      "summary": "Deterministic fake executor result",
+      "claimedAcIds": [
+        "AC-001"
+      ]
+    },
+    "findings": [],
+    "usage": {
+      "source": "runner",
+      "values": "unknown"
+    }
+  },
+  "provenance": "synthetic-executor-over-http"
+}

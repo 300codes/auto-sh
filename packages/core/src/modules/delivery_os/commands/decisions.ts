@@ -28,7 +28,9 @@ import {
 } from '../lib/contracts'
 import { isVerifiedDeploymentPayload } from '../lib/deliveryReport'
 import { hashCanonical } from '../lib/hash'
-import type { DeliveryOsReportQueries } from './reportQueries'
+import { checkProjectFlowGateV1 } from './flowGate'
+import { createDeliveryOsReportQueries } from './reportQueries'
+import { assertReportDecisionContext, assertCurrentCandidateDeployConsent, candidateConsentHash } from './reportContext'
 import { findProjectBaseline, requireTaskProfile } from './tasks'
 import {
   assertDeliveryCheck,
@@ -38,6 +40,7 @@ import {
   deliveryHttpError,
   findScopedBaseline,
   lockProjectForWrite,
+  lockScopedProjectTasks,
   parseDeliveryInput,
   requireActorUserId,
   requireLockHeader,
@@ -156,11 +159,12 @@ async function recordDeployDecision(rawInput: unknown, ctx: CommandContext): Pro
   const actorUserId = requireActorUserId(ctx)
   const readEm = resolveDeliveryEm(ctx)
   await requireScopedProject(readEm, parsed.projectId, scope)
-  const reportQueries = ctx.container.resolve('deliveryOsReportQueries') as DeliveryOsReportQueries
 
   const em = resolveDeliveryEm(ctx)
   const outcome = await em.transactional(async (tx) => {
     const project = await lockProjectForWrite(tx, ctx, parsed.projectId, scope, { force: true })
+    await lockScopedProjectTasks(tx, project.id, scope)
+    const reportQueries = createDeliveryOsReportQueries(tx, true)
     const profile = requireTaskProfile(project.targetProfileId, project.targetProfileVersion)
     if (parsed.sourceRevision.kind !== profile.revisionKind) {
       throw invalidRevisionKind(`Profile ${profile.id}@${profile.version} requires a ${profile.revisionKind} revision`)
@@ -174,11 +178,9 @@ async function recordDeployDecision(rawInput: unknown, ctx: CommandContext): Pro
         ]),
       )
     }
+    const report = await reportQueries.buildReport(scope, project.id, { baselineId: baseline.id, revision: parsed.sourceRevision })
+    assertReportDecisionContext(report, parsed, parsed.sourceRevision, parsed.verdict === 'approved')
     if (parsed.verdict === 'approved') {
-      const report = await reportQueries.buildReport(scope, project.id, {
-        baselineId: baseline.id,
-        revision: parsed.sourceRevision,
-      })
       if (!report.gates.publishable.ok) {
         throw deliveryHttpError(
           buildDeliveryError(
@@ -188,6 +190,7 @@ async function recordDeployDecision(rawInput: unknown, ctx: CommandContext): Pro
           ),
         )
       }
+      assertDeliveryCheck(await checkProjectFlowGateV1(tx, project, scope))
     }
     const existing = await findWithDecryption(
       tx,
@@ -207,6 +210,9 @@ async function recordDeployDecision(rawInput: unknown, ctx: CommandContext): Pro
       subjectHash: baseline.contentHash,
       subjectVersion: baseline.version,
       sourceRevision: parsed.sourceRevision,
+      releaseCandidateId: report.currentCandidate?.id ?? null,
+      releaseCandidateVersion: report.currentCandidate?.version ?? null,
+      candidateContextHash: report.currentCandidate ? candidateConsentHash(report) : null,
       verdict: parsed.verdict,
       reason: parsed.reason?.trim() || null,
       actorUserId,
@@ -301,11 +307,12 @@ async function recordReleaseDecision(rawInput: unknown, ctx: CommandContext): Pr
   const actorUserId = requireActorUserId(ctx)
   const readEm = resolveDeliveryEm(ctx)
   await requireScopedProject(readEm, parsed.projectId, scope)
-  const reportQueries = ctx.container.resolve('deliveryOsReportQueries') as DeliveryOsReportQueries
 
   const em = resolveDeliveryEm(ctx)
   const outcome = await em.transactional(async (tx) => {
     const project = await lockProjectForWrite(tx, ctx, parsed.projectId, scope, { force: true })
+    await lockScopedProjectTasks(tx, project.id, scope)
+    const reportQueries = createDeliveryOsReportQueries(tx, true)
     const evidence = await findOneWithDecryption(
       tx,
       DeliveryEvidence,
@@ -347,6 +354,8 @@ async function recordReleaseDecision(rawInput: unknown, ctx: CommandContext): Pr
     if (revision.data.kind !== profile.revisionKind) {
       throw invalidRevisionKind(`Profile ${profile.id}@${profile.version} requires a ${profile.revisionKind} revision`)
     }
+    const report = await reportQueries.buildReport(scope, project.id, { baselineId: baseline.id, revision: revision.data })
+    assertReportDecisionContext(report, parsed, revision.data, parsed.verdict === 'approved')
     if (parsed.verdict === 'approved') {
       if (!isVerifiedDeploymentPayload(evidence.payload)) {
         throw releaseError('deployment_unverified', 'The deployment is not verified', [
@@ -361,7 +370,7 @@ async function recordReleaseDecision(rawInput: unknown, ctx: CommandContext): Pr
         scope,
       )
       assertDeliveryCheck(checkDeployConsent(deployDecisions, baseline.contentHash, revision.data))
-      const report = await reportQueries.buildReport(scope, project.id, { baselineId: baseline.id, revision: revision.data })
+      assertCurrentCandidateDeployConsent(report, deployDecisions)
       if (!report.gates.releasable.ok) {
         throw deliveryHttpError(
           buildDeliveryError(
@@ -390,6 +399,9 @@ async function recordReleaseDecision(rawInput: unknown, ctx: CommandContext): Pr
       subjectHash: baseline.contentHash,
       subjectVersion: baseline.version,
       sourceRevision: revision.data,
+      releaseCandidateId: report.currentCandidate?.id ?? null,
+      releaseCandidateVersion: report.currentCandidate?.version ?? null,
+      candidateContextHash: report.currentCandidate ? candidateConsentHash(report) : null,
       verdict: parsed.verdict,
       reason: parsed.reason?.trim() || null,
       actorUserId,

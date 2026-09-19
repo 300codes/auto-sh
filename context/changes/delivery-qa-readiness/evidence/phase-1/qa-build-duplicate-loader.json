@@ -1,0 +1,16 @@
+{
+  "status": "blocked",
+  "variant": "QA-only webpack singleCPUworker, private ignoreBuildErrors after narrowTS; standard Next fulltypecheck previouslyOOM",
+  "limits": {
+    "containerMiB": 6144,
+    "cpu": 2,
+    "heapMiB": 4096
+  },
+  "webpackSeconds": 162,
+  "webpackStatus": "passed",
+  "pageDataStatus": "failed",
+  "error": "Duplicate command loader registration for key auth:commands:acl during /start collection",
+  "liveExecuted": 0,
+  "liveStatus": "not_run",
+  "operationalFailureBeforeThisRun": "Private wrapper missing closing quote; syntax check corrected; separate failedbootstrap before appbuild; no product failure in that run."
+}

@@ -1,0 +1,45 @@
+{
+  "projectId": "3df4d6f6-f7ec-43b5-a498-671f3bb34d17",
+  "taskId": "35942c83-09e6-44c8-9dd4-9865cd5272c5",
+  "dependantId": "6e68c15f-d8f3-42e6-8573-39700fb42f76",
+  "beforeCounts": {
+    "projects": 1,
+    "baselines": 1,
+    "tasks": 2,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 0,
+    "resultManifests": 0
+  },
+  "afterCounts": {
+    "projects": 1,
+    "baselines": 1,
+    "tasks": 2,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 0,
+    "resultManifests": 0
+  },
+  "invalidEdits": [
+    {
+      "status": 409,
+      "code": "invalid_transition"
+    },
+    {
+      "status": 422,
+      "code": "unknown_ac"
+    },
+    {
+      "status": 422,
+      "code": "cycle"
+    },
+    {
+      "status": 422,
+      "code": "foreign_dependency"
+    },
+    {
+      "status": 422,
+      "code": "path_not_allowed"
+    }
+  ]
+}

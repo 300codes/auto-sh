@@ -4,20 +4,16 @@ import { z } from 'zod'
 import type { AttemptReserveResult } from '@open-mercato/core/modules/delivery_os/commands/attempts'
 import {
   DELIVERY_TASK_RESOURCE_KIND,
-  deliveryHttpError,
   parseDeliveryInput,
   resolveDeliveryScope,
 } from '@open-mercato/core/modules/delivery_os/commands/shared'
-import { idempotencyKeyHeaderSchema, reserveAttemptBodySchema } from '@open-mercato/core/modules/delivery_os/data/validators'
-import {
-  buildDeliveryError,
-  reserveAttemptResponseSchema,
-  uuidSchema,
-} from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { reserveAttemptBodySchema } from '@open-mercato/core/modules/delivery_os/data/validators'
+import { reserveAttemptResponseSchema, uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { DELIVERY_OS_OPENAPI_TAG } from '@open-mercato/core/modules/delivery_os/api/openapi'
 import {
   deliveryErrorResponse,
   executeDeliveryCommand,
+  readIdempotencyKeyHeader,
   readRouteBody,
   readRouteId,
   resolveDeliveryRouteContext,
@@ -25,23 +21,8 @@ import {
 } from '@open-mercato/core/modules/delivery_os/api/routeSupport'
 import { deliveryErrorBodySchema, optimisticLockConflictSchema } from '@open-mercato/core/modules/delivery_os/api/schemas'
 
-const IDEMPOTENCY_KEY_HEADER = 'idempotency-key'
-
 export const metadata = {
   POST: { requireAuth: true, requireFeatures: ['delivery_os.attempts.manage'] },
-}
-
-function readIdempotencyKey(request: Request): string {
-  const header = request.headers.get(IDEMPOTENCY_KEY_HEADER)
-  if (header === null || header.trim().length === 0) {
-    throw deliveryHttpError(
-      buildDeliveryError('idempotency_key_required', 'The Idempotency-Key header is required', [
-        { path: 'idempotencyKey', code: 'idempotency_key_required' },
-      ]),
-    )
-  }
-  return parseDeliveryInput(z.object({ idempotencyKey: idempotencyKeyHeaderSchema }), { idempotencyKey: header.trim() })
-    .idempotencyKey
 }
 
 export async function POST(request: Request, context: DeliveryRouteContext): Promise<Response> {
@@ -49,7 +30,7 @@ export async function POST(request: Request, context: DeliveryRouteContext): Pro
     const ctx = await resolveDeliveryRouteContext(request)
     const scope = resolveDeliveryScope(ctx)
     const taskId = await readRouteId(context)
-    const idempotencyKey = readIdempotencyKey(request)
+    const idempotencyKey = readIdempotencyKeyHeader(request)
     const { mode, baseRevision } = parseDeliveryInput(reserveAttemptBodySchema, await readRouteBody(request))
     const outcome = await executeDeliveryCommand<AttemptReserveResult>(ctx, scope, {
       commandId: 'delivery_os.attempts.reserve',

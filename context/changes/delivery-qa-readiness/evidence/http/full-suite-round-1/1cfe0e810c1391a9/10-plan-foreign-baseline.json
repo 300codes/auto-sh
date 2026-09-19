@@ -1,0 +1,15 @@
+{
+  "status": 422,
+  "body": {
+    "error": "Baseline does not belong to this project",
+    "code": "foreign_reference",
+    "details": [
+      {
+        "path": "baselineId",
+        "code": "foreign_baseline"
+      }
+    ]
+  },
+  "taskCount": 0,
+  "baselineId": "d4c92a2a-6870-4998-ac3e-68436cf33b38"
+}

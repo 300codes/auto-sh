@@ -1,6 +1,23 @@
-import type { DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../data/entities'
+import { toIntakeDocument, toIntakeResponse } from '../commands/intake'
+import type {
+  DeliveryBaseline,
+  DeliveryDecision,
+  DeliveryFlowStageArtifact,
+  DeliveryFlowStageDecision,
+  DeliveryIntake,
+  DeliveryProject,
+  DeliveryTask,
+} from '../data/entities'
 import { parseAttemptRegister } from '../lib/attempts'
-import { baselineContentV1Schema } from '../lib/contracts'
+import {
+  baselineContentV1Schema,
+  clientApprovalSchema,
+  type ClientApproval,
+  type IntakeResponse,
+  type StageArtifactListItem,
+  type StageDecisionListItem,
+} from '../lib/contracts'
+import { defaultIntake } from '../lib/intakeRules'
 import type { ProjectStatusSummary } from '../lib/projectStatus'
 import type { BaselineDto, ProjectDetail, ProjectListItem, TaskDto } from './schemas'
 
@@ -111,5 +128,58 @@ export function serializeTask(task: DeliveryTask): TaskDto {
     createdAt: requireIso(task.createdAt),
     updatedAt: requireIso(task.updatedAt),
     archivedAt: toIso(task.deletedAt),
+  }
+}
+
+/** F1: the stored draft (decrypted by the caller's loader) or the empty default whose version is the project `createdAt`. */
+export function serializeIntakeResponse(project: DeliveryProject, intake: DeliveryIntake | null): IntakeResponse {
+  if (intake) return toIntakeResponse(toIntakeDocument(intake), project, intake.updatedAt)
+  return toIntakeResponse(defaultIntake(project.id), project, project.createdAt)
+}
+
+export function serializeStageArtifact(row: DeliveryFlowStageArtifact): StageArtifactListItem {
+  return {
+    artifactId: row.id,
+    projectId: row.projectId,
+    stageId: row.stageId,
+    version: row.version,
+    contentHash: row.contentHash,
+    source: row.source,
+    content: row.content,
+    dependsOn: row.dependsOn,
+    attachmentIds: row.attachmentIds,
+    templateHash: row.templateHash,
+    createdBy: row.createdBy ?? null,
+    createdAt: requireIso(row.createdAt),
+  }
+}
+
+function readClientApproval(row: DeliveryFlowStageDecision): ClientApproval | null {
+  if (typeof row.clientApproverName !== 'string' || row.clientApproverName.length === 0) return null
+  const parsed = clientApprovalSchema.safeParse({
+    approverName: row.clientApproverName,
+    approverRole: row.clientApproverRole ?? null,
+    evidence: row.clientApprovalEvidence,
+  })
+  return parsed.success ? parsed.data : null
+}
+
+/** Approver fields arrive decrypted: rows are loaded with `findWithDecryption` for the session scope only. */
+export function serializeStageDecision(row: DeliveryFlowStageDecision): StageDecisionListItem {
+  return {
+    decisionId: row.id,
+    projectId: row.projectId,
+    stageId: row.stageId,
+    artifactId: row.artifactId,
+    subjectHash: row.subjectHash,
+    subjectVersion: row.subjectVersion,
+    verdict: row.verdict,
+    reason: row.reason ?? null,
+    actorUserId: row.actorUserId,
+    decidedAt: requireIso(row.decidedAt),
+    clientApproved: typeof row.clientApproverName === 'string' && row.clientApproverName.length > 0,
+    clientApproval: readClientApproval(row),
+    deferredThreadKeys: row.deferredThreadKeys,
+    templateHash: row.templateHash,
   }
 }

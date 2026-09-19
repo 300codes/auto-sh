@@ -1,0 +1,44 @@
+{
+  "case": "outside paths",
+  "status": 422,
+  "body": {
+    "error": "The result changes files outside the allowed paths of this task",
+    "code": "path_not_allowed",
+    "details": [
+      {
+        "path": "changedPaths.0",
+        "code": "outside_allowed_paths",
+        "message": "package.json is outside the allowed paths of this task"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "767a6eee-077d-42a6-b16c-5c3944f29750",
+  "taskId": "6f7479c6-57c2-4228-a9c7-1cf88a0ca940",
+  "attemptId": "a17db79c-048b-4f46-a210-200d54abfbc7",
+  "baselineId": "17004262-7f81-49ef-8b8f-9acb32ae536d",
+  "baselineHash": "fae63a9b53d1dcde9a61f1041bf760488671fe73439a3feb61a0325ecca9a17a"
+}

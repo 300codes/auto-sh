@@ -5,8 +5,12 @@ import { hasAllFeatures } from '@open-mercato/shared/security/features'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import {
   DeliveryBaseline,
+  DeliveryReleaseCandidate,
   DeliveryDecision,
   DeliveryEvidence,
+  DeliveryFlowStageArtifact,
+  DeliveryFlowStageDecision,
+  DeliveryIntake,
   DeliveryProject,
   DeliveryTask,
 } from '../../data/entities'
@@ -37,7 +41,15 @@ type RouteStore = {
   decisions: Row[]
   tasks: Row[]
   evidence: Row[]
+  candidates: Row[]
   attachments: Row[]
+  intakes: Row[]
+  stageArtifacts: Row[]
+  stageDecisions: Row[]
+}
+
+function emptyRouteStore(): RouteStore {
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [] }
 }
 
 export const routeState: {
@@ -53,27 +65,52 @@ export const routeState: {
   features: [],
   rbacAvailable: true,
   selectionRejected: false,
-  store: { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] },
+  store: emptyRouteStore(),
   queryEngine: { query: jest.fn() },
   writes: 0,
 }
 
 function rowsFor(entity: unknown): Row[] {
   const { store } = routeState
+  if (entity === DeliveryReleaseCandidate) return store.candidates
   if (entity === DeliveryProject) return store.projects
   if (entity === DeliveryBaseline) return store.baselines
   if (entity === DeliveryDecision) return store.decisions
   if (entity === DeliveryTask) return store.tasks
   if (entity === DeliveryEvidence) return store.evidence
   if (entity === Attachment) return store.attachments
+  if (entity === DeliveryIntake) return store.intakes
+  if (entity === DeliveryFlowStageArtifact) return store.stageArtifacts
+  if (entity === DeliveryFlowStageDecision) return store.stageDecisions
   throw new Error('[internal] unexpected entity in route test store')
+}
+
+/** Stage histories and candidate selection honour `orderBy`; legacy v1 suites retain insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryReleaseCandidate])
+
+function sortKey(value: unknown): number | string {
+  if (value instanceof Date) return value.getTime()
+  return typeof value === 'number' ? value : String(value ?? '')
+}
+
+function sortRows(rows: Row[], orderBy: Record<string, 'asc' | 'desc'>): Row[] {
+  return [...rows].sort((left, right) => {
+    for (const [key, direction] of Object.entries(orderBy)) {
+      const a = sortKey(left[key])
+      const b = sortKey(right[key])
+      if (a === b) continue
+      return (a < b ? -1 : 1) * (direction === 'desc' ? -1 : 1)
+    }
+    return 0
+  })
 }
 
 export const findMock = {
   findOneWithDecryption: async (_em: unknown, entity: unknown, where: Row) =>
     rowsFor(entity).find((row) => matches(row, where)) ?? null,
-  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number }) => {
-    const rows = rowsFor(entity).filter((row) => matches(row, where))
+  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number; orderBy?: Record<string, 'asc' | 'desc'> }) => {
+    const filtered = rowsFor(entity).filter((row) => matches(row, where))
+    const rows = options?.orderBy && ORDERED_ENTITIES.has(entity) ? sortRows(filtered, options.orderBy) : filtered
     const offset = options?.offset ?? 0
     return rows.slice(offset, options?.limit === undefined ? undefined : offset + options.limit)
   }),
@@ -114,6 +151,7 @@ export const em = {
   nativeInsert: jest.fn(async () => undefined),
   nativeUpdate: jest.fn(async () => 0),
   findOne: async () => null,
+  count: async (entity: unknown, where: Row) => rowsFor(entity).filter((row) => matches(row, where)).length,
 }
 
 export const EM_WRITE_METHODS = ['transactional', 'persist', 'flush', 'nativeInsert', 'nativeUpdate'] as const
@@ -163,6 +201,14 @@ export const containerMock = {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
         return createDeliveryOsAttemptQueries(em)
       }
+      if (name === 'deliveryOsFlowQueries') {
+        const { createDeliveryOsFlowQueries } = jest.requireActual('../../commands/flowQueries')
+        return createDeliveryOsFlowQueries(em)
+      }
+      if (name === 'deliveryFlowTemplateProvider') {
+        const { createBuiltInFlowTemplateProvider } = jest.requireActual('../../commands/flowTemplateProvider')
+        return createBuiltInFlowTemplateProvider()
+      }
       if (name === 'deliveryOsReportQueries') {
         const { createDeliveryOsReportQueries } = jest.requireActual('../../commands/reportQueries')
         return createDeliveryOsReportQueries(em)
@@ -197,7 +243,7 @@ export function resetRouteState(): void {
   routeState.features = [...ALL_FEATURES]
   routeState.rbacAvailable = true
   routeState.selectionRejected = false
-  routeState.store = { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] }
+  routeState.store = emptyRouteStore()
   routeState.writes = 0
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()

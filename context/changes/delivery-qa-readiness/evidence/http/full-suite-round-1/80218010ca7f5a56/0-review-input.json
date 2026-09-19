@@ -1,0 +1,112 @@
+{
+  "scenario": "wrong_revision",
+  "manifest": {
+    "schemaVersion": "delivery.result-manifest/v1",
+    "projectId": "6a183deb-1b4b-4d67-9803-9497b4a6fb19",
+    "taskId": "3d98b1fc-7f74-4c10-b8a2-62d52137ad95",
+    "attemptId": "92481e59-052c-4db8-ad59-f826f3436dbb",
+    "baselineId": "ec93ac7b-fcc1-47a7-9ab9-1ca679f888fa",
+    "baselineHash": "3dcf87455c3e17930124c51bc3ad392915ee4cf607bfbff52c73501e82293880",
+    "targetProfileVersion": 1,
+    "externalRunId": "fake-run-92481e59-052c-4db8-ad59-f826f3436dbb",
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "c126857add9015467a78373cc8b93a0417339405"
+    },
+    "resultRevision": {
+      "kind": "git",
+      "commitSha": "fb7d943e3a58354d2d918f6a90a3a574100efe98"
+    },
+    "baseCommit": "c126857add9015467a78373cc8b93a0417339405",
+    "resultCommit": "fb7d943e3a58354d2d918f6a90a3a574100efe98",
+    "changedPaths": [],
+    "artifacts": [],
+    "checks": [
+      {
+        "checkId": "unit-tests-1",
+        "testId": "service catalogue AC-001: service list renders seeded services",
+        "acIds": [
+          "AC-001"
+        ],
+        "commandProfileId": "vitest-report",
+        "testDefinitionHash": "ace813de0011021d2ba47f784677ff4553df144fa3383451be501305e4356bee",
+        "rawReportHash": "d332471847c14a5b5d46c39673ebae6a4c2fc2b6ce8e70f0b9e436c274154d8c",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "fb7d943e3a58354d2d918f6a90a3a574100efe98"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "build",
+        "testId": "build",
+        "acIds": [],
+        "commandProfileId": "vite-build",
+        "testDefinitionHash": "77a3702aa3eda202b1ff61bc262f520783e47221197b5f4794af1b5313bdd350",
+        "rawReportHash": "22027810cc142859679bc800d652370c5d01d8c862e23dea37a5b0b36aaf6cda",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "fb7d943e3a58354d2d918f6a90a3a574100efe98"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "lint",
+        "testId": "lint",
+        "acIds": [],
+        "commandProfileId": "oxlint",
+        "testDefinitionHash": "f10fa12f829abd17b955c268ce19d24a0386aead9472e613959620c406748923",
+        "rawReportHash": "8d3c0510b0a2e34dc14125d861ae4cf2c59b893e7e7c4a48021ebb2219a88ef9",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "fb7d943e3a58354d2d918f6a90a3a574100efe98"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "dependency-audit",
+        "testId": "dependency-audit",
+        "acIds": [],
+        "commandProfileId": "npm-audit",
+        "testDefinitionHash": "074fbe2b55421206ff31267d3c911ce4c0579aab53e3f79413f7bf4eaf1c93e1",
+        "rawReportHash": "4d56ffe19a23662e7bb6e0a5a175b3807eb392573244125f33c790d319b0c051",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "fb7d943e3a58354d2d918f6a90a3a574100efe98"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      }
+    ],
+    "agentDeclaration": {
+      "summary": "Deterministic fake executor result",
+      "claimedAcIds": [
+        "AC-001"
+      ]
+    },
+    "findings": [],
+    "usage": {
+      "source": "runner",
+      "values": "unknown"
+    }
+  },
+  "status": 201,
+  "body": {
+    "evidenceId": "b5136641-fd32-48e5-8ce9-74575eb8fa57",
+    "duplicate": false,
+    "taskStatus": "awaiting_review",
+    "taskUpdatedAt": "2026-09-19T11:09:21.829Z"
+  },
+  "provenance": "synthetic-executor-over-http"
+}

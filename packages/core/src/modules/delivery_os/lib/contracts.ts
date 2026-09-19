@@ -40,6 +40,8 @@ export const deliveryErrorCodes = {
   task_not_ready: 409,
   invalid_transition: 409,
   result_conflict: 409,
+  decision_context_stale: 409,
+  candidate_stale: 409,
   subject_hash_mismatch: 409,
   correction_limit_reached: 409,
   payload_too_large: 413,
@@ -69,6 +71,10 @@ export const deliveryErrorCodes = {
   manifest_required: 422,
   reason_required: 422,
   report_not_green: 422,
+  flow_not_publishable: 422,
+  release_candidate_required: 422,
+  candidate_evidence_mismatch: 422,
+  candidate_integration_evidence_required: 422,
   deployment_unverified: 422,
   deployment_incomplete: 422,
   revision_mismatch: 422,
@@ -1465,6 +1471,54 @@ export const stageDecisionResponseSchema = z.object({
   projectUpdatedAt: isoDateTimeSchema,
 })
 export type StageDecisionResponse = z.infer<typeof stageDecisionResponseSchema>
+
+export const STAGE_HISTORY_MAX_PAGE_SIZE = 100
+
+export const stageArtifactListItemSchema = z.object({
+  artifactId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+  source: stageArtifactSourceSchema,
+  content: z.record(z.string(), z.unknown()),
+  dependsOn: z.array(stageArtifactDependencySchema).max(3),
+  attachmentIds: z.array(uuidSchema).max(200),
+  templateHash: sha256Schema,
+  createdBy: uuidSchema.nullable(),
+  createdAt: isoDateTimeSchema,
+})
+export type StageArtifactListItem = z.infer<typeof stageArtifactListItemSchema>
+
+export const stageArtifactListResponseSchema = z.object({
+  items: z.array(stageArtifactListItemSchema).max(STAGE_HISTORY_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type StageArtifactListResponse = z.infer<typeof stageArtifactListResponseSchema>
+
+export const stageDecisionListItemSchema = z.object({
+  decisionId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema,
+  subjectHash: sha256Schema,
+  subjectVersion: z.number().int().positive(),
+  verdict: stageDecisionVerdictSchema,
+  reason: z.string().max(4000).nullable(),
+  actorUserId: uuidSchema,
+  decidedAt: isoDateTimeSchema,
+  clientApproved: z.boolean(),
+  clientApproval: clientApprovalSchema.nullable(),
+  deferredThreadKeys: z.array(z.string().min(1).max(200)).max(200),
+  templateHash: sha256Schema,
+})
+export type StageDecisionListItem = z.infer<typeof stageDecisionListItemSchema>
+
+export const stageDecisionListResponseSchema = z.object({
+  items: z.array(stageDecisionListItemSchema).max(STAGE_HISTORY_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type StageDecisionListResponse = z.infer<typeof stageDecisionListResponseSchema>
 
 // --- Flow status (read model) ----------------------------------------------
 

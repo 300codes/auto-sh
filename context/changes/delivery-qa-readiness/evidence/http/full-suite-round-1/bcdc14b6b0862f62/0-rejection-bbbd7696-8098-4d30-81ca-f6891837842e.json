@@ -1,0 +1,26 @@
+{
+  "expected": {
+    "status": 422,
+    "code": "baseline_not_approved"
+  },
+  "actual": {
+    "status": 422,
+    "body": {
+      "code": "baseline_not_approved",
+      "details": [
+        {
+          "path": "baselineId",
+          "code": "baseline_not_active"
+        },
+        {
+          "path": "decisions.requirements",
+          "code": "requirements_decision_missing"
+        },
+        {
+          "path": "decisions.design",
+          "code": "design_decision_missing"
+        }
+      ]
+    }
+  }
+}

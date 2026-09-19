@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-19T12:55:48.338644+00:00",
+  "reason": "user_reported_computer_shutdown",
+  "actions": "read_only_no_service_start_no_pid_signals_no_database_deletion",
+  "workspacePreserved": true,
+  "dockerWslCli": "unavailable_integration_not_ready",
+  "dockerWindowsCli": "available_but_daemon_pipe_unavailable",
+  "containerState": "not_observed_daemon_unavailable",
+  "sudo": "not_available_password_required_no_password_requested",
+  "lastKnownGate": {
+    "steps1to4": "passed_before_shutdown",
+    "step5": "complete_advisory_only_log_observed_before_shutdown_exit_code_not_collected",
+    "step6to8": "not_started_no_logs",
+    "resume": "fresh_step5_process_after_resource_slot_then_remaining_ordered_steps; never signal historical PID"
+  },
+  "gatePause": {
+    "at": "2026-09-19T12:43:09.796Z",
+    "action": "gate_parent_paused_before_next_step",
+    "pid": 1295,
+    "currentChild": "i18n_usage_continues"
+  },
+  "resourceEvidence": {
+    "rawSha256": "d2039525304eae3e26c82a4dd00579bdd1b7beacc8b72049e86656e7883fbfef",
+    "validSamples": 88,
+    "invalidLines": 1,
+    "corruptTail": "preserved_unchanged",
+    "lastValid": {
+      "timestamp": 1789821917.4500124,
+      "availableKiB": 8435440,
+      "stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "0.00%",
+        "Container": "auto-sh-q-current",
+        "ID": "528c91115955",
+        "MemPerc": "5.68%",
+        "MemUsage": "465.5MiB / 8GiB",
+        "Name": "auto-sh-q-current",
+        "NetIO": "419MB / 5.17MB",
+        "PIDs": "97"
+      }
+    },
+    "minimumHostAvailableMiB": 6166,
+    "monitorStopRecords": []
+  },
+  "currentHost": {
+    "linuxMemoryTotalMiB": 16001,
+    "linuxMemoryAvailableMiB": 14071,
+    "swapUsedMiB": 0,
+    "pointInTimeNotReserved": true
+  },
+  "cause": "unknown_no_causal_shutdown_or_containerOOM_conclusion",
+  "httpExecuted": 0,
+  "databaseSentinel": "not_run"
+}

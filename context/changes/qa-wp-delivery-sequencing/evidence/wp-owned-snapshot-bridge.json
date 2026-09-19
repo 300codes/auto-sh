@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-19",
+  "scope": "internal owned frozen snapshot reader and QA mapper caller",
+  "readerTests": {
+    "passed": 17,
+    "runner": "Node test, isolation none"
+  },
+  "callerTests": {
+    "passed": 9,
+    "runner": "Jest compiled-callsite"
+  },
+  "typechecks": "WP package and narrow bridge PASS",
+  "live": false,
+  "limitations": [
+    "capture toolExecutionId is caller-attested; no persisted original capture receipt",
+    "unit owner live provenance explicitly simulated; not live proof",
+    "HTTP result import and automatic executor not exercised"
+  ],
+  "files": {
+    "packages/delivery-wordpress/src/snapshot-reader.ts": "435b00849d15fda2e7139b63306411122634495b4152ab9986355aaf1b5dee73",
+    "packages/delivery-wordpress/src/__tests__/snapshot-reader.test.ts": "f175f6f65f92275c558c8057825d454ef7d0bb8fd32034180f2d68df5b31bdc4",
+    "packages/core/src/helpers/integration/wordpressResultFixtures.ts": "b98096933c214c1513ff5ab1f70c11f7129f05b27bc032f829ac81ccc99dea5a",
+    "packages/core/src/helpers/integration/__tests__/wordpressResultFixtures.test.ts": "aabd802dc73bea7f4873bc79c3141f5c35e138fa8ef3fb8ae4fd16648ea003af"
+  },
+  "preflight": "Reject >200 unique artifact refs before loading operator or reading snapshot bytes"
+}

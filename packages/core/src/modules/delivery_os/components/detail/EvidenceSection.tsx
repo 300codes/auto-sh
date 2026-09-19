@@ -1,10 +1,10 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
 import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
-import { Alert } from '@open-mercato/ui/primitives/alert'
 import { Badge } from '@open-mercato/ui/primitives/badge'
 import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import { Button } from '@open-mercato/ui/primitives/button'
@@ -13,6 +13,7 @@ import { resolveActiveBaseline } from './baselineContent'
 import type { SectionSource } from './useProjectSections'
 
 export type EvidenceSectionProps = {
+  projectId?: string
   progress: ProjectDetail['progress']
   taskCounts: ProjectDetail['taskCounts']
   attention: ProjectDetail['attention']
@@ -38,7 +39,7 @@ function ProgressValue({ progress }: { progress: ProjectDetail['progress'] }) {
   )
 }
 
-export function EvidenceSection({ progress, taskCounts, attention, baselines, onRetry }: EvidenceSectionProps) {
+export function EvidenceSection({ projectId, progress, taskCounts, attention, baselines, onRetry }: EvidenceSectionProps) {
   const t = useT()
   const active = baselines.status === 'ready' ? resolveActiveBaseline(baselines.data) : null
   const coverage = active?.kind === 'ready' ? active.content : null
@@ -112,11 +113,9 @@ export function EvidenceSection({ progress, taskCounts, attention, baselines, on
         ) : null}
       </div>
 
-      {/* Platform gap, not a domain result: the read endpoint does not exist yet. */}
-      <Alert status="information" data-testid="delivery-evidence-list-unavailable">
-        <p className="font-medium">{t('delivery_os.project.sections.evidence.listUnavailable')}</p>
-        <p>{t('delivery_os.project.sections.evidence.listUnavailableDescription')}</p>
-      </Alert>
+      {projectId ? <Button type="button" variant="outline" asChild>
+        <Link href={`/backend/delivery/projects/${encodeURIComponent(projectId)}/report`} data-testid="delivery-report-link">{t('delivery_os.report.open')}</Link>
+      </Button> : null}
     </section>
   )
 }

@@ -1,0 +1,127 @@
+{
+  "scope": "final main68361d163 plus frozen local source",
+  "buildSteps": [
+    {
+      "at": "2026-09-19T15:25:49.503787+00:00",
+      "step": 1,
+      "command": "yarn build:packages",
+      "exitCode": 1,
+      "seconds": 1.8400268020000112,
+      "sourceFingerprint": "be3aef6c69f258ebd5f1f5fcd6fae26c6bf6637061986f2d18909fa7685474a6",
+      "afterFingerprint": "be3aef6c69f258ebd5f1f5fcd6fae26c6bf6637061986f2d18909fa7685474a6",
+      "sourceChanged": false,
+      "status": "failed",
+      "log": "resume-20260919T152534179168Z-1.log",
+      "resourceInterrupted": false,
+      "validationScope": "final_source_build_prerequisite",
+      "fullOrderedGate": "not_passed",
+      "skippedSteps": [
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "at": "2026-09-19T15:28:26.857532+00:00",
+      "step": 1,
+      "command": "yarn build:packages",
+      "exitCode": 0,
+      "seconds": 114.44908891500017,
+      "sourceFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "afterFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "sourceChanged": false,
+      "status": "passed",
+      "log": "resume-20260919T152630946699Z-1.log",
+      "resourceInterrupted": false,
+      "validationScope": "final_source_build_prerequisite",
+      "fullOrderedGate": "not_passed",
+      "skippedSteps": [
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "at": "2026-09-19T15:28:56.343255+00:00",
+      "step": 2,
+      "command": "yarn generate",
+      "exitCode": 0,
+      "seconds": 29.044356762999996,
+      "sourceFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "afterFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "sourceChanged": false,
+      "status": "passed",
+      "log": "resume-20260919T152630946699Z-2.log",
+      "resourceInterrupted": false,
+      "validationScope": "final_source_build_prerequisite",
+      "fullOrderedGate": "not_passed",
+      "skippedSteps": [
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "at": "2026-09-19T15:29:19.248152+00:00",
+      "step": 3,
+      "command": "yarn build:packages",
+      "exitCode": 0,
+      "seconds": 22.446473044999948,
+      "sourceFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "afterFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "sourceChanged": false,
+      "status": "passed",
+      "log": "resume-20260919T152630946699Z-3.log",
+      "resourceInterrupted": false,
+      "validationScope": "final_source_build_prerequisite",
+      "fullOrderedGate": "not_passed",
+      "skippedSteps": [
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "at": "2026-09-19T15:34:24.275964+00:00",
+      "step": 8,
+      "command": "yarn build:app",
+      "exitCode": 1,
+      "seconds": 304.5764167680002,
+      "sourceFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "afterFingerprint": "d8f677b4ff47ed8a153c9b2e5ee6c1df7f2a0d162928928bb13f2800daedb337",
+      "sourceChanged": false,
+      "status": "failed",
+      "log": "resume-20260919T152630946699Z-8.log",
+      "resourceInterrupted": false,
+      "validationScope": "final_source_build_prerequisite",
+      "fullOrderedGate": "not_passed",
+      "skippedSteps": [
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ],
+  "failure": "V8 heap6144MiB exhaustion in Next full TypeScript, not host guard/kernel OOM",
+  "errorExcerpt": [
+    "@open-mercato/app:build: \u2713 Compiled successfully in 2.5min",
+    "@open-mercato/app:build:   Running TypeScript ...",
+    "@open-mercato/app:build: [1770:0x7feaefc6e000]   144048 ms: Scavenge 6083.7 (6120.0) -> 6071.8 (6154.8) MB, pooled: 0 MB, 7.91 / 0.00 ms  (average mu = 0.328, current mu = 0.293) allocation failure; ",
+    "@open-mercato/app:build: [1770:0x7feaefc6e000]   147880 ms: Mark-Compact (reduce) 6094.3 (6155.8) -> 6066.9 (6091.3) MB, pooled: 0 MB, 68.45 / 0.00 ms  (+ 3444.9 ms in 345 steps since start of marking, biggest step 70.2 ms, walltime since start of marking 3832 ms) (average mu = 0",
+    "@open-mercato/app:build: FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+    "@open-mercato/app:build: Failed to type check."
+  ],
+  "fullOrderedGate": "not_passed",
+  "databaseMigrated": false,
+  "apiStarted": false,
+  "resourceSamples": 60,
+  "minimumWindowsMemoryBytes": 6881628160,
+  "minimumLinuxMemoryBytes": 6408839168,
+  "minimumWindowsDiskBytes": 32364216320,
+  "minimumWslDiskBytes": 77417361408
+}

@@ -1,0 +1,49 @@
+{
+  "case": "wrong base revision",
+  "status": 422,
+  "body": {
+    "error": "baseCommit does not match the reserved attempt",
+    "code": "base_revision_mismatch",
+    "details": [
+      {
+        "path": "baseCommit",
+        "code": "base_revision_mismatch",
+        "message": "baseCommit does not match the reserved attempt"
+      },
+      {
+        "path": "baseRevision",
+        "code": "base_revision_mismatch",
+        "message": "baseRevision does not match the reserved attempt"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "1b9e7ffa-6941-4436-b553-7192784b03a1",
+  "taskId": "0044dbfd-9fdc-41b0-a589-048360e6f620",
+  "attemptId": "8cce5df0-6114-458b-b32d-6af485f4d772",
+  "baselineId": "a4750fbe-1568-4c0f-a530-f2c42b0a98b5",
+  "baselineHash": "b73aa73babef46952ba268eebc79f2720afa103c07744fbb7ef75bad4ca3a02d"
+}

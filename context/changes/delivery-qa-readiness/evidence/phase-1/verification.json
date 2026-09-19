@@ -1,0 +1,37 @@
+{
+  "provenance": "unit-fixture/static-types",
+  "codeRevision": "68740781186420bd7952a52bd9c597fce53d02d0",
+  "workingTreeFiles": {
+    "packages/core/src/helpers/integration/deliveryFixtureLedger.ts": "37caca574debfdf9e59f937bd6f8eb7455f64610507568ca1f21fe37fee44011",
+    "packages/core/src/helpers/integration/deliveryFixtures.ts": "e8e63a6c688868e0e75e61db800100e398cbf3489c5c4a4441eaab57b8bd9d81",
+    "packages/core/src/helpers/integration/__tests__/deliveryFixtureLedger.test.ts": "1fa4108da851466fd2eb681e1eedd2eceaeaae40ef641992dab88db68fa3d1c8",
+    "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FIXTURE-001.spec.ts": "cd3ff2d4340625bf969d8d1ffb37fba3104623791a26df5095561baeb8d23446"
+  },
+  "runner": "isolated Docker copy; locked dependencies; 6 GiB RAM; 2 CPU",
+  "unitTests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "typecheck": {
+    "scope": "four new files and transitive imports",
+    "exitCode": 0
+  },
+  "http": "not_run/environment; zero HTTP scenarios executed; app builds exhausted configured memory limits",
+  "reports": {
+    "qa-fixture-tsconfig.json": "62e645aaaad69436733c01340a471e77234ef64e1a3328856610a6b85fc4a50c",
+    "png-validation.json": "b8e5b673cc7fc1bbf5d1cacbefc0ed948f0ffd89c19502493f8485ab6c0d7a2d",
+    "fixture-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fixture-jest.log": "340d684b62008fd0d20b517d4d084ab7acd9d1fc0c8bd7244c53df7a3ffe3e19",
+    "environment.json": "3a502d873f06563588d82d641f242d227a8b854889effa9ddc7dd943b3085c50",
+    "native-fixture-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "native-fixture-tsconfig.json": "62e645aaaad69436733c01340a471e77234ef64e1a3328856610a6b85fc4a50c",
+    "native-fixture-jest.log": "340d684b62008fd0d20b517d4d084ab7acd9d1fc0c8bd7244c53df7a3ffe3e19"
+  },
+  "physicalCleanup": "completed",
+  "commands": {
+    "jest": "node node_modules/jest/bin/jest.js --config packages/core/jest.config.cjs --runInBand --runTestsByPath packages/core/src/helpers/integration/__tests__/deliveryFixtureLedger.test.ts",
+    "typecheck": "node node_modules/typescript/bin/tsc -p qa-fixture-tsconfig.json",
+    "packageBuild": "yarn build:packages --concurrency=1",
+    "live": "node packages/cli/dist/bin.js test:integration TC-DELIVERY-FIXTURE-001 --no-reuse-env"
+  }
+}

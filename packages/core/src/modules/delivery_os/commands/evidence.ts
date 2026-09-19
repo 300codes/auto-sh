@@ -1,3 +1,4 @@
+import { assertPublicationGate } from './publicationGate'
 import { randomUUID } from 'node:crypto'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
@@ -525,6 +526,7 @@ async function recordEvidenceInTransaction(
     ? requireTaskProfile(task.targetProfileId, task.targetProfileVersion)
     : requireTaskProfile(project.targetProfileId, project.targetProfileVersion)
   assertKindRules(input, profile, baseline, task)
+  if (input.kind === 'deployment' && input.sourceRevision) await assertPublicationGate(tx, scope, project, baseline.id, input.sourceRevision)
   const attachments = await verifyEvidenceAttachments(
     tx,
     ctx,
@@ -635,7 +637,7 @@ function findAcceptedResult(
   task: DeliveryTask,
   attemptId: string | null,
 ): { row: DeliveryEvidence; revision: SourceRevision } {
-  const results = taskRows.filter((row) => row.kind === 'result_manifest' && (attemptId === null || row.attemptId === attemptId))
+  const results = taskRows.filter((row) => row.kind === 'result_manifest')
   const onBaseline = results.filter((row) => row.baselineId === task.baselineId)
   if (onBaseline.length === 0) {
     if (results.length > 0) {
@@ -652,6 +654,13 @@ function findAcceptedResult(
     )
   }
   const row = onBaseline[onBaseline.length - 1]
+  if (attemptId !== null && row.attemptId !== attemptId) {
+    throw deliveryHttpError(
+      buildDeliveryError('missing_required_tests', 'The review names another attempt than the latest accepted result', [
+        { path: 'attemptId', code: 'attempt_mismatch', message: 'Review the attempt of the latest accepted result' },
+      ]),
+    )
+  }
   const revision = sourceRevisionSchema.safeParse(row.sourceRevision)
   if (!revision.success) {
     throw deliveryHttpError(

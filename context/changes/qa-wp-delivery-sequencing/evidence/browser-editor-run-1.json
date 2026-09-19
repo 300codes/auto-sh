@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "status": "interrupted",
+  "reason": "Image block pointer target intercepted by block toolbar; interrupted own runner after no progress",
+  "nativeFixtureCleanup": "cleaned",
+  "browserClosed": true,
+  "themeUpdate": "retained_intentionally",
+  "fixtureId": "3638cc00-32f2-4564-9f11-a6362ec31d9f",
+  "retainedPageTemplateHash": "6a70471f5a833b53b9d32d6f69566fe5cc79f0111c6a0f799b648a6559f70bbc",
+  "hashProvenance": "Exact deterministic source content of this fixture before-build, matched applied journal and prior approved hash",
+  "rawReportHash": "e25bead35bd059e70bf982b1249a4eb2bec89616aae6b3919521136ed3620a6c",
+  "correction": "Focus observed native block and assert Replace toolbar visible/enabled; direct editor login avoids dashboard Quick Draft"
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "status": "unit_verified_internal_mapper",
+  "liveResultImport": "not_run",
+  "phase4_2": "not_complete",
+  "sourceHashes": {
+    "packages/core/src/modules/delivery_os/lib/wordpressResultMapper.ts": "8552ef144a49ea677a3f10975c9ec9f21ac08ac3b496bb599af7b139141ad2a4",
+    "packages/core/src/modules/delivery_os/lib/__tests__/wordpressResultMapper.test.ts": "410c3e7ebc9b0e784d06c83456b372d134bc8f660ca9d951bd2a29aed5224802"
+  },
+  "checks": {
+    "focusedJest": {
+      "passed": 35,
+      "failed": 0,
+      "command": "SKIP_UNRS_RESOLVER_FALLBACK=1 NODE_PATH=/tmp/auto-sh-q-current-hz1_odcn/node_modules node --max-old-space-size=1024 /tmp/auto-sh-q-current-hz1_odcn/node_modules/jest/bin/jest.js --config /tmp/qa-wp-current-main-single-react.cjs --runInBand --runTestsByPath packages/core/src/modules/delivery_os/lib/__tests__/wordpressResultMapper.test.ts"
+    },
+    "narrowTypeScript": {
+      "status": "passed",
+      "command": "node packages/delivery-wordpress/node_modules/typescript/bin/tsc -p /tmp/wp-result-mapper-tsconfig.json",
+      "configuration": "ESNext/Bundler strict noEmit; new helper/test and their dependencies; private node/jest/zod type paths"
+    }
+  },
+  "fixtureCallsite": "packages/core/src/modules/delivery_os/lib/__tests__/wordpressResultMapper.test.ts",
+  "snapshotAlgorithmCompatibility": "independently recorded real provider hash in wordpress-local-theme-build/evidence/built-site-snapshot.json",
+  "limits": {
+    "uniqueArtifactReferences": 200,
+    "singleCheckArtifactBytes": 8388608,
+    "allCheckArtifactBytes": 67108864,
+    "allArtifactBytes": 1275068416,
+    "behavior": "reject before hashing; never truncate"
+  },
+  "trustBoundary": [
+    "Caller must supply reserved TaskPackage and backend-derived trusted scope/execution binding; structural validation is not authentication.",
+    "Caller must bind private frozen bytes and tool execution IDs to that execution; no filesystem lookup or provider/EXEC replacement in mapper.",
+    "Artifact paths are private-store logical references; DB bytes are hashed only and never emitted in ResultManifest. Caller must authorize storage/access separately.",
+    "Reported statuses are preserved, absent checks are not synthesized; map success is not verified acceptance.",
+    "Existing fixture helper and its prior regression semantics unchanged."
+  ],
+  "pending": [
+    "Live private artifact binding/callsite",
+    "Existing OSS result import/review/correction/verified E2E"
+  ],
+  "domainCallsiteIntegration": {
+    "status": "passed",
+    "path": "reserveAttempt \u2192 mapWordpressResult \u2192 evaluateResultAcceptance",
+    "asserted": "outcome accept, exact manifest, canonical SHA256 manifestHash",
+    "limitation": "Pure OSS domain evaluation; does not persist awaiting_review state or execute HTTP/live host."
+  }
+}

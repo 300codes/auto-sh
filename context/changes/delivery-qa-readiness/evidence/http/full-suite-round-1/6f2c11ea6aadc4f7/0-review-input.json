@@ -1,0 +1,115 @@
+{
+  "scenario": "manual_agent",
+  "manifest": {
+    "schemaVersion": "delivery.result-manifest/v1",
+    "projectId": "0bf3890c-89f4-4356-afae-5bbd914b6102",
+    "taskId": "0cac2633-5454-4320-875b-1d6f86354074",
+    "attemptId": "3144b943-7382-4a71-a6f0-34764d8a8caf",
+    "baselineId": "6fa671b1-190c-4c3f-b4ee-3703033b47df",
+    "baselineHash": "01c2bd0937343e43da0aa960c116ab2e58a2dd29c3bac86381e2218ef6af560c",
+    "targetProfileVersion": 1,
+    "externalRunId": "fake-run-3144b943-7382-4a71-a6f0-34764d8a8caf",
+    "baseRevision": {
+      "kind": "git",
+      "commitSha": "01375dec47a7500f0f96926f10585d733a914f6a"
+    },
+    "resultRevision": {
+      "kind": "git",
+      "commitSha": "1a3e8b7334cde6ec3c5cb264c45e50966dd9e73b"
+    },
+    "baseCommit": "01375dec47a7500f0f96926f10585d733a914f6a",
+    "resultCommit": "1a3e8b7334cde6ec3c5cb264c45e50966dd9e73b",
+    "changedPaths": [],
+    "artifacts": [],
+    "checks": [
+      {
+        "checkId": "unit-tests",
+        "testId": "unit-tests",
+        "acIds": [],
+        "commandProfileId": "vitest-report",
+        "testDefinitionHash": "874771c18c7de6617be40654a8f741cde41cfcde12da8af5310007f8b2180db6",
+        "rawReportHash": "a95e85ffc2474e78fd1ac1cffd67d9dde6bb984c5b986880f12ea97510b5b922",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "1a3e8b7334cde6ec3c5cb264c45e50966dd9e73b"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "build",
+        "testId": "build",
+        "acIds": [],
+        "commandProfileId": "vite-build",
+        "testDefinitionHash": "77a3702aa3eda202b1ff61bc262f520783e47221197b5f4794af1b5313bdd350",
+        "rawReportHash": "fb90ac25d1f286912455f5ef410cc8d87494a72f5847b7984ce6a2e002f3cabb",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "1a3e8b7334cde6ec3c5cb264c45e50966dd9e73b"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "lint",
+        "testId": "lint",
+        "acIds": [],
+        "commandProfileId": "oxlint",
+        "testDefinitionHash": "f10fa12f829abd17b955c268ce19d24a0386aead9472e613959620c406748923",
+        "rawReportHash": "e50076ed59b8dad36871e389e6422b44c9acc4e749671a071099f434be78d21e",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "1a3e8b7334cde6ec3c5cb264c45e50966dd9e73b"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      },
+      {
+        "checkId": "dependency-audit",
+        "testId": "dependency-audit",
+        "acIds": [],
+        "commandProfileId": "npm-audit",
+        "testDefinitionHash": "074fbe2b55421206ff31267d3c911ce4c0579aab53e3f79413f7bf4eaf1c93e1",
+        "rawReportHash": "a72b8ea4431e866c5c40f50d9b4ae66c87475f9a77a0dc5d1ff58f5d22f68387",
+        "sourceRevision": {
+          "kind": "git",
+          "commitSha": "1a3e8b7334cde6ec3c5cb264c45e50966dd9e73b"
+        },
+        "validationProfileVersion": 1,
+        "status": "passed",
+        "exitCode": 0,
+        "durationMs": 1000
+      }
+    ],
+    "agentDeclaration": {
+      "summary": "Deterministic fake executor result",
+      "claimedAcIds": [
+        "AC-003"
+      ]
+    },
+    "findings": [],
+    "usage": {
+      "source": "runner",
+      "values": "unknown"
+    }
+  },
+  "status": 422,
+  "body": {
+    "error": "A check is not part of the frozen test catalogue",
+    "code": "unknown_test_id",
+    "details": [
+      {
+        "path": "checks.0.testId",
+        "code": "unknown_test_id",
+        "message": "unit-tests is not a declared test"
+      }
+    ]
+  },
+  "provenance": "synthetic-executor-over-http"
+}

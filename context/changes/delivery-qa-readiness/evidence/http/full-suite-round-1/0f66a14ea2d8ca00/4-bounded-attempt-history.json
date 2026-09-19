@@ -1,0 +1,72 @@
+{
+  "taskId": "d1a0bd23-55f4-410b-a742-a0052e78f060",
+  "projectId": "126dcc2a-622b-41b7-94cd-e44352f5e592",
+  "reservations": [
+    {
+      "attemptId": "4bd3d36b-5416-4902-af17-66fc30ee3796",
+      "idempotencyKey": "9238e4a1-b88c-4304-930a-ef65b588e372"
+    },
+    {
+      "attemptId": "9d239362-491a-4818-b827-725590d43c07",
+      "idempotencyKey": "548373b9-d4e0-4104-9a64-6051b58395ad"
+    },
+    {
+      "attemptId": "844b09b9-2f76-4117-a173-93303f4318d2",
+      "idempotencyKey": "5ae44841-0f61-4d7c-8762-ef11a0848f83"
+    },
+    {
+      "attemptId": "b886505f-ba84-4760-81db-413f029107bd",
+      "idempotencyKey": "e0be6c34-8917-4f83-b119-ae4e11390401"
+    },
+    {
+      "attemptId": "c8cc839c-852b-4d0b-852a-8cc20c7268c6",
+      "idempotencyKey": "d6e2eb73-dd36-4a90-9f21-234672606159"
+    },
+    {
+      "attemptId": "fe0f13a2-6eac-434f-a3f1-29ac38c1ccae",
+      "idempotencyKey": "a7e8e98f-24f0-4d6f-9120-65b7fed9a19d"
+    },
+    {
+      "attemptId": "fa47db07-e2ce-4f96-bb78-ba3473fd8dd0",
+      "idempotencyKey": "f5fd1c65-986a-4d21-b119-ba8e536317f0"
+    },
+    {
+      "attemptId": "a3f88cf7-2254-4fbc-a462-7f12529bbf13",
+      "idempotencyKey": "4b0540b6-0e4e-4f24-950e-e6288e63b1db"
+    },
+    {
+      "attemptId": "4afba0d5-a02a-4d55-ae67-b2d32b1bd936",
+      "idempotencyKey": "9a79b0cd-4f43-42e9-93f6-e72d3da4ae3b"
+    },
+    {
+      "attemptId": "0fd8940e-228e-4d4f-bb4b-38542f7ca5d3",
+      "idempotencyKey": "a83a1339-540c-4992-9dff-f410c756cac0"
+    },
+    {
+      "attemptId": "b781625f-996b-4b95-8f43-04b843a91cb7",
+      "idempotencyKey": "616809c4-afd7-4d95-838c-11d051ee5691"
+    },
+    {
+      "attemptId": "2bced818-fa7a-4b45-b18c-2d7b1cbff7b5",
+      "idempotencyKey": "429294ca-bf13-4422-95e8-5cfaa3c70a7d"
+    },
+    {
+      "attemptId": "ed5e1e4a-98d6-4fba-bcf9-c03e1b5e0f78",
+      "idempotencyKey": "464a4bef-6a75-47f9-b649-643c58c7b165"
+    },
+    {
+      "attemptId": "6a0492af-7399-4006-b50d-04c75c3bbb71",
+      "idempotencyKey": "f58221a2-d5fb-4349-9cd1-555ea404abf9"
+    },
+    {
+      "attemptId": "ac222eb2-c833-4cc6-b281-cf036b482494",
+      "idempotencyKey": "12b612d3-32d9-4834-83c6-45b7e87899a5"
+    },
+    {
+      "attemptId": "e5ed4651-fb02-4072-9f90-63eec6a8135b",
+      "idempotencyKey": "83d23009-be46-41ce-a8b0-2466b970e21e"
+    }
+  ],
+  "completedCycles": 16,
+  "provenance": "http-fixture"
+}

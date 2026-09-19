@@ -49,6 +49,7 @@ import {
   resolveDeliveryEm,
   resolveDeliveryScope,
 } from './shared'
+import { checkProjectFlowGateV1 } from './flowGate'
 import { emitTaskSideEffects, emitTaskUpdated, findProjectBaseline, loadCorrectionBudget } from './tasks'
 
 export type AttemptReserveResult = ReserveAttemptResponse & { created: boolean }
@@ -232,6 +233,7 @@ const reserveAttemptCommand: CommandHandler<unknown, AttemptReserveResult> = {
         }),
       )
       if (!reservation.ok) throw deliveryHttpError(reservation)
+      assertDeliveryCheck(await checkProjectFlowGateV1(tx, project, scope))
 
       task.executionAttempts = reservation.register
       task.attemptNumber = reservation.register.length

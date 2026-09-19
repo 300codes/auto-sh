@@ -21,7 +21,7 @@ import '@open-mercato/core/modules/delivery_os/commands'
 import { LockMode } from '@mikro-orm/core'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
-import { DeliveryBaseline, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../../data/entities'
+import { DeliveryBaseline, DeliveryEvidence, DeliveryProject, DeliveryReleaseCandidate, DeliveryTask } from '../../data/entities'
 import { reserveAttempt } from '../../lib/attempts'
 import type { ExecutionAttempt, SourceRevision } from '../../lib/contracts'
 import { loadBaselineContentFixture, loadResultManifestFixture, loadTaskPackageFixture } from '../../lib/fixtures'
@@ -61,6 +61,7 @@ type Store = {
   tasks: DeliveryTask[]
   baselines: DeliveryBaseline[]
   evidence: DeliveryEvidence[]
+  candidates: DeliveryReleaseCandidate[]
   attachments: Row[]
 }
 
@@ -74,6 +75,7 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryTask) return store.tasks as unknown as Row[]
   if (entity === DeliveryBaseline) return store.baselines as unknown as Row[]
   if (entity === DeliveryEvidence) return store.evidence as unknown as Row[]
+  if (entity === DeliveryReleaseCandidate) return store.candidates as unknown as Row[]
   if (entity === Attachment) return store.attachments
   throw new Error('[internal] unexpected entity in test store')
 }
@@ -136,6 +138,7 @@ function makeTask(overrides: Partial<DeliveryTask> = {}): DeliveryTask {
 function seed(options: { profileId?: string; task?: Partial<DeliveryTask> } = {}): void {
   const profileId = options.profileId ?? taskPackage.targetProfileId
   store = {
+    candidates: [],
     projects: [makeProject({ id: taskPackage.projectId, activeBaselineId: taskPackage.baselineId, targetProfileId: profileId, targetProfileVersion: 1 })],
     tasks: [makeTask({ targetProfileId: profileId, ...options.task })],
     baselines: [
@@ -692,19 +695,47 @@ describe('delivery_os.evidence.record: review approves only what the system can 
     expect(result.taskStatus).toBe('verified')
   })
 
-  it('reviews the result of the named attempt when attemptId is given', async () => {
+  it('reviews the latest accepted result when its attemptId is named', async () => {
+    seedResult({ attemptId: UNKNOWN_ID })
     seedResult({
       sourceRevision: OTHER_REVISION,
+      createdAt: new Date('2026-09-19T08:45:00.000Z'),
       payload: { ...manifest, resultRevision: OTHER_REVISION, checks: manifest.checks.map((check) => ({ ...check, sourceRevision: OTHER_REVISION })) },
     })
-    seedResult({ attemptId: UNKNOWN_ID, createdAt: new Date('2026-09-19T08:45:00.000Z') })
-    const wrongAttempt = await catchHttpError(() => record(review({ verdict: 'approved' }, { attemptId: taskPackage.attemptId })))
-    expectFrozenBody(wrongAttempt, 422, 'missing_required_tests')
-    expect(detailCodes(wrongAttempt)).toEqual(['revision_mismatch'])
+    const wrongRevision = await catchHttpError(() => record(review({ verdict: 'approved' }, { attemptId: taskPackage.attemptId })))
+    expectFrozenBody(wrongRevision, 422, 'missing_required_tests')
+    expect(detailCodes(wrongRevision)).toEqual(['revision_mismatch'])
 
     const result = await record(review({ verdict: 'approved' }, { sourceRevision: OTHER_REVISION, attemptId: taskPackage.attemptId }))
     expect(result.taskStatus).toBe('verified')
     expect(store.evidence.at(-1)).toMatchObject({ kind: 'review', attemptId: taskPackage.attemptId })
+  })
+
+  it.each([
+    ['approved', false], ['approved', true], ['changes_requested', false], ['changes_requested', true],
+  ] as const)('rejects stale %s replay after a newer attempt result even with equal revision=%s', async (verdict, sameRevision) => {
+    seedResult()
+    const oldReview = review({ verdict }, { attemptId: taskPackage.attemptId })
+    const first = await record(oldReview)
+    const replay = await record(oldReview)
+    expect(replay).toMatchObject({ duplicate: true, evidenceId: first.evidenceId })
+    task().status = 'awaiting_review'
+    task().executionAttempts = [...task().executionAttempts.map((attempt) => ({ ...attempt, state: 'result_received' as const })), { ...reservedAttempt(), state: 'result_received', attemptId: UNKNOWN_ID, idempotencyKey: 'fixture-second-attempt' }]
+    const revision = sameRevision ? GIT_REVISION : OTHER_REVISION
+    seedResult({ attemptId: UNKNOWN_ID, sourceRevision: revision, createdAt: new Date(Math.max(...store.evidence.map((row) => row.createdAt.getTime())) + 60_000),
+      payload: { ...manifest, attemptId: UNKNOWN_ID, resultRevision: revision, checks: manifest.checks.map((check) => ({ ...check, sourceRevision: revision })) },
+    })
+    const evidenceCount = store.evidence.length
+    const eventCount = mockEmitDeliveryOsEvent.mock.calls.length
+    const before = JSON.stringify(task())
+    const error = await catchHttpError(() => record(oldReview))
+    expectFrozenBody(error, 422, 'missing_required_tests')
+    expect(detailCodes(error)).toEqual(['attempt_mismatch'])
+    expect(JSON.stringify(task())).toBe(before)
+    expect(store.evidence).toHaveLength(evidenceCount)
+    expect(mockEmitDeliveryOsEvent.mock.calls).toHaveLength(eventCount)
+    const current = await record(review({ verdict: 'approved', summary: 'Review current result' }, { attemptId: UNKNOWN_ID, sourceRevision: revision }))
+    expect(current.taskStatus).toBe('verified')
   })
 
   it('answers a review that names another revision than the accepted result with revision_mismatch', async () => {
@@ -771,6 +802,31 @@ describe('delivery_os.evidence.record: review correction rounds', () => {
     const afterLimit = await catchHttpError(() => record(review({ verdict: 'changes_requested', summary: 'Round four' })))
     expectFrozenBody(afterLimit, 409, 'invalid_transition')
     expect(detailCodes(afterLimit)).toEqual(['task_not_awaiting_review'])
+  })
+
+  it.each(['approved', 'changes_requested'] as const)('recognizes identical %s review committed while waiting for task locks', async (verdict) => {
+    seedResult()
+    const request = review({ verdict }, { attemptId: taskPackage.attemptId })
+    const first = await record(request)
+    const evidenceCount = store.evidence.length
+    const eventsBefore = taskEvents().length
+    const committedReview = store.evidence.find((row) => row.id === first.evidenceId)!
+    store.evidence = store.evidence.filter((row) => row.id !== first.evidenceId)
+    const readsInOrder: string[] = []
+    mockFindWithDecryption.mockImplementation(async (_em: unknown, entity: unknown, where: Row, options?: Row) => {
+      if (entity === DeliveryTask && options?.lockMode === LockMode.PESSIMISTIC_WRITE) {
+        readsInOrder.push('lock_tasks')
+        store.evidence.push(committedReview)
+      }
+      if (entity === DeliveryEvidence && where.taskId === taskPackage.taskId) readsInOrder.push('load_task_evidence')
+      return rowsFor(entity).filter((row) => matches(row, where))
+    })
+    const replay = await record(request)
+    expect(replay).toMatchObject({ duplicate: true, evidenceId: first.evidenceId, taskStatus: first.taskStatus })
+    expect(readsInOrder).toEqual(['lock_tasks', 'load_task_evidence'])
+    expect(store.evidence).toHaveLength(evidenceCount)
+    expect(taskEvents()).toHaveLength(eventsBefore)
+    expect(task().status).toBe(first.taskStatus)
   })
 
   it('treats the same words as a replay only while nothing happened since', async () => {

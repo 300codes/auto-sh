@@ -1,0 +1,9 @@
+{
+  "status": 409,
+  "body": {
+    "error": "record_modified",
+    "code": "optimistic_lock_conflict",
+    "currentUpdatedAt": "2026-09-19T11:07:50.251Z",
+    "expectedUpdatedAt": "2026-09-19T11:07:49.794Z"
+  }
+}

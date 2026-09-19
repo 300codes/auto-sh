@@ -1,0 +1,98 @@
+{
+  "at": "2026-09-19T16:02:20.400282+00:00",
+  "run": "selective39_after_actual_account_reconciliation",
+  "stats": {
+    "startTime": "2026-09-19T15:58:05.463Z",
+    "duration": 47749.394,
+    "expected": 29,
+    "skipped": 0,
+    "unexpected": 10,
+    "flaky": 0
+  },
+  "retainedInitialDomainPassed": 43,
+  "retainedFixtureExecutionsPassed": 4,
+  "aggregate": {
+    "passedExecutions": 76,
+    "passedUnique": 74,
+    "failedUnique": 10,
+    "notRunProfileUnique": 2,
+    "plannedUnique": 86
+  },
+  "failures": [
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-002.spec.ts",
+      "line": 444,
+      "title": "cross-tenant: org B token gets 404 on a project created by org A",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "line": 391,
+      "title": "task status READY transition blocked by unresolved predecessors that are not done",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-004.spec.ts",
+      "line": 616,
+      "title": "missing lock header on task update returns 428 optimistic_lock_required",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-006.spec.ts",
+      "line": 413,
+      "title": "cancelled attempt: POST results for a cancelled attempt answers 409 attempt_closed or attempt_cancelled",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-007.spec.ts",
+      "line": 424,
+      "title": "late result after cancel: POST results for a cancel_requested attempt answers 409",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "line": 217,
+      "title": "screenshot kind without required payload fields \u2192 422 validation_failed",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "line": 243,
+      "title": "scan kind without required AC mapping fields \u2192 422 validation_failed",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "line": 267,
+      "title": "scan kind with sourceRevision missing \u2192 422 (sourceRevision required for scan)",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "line": 300,
+      "title": "screenshot evidence with declared sha256 not matching attachment content \u2192 422 attachment_hash_mismatch",
+      "status": "failed"
+    },
+    {
+      "file": "packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-008.spec.ts",
+      "line": 417,
+      "title": "changes_requested review does not move task to verified; deploy gate blocks when report not green",
+      "status": "failed"
+    }
+  ],
+  "authDiagnosis": {
+    "helperMatchesEnv": true,
+    "actualCreatedUserEmailReconciledPrivately": true,
+    "directAdminLoginStatus": 200,
+    "databaseOrAccountsMutated": false,
+    "bootstrapFooterMismatch": "Derived footer account email differed from actual auth setup defaults; follow-up CLI owner investigation required."
+  },
+  "runtime": {
+    "url": "http://localhost:5001/login",
+    "keptRunning": true,
+    "workersAutoSpawn": false,
+    "profile": "developer enterprise enabled"
+  },
+  "fullOrderedGate": "not_passed",
+  "privateNativeEvidence": "/tmp/auto-sh-q-main-ll9zlmvv/q-ops/retry39-reconciled-1789833483331530449"
+}

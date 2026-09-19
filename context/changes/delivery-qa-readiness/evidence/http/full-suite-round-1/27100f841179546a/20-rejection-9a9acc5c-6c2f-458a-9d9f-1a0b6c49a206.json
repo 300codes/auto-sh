@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "status": 409,
+    "code": "attempt_active"
+  },
+  "actual": {
+    "status": 409,
+    "body": {
+      "code": "attempt_active",
+      "details": [
+        {
+          "path": "tasks.a9241b14-83c4-4e52-ae8a-e6e7c6e6e9f3.attempts.6b1f15bc-11b5-448e-b92a-086690cdc1cc",
+          "code": "attempt_reserved"
+        },
+        {
+          "path": "tasks.a9241b14-83c4-4e52-ae8a-e6e7c6e6e9f3",
+          "code": "task_executing"
+        }
+      ]
+    }
+  }
+}

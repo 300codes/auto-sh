@@ -1,3 +1,7 @@
+import type { DeliveryOsEvidenceQueries } from '../../../../commands/evidenceQueries'
+import { evidenceListQuerySchema, evidenceListResponseSchema } from '../../../../lib/evidenceReadContracts'
+import { parseDeliveryInput } from '../../../../commands/shared'
+import { requireDeliveryFeatures } from '../../../routeSupport'
 import { NextResponse } from 'next/server'
 import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
 import { z } from 'zod'
@@ -25,7 +29,20 @@ import { deliveryErrorBodySchema, evidenceRecordResponseSchema } from '@open-mer
 const MAX_EVIDENCE_BODY_BYTES = 8_000_000
 
 export const metadata = {
+  GET: { requireAuth: true, requireFeatures: ['delivery_os.projects.view'] },
   POST: { requireAuth: true, requireFeatures: ['delivery_os.results.import'] },
+}
+
+export async function GET(request: Request, context: DeliveryRouteContext): Promise<Response> {
+  try {
+    const ctx = await resolveDeliveryRouteContext(request)
+    const scope = resolveDeliveryScope(ctx)
+    await requireDeliveryFeatures(ctx, scope, ['delivery_os.projects.view'])
+    const projectId = await readRouteId(context)
+    const query = parseDeliveryInput(evidenceListQuerySchema, Object.fromEntries(new URL(request.url).searchParams))
+    const queries = ctx.container.resolve('deliveryOsEvidenceQueries') as DeliveryOsEvidenceQueries
+    return NextResponse.json(await queries.list(scope, projectId, query), { headers: { 'Cache-Control': 'private, no-store' } })
+  } catch (error) { return deliveryErrorResponse(error, 'delivery_os.evidence.list') }
 }
 
 export async function POST(request: Request, context: DeliveryRouteContext): Promise<Response> {
@@ -61,6 +78,13 @@ export const openApi: OpenApiRouteDoc = {
   summary: 'Project evidence',
   pathParams: z.object({ id: uuidSchema }),
   methods: {
+    GET: {
+      summary: 'List scoped evidence for one exact revision or the separate revisionless baseline group',
+      description: 'Read-only, ordered by createdAt then id. limit <=100, nextOffset null means complete. Missing or foreign project/baseline returns 404; malformed filter returns 400/422. Payload and attachments are loaded only by the detail operation.',
+      query: evidenceListQuerySchema,
+      responses: [{ status: 200, description: 'Evidence read v1 page', schema: evidenceListResponseSchema }],
+      errors: [{ status: 403, description: 'Missing view feature', schema: deliveryErrorBodySchema }, { status: 404, description: 'Not found in scope', schema: deliveryErrorBodySchema }],
+    },
     POST: {
       summary: 'Record test, review, screenshot, scan, deployment or reference evidence',
       description:

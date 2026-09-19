@@ -1,0 +1,44 @@
+{
+  "case": "foreign baseline",
+  "status": 422,
+  "body": {
+    "error": "baselineId does not match the reserved attempt",
+    "code": "baseline_mismatch",
+    "details": [
+      {
+        "path": "baselineId",
+        "code": "baseline_mismatch",
+        "message": "baselineId does not match the reserved attempt"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "85d133d8-3bb4-48f0-9ac8-09df53734918",
+  "taskId": "5c612ee7-fc59-4468-a85b-bd524303673d",
+  "attemptId": "ac78d6ac-45fc-4e66-a3c5-9b5db558c38c",
+  "baselineId": "f8216f1b-4bd7-473a-8ebf-5e2f0348f09c",
+  "baselineHash": "557ca6ab406ca42903ef6e04af211342717d7d3f78e6429334c997a9f8fcb481"
+}

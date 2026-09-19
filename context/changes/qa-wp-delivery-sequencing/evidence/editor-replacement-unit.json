@@ -1,0 +1,17 @@
+{
+  "executedAt": "2026-09-19T13:16:23.971436+00:00",
+  "runner": "local host Node24.13.1",
+  "command": "node --test --test-reporter=spec packages/delivery-wordpress/src/__tests__/editor-fixtures.test.ts",
+  "tests": {
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0
+  },
+  "definitionVersion": 2,
+  "browserReplacement": "not_run",
+  "compiledDist": "not_updated_until_existing_fixture_cleanup",
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/editor-fixtures.ts": "8e38ec2193f63d102f9278ef35bd88ae3596c38b2b457950f04abfa75b6635af",
+    "packages/delivery-wordpress/src/__tests__/editor-fixtures.test.ts": "f166c883e0f4a0d440d2f58a7dc8d2aef0fc1e4a4d3227e376e65230a817bff0"
+  }
+}

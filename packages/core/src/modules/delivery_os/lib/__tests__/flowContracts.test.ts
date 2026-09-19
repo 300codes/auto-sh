@@ -48,13 +48,13 @@ const approve = (id: string, target: StageArtifactRecord, decidedAt = '2026-09-1
 })
 
 describe('v1 boundary', () => {
-  it('keeps the frozen v1 constants and maps untouched', () => {
+  it('keeps v1 constants with additive report error codes', () => {
     expect(DELIVERY_CONTRACT_VERSION).toBe(1)
     expect(Object.keys(DELIVERY_SCHEMA_VERSIONS).sort()).toEqual(
       ['baselineContent', 'designManifest', 'executionWidgetContext', 'planProposal', 'report', 'requirementsProposal', 'resultManifest', 'taskPackage'].sort(),
     )
     expect(Object.keys(deliveryDocumentSchemas)).toHaveLength(7)
-    expect(Object.keys(deliveryErrorCodes)).toHaveLength(54)
+    expect(Object.keys(deliveryErrorCodes)).toHaveLength(60)
   })
 
   it('flow codes and schema versions are disjoint from v1', () => {

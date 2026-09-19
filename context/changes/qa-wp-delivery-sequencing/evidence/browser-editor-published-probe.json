@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "checks": {
+    "header": true,
+    "footer": true,
+    "navigation": true
+  },
+  "fixtureId": "6e01d28e-a644-44a1-b486-3f1bb364dea3",
+  "method": "published editor; navigation selected before keyboard and one-owned-entity save dialog; template parts Edit original then keyboard and native Save",
+  "cleanup": {
+    "status": "cleaned",
+    "browser": "not_run"
+  },
+  "schemaVersion": 1,
+  "provenance": "live_browser_fixture",
+  "privateEvidenceHashes": {
+    "result.json": "9eb7aae01a24d5837b23e2ca636076e4fdbcb6466a2c326619f6d9aef12eb03f",
+    "read.json": "bf9ea1182344271b7a3ad5a1b5cb80265686affbcc39cc767285c699e00de270",
+    "probe-published-entities-2.mjs": "a7725edb57fd6a477f997be53aa8c9ba3442ab5796e72caadf94e397967eaa34"
+  },
+  "finalSpecHash": "f169e92a0254df241283b14ca3183395fbd11aba7a632cac24c9630194ce8a8e",
+  "interactiveCorrection": "Read-only diagnosis identified template-part overlay; real Edit original and keyboard actions used. No force click or wp.data mutation."
+}

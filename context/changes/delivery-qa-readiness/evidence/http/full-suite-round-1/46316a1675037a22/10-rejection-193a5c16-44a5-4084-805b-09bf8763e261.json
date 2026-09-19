@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "status": 422,
+    "code": "foreign_dependency"
+  },
+  "actual": {
+    "status": 422,
+    "body": {
+      "code": "foreign_dependency",
+      "details": [
+        {
+          "path": "tasks.35942c83-09e6-44c8-9dd4-9865cd5272c5.dependsOnTaskIds",
+          "code": "unknown_dependency"
+        }
+      ]
+    }
+  }
+}

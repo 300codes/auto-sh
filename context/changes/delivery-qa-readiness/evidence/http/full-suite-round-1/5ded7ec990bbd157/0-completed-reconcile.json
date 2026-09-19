@@ -1,0 +1,28 @@
+{
+  "provenance": "http-fixture",
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  },
+  "attemptId": "00d69895-8cd7-46d9-a9b8-8d0799700a29"
+}

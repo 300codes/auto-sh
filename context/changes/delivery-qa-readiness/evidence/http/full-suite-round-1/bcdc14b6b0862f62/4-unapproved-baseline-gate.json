@@ -1,0 +1,24 @@
+{
+  "projectId": "17f7992e-6b1d-4eaa-8a8a-4d8f0bf2e928",
+  "oldBaselineId": "37148a8a-ec1b-4b51-9b42-1eeb0135eb03",
+  "newBaselineId": "80e873c7-501b-4bfa-9486-28965493a4bd",
+  "baselineHash": "cda29ec69af0ce47a9056a69a285ac316e7e537f9a20f9f398be98eb46b5df5d",
+  "beforeCounts": {
+    "projects": 1,
+    "baselines": 2,
+    "tasks": 1,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 0,
+    "resultManifests": 0
+  },
+  "afterCounts": {
+    "projects": 1,
+    "baselines": 2,
+    "tasks": 1,
+    "decisions": 2,
+    "evidence": 0,
+    "attempts": 0,
+    "resultManifests": 0
+  }
+}

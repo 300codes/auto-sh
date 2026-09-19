@@ -1,0 +1,13 @@
+{
+  "status": 428,
+  "body": {
+    "error": "The project version header is required",
+    "code": "optimistic_lock_required",
+    "details": [
+      {
+        "path": "headers",
+        "code": "optimistic_lock_required"
+      }
+    ]
+  }
+}

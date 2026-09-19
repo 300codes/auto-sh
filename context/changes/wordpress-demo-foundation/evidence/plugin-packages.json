@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "archiveProvenance": "user_supplied_acf_and_official_wordpress_repository",
+  "plugins": [
+    {
+      "slug": "advanced-custom-fields-pro",
+      "version": "6.8.9",
+      "sha256": "597c72a559a2dbc51161f261bc6165eb8144a7f4077428bd0e0162198225917f"
+    },
+    {
+      "slug": "polylang",
+      "version": "3.8.9",
+      "sha256": "de5fae3d399e34c2db496a02b7cff4e4ca79723c418c8542b82bb7c030204a60"
+    },
+    {
+      "slug": "wordpress-seo",
+      "version": "28.5",
+      "sha256": "da297cf7f0a9fdb4c7a605e1d8896552fc97360f6b0f55eaa318fe8f8a1b829c"
+    }
+  ],
+  "paidSourceCommitted": false,
+  "licenseActivation": "not_verified",
+  "installationEvidence": "see_live_report"
+}

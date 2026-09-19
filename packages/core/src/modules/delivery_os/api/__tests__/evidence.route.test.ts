@@ -98,8 +98,8 @@ beforeEach(() => {
 })
 
 describe('POST /api/delivery_os/projects/:id/evidence — guards', () => {
-  it('requires results.import and exposes POST only', () => {
-    expect(Object.keys(openApi.methods)).toEqual(['POST'])
+  it('requires results.import for POST and exposes scoped GET', () => {
+    expect(Object.keys(openApi.methods)).toEqual(['GET', 'POST'])
     expect(isAllowedBy(metadata, 'POST', ['delivery_os.results.import'])).toBe(true)
     expect(isAllowedBy(metadata, 'POST', ['delivery_os.*'])).toBe(true)
     expect(isAllowedBy(metadata, 'POST', EMPLOYEE_FEATURES)).toBe(true)

@@ -30,9 +30,10 @@ export const messageObjectTypes: MessageObjectTypeDefinition[] = [
           subtitle: entityId,
           metadata: { id: entityId },
         }
+      } else {
+        const { loadCurrencyPreview } = await import('./lib/messageObjectPreviews')
+        return loadCurrencyPreview(entityId, ctx)
       }
-      const { loadCurrencyPreview } = await import('./lib/messageObjectPreviews')
-      return loadCurrencyPreview(entityId, ctx)
     },
   },
 ]

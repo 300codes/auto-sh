@@ -1,0 +1,44 @@
+{
+  "case": "foreign task",
+  "status": 422,
+  "body": {
+    "error": "taskId does not match the reserved attempt",
+    "code": "correlation_mismatch",
+    "details": [
+      {
+        "path": "taskId",
+        "code": "correlation_mismatch",
+        "message": "taskId does not match the reserved attempt"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "8ab47b2b-ed69-41d7-b00a-d78c72b405c6",
+  "taskId": "b1b55147-ac26-476c-90de-366801db53b7",
+  "attemptId": "f0412353-3093-439f-87bc-162ac5557158",
+  "baselineId": "97550b80-6c55-4d5f-a8b9-22b9fc29b6ba",
+  "baselineHash": "7667ae6a0e10c28c7984cdf62ae85a456b094a0947741047294fca28092c5134"
+}

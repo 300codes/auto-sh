@@ -1,0 +1,35 @@
+{
+  "head": "68361d16342074eb5b3a1c57f86187f428509aca",
+  "sourceFiles": 17016,
+  "widgetUseTFixIncluded": true,
+  "cacheStrategy": "existing read-only binds; no duplicated node_modules",
+  "yarnInstallStateBytesCopied": 4296267,
+  "lockSha256": "b0b9521d8d4562a3edaa9413d4a9fc500c8fc37478652a2a9b2bf22cfa289441",
+  "discovery": {
+    "ossHttp": 86,
+    "ui": 8,
+    "exec": 21,
+    "uniqueTotal": 115,
+    "files": 26,
+    "withFixtureRepeat2Executions": 117,
+    "runtimeStatus": "not_run"
+  },
+  "profile": {
+    "enterpriseModules": true,
+    "enterpriseAgents": true,
+    "sso": false,
+    "security": false,
+    "licensePurpose": "non-production developer-only evaluation"
+  },
+  "guard": {
+    "startupFreeDiskGiB": 20,
+    "stopFreeDiskGiB": 10,
+    "startupLinuxMemoryGiB": 9,
+    "startupWindowsMemoryGiB": 8,
+    "stopLinuxMemoryGiB": 3,
+    "stopWindowsMemoryGiB": 4
+  },
+  "containerProvisioned": false,
+  "migrationPerformed": false,
+  "buildPerformed": false
+}

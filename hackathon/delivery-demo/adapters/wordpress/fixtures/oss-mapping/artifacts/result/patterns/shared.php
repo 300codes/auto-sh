@@ -1,0 +1,1 @@
+<?php /* synthetic unchanged fixture */

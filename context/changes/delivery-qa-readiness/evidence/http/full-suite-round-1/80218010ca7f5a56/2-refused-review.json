@@ -1,0 +1,39 @@
+{
+  "scenario": "wrong_revision",
+  "status": 422,
+  "body": {
+    "error": "The review names another revision than the accepted result",
+    "code": "missing_required_tests",
+    "details": [
+      {
+        "path": "sourceRevision",
+        "code": "revision_mismatch",
+        "message": "Review the revision of the accepted result"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 1,
+      "attempts": 1,
+      "resultManifests": 1
+    }
+  }
+}

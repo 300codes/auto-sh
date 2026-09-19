@@ -104,6 +104,28 @@ Builder może zmienić proces biznesowy, ale nie usuwa autoryzacji, tenant scope
 
 **Obowiązkowe wymagania użytkownika z 2026-09-19, do wdrożenia.** Dotyczą generowanych stron klienta; nie oznaczają przebudowy backendu OM na PHP. Standard frontendowy Tailwind i małych, czytelnych plików obowiązuje także pozostałe targety stron. W ścieżce WordPress dochodzą poniższe reguły motywu, PHP, edycji i wtyczek. Zmiana flow ani wybór agenta nie wyłącza tych kryteriów jakości.
 
+### Zakres demo — decyzja użytkownika z 2026-09-19
+
+Pozostajemy przy **Polylang Free**, ale tłumaczenia są odłożone poza demo. Nie wymagamy
+w nim drugiego języka, tłumaczenia pól ACF, synchronizacji translate/copy ani przełącznika
+języka. Ich brak nie blokuje demo i nie jest wynikiem PASS: to jawnie odroczony zakres.
+Instalacja Polylang pozostaje w WP-03, edycja treści/ACF/SEO w jednym języku w WP-04,
+a zachowanie treści i Global Styles po redeploy pozostaje obowiązkową częścią WP-05.
+Poniższe wymagania wielojęzyczne opisują etap po demo; niniejsza decyzja ma pierwszeństwo.
+
+### Lokalny build → Studio Preview — decyzja użytkownika z 2026-09-19
+
+Cały system i witryna muszą być przygotowane oraz zbudowane lokalnie: instalacja
+WordPressa i wtyczek, konfiguracja, kompilacja motywu/assets, testy i review poprzedzają
+wysyłkę. Studio Preview jest celem deploymentu gotowej, zweryfikowanej rewizji.
+Nie uruchamiać na Preview instalatorów wtyczek/zależności, konfiguracji ani builda.
+
+Kolejność: lokalna instalacja i build → lokalne kontrole → snapshot/hash gotowego
+artefaktu → wymagana zgoda dla tej rewizji → upload gotowej witryny → odczytowa
+weryfikacja Preview. Zmiana kodu, paczek, konfiguracji lub treści wymaga nowego lokalnego
+przygotowania i kontroli przed kolejnym deploymentem; nie naprawiać zdalnej kopii.
+Samo HTTP 200 na Preview nie zastępuje lokalnego builda ani dopasowania rewizji.
+
 ### Frontend i własny CSS
 
 - Tailwind jest obowiązkową podstawą stylowania. Klasy utilities i wspólne tokeny mają pierwszeństwo; własny CSS uzupełnia zachowania, których nie warto powielać w markupie. Nie tworzyć równoległego, pełnego frameworka CSS ani zastępować Tailwinda innym frameworkiem.
@@ -229,7 +251,7 @@ Testy funkcji muszą trafić w tej samej zmianie co funkcja; fixture self-contai
 | WP-02 | Figma → theme.json/Tailwind | Traceability tokenów, walidacja schematu, deterministyczny eksport; frontend i edytor zgodne z zaakceptowanym DS |
 | WP-03 | Instalacja/konfiguracja wtyczek | Aktywne Yoast SEO, ACF Pro, Polylang; zgodne wersje/edycje, retry bez resetu, brak licencji daje blocker |
 | WP-04 | Edycja strony jako redaktor | Teksty, media, CTA, sekcje, header/footer/menu, ACF i SEO bez kodu/builda; zapis i preview/publikacja |
-| WP-05 | Tłumaczenia i redeploy | Dwa języki, pola ACF i nawigacja; zmiany treści/Global Styles przetrwają redeploy, konflikt designu jest jawny |
+| WP-05 | Redeploy; tłumaczenia po demo | Demo: treści/ACF/Global Styles przetrwają redeploy, konflikt designu jest jawny. Dwa języki i tłumaczenia odroczone decyzją użytkownika |
 
 Live Figma/WP to jawna próba na uprawnionym stanowisku, nie warunek zwykłych testów CI wymagający cudzych sekretów. CI używa deterministycznych adapterów i pokrywa wszystkie operacje także negatywnie. Fixture nigdy nie zalicza live FLOW-03/06/07.
 
@@ -243,6 +265,60 @@ Live Figma/WP to jawna próba na uprawnionym stanowisku, nie warunek zwykłych t
 
 Każdy etap pozostawia działające poprzednie ścieżki; nowe funkcje niegotowe do odbioru nie podszywają się pod ukończone. Szczegóły odpowiedzialności, plików, zależności i przekazania są w [README zespołu](../../context/changes/autonomous-software-delivery/flow-handoff/README.md).
 
+## Ustawienia połączeń narzędzi — nowy zakres do wdrożenia
+
+Decyzja użytkownika2026-09-19. Status: **TODO, wymagania produktowe; brak wdrożenia**.
+Panel ma udostępniać „Ustawienia → Połączenia narzędzi” dla obsługiwanych CLI,
+WordPress Studio oraz MCP Figmy. Użytkownik rozpoczyna połączenie/logowanie z panelu,
+kończy autoryzację narzędzia i widzi zweryfikowany stan. Nie zakładamy, że każde CLI
+obsługuje ten sam protokół logowania.
+
+Zakres:
+
+- Lista narzędzi z miejscem wykonania (host/worker), wykrytą instalacją i wersją,
+  stanem połączenia, rozpoznanym kontem oraz ostatnim wynikiem sprawdzenia. Oddzielne
+  stany: niezainstalowane, niepołączone, oczekiwanie na logowanie, połączone,
+  sesja wygasła i błąd. Sama obecność programu nie oznacza autoryzacji.
+- Akcje „Połącz / Zaloguj”, „Sprawdź połączenie”, „Zaloguj ponownie” i „Rozłącz”.
+  Adapter uruchamia oficjalnie obsługiwany OAuth/device flow lub logowanie przeglądarkowe
+  narzędzia. Jeśli narzędzie wymaga kroku na hoście, panel pokazuje instrukcję i czeka
+  na potwierdzony wynik; nie przedstawia nieistniejącego webowego logowania jako gotowego.
+- Studio: sprawdzenie instalacji/CLI, logowania WordPress.com i możliwości odczytu
+  rejestru witryn w środowisku operatora. Instalację wykonać przed logowaniem;
+  panel wskazuje brak instalacji. Połączenie nie udziela zgody na deployment.
+- MCP Figmy: wybór obsługiwanego połączenia, uwierzytelnienie właściwym mechanizmem,
+  sprawdzenie dostępności serwera/narzędzi i dostępu do wskazanego zasobu Figmy.
+  Udany handshake nie dowodzi dostępu do pliku projektu ani zatwierdzenia designu.
+- Sesję wiązać z rzeczywistym hostem wykonania, autoryzowanym aktorem i scope
+  tenant/organizacja. Wspólnej sesji CLI na hoście nie udostępniać automatycznie
+  innym organizacjom. Rozłączenie nie usuwa witryn ani danych użytkownika.
+- Sekrety pozostają w odpowiednim magazynie poświadczeń hosta/backendu; panel,
+  logi i dowody pokazują wyłącznie bezpieczny status. Nie zbierać haseł dostawców
+  we własnym formularzu. Dostęp do akcji chronią dedykowane uprawnienia i audit;
+  nie udostępniać dowolnego polecenia shell przez UI.
+
+Przed implementacją właściciele UI/backendu/adapterów uzgadniają listę CLI,
+możliwości logowania poszczególnych dostawców, zakres osobisty/współdzielony,
+model hosta, lifecycle sesji i delta API/ACL. Korzystać z istniejącego systemu
+integracji, poświadczeń i MCP tam, gdzie odpowiada wymaganiom. Ten wpis nie zatwierdza
+nowych endpointów, zależności ani zmiany publicznych kontraktów. Kolejność: kontrakt
+→ równoległe UI i adaptery → wspólny odbiór. Właścicieli trzeba przypisać zespołowo.
+
+Wymagane pokrycie integracyjne API i UI (przypadki **TOOLS-01…06**):
+
+| ID | Kryterium odbioru |
+|---|---|
+| TOOLS-01 | Brak programu daje stan niezainstalowany i instrukcję; zainstalowany bez sesji pozostaje niepołączony. |
+| TOOLS-02 | Logowanie rozpoczęte w panelu, sukces, anulowanie i timeout mają rzeczywiste, różne stany; powtórzenie nie tworzy konkurujących sesji. |
+| TOOLS-03 | Wygasła sesja, ponowne logowanie i rozłączenie odświeżają status; rozłączenie zachowuje witryny/pliki. |
+| TOOLS-04 | Brak ACL i obcy tenant/organizacja/host nie pozwalają odczytać ani użyć połączenia; tokeny nie trafiają do odpowiedzi, logów lub browser storage. |
+| TOOLS-05 | Studio potwierdza konto i odczyt witryn na właściwym hoście; logowanie Windows nie daje fałszywego PASS dla niepołączonego WSL/kontenera. |
+| TOOLS-06 | MCP Figmy rozróżnia połączenie z serwerem od dostępu do pliku; odmowa dostępu nie jest sukcesem połączenia projektowego. |
+
+Testy API wszystkich dodanych operacji i odpowiadające im kluczowe ścieżki panelu
+mają trafić w tej samej zmianie co implementacja. TOOLS jest nowym zakresem odbioru;
+nie zalicza historycznych FLOW/WP/REC i nie omija zgody target+revision dla Preview.
+
 ## Final Compliance Report
 
 Przegląd dokumentacyjny: root AGENTS, specs AGENTS, zasady core/UI, staff, workflows, QA oraz BACKWARD_COMPATIBILITY. Wymagania respektują scoping, brak relacji ORM między modułami, OSS/enterprise, wersjonowanie i prawdziwe evidence. Nie zmieniono kodu ani kontraktów publicznych.
@@ -251,6 +327,12 @@ Przegląd dokumentacyjny: root AGENTS, specs AGENTS, zasady core/UI, staff, work
 
 ## Changelog
 
+- 2026-09-19 — Dodano TODO ustawień połączeń CLI, Studio i MCP Figmy z logowaniem inicjowanym w panelu, statusem sesji, granicami scope/hosta i testami TOOLS-01…06; bez implementacji.
+
+- 2026-09-19 — Decyzją użytkownika pozostaje Polylang Free; tłumaczenia i integracja wielojęzyczna ACF odroczone poza demo. Jednojęzyczna edycja i zachowanie treści po redeploy pozostają wymagane.
+
 - 2026-09-19 — Dodano obowiązkowy standard Tailwind/clean code, modułowy CSS/PHP, natywny WP z Yoast SEO/ACF Pro/Polylang, mapowanie Figma → theme.json i testy pełnej edytowalności WP-01…05. Wymagania pozostają do implementacji.
 
 - 2026-09-19 — Porównano wcześniejszy plan z korektą użytkownika; dodano obowiązkowy WordPress E2E, osobne UX/KV/DS/UI approvals, import komentarzy do staff Kanban, wersjonowany szablon procesu i cztery pakiety wdrożenia. Nie zaliczono żadnej implementacji.
+
+- 2026-09-19 — Doprecyzowanie użytkownika: całość instalacji, konfiguracji i builda lokalnie; Studio Preview otrzymuje gotową zweryfikowaną rewizję jako deployment, bez instalacji/builda na Preview.

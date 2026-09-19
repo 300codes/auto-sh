@@ -1,0 +1,14 @@
+{
+  "testsPassed": 17,
+  "runner": "local node --test --test-isolation=none",
+  "review": "PASS independent readonly",
+  "benchmark": {
+    "keys": 32503,
+    "files": 30,
+    "originalMs": 652.912,
+    "preparedMs": 21.349,
+    "identicalOutput": true,
+    "outputSha256": "91b1c7eb55a703351e01ccda56f2764bc632c94d0ed2fdbc9332e1f35920f5a6"
+  },
+  "scope": "same checks; immutable index once per catalog; no paths excluded"
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-19T13:59:19.180271+00:00",
+  "scope": "Independent saved-package verification and durable Preview journal; no transport or final release acceptance",
+  "runner": "local Node24.13.1",
+  "tests": {
+    "passed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "command": "node --test --test-isolation=none packages/delivery-wordpress/src/__tests__/deployment-verify.test.ts packages/delivery-wordpress/src/__tests__/preview-journal.test.ts"
+  },
+  "typecheck": {
+    "command": "npm run typecheck --prefix packages/delivery-wordpress",
+    "exitCode": 0,
+    "scope": "full WordPress package"
+  },
+  "sourceHashes": {
+    "packages/delivery-wordpress/src/deployment-verify.ts": "6b1659e912bfbe942cbaca50ad7362b23449ab2290a0ccad36d5ca4ac581560d",
+    "packages/delivery-wordpress/src/preview-journal.ts": "9ab155b9ee39b521032d50dc62773ad2ea193e3ba7d8af1602794ab5be2bbb24",
+    "packages/delivery-wordpress/src/__tests__/deployment-verify.test.ts": "02ec86920d98f6cc01d0578437ad75300cca853a0957ea310b1c2e5cac82734c",
+    "packages/delivery-wordpress/src/__tests__/preview-journal.test.ts": "a8c03823632e5fa98c02f9b9ffebc4f15b77d75cd0b7351d1bf91f9ec44c073e",
+    "packages/delivery-wordpress/src/__tests__/fixtures/saved-deployment.ts": "0d2ec1a22053d9554029ade6b2df74f9f1b589b94e8cdaec5420f767ce2c679a"
+  },
+  "logHashes": {
+    "offline-review-tests.log": "fcb0ad3f5b2b6f47d99c6ed863b0f8c79370ae03298a37ac91a0f9bc79f0c3fd",
+    "offline-package-typecheck.log": "709ee0367dd71d4a7587682dd1ddecd5ee55dd49437892c4431c5668a914824e"
+  },
+  "liveSavedPackageEvidence": "local-deployment-package-verify.json",
+  "fullMonorepoGate": "not_passed"
+}

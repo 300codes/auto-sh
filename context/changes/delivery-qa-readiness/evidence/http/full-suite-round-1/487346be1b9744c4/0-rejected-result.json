@@ -1,0 +1,44 @@
+{
+  "case": "foreign project",
+  "status": 422,
+  "body": {
+    "error": "projectId does not match the reserved attempt",
+    "code": "correlation_mismatch",
+    "details": [
+      {
+        "path": "projectId",
+        "code": "correlation_mismatch",
+        "message": "projectId does not match the reserved attempt"
+      }
+    ]
+  },
+  "before": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "after": {
+    "ok": true,
+    "counts": {
+      "projects": 1,
+      "baselines": 1,
+      "tasks": 1,
+      "decisions": 2,
+      "evidence": 0,
+      "attempts": 1,
+      "resultManifests": 0
+    }
+  },
+  "projectId": "1e0e25fc-36cc-462f-ad16-11d2d0a8f1b3",
+  "taskId": "241af752-da03-4857-9352-fb8fb8dbd036",
+  "attemptId": "8d6e131f-41d8-4660-b295-dd08dc8f4a54",
+  "baselineId": "5f17a23a-2141-4bed-b69c-451d97289001",
+  "baselineHash": "037b36f6d63ee6d5d0334aac2a23c7730c4cae936c224af5a4e1edd2fa373ef4"
+}
