@@ -70,3 +70,20 @@ and routes; the export test with real decisions comes with them.
   `design_decision_missing`, `requirements_rejected`, `design_rejected`, `requirements_decision_invalid`,
   `design_decision_invalid`, `missing_render`, `missing_required_tests`,
   `unknown_ac`, `missing_acceptance_criteria`, `target_profile_mismatch`, `baseline_mismatch`, `hash_mismatch`.
+
+## Addendum — L4a registration (T009)
+
+- `acl.ts` (8 features), `setup.ts` (admin `delivery_os.*`; employee `projects.view`, `projects.manage`,
+  `results.import`), `events.ts`, `extension-points.ts`; `index.ts` re-exports `features`. The local tenant got the
+  grants via `yarn mercato auth sync-role-acls`. Live `POST /api/auth/feature-check`: the employee is granted only the
+  three features above, and admin holds all eight.
+- **For the L4 commands:** emit via `emitDeliveryOsEvent(id, payload, { tenantId, organizationId })`. Payloads per the
+  spec § Events include `tenantId`/`organizationId`. Pass scope in options too, or SSE drops the broadcast. Do not set
+  `makeCrudRoute` `events` for delivery entities.
+- **For UI:** render the spot with `extensionPoints.hosts.projectExecution.spotId` (import `extensionPoints` from
+  `@open-mercato/core/modules/delivery_os/extension-points`) in `backend/delivery/projects/[id]/page.tsx`. Referencing
+  `extensionPoints.hosts.projectExecution` there is what marks the host `bound` in module facts. Subscribe with
+  `useAppEvent('delivery_os.task.updated' | 'delivery_os.evidence.recorded', …)`. Feature titles are English labels in
+  `acl.ts` (same as customers), so no i18n keys are required.
+- **For EXEC/enterprise:** subscribe to `delivery_os.evidence.recorded` (`duplicate`, `completionDelivery`). Gate with
+  the feature IDs above, never role names.
