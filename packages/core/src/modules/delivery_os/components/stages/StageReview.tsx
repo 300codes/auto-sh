@@ -65,7 +65,7 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
       let raw: unknown
       try { raw = JSON.parse(String(values.artifact ?? '')) } catch { throw createCrudFormError(t('delivery_os.flow.invalid')) }
       const parsed = stageArtifactV1Schema.safeParse(raw)
-      if (!parsed.success || parsed.data.projectId !== projectId || parsed.data.stageId !== stage.stageId || (parsed.data.source !== 'manual' && parsed.data.source !== 'agent')) throw createCrudFormError(t('delivery_os.flow.invalid'))
+      if (!parsed.success || parsed.data.projectId !== projectId || parsed.data.stageId !== stage.stageId || !['manual', 'agent', 'figma'].includes(parsed.data.source)) throw createCrudFormError(t('delivery_os.flow.invalid'))
       payload = parsed.data
     } else {
       if (!selected || !isCurrent) throw createCrudFormError(t('delivery_os.flow.historyReadOnly'))
@@ -92,7 +92,7 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
     <h2 className="text-lg font-semibold">{t(`delivery_os.flow.stage.${stage.stageId}`)}</h2>
     <p>{t(`delivery_os.flow.currency.${stage.currency ?? "pending"}`)}</p>
     {canManage ? <div className="flex flex-wrap items-center gap-2">
-      {stage.stageId === 'scope' ? <Button type="button" onClick={() => { void generateDraft() }} disabled={drafting}>{t(drafting ? 'delivery_os.flow.artifact.drafting' : 'delivery_os.flow.artifact.draft')}</Button> : null}
+      <Button type="button" onClick={() => { void generateDraft() }} disabled={drafting}>{t(drafting ? 'delivery_os.flow.artifact.drafting' : 'delivery_os.flow.artifact.draft')}</Button>
       <Button type="button" variant="outline" onClick={() => setDialog('artifact')}>{t('delivery_os.flow.artifact.import')}</Button>
     </div> : null}
     {draftError ? <p role="status" className="text-sm text-status-error-text">{draftError}</p> : null}
@@ -101,7 +101,7 @@ export function StageReview({ projectId, stage, updatedAt, canManage, canApprove
       <h3 className="text-sm font-semibold">{t('delivery_os.flow.version', { version: selected.version })}</h3>
       <p className="break-all font-mono text-xs">{selected.contentHash}</p>
       {scope.success ? <div className="space-y-2"><p>{scope.data.summary}</p><ul>{scope.data.inScope.map((item) => <li key={item}>{item}</li>)}</ul><h4>{t('delivery_os.project.sections.requirements.title')}</h4><ul>{scope.data.acceptanceCriteria.map((criterion) => <li key={criterion.id}>{criterion.id}: {criterion.description}</li>)}</ul></div> : null}
-      {design.success ? <div className="space-y-2"><p>{design.data.summary}</p><p>{design.data.notes}</p><ul>{design.data.screens.map((screen) => <li key={`${screen.fileKey}:${screen.nodeId}:${screen.viewport.width}:${screen.viewport.height}`}>{screen.name} · {screen.viewport.width} × {screen.viewport.height} · {screen.figmaVersion}</li>)}</ul></div> : null}
+      {design.success ? <div className="space-y-2"><p>{design.data.summary}</p><p className="whitespace-pre-line">{design.data.notes}</p><ul>{design.data.figmaRefs.map((reference) => <li key={`${reference.fileKey}:${reference.nodeId}`}>{reference.url ? <a className="underline" href={reference.url} target="_blank" rel="noreferrer">{reference.name}</a> : reference.name}</li>)}</ul><ul>{design.data.screens.map((screen) => <li key={`${screen.fileKey}:${screen.nodeId}:${screen.viewport.width}:${screen.viewport.height}`}>{screen.name} · {screen.viewport.width} × {screen.viewport.height} · {screen.figmaVersion}</li>)}</ul></div> : null}
       <h4 className="text-xs font-medium">{t('delivery_os.flow.dependencies')}</h4><ul>{selected.dependsOn.map((dependency) => <li key={dependency.stageId} className="break-all text-xs">{t(`delivery_os.flow.stage.${dependency.stageId}`)} · {dependency.version} · {dependency.contentHash}</li>)}</ul>
       {canApprove && isCurrent && stage.currency !== 'stale' ? <Button type="button" onClick={() => setDialog('decision')}>{t('delivery_os.flow.recordDecision')}</Button> : null}
     </article> : <p>{t('delivery_os.flow.currency.missing')}</p>}
