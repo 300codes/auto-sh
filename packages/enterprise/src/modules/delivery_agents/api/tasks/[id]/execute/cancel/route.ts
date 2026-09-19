@@ -5,6 +5,7 @@ import { CrudHttpError, isCrudHttpError } from '@open-mercato/shared/lib/crud/er
 import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import {
   deliveryErrorResponse,
+  readRouteId,
   resolveDeliveryRouteContext,
 } from '@open-mercato/core/modules/delivery_os/api/routeSupport'
 import { resolveDeliveryScope } from '@open-mercato/core/modules/delivery_os/commands/shared'
@@ -28,8 +29,7 @@ export async function POST(request: Request, context: RouteParams): Promise<Resp
   try {
     const routeCtx = await resolveDeliveryRouteContext(request)
     const scope = resolveDeliveryScope(routeCtx)
-    const params = await Promise.resolve(context.params)
-    const taskId = uuidSchema.parse(params.id)
+    const taskId = await readRouteId(context)
 
     const body = await request.json().catch(() => ({}))
     const parsed = cancelBodySchema.safeParse(body)

@@ -81,6 +81,10 @@ async function pollForPark(
   logger.warn('workflow did not park within polling window', { instanceId, ...scope })
 }
 
+export type SourceRevision =
+  | { kind: 'git'; commitSha: string }
+  | { kind: 'snapshot'; contentHash: string; externalWorkspaceId: string }
+
 export type ExecutionBridgeStartInput = {
   taskId: string
   idempotencyKey: string
@@ -89,6 +93,7 @@ export type ExecutionBridgeStartInput = {
   container: AppContainer
   em: EntityManager
   targetProfileId?: string | null
+  baseRevision?: SourceRevision | null
 }
 
 export type ExecutionBridgeStartResult = {
@@ -97,15 +102,53 @@ export type ExecutionBridgeStartResult = {
   state: 'reserved'
 }
 
+async function resolveBaseRevision(
+  em: EntityManager,
+  taskId: string,
+  scope: DeliveryScope,
+  provided: SourceRevision | null | undefined,
+): Promise<SourceRevision> {
+  if (provided) return provided
+  // Derive from the task's baseline: use a snapshot revision keyed by baseline hash
+  try {
+    const { DeliveryTask } = (await import('@open-mercato/core/modules/delivery_os/data/entities')) as {
+      DeliveryTask: new () => { baselineId?: string | null }
+    }
+    const task = await em.fork().findOne(DeliveryTask as never, {
+      id: taskId,
+      tenantId: scope.tenantId,
+      organizationId: scope.organizationId,
+    } as never) as { baselineId?: string | null; executionAttempts?: unknown } | null
+
+    const { DeliveryBaseline } = (await import('@open-mercato/core/modules/delivery_os/data/entities')) as {
+      DeliveryBaseline: new () => { contentHash?: string | null }
+    }
+    const baseline = task?.baselineId
+      ? await em.fork().findOne(DeliveryBaseline as never, {
+          id: task.baselineId,
+          tenantId: scope.tenantId,
+          organizationId: scope.organizationId,
+        } as never) as { contentHash?: string | null } | null
+      : null
+
+    const contentHash = (baseline as { contentHash?: string | null } | null)?.contentHash ?? 'unknown'
+    return { kind: 'snapshot', contentHash, externalWorkspaceId: taskId }
+  } catch {
+    return { kind: 'snapshot', contentHash: 'unknown', externalWorkspaceId: taskId }
+  }
+}
+
 export async function startExecution(input: ExecutionBridgeStartInput): Promise<ExecutionBridgeStartResult> {
-  const { taskId, idempotencyKey, userId, scope, container, em } = input
+  const { taskId, idempotencyKey, userId, scope, container, em, baseRevision } = input
   const commandBus = container.resolve('commandBus') as CommandBus
   const trustedExecution: TrustedExecution = { source: 'delivery_agents', actorUserId: userId }
   const ctx = buildTrustedCtx(container, scope, userId)
 
+  const resolvedRevision = await resolveBaseRevision(em, taskId, scope, baseRevision)
+
   // 1. Reserve attempt (trusted, automatic mode)
   const reservation = (await commandBus.execute('delivery_os.attempts.reserve', {
-    input: { taskId, idempotencyKey, mode: 'automatic', trustedExecution },
+    input: { taskId, idempotencyKey, mode: 'automatic', baseRevision: resolvedRevision, trustedExecution },
     ctx,
   })) as unknown as { attemptId: string; created: boolean; workflowInstanceId?: string | null }
 
