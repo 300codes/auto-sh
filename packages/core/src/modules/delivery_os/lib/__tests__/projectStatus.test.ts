@@ -101,6 +101,21 @@ describe('deriveProjectStatus', () => {
     expect(deriveProjectStatus(input({ tasks: allVerified, evidence, decisions: laterReject })).status).toBe('verified')
   })
 
+  it('ignores reference material and every other generic evidence kind for status, progress and the released revision', () => {
+    const result = [{ kind: 'result_manifest' as const, baselineId: 'baseline-2', sourceRevision: releasedRevision, createdAt: '2026-09-19T10:00:00Z' }]
+    const decisions = [{ kind: 'release', verdict: 'approved' as const, sourceRevision: releasedRevision, decidedAt: '2026-09-19T11:00:00Z' }]
+    const generic = (['reference_material', 'test', 'screenshot', 'scan', 'deployment'] as const).map((kind) => ({
+      kind,
+      baselineId: 'baseline-2',
+      sourceRevision: newerRevision,
+      createdAt: '2026-09-19T12:00:00Z',
+    }))
+    expect(deriveProjectStatus(input({ evidence: generic }))).toEqual(deriveProjectStatus(input()))
+    expect(deriveProjectStatus(input({ tasks: allVerified, evidence: [...result, ...generic], decisions }))).toEqual(
+      deriveProjectStatus(input({ tasks: allVerified, evidence: result, decisions })),
+    )
+  })
+
   it('lets a same-instant rejection win over an approval and ignores unparseable dates', () => {
     const evidence = [{ kind: 'result_manifest' as const, baselineId: 'baseline-2', sourceRevision: releasedRevision, createdAt: '2026-09-19T10:00:00Z' }]
     const tie = [

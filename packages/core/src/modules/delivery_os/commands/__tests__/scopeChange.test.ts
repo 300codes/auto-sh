@@ -267,6 +267,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.baselines.create',
       'delivery_os.baselines.import_requirements',
       'delivery_os.decisions.record',
+      'delivery_os.evidence.record',
       'delivery_os.projects.create',
       'delivery_os.projects.delete',
       'delivery_os.projects.update',
@@ -281,6 +282,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.baselines.create',
       'delivery_os.baselines.import_requirements',
       'delivery_os.decisions.record',
+      'delivery_os.evidence.record',
       'delivery_os.results.accept',
     ])
     expect(appendOnly.filter((id) => MUTATING_ACTIONS.test(id.slice('delivery_os.'.length)))).toEqual([])
@@ -290,7 +292,12 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
   it('exposes no PUT, PATCH or DELETE on any baseline, decision, result or evidence route', () => {
     const routes = routeMethods()
     const appendOnlyRoutes = [...routes.keys()].filter((path) => IMMUTABLE_SUBJECTS.some((subject) => path.split('/').includes(subject)))
-    expect(appendOnlyRoutes.sort()).toEqual(['baselines/[id]/decisions/route.ts', 'projects/[id]/baselines/route.ts', 'tasks/[id]/results/route.ts'])
+    expect(appendOnlyRoutes.sort()).toEqual([
+      'baselines/[id]/decisions/route.ts',
+      'projects/[id]/baselines/route.ts',
+      'projects/[id]/evidence/route.ts',
+      'tasks/[id]/results/route.ts',
+    ])
     for (const path of appendOnlyRoutes) {
       const methods = routes.get(path) ?? new Set<string>()
       expect({ path, writes: [...methods].filter((method) => WRITE_METHODS.includes(method)) }).toEqual({ path, writes: [] })

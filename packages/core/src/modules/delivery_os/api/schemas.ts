@@ -147,6 +147,13 @@ export const resultAcceptResponseSchema = z.object({
   taskUpdatedAt: isoDateTimeSchema,
 })
 
+export const evidenceRecordResponseSchema = z.object({
+  evidenceId: uuidSchema,
+  duplicate: z.boolean(),
+  taskStatus: taskStatusSchema.optional(),
+  taskUpdatedAt: isoDateTimeSchema.optional(),
+})
+
 export const attemptCancelResponseSchema = z.object({
   attemptId: uuidSchema,
   state: z.literal('cancel_requested'),
