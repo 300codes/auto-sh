@@ -130,15 +130,26 @@ function resolveTargetProfile(id: string, version: number | undefined): TargetPr
   )
 }
 
+export type ArchivableSubject = 'project' | 'task' | 'stage'
+
+const UNKNOWN_ATTEMPT_MESSAGES: Record<ArchivableSubject, string> = {
+  project: 'Reconcile unknown attempts before archiving the project',
+  task: 'Reconcile the unknown attempt before changing the task',
+  stage: 'Reconcile the unknown attempt before a new stage version',
+}
+
+const ACTIVE_ATTEMPT_MESSAGES: Record<ArchivableSubject, string> = {
+  project: 'Project has an active attempt or task',
+  task: 'Task has an active attempt',
+  stage: 'Cancel or reconcile the active attempt before a new stage version',
+}
+
 export function checkProjectArchivable(
   tasks: readonly DeliveryTask[],
-  subject: 'project' | 'task' = 'project',
+  subject: ArchivableSubject = 'project',
 ): DeliveryCheckResult {
-  const unknownMessage =
-    subject === 'project'
-      ? 'Reconcile unknown attempts before archiving the project'
-      : 'Reconcile the unknown attempt before changing the task'
-  const activeMessage = subject === 'project' ? 'Project has an active attempt or task' : 'Task has an active attempt'
+  const unknownMessage = UNKNOWN_ATTEMPT_MESSAGES[subject]
+  const activeMessage = ACTIVE_ATTEMPT_MESSAGES[subject]
   const unknown: DeliveryErrorDetail[] = []
   const active: DeliveryErrorDetail[] = []
   for (const task of tasks) {

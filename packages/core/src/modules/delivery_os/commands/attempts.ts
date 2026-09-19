@@ -67,7 +67,7 @@ function readIdempotencyKey(rawInput: unknown): unknown {
   return typeof rawInput === 'object' && rawInput !== null ? (rawInput as Record<string, unknown>).idempotencyKey : undefined
 }
 
-function requireIdempotencyKey(rawInput: unknown): void {
+export function requireIdempotencyKey(rawInput: unknown): void {
   const key = readIdempotencyKey(rawInput)
   if (typeof key === 'string' && key.length > 0) return
   throw deliveryHttpError(
