@@ -36,7 +36,13 @@ type Json = Record<string, unknown>
 type Row = Record<string, unknown>
 
 const MODULE_ROOT = join(__dirname, '..', '..')
-const HISTORY_ENTITIES = ['DeliveryBaseline', 'DeliveryEvidence', 'DeliveryDecision']
+const HISTORY_ENTITIES = [
+  'DeliveryBaseline',
+  'DeliveryEvidence',
+  'DeliveryDecision',
+  'DeliveryFlowStageArtifact',
+  'DeliveryFlowStageDecision',
+]
 const FORBIDDEN_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'em.remove / removeAndFlush / nativeDelete', pattern: /\.remove\(|removeAndFlush|nativeDelete/ },
   { label: 'command undo handler', pattern: /\bundo\s*[:(]/ },
