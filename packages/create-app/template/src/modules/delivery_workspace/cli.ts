@@ -1,6 +1,7 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
+import { runWithCacheTenant } from '@open-mercato/cache'
 import { buildAdminNav, type AdminNavItem } from '@open-mercato/ui/backend/utils/nav'
 import { backendRouteMetadata, type BackendRouteMetadataEntry } from '@/.mercato/generated/backend-route-metadata.generated'
 import {
@@ -69,10 +70,13 @@ async function resolveTargetRoles(em: EntityManager, args: Record<string, string
 }
 
 async function invalidateRoleNav(cache: CacheLike | undefined, roles: Role[]): Promise<void> {
-  if (!cache?.deleteByTags) return
-  const tags = roles.flatMap((role) => [`nav:sidebar:role:${role.id}`, `nav:sidebar:role:${role.name}`])
+  const deleteByTags = cache?.deleteByTags?.bind(cache)
+  if (!deleteByTags) return
   try {
-    await cache.deleteByTags(Array.from(new Set(tags)))
+    for (const role of roles) {
+      const tags = [`nav:sidebar:role:${role.id}`, `nav:sidebar:role:${role.name}`]
+      await runWithCacheTenant(role.tenantId ?? null, () => deleteByTags(tags))
+    }
   } catch {
     console.warn('[internal] nav cache invalidation failed; the menu refreshes when the cache TTL expires')
   }
