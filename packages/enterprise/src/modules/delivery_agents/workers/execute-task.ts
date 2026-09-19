@@ -145,7 +145,31 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
   const baseDir = process.env.DELIVERY_CEZAR_BASE_DIR ?? process.cwd()
   await queries.assertExecutionReady(scope, taskId, attemptId)
   const produced = await produceManifest(container, taskExecutor, taskPackage, { scope, actorUserId: userId, baseDir })
-  if (!produced) return
+  if (!produced) {
+    // Execution failed — reconcile the attempt so it doesn't stay stuck in `claimed`
+    try {
+      await commandBus.execute('delivery_os.attempts.reconcile', {
+        input: {
+          taskId,
+          attemptId,
+          resolution: 'stopped',
+          externalEvidence: {
+            note: '[internal] Execution host failed to produce a result manifest',
+            observedAt: new Date().toISOString(),
+          },
+          trustedExecution,
+        },
+        ctx,
+      })
+    } catch (reconcileErr) {
+      logger.error('failed to reconcile failed attempt', {
+        taskId,
+        attemptId,
+        error: reconcileErr instanceof Error ? reconcileErr.message : String(reconcileErr),
+      })
+    }
+    return
+  }
 
   // Re-read attempt to check for cancel_requested
   const latestAttempt = await queries.getAttempt(scope, taskId, attemptId)
