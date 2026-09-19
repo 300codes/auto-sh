@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
-import type { CommandHandler } from '@open-mercato/shared/lib/commands'
+import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { emitCrudSideEffects } from '@open-mercato/shared/lib/commands/helpers'
 import { isUniqueViolation } from '@open-mercato/shared/lib/crud/errors'
 import type { CrudIndexerConfig } from '@open-mercato/shared/lib/crud/types'
@@ -9,17 +9,19 @@ import type { DataEngine } from '@open-mercato/shared/lib/data/engine'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { E } from '#generated/entities.ids.generated'
-import { DeliveryBaseline } from '../data/entities'
+import { DeliveryBaseline, DeliveryProject } from '../data/entities'
 import { baselineCreateSchema, draftSpecV1Schema } from '../data/validators'
-import { buildBaselineContent, nextBaselineVersion } from '../lib/baseline'
+import { buildBaselineContent, nextBaselineVersion, type BaselineBuildExtras } from '../lib/baseline'
 import { applyAttachmentSnapshot, checkDesignReview, checkRawScreenRenders } from '../lib/designReview'
 import {
   buildDeliveryError,
   deliveryErrorFromZod,
+  importedManifestSchema,
   uuidSchema,
   type DeliveryCheckResult,
   type DeliveryErrorDetail,
 } from '../lib/contracts'
+import { parseRequirementsProposal, validateRequirementsProposal } from '../lib/proposals'
 import { verifyDraftAttachments } from './attachments'
 import {
   assertDeliveryCheck,
@@ -27,6 +29,7 @@ import {
   DELIVERY_PROJECT_RESOURCE_KIND,
   deliveryHttpError,
   lockProjectForWrite,
+  lockScopedProject,
   parseDeliveryInput,
   requireLockHeader,
   requireScopedProject,
@@ -42,6 +45,13 @@ export type BaselineCommandResult = {
   contentHash: string
   duplicate: boolean
   openCommentIds: string[]
+  projectUpdatedAt: string
+}
+
+export type BaselineImportCommandResult = BaselineCommandResult & {
+  manifestId: string
+  manifestHash: string
+  prunedAcIds: string[]
 }
 
 type DraftSpec = z.infer<typeof draftSpecV1Schema>
@@ -52,7 +62,17 @@ const baselineCrudIndexer: CrudIndexerConfig<DeliveryBaseline> = {
   entityType: E.delivery_os.delivery_baseline,
 }
 
-export function checkDraftFreezable(draft: DraftSpec): DeliveryCheckResult {
+const projectCrudIndexer: CrudIndexerConfig<DeliveryProject> = {
+  entityType: E.delivery_os.delivery_project,
+}
+
+const importedManifestsSchema = z.object({ importedManifests: z.array(importedManifestSchema) })
+
+type FreezeOptions = { requireRender: boolean; extras?: BaselineBuildExtras }
+
+type FrozenDraft = { content: DeliveryBaseline['content']; contentHash: string; openCommentIds: string[]; attachmentIds: string[] }
+
+export function checkDraftFreezable(draft: DraftSpec, options: { requireRender: boolean } = { requireRender: true }): DeliveryCheckResult {
   const details: DeliveryErrorDetail[] = []
   if (draft.requirements.length === 0) {
     details.push({ path: 'requirements', code: 'missing_requirements', message: 'Add at least one requirement' })
@@ -65,7 +85,7 @@ export function checkDraftFreezable(draft: DraftSpec): DeliveryCheckResult {
     })
   }
   const hasScopeGap = details.length > 0
-  if (draft.screens.length === 0) {
+  if (options.requireRender && draft.screens.length === 0) {
     details.push({ path: 'screens', code: 'missing_render', message: 'Attach at least one stored render or snapshot' })
   }
   if (details.length === 0) return { ok: true }
@@ -89,8 +109,65 @@ function findProjectBaselineByHash(
   )
 }
 
-function toResult(baseline: DeliveryBaseline, duplicate: boolean, openCommentIds: string[]): BaselineCommandResult {
+async function freezeDraft(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  scope: DeliveryScope,
+  draft: DraftSpec,
+  options: FreezeOptions,
+): Promise<FrozenDraft> {
+  assertDeliveryCheck(checkDraftFreezable(draft, options))
+  assertDeliveryCheck(checkDesignReview(draft))
+  const verified = await verifyDraftAttachments(tx, ctx, draft, scope)
+  if (!verified.ok) throw deliveryHttpError({ status: verified.status, body: verified.body })
+  const built = buildBaselineContent(applyAttachmentSnapshot(draft, verified.snapshots), options.extras)
+  if (!built.ok) throw deliveryHttpError({ status: built.status, body: built.body })
   return {
+    content: built.content,
+    contentHash: built.contentHash,
+    openCommentIds: built.openCommentIds,
+    attachmentIds: verified.attachmentIds,
+  }
+}
+
+function parseProjectDraft(project: DeliveryProject): DraftSpec {
+  assertDeliveryCheck(checkRawScreenRenders((project.draftSpec as { screens?: unknown } | null)?.screens))
+  const draft = draftSpecV1Schema.safeParse(project.draftSpec)
+  if (!draft.success) throw deliveryHttpError(deliveryErrorFromZod(draft.error))
+  return draft.data
+}
+
+function listProjectBaselines(tx: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryBaseline[]> {
+  return findWithDecryption(
+    tx,
+    DeliveryBaseline,
+    { projectId, tenantId: scope.tenantId, organizationId: scope.organizationId },
+    undefined,
+    scope,
+  )
+}
+
+function findImportedManifest(
+  baselines: readonly DeliveryBaseline[],
+  manifestId: string,
+): { baseline: DeliveryBaseline; manifestHash: string } | null {
+  const ordered = [...baselines].sort((left, right) => left.version - right.version)
+  for (const baseline of ordered) {
+    const parsed = importedManifestsSchema.safeParse(baseline.content)
+    const entry = parsed.success ? parsed.data.importedManifests.find((candidate) => candidate.manifestId === manifestId) : undefined
+    if (entry) return { baseline, manifestHash: entry.manifestHash }
+  }
+  return null
+}
+
+function toResult(
+  baseline: DeliveryBaseline,
+  duplicate: boolean,
+  openCommentIds: string[],
+  project: DeliveryProject,
+): BaselineCommandResult {
+  return {
+    projectUpdatedAt: project.updatedAt.toISOString(),
     baselineId: baseline.id,
     projectId: baseline.projectId,
     version: baseline.version,
@@ -98,6 +175,16 @@ function toResult(baseline: DeliveryBaseline, duplicate: boolean, openCommentIds
     duplicate,
     openCommentIds,
   }
+}
+
+async function emitBaselineCreated(ctx: CommandRuntimeContext, scope: DeliveryScope, baseline: DeliveryBaseline): Promise<void> {
+  await emitCrudSideEffects({
+    dataEngine: ctx.container.resolve('dataEngine') as DataEngine,
+    action: 'created',
+    entity: baseline,
+    identifiers: { id: baseline.id, organizationId: scope.organizationId, tenantId: scope.tenantId },
+    indexer: baselineCrudIndexer,
+  })
 }
 
 const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
@@ -117,31 +204,17 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
 
     const frozen = { contentHash: null as string | null, openCommentIds: [] as string[] }
     const em = resolveDeliveryEm(ctx)
-    let outcome: { baseline: DeliveryBaseline; duplicate: boolean }
+    let outcome: { baseline: DeliveryBaseline; duplicate: boolean; project: DeliveryProject }
     try {
       outcome = await em.transactional(async (tx) => {
         const project = await lockProjectForWrite(tx, ctx, projectId, scope, { force: true })
-        assertDeliveryCheck(checkRawScreenRenders((project.draftSpec as { screens?: unknown } | null)?.screens))
-        const draft = draftSpecV1Schema.safeParse(project.draftSpec)
-        if (!draft.success) throw deliveryHttpError(deliveryErrorFromZod(draft.error))
-        assertDeliveryCheck(checkDraftFreezable(draft.data))
-        assertDeliveryCheck(checkDesignReview(draft.data))
-        const verified = await verifyDraftAttachments(tx, ctx, draft.data, scope)
-        if (!verified.ok) throw deliveryHttpError({ status: verified.status, body: verified.body })
-        const built = buildBaselineContent(applyAttachmentSnapshot(draft.data, verified.snapshots))
-        if (!built.ok) throw deliveryHttpError({ status: built.status, body: built.body })
+        const built = await freezeDraft(tx, ctx, scope, parseProjectDraft(project), { requireRender: true })
         frozen.contentHash = built.contentHash
         frozen.openCommentIds = built.openCommentIds
 
-        const existing = await findWithDecryption(
-          tx,
-          DeliveryBaseline,
-          { projectId: project.id, tenantId: scope.tenantId, organizationId: scope.organizationId },
-          undefined,
-          scope,
-        )
+        const existing = await listProjectBaselines(tx, project.id, scope)
         const identical = existing.find((baseline) => baseline.contentHash === built.contentHash)
-        if (identical) return { baseline: identical, duplicate: true }
+        if (identical) return { baseline: identical, duplicate: true, project }
 
         const baseline = tx.create(DeliveryBaseline, {
           tenantId: scope.tenantId,
@@ -152,29 +225,21 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
           source: 'manual',
           parentBaselineId: null,
           content: built.content,
-          attachmentIds: verified.attachmentIds,
+          attachmentIds: built.attachmentIds,
           createdBy: createdBy.success ? createdBy.data : null,
         })
         tx.persist(baseline)
-        return { baseline, duplicate: false }
+        return { baseline, duplicate: false, project }
       })
     } catch (error) {
       if (!frozen.contentHash || !isUniqueViolation(error)) throw error
       const winner = await findProjectBaselineByHash(resolveDeliveryEm(ctx), projectId, frozen.contentHash, scope)
       if (!winner) throw error
-      outcome = { baseline: winner, duplicate: true }
+      outcome = { baseline: winner, duplicate: true, project: await requireScopedProject(resolveDeliveryEm(ctx), projectId, scope) }
     }
 
-    if (!outcome.duplicate) {
-      await emitCrudSideEffects({
-        dataEngine: ctx.container.resolve('dataEngine') as DataEngine,
-        action: 'created',
-        entity: outcome.baseline,
-        identifiers: { id: outcome.baseline.id, organizationId: scope.organizationId, tenantId: scope.tenantId },
-        indexer: baselineCrudIndexer,
-      })
-    }
-    return toResult(outcome.baseline, outcome.duplicate, frozen.openCommentIds)
+    if (!outcome.duplicate) await emitBaselineCreated(ctx, scope, outcome.baseline)
+    return toResult(outcome.baseline, outcome.duplicate, frozen.openCommentIds, outcome.project)
   },
   buildLog: async ({ result, ctx }) => {
     if (result.duplicate) return null
@@ -193,4 +258,118 @@ const createBaselineCommand: CommandHandler<unknown, BaselineCommandResult> = {
   },
 }
 
+const importRequirementsCommand: CommandHandler<unknown, BaselineImportCommandResult> = {
+  id: 'delivery_os.baselines.import_requirements',
+  async execute(rawInput, ctx) {
+    const scope = resolveDeliveryScope(ctx)
+    const { projectId } = parseDeliveryInput(baselineProjectSchema, rawInput)
+    const parsed = parseDeliveryInput(baselineCreateSchema, rawInput)
+    if (parsed.source !== 'requirements_proposal') {
+      throw deliveryHttpError(
+        buildDeliveryError('validation_failed', 'Validation failed', [{ path: 'source', code: 'unsupported_source' }]),
+      )
+    }
+    const { manifest } = parsed
+    const createdBy = uuidSchema.safeParse(ctx.auth?.sub)
+    await requireScopedProject(resolveDeliveryEm(ctx), projectId, scope)
+    const identity = parseRequirementsProposal(manifest, projectId)
+    if (!identity.ok) throw deliveryHttpError({ status: identity.status, body: identity.body })
+    const { manifestId, manifestHash } = identity
+
+    const frozen = { contentHash: null as string | null, openCommentIds: [] as string[], prunedAcIds: [] as string[] }
+    const em = resolveDeliveryEm(ctx)
+    let outcome: { baseline: DeliveryBaseline; duplicate: boolean; project: DeliveryProject }
+    try {
+      outcome = await em.transactional(async (tx) => {
+        const locked = await lockScopedProject(tx, projectId, scope)
+        const existing = await listProjectBaselines(tx, locked.id, scope)
+        const replay = findImportedManifest(existing, manifestId)
+        if (replay && replay.manifestHash === manifestHash) return { baseline: replay.baseline, duplicate: true, project: locked }
+        if (replay) {
+          throw deliveryHttpError(
+            buildDeliveryError('idempotency_conflict', 'This manifestId was already imported with different content', [
+              { path: 'manifest.manifestId', code: 'idempotency_conflict', message: `Imported as baseline v${replay.baseline.version}` },
+            ]),
+          )
+        }
+
+        requireLockHeader(ctx)
+        const project = await lockProjectForWrite(tx, ctx, projectId, scope, { force: true })
+        const merged = validateRequirementsProposal(manifest, { projectId, draftSpec: parseProjectDraft(project) })
+        if (!merged.ok) throw deliveryHttpError({ status: merged.status, body: merged.body })
+        const built = await freezeDraft(tx, ctx, scope, merged.draftSpec, {
+          requireRender: false,
+          extras: { importedManifestHashes: [manifestHash], importedManifests: [{ manifestId, manifestHash }] },
+        })
+        frozen.contentHash = built.contentHash
+        frozen.openCommentIds = built.openCommentIds
+        frozen.prunedAcIds = merged.prunedAcIds
+        const identical = existing.find((baseline) => baseline.contentHash === built.contentHash)
+        if (identical) return { baseline: identical, duplicate: true, project }
+
+        project.draftSpec = merged.draftSpec
+        project.updatedAt = new Date()
+        const baseline = tx.create(DeliveryBaseline, {
+          tenantId: scope.tenantId,
+          organizationId: scope.organizationId,
+          projectId: project.id,
+          version: nextBaselineVersion(existing.map((entry) => entry.version)),
+          contentHash: built.contentHash,
+          source: 'requirements_proposal',
+          parentBaselineId: null,
+          content: built.content,
+          attachmentIds: built.attachmentIds,
+          createdBy: createdBy.success ? createdBy.data : null,
+        })
+        tx.persist(baseline)
+        return { baseline, duplicate: false, project }
+      })
+    } catch (error) {
+      if (!frozen.contentHash || !isUniqueViolation(error)) throw error
+      const winner = await findProjectBaselineByHash(resolveDeliveryEm(ctx), projectId, frozen.contentHash, scope)
+      if (!winner) throw error
+      outcome = { baseline: winner, duplicate: true, project: await requireScopedProject(resolveDeliveryEm(ctx), projectId, scope) }
+    }
+
+    if (!outcome.duplicate) {
+      await emitBaselineCreated(ctx, scope, outcome.baseline)
+      await emitCrudSideEffects({
+        dataEngine: ctx.container.resolve('dataEngine') as DataEngine,
+        action: 'updated',
+        entity: outcome.project,
+        identifiers: { id: outcome.project.id, organizationId: scope.organizationId, tenantId: scope.tenantId },
+        indexer: projectCrudIndexer,
+      })
+    }
+    const openCommentIds = outcome.duplicate ? [] : frozen.openCommentIds
+    const prunedAcIds = outcome.duplicate ? [] : frozen.prunedAcIds
+    return { ...toResult(outcome.baseline, outcome.duplicate, openCommentIds, outcome.project), manifestId, manifestHash, prunedAcIds }
+  },
+  buildLog: async ({ result, ctx }) => {
+    if (result.duplicate) return null
+    const scope = resolveDeliveryScope(ctx)
+    const { translate } = await resolveTranslations()
+    return {
+      actionLabel: translate('delivery_os.audit.baselines.import_requirements', 'Import requirements proposal'),
+      resourceKind: DELIVERY_BASELINE_RESOURCE_KIND,
+      resourceId: result.baselineId,
+      parentResourceKind: DELIVERY_PROJECT_RESOURCE_KIND,
+      parentResourceId: result.projectId,
+      tenantId: scope.tenantId,
+      organizationId: scope.organizationId,
+      snapshotAfter: {
+        id: result.baselineId,
+        projectId: result.projectId,
+        version: result.version,
+        contentHash: result.contentHash,
+        source: 'requirements_proposal',
+        manifestId: result.manifestId,
+        manifestHash: result.manifestHash,
+        prunedAcIds: result.prunedAcIds,
+      },
+    }
+  },
+}
+
 registerCommand(createBaselineCommand)
+registerCommand(importRequirementsCommand)

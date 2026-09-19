@@ -9,6 +9,7 @@ import {
   type DeliveryErrorCode,
   type DeliveryErrorDetail,
   type DeliveryErrorResult,
+  type ImportedManifest,
 } from './contracts'
 import { hashCanonical } from './hash'
 import type { TargetProfile } from './targetProfiles'
@@ -36,7 +37,10 @@ export type BaselineDraftInput = {
   comments?: readonly BaselineDraftComment[]
 }
 
-export type BaselineBuildExtras = { importedManifestHashes?: readonly string[] }
+export type BaselineBuildExtras = {
+  importedManifestHashes?: readonly string[]
+  importedManifests?: readonly ImportedManifest[]
+}
 
 export type BaselineBuildResult =
   | { ok: true; content: BaselineContentV1; contentHash: string; openCommentIds: string[] }
@@ -129,6 +133,7 @@ export function buildBaselineContent(draft: BaselineDraftInput, extras: Baseline
         resolution: comment.resolution,
       })),
     importedManifestHashes: [...(extras.importedManifestHashes ?? [])],
+    ...(extras.importedManifests?.length ? { importedManifests: extras.importedManifests.map((entry) => ({ ...entry })) } : {}),
   }
   const parsed = baselineContentV1Schema.safeParse(candidate)
   if (!parsed.success) return { ok: false, ...deliveryErrorFromZod(parsed.error) }

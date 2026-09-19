@@ -26,7 +26,9 @@ import { DeliveryBaseline, DeliveryProject } from '../../data/entities'
 import { baselineContentV1Schema } from '../../lib/contracts'
 import { MAX_BASELINE_ATTACHMENT_BYTES } from '../../lib/designReview'
 import { hashCanonical } from '../../lib/hash'
-import type { BaselineCommandResult } from '../baselines'
+import { hashProposalManifest } from '../../lib/proposals'
+import type { RequirementsProposalV1 } from '../../lib/contracts'
+import type { BaselineCommandResult, BaselineImportCommandResult } from '../baselines'
 import {
   catchHttpError,
   detailCodes,
@@ -37,7 +39,9 @@ import {
   getHandler,
   makeDraft,
   makeHarness,
+  makeBaseline,
   makeProject,
+  makeRequirementsProposal,
   matches,
   PROJECT_ID,
   rowsFor,
@@ -142,12 +146,16 @@ describe('delivery_os.baselines.create', () => {
 
   it('recovers a unique violation by returning the winning baseline', async () => {
     const { ctx, em } = makeHarness(store, { headers: currentHeaders })
+    const winnerId = '7e7e7e7e-7777-4777-8777-777777777777'
+    em.persist.mockImplementation(() => undefined)
     em.transactional.mockImplementationOnce(async (work: (tx: typeof em) => Promise<unknown>) => {
       await work(em)
+      const attempted = em.create.mock.results[0].value as Row
+      store.baselines.push({ ...attempted, id: winnerId } as unknown as DeliveryBaseline)
       throw Object.assign(new Error('duplicate key value'), { code: '23505', constraint: 'delivery_baselines_project_hash_uq' })
     })
     const result = await create.execute(input, ctx)
-    expect(result).toMatchObject({ duplicate: true, version: 1 })
+    expect(result).toMatchObject({ baselineId: winnerId, duplicate: true, version: 1 })
   })
 
   it('rethrows a unique violation when no baseline carries the hash', async () => {
@@ -367,7 +375,7 @@ describe('delivery_os.baselines.create', () => {
     expect(store.baselines).toHaveLength(0)
   })
 
-  it('rejects the proposal source until OSS-03 and an unknown source', async () => {
+  it('rejects the proposal source on the manual command and an unknown source', async () => {
     const unknown = await catchHttpError(() =>
       create.execute({ projectId: PROJECT_ID, source: 'figma' }, makeHarness(store, { headers: currentHeaders }).ctx),
     )
@@ -387,5 +395,232 @@ describe('delivery_os.baselines.create', () => {
     expect(commandRegistry.get('delivery_os.baselines.update')).toBeFalsy()
     expect(commandRegistry.get('delivery_os.baselines.delete')).toBeFalsy()
     expect(DeliveryBaseline.name).toBe('DeliveryBaseline')
+  })
+})
+
+describe('delivery_os.baselines.import_requirements', () => {
+  const importRequirements = getHandler<BaselineImportCommandResult>('delivery_os.baselines.import_requirements')
+  const staleHeaders = { [OPTIMISTIC_LOCK_HEADER_NAME]: STALE_UPDATED_AT }
+
+  function importInput(manifestOverrides: Row = {}): Row {
+    return { projectId: PROJECT_ID, source: 'requirements_proposal', manifest: makeRequirementsProposal(manifestOverrides) }
+  }
+
+  it('merges the proposal into the draft and freezes the next version with the manual schema and hash', async () => {
+    const manual = await create.execute(input, makeHarness(store, { headers: currentHeaders }).ctx)
+    const { ctx, em } = makeHarness(store, { headers: currentHeaders })
+    const manifest = makeRequirementsProposal()
+    const result = await importRequirements.execute({ ...importInput(), manifest }, ctx)
+
+    const manifestHash = hashProposalManifest(manifest as unknown as RequirementsProposalV1)
+    expect(result).toMatchObject({ version: 2, duplicate: false, manifestId: manifest.manifestId, manifestHash })
+    expect(store.baselines).toHaveLength(2)
+    const [manualRow, importedRow] = store.baselines
+    expect(manualRow.id).toBe(manual.baselineId)
+    for (const row of [manualRow, importedRow]) {
+      expect(baselineContentV1Schema.safeParse(row.content).success).toBe(true)
+      expect(row.contentHash).toBe(hashCanonical(row.content))
+    }
+    expect(Object.keys(importedRow.content).filter((key) => key !== 'importedManifests')).toEqual(Object.keys(manualRow.content))
+    expect(manualRow.content).not.toHaveProperty('importedManifests')
+    expect(importedRow).toMatchObject({ source: 'requirements_proposal', parentBaselineId: null })
+    expect(importedRow.content).toMatchObject({
+      requirements: manifest.requirements,
+      acceptanceCriteria: manifest.acceptanceCriteria,
+      importedManifestHashes: [manifestHash],
+      importedManifests: [{ manifestId: manifest.manifestId, manifestHash }],
+    })
+    const [project] = store.projects
+    expect(project.draftSpec).toMatchObject({ requirements: manifest.requirements, questions: manifest.questions, risks: manifest.risks })
+    expect(project.updatedAt).not.toBe(UPDATED_AT)
+    expect(result.projectUpdatedAt).toBe(project.updatedAt.toISOString())
+    expect(em.transactional).toHaveBeenCalledTimes(1)
+    const lockedLoads = mockFindOneWithDecryption.mock.calls.filter(
+      ([, entity, , options]) => entity === DeliveryProject && options?.lockMode === LockMode.PESSIMISTIC_WRITE,
+    )
+    expect(lockedLoads.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('runs no query after the first mutation', async () => {
+    const { ctx, em } = makeHarness(store, { headers: currentHeaders })
+    const [project] = store.projects
+    const queryCount = () => mockFindWithDecryption.mock.calls.length + mockFindOneWithDecryption.mock.calls.length
+    let draftSpec = project.draftSpec
+    let queriesAtFirstMutation: number | null = null
+    Object.defineProperty(project, 'draftSpec', {
+      configurable: true,
+      enumerable: true,
+      get: () => draftSpec,
+      set: (next: typeof draftSpec) => {
+        queriesAtFirstMutation ??= queryCount()
+        draftSpec = next
+      },
+    })
+    await importRequirements.execute(importInput(), ctx)
+    expect(queriesAtFirstMutation).not.toBeNull()
+    expect(queryCount()).toBe(queriesAtFirstMutation)
+    expect(em.persist).toHaveBeenCalledTimes(1)
+  })
+
+  it('imports requirements before any design exists but still needs acceptance criteria', async () => {
+    seedProject({ screens: [], attachments: [], comments: [] })
+    const result = await importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders }).ctx)
+    expect(result).toMatchObject({ version: 1, duplicate: false })
+    expect((store.baselines[0].content as { screens: unknown[] }).screens).toEqual([])
+
+    seedProject({ screens: [], attachments: [] })
+    const error = await catchHttpError(() =>
+      importRequirements.execute(importInput({ acceptanceCriteria: [] }), makeHarness(store, { headers: currentHeaders }).ctx),
+    )
+    expectFrozenBody(error, 422, 'missing_acceptance_criteria')
+    expect(store.baselines).toHaveLength(0)
+    expect(store.projects[0].updatedAt).toBe(UPDATED_AT)
+  })
+
+  it('answers duplicate for the same manifest without writing, even with a stale or missing header', async () => {
+    const first = await importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders }).ctx)
+    const draftAfterImport = structuredClone(store.projects[0].draftSpec)
+    const updatedAtAfterImport = store.projects[0].updatedAt
+    for (const headers of [currentHeaders, staleHeaders, undefined]) {
+      const replay = makeHarness(store, { headers })
+      const result = await importRequirements.execute(importInput(), replay.ctx)
+      expect(result).toMatchObject({ baselineId: first.baselineId, version: 1, duplicate: true, openCommentIds: [] })
+      expect(replay.em.persist).not.toHaveBeenCalled()
+      expect(replay.em.create).not.toHaveBeenCalled()
+      expect(await importRequirements.buildLog?.({ input: importInput(), result, ctx: replay.ctx, snapshots: {} })).toBeNull()
+    }
+    expect(store.baselines).toHaveLength(1)
+    expect(store.projects[0].draftSpec).toEqual(draftAfterImport)
+    expect(store.projects[0].updatedAt).toBe(updatedAtAfterImport)
+  })
+
+  it('still answers duplicate for the first import after the draft moved on', async () => {
+    const first = await importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders }).ctx)
+    store.projects[0].draftSpec = makeDraft()
+    const fresh = { [OPTIMISTIC_LOCK_HEADER_NAME]: store.projects[0].updatedAt.toISOString() }
+    await create.execute(input, makeHarness(store, { headers: fresh }).ctx)
+    const replay = await importRequirements.execute(importInput(), makeHarness(store, { headers: staleHeaders }).ctx)
+    expect(replay).toMatchObject({ baselineId: first.baselineId, version: 1, duplicate: true })
+    expect(store.baselines).toHaveLength(2)
+  })
+
+  it('prunes test mappings of acceptance criteria the proposal dropped and reports them for the audit log', async () => {
+    const manifest = makeRequirementsProposal()
+    const kept = (manifest.acceptanceCriteria as Array<{ id: string }>).filter((criterion) => criterion.id !== 'AC-002')
+    const { ctx } = makeHarness(store, { headers: currentHeaders })
+    const pruningInput = importInput({ acceptanceCriteria: kept })
+    const result = await importRequirements.execute(pruningInput, ctx)
+    expect(result.prunedAcIds).toEqual(['AC-002'])
+    expect(Object.keys((store.baselines[0].content as { acTestMap: Row }).acTestMap)).toEqual(['AC-001'])
+    const log = await importRequirements.buildLog?.({ input: pruningInput, result, ctx, snapshots: {} })
+    expect(log).toMatchObject({
+      resourceId: result.baselineId,
+      parentResourceId: PROJECT_ID,
+      snapshotAfter: { source: 'requirements_proposal', manifestId: manifest.manifestId, prunedAcIds: ['AC-002'] },
+    })
+  })
+
+  it('answers 409 idempotency_conflict for the same manifestId with different content', async () => {
+    await importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders }).ctx)
+    const fresh = { [OPTIMISTIC_LOCK_HEADER_NAME]: store.projects[0].updatedAt.toISOString() }
+    const changed = importInput({ risks: [] })
+    const error = await catchHttpError(() => importRequirements.execute(changed, makeHarness(store, { headers: fresh }).ctx))
+    expectFrozenBody(error, 409, 'idempotency_conflict')
+    expect(store.baselines).toHaveLength(1)
+  })
+
+  it('creates version n+1 next to an approved baseline and leaves it and the active pointer untouched', async () => {
+    const approved = makeBaseline()
+    const before = structuredClone(approved)
+    store.baselines.push(approved)
+    store.projects[0].activeBaselineId = approved.id
+    const result = await importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders }).ctx)
+    expect(result).toMatchObject({ version: 2, duplicate: false })
+    expect(store.baselines[0]).toEqual(before)
+    expect(store.projects[0].activeBaselineId).toBe(approved.id)
+  })
+
+  it('rejects an unknown schema version and a foreign project before looking at the lock', async () => {
+    const { ctx, em } = makeHarness(store)
+    const unknown = await catchHttpError(() =>
+      importRequirements.execute(importInput({ schemaVersion: 'delivery.requirements-proposal/v2' }), ctx),
+    )
+    expectFrozenBody(unknown, 422, 'unsupported_schema_version')
+    const planDocument = await catchHttpError(() =>
+      importRequirements.execute(importInput({ schemaVersion: 'delivery.plan-proposal/v1' }), ctx),
+    )
+    expectFrozenBody(planDocument, 422, 'unsupported_schema_version')
+    const foreign = await catchHttpError(() =>
+      importRequirements.execute(importInput({ projectId: '00000000-0000-4000-8000-000000000000' }), ctx),
+    )
+    expectFrozenBody(foreign, 422, 'foreign_reference')
+    expect(detailCodes(foreign)).toEqual(['foreign_project'])
+    const duplicateIds = await catchHttpError(() =>
+      importRequirements.execute(importInput({ requirements: [{ id: 'REQ-1', title: 'One' }, { id: 'REQ-1', title: 'Again' }] }), ctx),
+    )
+    expectFrozenBody(duplicateIds, 422, 'duplicate_stable_id')
+    expect(em.transactional).not.toHaveBeenCalled()
+    expect(store.baselines).toHaveLength(0)
+  })
+
+  it('requires the project version for a new manifest and answers the platform 409 for a stale one', async () => {
+    const missing = await catchHttpError(() => importRequirements.execute(importInput(), makeHarness(store).ctx))
+    expectFrozenBody(missing, 428, 'optimistic_lock_required')
+
+    const previous = process.env.OM_OPTIMISTIC_LOCK
+    process.env.OM_OPTIMISTIC_LOCK = 'off'
+    try {
+      const stale = await catchHttpError(() => importRequirements.execute(importInput(), makeHarness(store, { headers: staleHeaders }).ctx))
+      expect(stale.status).toBe(409)
+      expect(stale.body.code).toBe('optimistic_lock_conflict')
+    } finally {
+      if (previous === undefined) delete process.env.OM_OPTIMISTIC_LOCK
+      else process.env.OM_OPTIMISTIC_LOCK = previous
+    }
+    expect(store.baselines).toHaveLength(0)
+    expect(store.projects[0].updatedAt).toBe(UPDATED_AT)
+  })
+
+  it('verifies the attachments of a draft that already has screens', async () => {
+    store.attachments = draftAttachmentRows(store.projects[0].draftSpec, FOREIGN_ORG_ID)
+    const error = await catchHttpError(() => importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders }).ctx))
+    expectFrozenBody(error, 422, 'attachment_scope_mismatch')
+    expect(store.baselines).toHaveLength(0)
+  })
+
+  it('recovers a unique violation by returning the baseline another writer committed', async () => {
+    const { ctx, em } = makeHarness(store, { headers: currentHeaders })
+    const winnerId = '7e7e7e7e-7777-4777-8777-777777777777'
+    em.persist.mockImplementation(() => undefined)
+    em.transactional.mockImplementationOnce(async (work: (tx: typeof em) => Promise<unknown>) => {
+      await work(em)
+      const attempted = em.create.mock.results[0].value as Row
+      store.baselines.push({ ...attempted, id: winnerId, createdBy: null } as unknown as DeliveryBaseline)
+      throw Object.assign(new Error('duplicate key value'), { code: '23505', constraint: 'delivery_baselines_project_hash_uq' })
+    })
+    const result = await importRequirements.execute(importInput(), ctx)
+    expect(result).toMatchObject({ baselineId: winnerId, duplicate: true, version: 1, openCommentIds: [] })
+    expect(store.baselines).toHaveLength(1)
+    expect(await importRequirements.buildLog?.({ input: importInput(), result, ctx, snapshots: {} })).toBeNull()
+  })
+
+  it('rethrows a unique violation when no baseline carries the hash', async () => {
+    const { ctx, em } = makeHarness(store, { headers: currentHeaders })
+    em.persist.mockImplementation(() => undefined)
+    em.transactional.mockImplementationOnce(async (work: (tx: typeof em) => Promise<unknown>) => {
+      await work(em)
+      throw Object.assign(new Error('duplicate key value'), { code: '23505' })
+    })
+    await expect(importRequirements.execute(importInput(), ctx)).rejects.toMatchObject({ code: '23505' })
+  })
+
+  it('answers 404 for a project of another organization and rejects the manual source', async () => {
+    const foreign = await catchHttpError(() =>
+      importRequirements.execute(importInput(), makeHarness(store, { headers: currentHeaders, orgId: FOREIGN_ORG_ID }).ctx),
+    )
+    expectFrozenBody(foreign, 404, 'not_found')
+    const manual = await catchHttpError(() => importRequirements.execute(input, makeHarness(store, { headers: currentHeaders }).ctx))
+    expectFrozenBody(manual, 400, 'validation_failed')
+    expect(detailCodes(manual)).toEqual(['unsupported_source'])
   })
 })

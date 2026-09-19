@@ -91,6 +91,7 @@ export const baselineCreateResponseSchema = z.object({
   contentHash: sha256Schema,
   duplicate: z.boolean(),
   openCommentIds: z.array(z.string()),
+  projectUpdatedAt: z.string(),
 })
 
 export const decisionCreateResponseSchema = z.object({

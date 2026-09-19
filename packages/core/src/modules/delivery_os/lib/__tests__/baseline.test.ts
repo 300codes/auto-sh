@@ -82,6 +82,19 @@ describe('buildBaselineContent', () => {
     expect(withImport.ok && withImport.contentHash).not.toBe(buildOrThrow(draft).contentHash)
   })
 
+  it('adds import provenance only when a manifest was imported, so manual hashes never change', () => {
+    const draft = draftFromFixture()
+    const manual = buildOrThrow(draft)
+    expect(manual.content).not.toHaveProperty('importedManifests')
+    expect(buildBaselineContent(draft, { importedManifests: [] })).toMatchObject({ contentHash: manual.contentHash })
+    const entry = { manifestId: 'requirements-001', manifestHash: OTHER_HASH }
+    const imported = buildBaselineContent(draft, { importedManifestHashes: [OTHER_HASH], importedManifests: [entry] })
+    expect(imported.ok && imported.content.importedManifests).toEqual([entry])
+    expect(errorCode(buildBaselineContent(draft, { importedManifests: [{ manifestId: 'has space', manifestHash: OTHER_HASH }] }))).toBe(
+      'validation_failed',
+    )
+  })
+
   it('rejects a draft without acceptance criteria', () => {
     const result = buildBaselineContent({ ...draftFromFixture(), acceptanceCriteria: [], acTestMap: {}, manualChecks: {} })
     expect(errorCode(result)).toBe('missing_acceptance_criteria')

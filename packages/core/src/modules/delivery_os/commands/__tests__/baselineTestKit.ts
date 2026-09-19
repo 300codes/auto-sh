@@ -6,7 +6,7 @@ import { DeliveryBaseline, DeliveryDecision, DeliveryProject } from '../../data/
 import { draftSpecV1Schema } from '../../data/validators'
 import { hashBaseline } from '../../lib/baseline'
 import { DEFAULT_DELIVERY_LIMITS, deliveryErrorBodySchema, type BaselineContentV1 } from '../../lib/contracts'
-import { loadBaselineContentFixture } from '../../lib/fixtures/index'
+import { loadBaselineContentFixture, loadRequirementsProposalFixture } from '../../lib/fixtures/index'
 import { TARGET_PROFILES } from '../../lib/targetProfiles'
 
 export const TENANT_ID = '11111111-1111-4111-8111-111111111111'
@@ -120,6 +120,10 @@ export function makeDraft(overrides: Row = {}): Row {
     attachments: content.attachments,
     ...overrides,
   })
+}
+
+export function makeRequirementsProposal(overrides: Row = {}): Row {
+  return { ...loadRequirementsProposalFixture(), projectId: PROJECT_ID, ...overrides }
 }
 
 export function makeProject(overrides: Partial<DeliveryProject> = {}): DeliveryProject {

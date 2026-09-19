@@ -11,6 +11,7 @@ import { hashBaseline } from '../baseline'
 import {
   MAX_PLAN_SUMMARY_LENGTH,
   summarizePlan,
+  parseRequirementsProposal,
   validatePlanProposal,
   validateRequirementsProposal,
   type PlanProposalContext,
@@ -479,5 +480,22 @@ describe('validateRequirementsProposal', () => {
     expect(reordered.manifestHash).toBe(first.manifestHash)
     expect(changed.manifestHash).not.toBe(first.manifestHash)
     expect(first.manifestId).toBe(proposal.manifestId)
+  })
+})
+
+describe('parseRequirementsProposal', () => {
+  it('returns the manifest identity without a draft and matches the full validator', () => {
+    const manifest = loadRequirementsProposalFixture()
+    const identity = parseRequirementsProposal(manifest, manifest.projectId)
+    const full = validateRequirementsProposal(manifest, { projectId: manifest.projectId, draftSpec: draftSpecV1Schema.parse({}) })
+    expect(identity.ok && full.ok && identity.manifestHash === full.manifestHash && identity.manifestId === manifest.manifestId).toBe(true)
+    const reordered = Object.fromEntries(Object.entries(manifest).reverse())
+    expect(parseRequirementsProposal(reordered, manifest.projectId)).toMatchObject({ manifestHash: identity.ok && identity.manifestHash })
+  })
+
+  it('rejects an unknown version and a foreign project', () => {
+    const manifest = loadRequirementsProposalFixture()
+    expectFailure(parseRequirementsProposal({ ...manifest, schemaVersion: 'delivery.requirements-proposal/v2' }, manifest.projectId), 'unsupported_schema_version')
+    expectFailure(parseRequirementsProposal(manifest, FOREIGN_ID), 'foreign_reference')
   })
 })

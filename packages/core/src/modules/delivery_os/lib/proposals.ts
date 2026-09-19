@@ -45,6 +45,13 @@ export type RequirementsProposalContext<TDraft extends RequirementsDraftSections
   draftSpec: TDraft
 }
 
+export type RequirementsProposalIdentity = {
+  ok: true
+  manifest: RequirementsProposalV1
+  manifestId: string
+  manifestHash: string
+}
+
 export type RequirementsProposalResult<TDraft extends RequirementsDraftSections> =
   | {
       ok: true
@@ -155,26 +162,33 @@ function pickKnown<TValue>(record: Record<string, TValue>, knownKeys: ReadonlySe
   return Object.fromEntries(Object.entries(record).filter(([key]) => knownKeys.has(key)))
 }
 
-export function validateRequirementsProposal<TDraft extends RequirementsDraftSections>(
-  manifest: unknown,
-  context: RequirementsProposalContext<TDraft>,
-): RequirementsProposalResult<TDraft> {
+export function parseRequirementsProposal(manifest: unknown, projectId: string): RequirementsProposalIdentity | ProposalFailure {
   const parsed = parseVersioned(requirementsProposalSchemas, manifest)
   if (!parsed.ok) return parsed
   const proposal = parsed.data
-  if (proposal.projectId !== context.projectId) {
+  if (proposal.projectId !== projectId) {
     return failure('foreign_reference', 'Proposal belongs to another project', [
       { path: 'projectId', code: 'foreign_project', message: 'The manifest projectId is not this project' },
     ])
   }
+  const manifestHash = tryHash(() => hashProposalManifest(proposal))
+  if (manifestHash === null) return notCanonical('manifest')
+  return { ok: true, manifest: proposal, manifestId: proposal.manifestId, manifestHash }
+}
+
+export function validateRequirementsProposal<TDraft extends RequirementsDraftSections>(
+  manifest: unknown,
+  context: RequirementsProposalContext<TDraft>,
+): RequirementsProposalResult<TDraft> {
+  const identity = parseRequirementsProposal(manifest, context.projectId)
+  if (!identity.ok) return identity
+  const proposal = identity.manifest
   const draft = tryClone(context.draftSpec)
   if (draft === null) return notCanonical('draftSpec')
   const proposedAcIds = new Set(proposal.acceptanceCriteria.map((criterion) => criterion.id))
   const prunedAcIds = unique(
     [...Object.keys(draft.acTestMap), ...Object.keys(draft.manualChecks)].filter((acId) => !proposedAcIds.has(acId)),
   )
-  const manifestHash = tryHash(() => hashProposalManifest(proposal))
-  if (manifestHash === null) return notCanonical('manifest')
   const draftSpec: TDraft = {
     ...draft,
     requirements: proposal.requirements,
@@ -184,14 +198,7 @@ export function validateRequirementsProposal<TDraft extends RequirementsDraftSec
     acTestMap: pickKnown(draft.acTestMap, proposedAcIds),
     manualChecks: pickKnown(draft.manualChecks, proposedAcIds),
   }
-  return {
-    ok: true,
-    manifest: proposal,
-    manifestId: proposal.manifestId,
-    manifestHash,
-    draftSpec,
-    prunedAcIds,
-  }
+  return { ...identity, draftSpec, prunedAcIds }
 }
 
 function checkPlanCorrelation(proposal: PlanProposalV1, context: PlanProposalContext): DeliveryErrorDetail[] {

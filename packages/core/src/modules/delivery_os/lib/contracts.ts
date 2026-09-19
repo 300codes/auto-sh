@@ -474,6 +474,11 @@ export const resolvedCommentSchema = z.object({
   resolution: z.string().min(1).max(4000),
 })
 
+const manifestIdSchema = z.string().regex(/^[\x21-\x7E]{1,200}$/)
+
+export const importedManifestSchema = z.object({ manifestId: manifestIdSchema, manifestHash: sha256Schema })
+export type ImportedManifest = z.infer<typeof importedManifestSchema>
+
 export const baselineContentV1Schema = z
   .object({
     schemaVersion: z.literal(DELIVERY_SCHEMA_VERSIONS.baselineContent),
@@ -489,6 +494,7 @@ export const baselineContentV1Schema = z
     attachments: z.array(attachmentRefSchema).max(200),
     resolvedComments: z.array(resolvedCommentSchema).max(500),
     importedManifestHashes: z.array(sha256Schema).max(50),
+    importedManifests: z.array(importedManifestSchema).max(50).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.acceptanceCriteria.length === 0) {
@@ -506,8 +512,6 @@ const producedBySchema = z.object({
   tool: z.string().min(1).max(200),
   sessionRef: z.string().min(1).max(500).nullable(),
 })
-
-const manifestIdSchema = z.string().regex(/^[\x21-\x7E]{1,200}$/)
 
 export const proposalQuestionSchema = z.object({
   id: stableIdSchema,
