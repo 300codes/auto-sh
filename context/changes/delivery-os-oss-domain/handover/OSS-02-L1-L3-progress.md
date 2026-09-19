@@ -136,3 +136,31 @@ and routes; the export test with real decisions comes with them.
   commands own that path; archiving a `verified`/`awaiting_review` task is allowed (soft delete, evidence stays).
 - Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 15 suites, 462 tests
   green; `tsc --noEmit` for `@open-mercato/core` clean. No migration, no workspace change.
+
+## Addendum — L4d manual baseline and decisions (T012)
+
+- Commands: `delivery_os.baselines.create` (`commands/baselines.ts`) and `delivery_os.decisions.record`
+  (`commands/decisions.ts`). **Routes must merge the path id into the input**: R7 `{ projectId, ...body }`,
+  R8 `{ baselineId, ...body }`. R7 answers `201` for `duplicate: false` and `200` for `duplicate: true`. R8 must check
+  `delivery_os.baselines.approve` (`manage` is not enough) — the command does not check features.
+- Both commands require the **project** `updatedAt` lock header themselves (`428 optimistic_lock_required`) and force the
+  compare even with `OM_OPTIMISTIC_LOCK=off` (`lockProjectForWrite(..., { force: true })`).
+- **For UI:** after every decision take `projectUpdatedAt` from the response as the next lock header. A concurrent
+  decision answers the platform 409 → `surfaceRecordConflict`. `openCommentIds` lists the comments that were left out of
+  the frozen content. Detail codes to render: `missing_requirements`, `missing_acceptance_criteria`, `missing_render`,
+  `attachment_scope_mismatch` (path `screens.N.attachmentId` / `attachments.N.attachmentId`),
+  `subject_hash_mismatch`, `subject_version_mismatch`, `stored_content_altered`, `decision_kind_not_supported`,
+  `actor_required`, `reason_required`. Audit labels need `delivery_os.audit.baselines.create` and
+  `delivery_os.audit.decisions.record`.
+- A reject of the active baseline clears `activeBaselineId` (no event); ready tasks of that baseline then fail the
+  ready gate. `delivery_os.baseline.approved` fires only when a baseline becomes active — safe as a workflow trigger.
+- New shared helpers: `requireLockHeader`, `requireActorUserId`, `findScopedBaseline`, `requireScopedBaseline`,
+  `DELIVERY_BASELINE_RESOURCE_KIND`, `DELIVERY_DECISION_RESOURCE_KIND`. Exported checks: `checkDraftFreezable`,
+  `checkDecisionSubject`.
+- Limitation: attachments are checked for existence in the same tenant/organization only; hash/size/type verification
+  of the bytes is OSS-03. No route exists yet, so the commands were verified by unit tests, not over HTTP.
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 17 suites, 496 tests
+  green; `tsc --noEmit` for `@open-mercato/core` clean. No migration, no workspace change.
+- A lock header that is not a timestamp answers `400 validation_failed`/`optimistic_lock_invalid`. An older baseline is
+  never promoted over a newer active one. **OSS-03:** every baseline writer must take `lockProjectForWrite` so version
+  numbers cannot collide.

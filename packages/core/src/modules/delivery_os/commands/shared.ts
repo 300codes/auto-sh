@@ -7,18 +7,23 @@ import { CrudHttpError, isCrudHttpError } from '@open-mercato/shared/lib/crud/er
 import {
   enforceCommandOptimisticLockWithGuards,
   enforceRecordGoneIsConflict,
+  readOptimisticLockExpected,
 } from '@open-mercato/shared/lib/crud/optimistic-lock-command'
+import { normalizeIsoToken } from '@open-mercato/shared/lib/crud/optimistic-lock'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
-import { DeliveryProject, DeliveryTask } from '../data/entities'
+import { DeliveryBaseline, DeliveryProject, DeliveryTask } from '../data/entities'
 import {
   buildDeliveryError,
   deliveryErrorFromZod,
   type DeliveryCheckResult,
   type DeliveryErrorResult,
+  uuidSchema,
 } from '../lib/contracts'
 
 export const DELIVERY_PROJECT_RESOURCE_KIND = 'delivery_os.project'
 export const DELIVERY_TASK_RESOURCE_KIND = 'delivery_os.task'
+export const DELIVERY_BASELINE_RESOURCE_KIND = 'delivery_os.baseline'
+export const DELIVERY_DECISION_RESOURCE_KIND = 'delivery_os.decision'
 
 export type DeliveryScope = {
   tenantId: string
@@ -26,6 +31,8 @@ export type DeliveryScope = {
 }
 
 type ScopedLoadOptions = { lock?: boolean }
+
+type ProjectWriteLockOptions = { force?: boolean }
 
 export function deliveryHttpError(failure: DeliveryErrorResult): CrudHttpError {
   const httpError = new CrudHttpError(failure.status, failure.body)
@@ -63,6 +70,32 @@ export function resolveDeliveryScope(ctx: CommandRuntimeContext): DeliveryScope 
     throw error
   }
   return { tenantId, organizationId }
+}
+
+export function requireLockHeader(ctx: CommandRuntimeContext): string {
+  const expected = readOptimisticLockExpected(ctx.request ?? null)
+  if (!expected) {
+    throw deliveryHttpError(
+      buildDeliveryError('optimistic_lock_required', 'The project version header is required', [
+        { path: 'headers', code: 'optimistic_lock_required' },
+      ]),
+    )
+  }
+  const normalized = normalizeIsoToken(expected)
+  if (normalized) return normalized
+  throw deliveryHttpError(
+    buildDeliveryError('validation_failed', 'The project version header is not a timestamp', [
+      { path: 'headers', code: 'optimistic_lock_invalid' },
+    ]),
+  )
+}
+
+export function requireActorUserId(ctx: CommandRuntimeContext): string {
+  const parsed = uuidSchema.safeParse(ctx.auth?.sub)
+  if (parsed.success) return parsed.data
+  throw deliveryHttpError(
+    buildDeliveryError('forbidden', 'A signed-in user is required', [{ path: 'actorUserId', code: 'actor_required' }]),
+  )
 }
 
 export function resolveDeliveryEm(ctx: CommandRuntimeContext): EntityManager {
@@ -120,6 +153,30 @@ export async function requireScopedTask(
   return task
 }
 
+export async function findScopedBaseline(
+  em: EntityManager,
+  id: string,
+  scope: DeliveryScope,
+): Promise<DeliveryBaseline | null> {
+  return findOneWithDecryption(
+    em,
+    DeliveryBaseline,
+    { id, tenantId: scope.tenantId, organizationId: scope.organizationId },
+    undefined,
+    scope,
+  )
+}
+
+export async function requireScopedBaseline(
+  em: EntityManager,
+  id: string,
+  scope: DeliveryScope,
+): Promise<DeliveryBaseline> {
+  const baseline = await findScopedBaseline(em, id, scope)
+  if (!baseline) throw notFoundError('baselineId')
+  return baseline
+}
+
 export function lockScopedProject(tx: EntityManager, id: string, scope: DeliveryScope): Promise<DeliveryProject> {
   return requireScopedProject(tx, id, scope, { lock: true })
 }
@@ -133,13 +190,16 @@ export async function lockProjectForWrite(
   ctx: CommandRuntimeContext,
   id: string,
   scope: DeliveryScope,
+  options: ProjectWriteLockOptions = {},
 ): Promise<DeliveryProject> {
+  const envValue = options.force ? 'all' : undefined
   const project = await findScopedProject(tx, id, scope, { lock: true })
   if (!project) {
     enforceRecordGoneIsConflict({
       resourceKind: DELIVERY_PROJECT_RESOURCE_KIND,
       resourceId: id,
       request: ctx.request ?? null,
+      envValue,
     })
     throw notFoundError('projectId')
   }
@@ -148,6 +208,7 @@ export async function lockProjectForWrite(
     resourceId: project.id,
     current: project.updatedAt,
     request: ctx.request ?? null,
+    envValue,
   })
   return project
 }
