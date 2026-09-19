@@ -326,3 +326,26 @@ no error code, path, schema version, event, feature or migration changed.
   evidence toward 4.1 (duplicate does not double evidence). Still OSS-04: claim, cancel, reconcile, mark_delivery,
   closing the attempt, the pass-through result checks.
 
+
+## Addendum — L6 in-process manual flow (T017)
+
+- New suite `packages/core/src/modules/delivery_os/api/__tests__/manualFlow.route.test.ts` drives the OSS-only path
+  through the real route handlers and registered commands, with no seeded approved baseline: R2 create project → R3
+  draft with screen attachments → R7 manual baseline → R8 requirements + design decisions bound to `contentHash` and
+  `version` → R10 manual task → R12 ready → R14 reserve (`201`, then `200` same attempt) → R15 package (zero EM writes)
+  → R16 result from `buildResultManifest(taskPackage)` (`201`, then `200 duplicate:true`, one evidence row) → R5 detail
+  (`in_progress`, progress `0 / <baseline AC count>`). Every call sends the version the previous response returned
+  (project `updatedAt` read from R5 before R7/R8).
+- Negative legs: with only the requirements decision, ready answers `422 baseline_not_approved` with details
+  `[baseline_not_active, design_decision_missing]`; with no decision, `[baseline_not_active,
+  requirements_decision_missing, design_decision_missing]`. Reserve then answers `409 task_not_ready`, so no attempt is
+  appended (task stays `draft`, `attemptNumber 0`, empty register, no `em.persist`, no `baseline.approved` event) and
+  therefore there is nothing to export; a package GET for any attempt id answers `404 attempt_not_found`. After both
+  decisions a draft task still cannot be reserved (`409 task_not_ready`). The reserve-side `422 baseline_not_active`
+  defence for a ready task on a non-active baseline stays covered by `commands/__tests__/attempts.test.ts`.
+- Test-kit fix: `api/__tests__/routeTestKit.ts` `em.create` now applies the entity class defaults (e.g.
+  `attemptNumber = 0`, `executionAttempts = []`) like MikroORM does; before, rows created by commands lacked them.
+- The OSS/enterprise boundary is guarded by `__tests__/module-registration.test.ts`, which scans every delivery_os file.
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 30 suites / 685 tests
+  green; core typecheck exit 0; eslint clean. Rows: 2.1 (one key reserves one attempt, GET does not mutate), 2.3
+  (manual flow without enterprise, real decisions); co-acceptance 2.4 stays open for humans.

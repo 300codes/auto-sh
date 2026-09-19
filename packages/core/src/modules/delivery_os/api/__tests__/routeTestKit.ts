@@ -80,12 +80,26 @@ export const findMock = {
 
 const createdEntities = new WeakMap<object, unknown>()
 
+function entityDefaults(entity: unknown): Row {
+  if (typeof entity !== 'function') return {}
+  const instance = new (entity as new () => Row)()
+  return Object.fromEntries(Object.entries(instance).filter(([, value]) => value !== undefined))
+}
+
 export const em = {
   fork: () => em,
   transactional: jest.fn(async (work: (tx: unknown) => Promise<unknown>) => work(em)),
   create: (entity: unknown, data: Row) => {
     const now = new Date()
-    const row: Row = { id: randomUUID(), createdAt: now, updatedAt: now, decidedAt: now, deletedAt: null, ...data }
+    const row: Row = {
+      id: randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      decidedAt: now,
+      deletedAt: null,
+      ...entityDefaults(entity),
+      ...data,
+    }
     createdEntities.set(row, entity)
     return row
   },
