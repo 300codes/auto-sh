@@ -82,11 +82,32 @@ function rowsFor(entity: unknown): Row[] {
   throw new Error('[internal] unexpected entity in route test store')
 }
 
+/** Only the stage history entities honour `orderBy`; the v1 suites rely on insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision])
+
+function sortKey(value: unknown): number | string {
+  if (value instanceof Date) return value.getTime()
+  return typeof value === 'number' ? value : String(value ?? '')
+}
+
+function sortRows(rows: Row[], orderBy: Record<string, 'asc' | 'desc'>): Row[] {
+  return [...rows].sort((left, right) => {
+    for (const [key, direction] of Object.entries(orderBy)) {
+      const a = sortKey(left[key])
+      const b = sortKey(right[key])
+      if (a === b) continue
+      return (a < b ? -1 : 1) * (direction === 'desc' ? -1 : 1)
+    }
+    return 0
+  })
+}
+
 export const findMock = {
   findOneWithDecryption: async (_em: unknown, entity: unknown, where: Row) =>
     rowsFor(entity).find((row) => matches(row, where)) ?? null,
-  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number }) => {
-    const rows = rowsFor(entity).filter((row) => matches(row, where))
+  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number; orderBy?: Record<string, 'asc' | 'desc'> }) => {
+    const filtered = rowsFor(entity).filter((row) => matches(row, where))
+    const rows = options?.orderBy && ORDERED_ENTITIES.has(entity) ? sortRows(filtered, options.orderBy) : filtered
     const offset = options?.offset ?? 0
     return rows.slice(offset, options?.limit === undefined ? undefined : offset + options.limit)
   }),
@@ -127,6 +148,7 @@ export const em = {
   nativeInsert: jest.fn(async () => undefined),
   nativeUpdate: jest.fn(async () => 0),
   findOne: async () => null,
+  count: async (entity: unknown, where: Row) => rowsFor(entity).filter((row) => matches(row, where)).length,
 }
 
 export const EM_WRITE_METHODS = ['transactional', 'persist', 'flush', 'nativeInsert', 'nativeUpdate'] as const

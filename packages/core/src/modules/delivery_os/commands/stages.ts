@@ -17,6 +17,7 @@ import {
 import {
   buildDeliveryError,
   buildDeliveryFlowError,
+  flowStageIdSchema,
   stageArtifactCreateResponseSchema,
   stageDecisionResponseSchema,
   uuidSchema,
@@ -78,7 +79,7 @@ type FeatureGrantReader = {
 
 const logger = createLogger('delivery_os')
 
-function readPinnedSnapshot(project: DeliveryProject): PinnedSnapshot {
+function readPinnedSnapshot(project: Pick<DeliveryProject, 'flowTemplateSnapshot' | 'flowTemplateHash'>): PinnedSnapshot {
   if (project.flowTemplateSnapshot && project.flowTemplateHash) {
     return { template: project.flowTemplateSnapshot, hash: project.flowTemplateHash }
   }
@@ -94,6 +95,25 @@ function requireTemplateStage(template: FlowTemplateV1, stageId: FlowStageId): F
   if (templateStage) return templateStage
   throw deliveryFlowHttpError(
     buildDeliveryFlowError('stage_unknown', 'Stage is not part of the pinned template', [{ path: 'stageId', code: 'stage_unknown', message: stageId }]),
+  )
+}
+
+/**
+ * Route-level check of the path `stageId` (F7/F8/F9) with the same errors as the commands: `422 flow_not_pinned` for an
+ * unpinned project, `422 stage_unknown` for a value that is not an approval stage of the pinned snapshot.
+ */
+export function requirePinnedTemplateStage(
+  project: Pick<DeliveryProject, 'flowTemplateSnapshot' | 'flowTemplateHash'>,
+  rawStageId: string,
+): FlowStageId {
+  const { template } = readPinnedSnapshot(project)
+  const parsed = flowStageIdSchema.safeParse(rawStageId)
+  const stages = Array.isArray(template.stages) ? template.stages : []
+  if (parsed.success && stages.some((stage) => stage.kind === parsed.data)) return parsed.data
+  throw deliveryFlowHttpError(
+    buildDeliveryFlowError('stage_unknown', 'Stage is not part of the pinned template', [
+      { path: 'stageId', code: 'stage_unknown', message: rawStageId.slice(0, 100) },
+    ]),
   )
 }
 
