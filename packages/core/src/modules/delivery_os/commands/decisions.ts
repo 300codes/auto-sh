@@ -29,6 +29,7 @@ import {
 import { isVerifiedDeploymentPayload } from '../lib/deliveryReport'
 import { hashCanonical } from '../lib/hash'
 import type { DeliveryOsReportQueries } from './reportQueries'
+import { checkProjectFlowGateV1 } from './flowGate'
 import { findProjectBaseline, requireTaskProfile } from './tasks'
 import {
   assertDeliveryCheck,
@@ -188,6 +189,7 @@ async function recordDeployDecision(rawInput: unknown, ctx: CommandContext): Pro
           ),
         )
       }
+      assertDeliveryCheck(await checkProjectFlowGateV1(tx, project, scope))
     }
     const existing = await findWithDecryption(
       tx,

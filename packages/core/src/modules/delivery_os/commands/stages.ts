@@ -3,7 +3,7 @@ import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { isUniqueViolation } from '@open-mercato/shared/lib/crud/errors'
 import { enforceCommandOptimisticLockWithGuards } from '@open-mercato/shared/lib/crud/optimistic-lock-command'
-import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
+import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
@@ -30,7 +30,7 @@ import {
   type StageDecisionResponse,
 } from '../lib/contracts'
 import { collectAttachmentReferences, type AttachmentReference } from '../lib/designReview'
-import { type StageArtifactRecord, type StageDecisionRecord } from '../lib/flowRules'
+import { type StageDecisionRecord } from '../lib/flowRules'
 import { planStageArtifact, type AcReference, type StageArtifactPlan } from '../lib/stageArtifacts'
 import {
   hashStageDecisionRequest,
@@ -44,6 +44,7 @@ import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/tru
 import { emitDeliveryOsEvent } from '../events'
 import { verifyAttachmentReferences } from './attachments'
 import { requireIdempotencyKey } from './attempts'
+import { loadStageArtifactRows, loadStageDecisionRows, toStageArtifactRecord, toStageDecisionRecord } from './flowGate'
 import { checkProjectArchivable } from './projects'
 import {
   assertDeliveryCheck,
@@ -100,47 +101,14 @@ function projectContext(project: DeliveryProject) {
   return { projectId: project.id, targetProfileId: project.targetProfileId, targetProfileVersion: project.targetProfileVersion }
 }
 
-async function loadStageArtifacts(em: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryFlowStageArtifact[]> {
-  const rows = await findWithDecryption(
-    em,
-    DeliveryFlowStageArtifact,
-    { projectId, tenantId: scope.tenantId, organizationId: scope.organizationId },
-    undefined,
-    scope,
-  )
-  return [...rows].sort((left, right) => left.version - right.version)
-}
-
-async function loadStageDecisions(em: EntityManager, projectId: string, scope: DeliveryScope): Promise<DeliveryFlowStageDecision[]> {
-  const rows = await findWithDecryption(
-    em,
-    DeliveryFlowStageDecision,
-    { projectId, tenantId: scope.tenantId, organizationId: scope.organizationId },
-    undefined,
-    scope,
-  )
-  return [...rows].sort((left, right) => left.decidedAt.getTime() - right.decidedAt.getTime() || left.id.localeCompare(right.id))
-}
-
-function toArtifactRecord(row: DeliveryFlowStageArtifact): StageArtifactRecord {
-  return { id: row.id, stageId: row.stageId, version: row.version, contentHash: row.contentHash, dependsOn: row.dependsOn }
-}
-
 function toArtifactRef(row: Pick<DeliveryFlowStageArtifact, 'id' | 'version' | 'contentHash'>): StageArtifactRef {
   return { artifactId: row.id, version: row.version, contentHash: row.contentHash }
 }
 
-/** Only an approval stores the approver columns, so their presence is the exact `clientApproved` flag. */
 function toStoredDecision(row: DeliveryFlowStageDecision): StoredDecision {
   return {
-    id: row.id,
-    stageId: row.stageId,
-    artifactId: row.artifactId,
-    subjectHash: row.subjectHash,
+    ...toStageDecisionRecord(row),
     subjectVersion: row.subjectVersion,
-    verdict: row.verdict,
-    decidedAt: row.decidedAt.toISOString(),
-    clientApproved: row.verdict === 'approved' && typeof row.clientApproverName === 'string' && row.clientApproverName.length > 0,
     idempotencyKey: row.idempotencyKey,
     requestHash: row.requestHash,
   }
@@ -250,13 +218,13 @@ async function planArtifactFor(
 ): Promise<ArtifactPlanning> {
   const snapshot = readPinnedSnapshot(project)
   requireTemplateStage(snapshot.template, parsed.stageId)
-  const artifactRows = await loadStageArtifacts(em, project.id, scope)
-  const decisionRows = await loadStageDecisions(em, project.id, scope)
+  const artifactRows = await loadStageArtifactRows(em, project.id, scope)
+  const decisionRows = await loadStageDecisionRows(em, project.id, scope)
   const plan = planStageArtifact({
     artifact: parsed.artifact,
     project: projectContext(project),
     template: snapshot.template,
-    existing: artifactRows.map(toArtifactRecord),
+    existing: artifactRows.map(toStageArtifactRecord),
     decisions: toDecisionRecords(decisionRows),
     resolvedScopeAcIds: resolveScopeAcIds(parsed.artifact, artifactRows),
     acReferences: collectArtifactAcReferences(parsed.artifact),
@@ -426,8 +394,8 @@ async function planDecisionFor(
   const snapshot = readPinnedSnapshot(project)
   requireTemplateStage(snapshot.template, parsed.stageId)
   const { grantedFeatures } = grants
-  const artifactRows = await loadStageArtifacts(em, project.id, scope)
-  const stored = (await loadStageDecisions(em, project.id, scope)).map(toStoredDecision)
+  const artifactRows = await loadStageArtifactRows(em, project.id, scope)
+  const stored = (await loadStageDecisionRows(em, project.id, scope)).map(toStoredDecision)
   const threads = await loadStageCommentThreads(em, project.id, parsed.stageId, scope)
   const plan = planStageDecision({
     request: parsed.decision,
@@ -435,7 +403,7 @@ async function planDecisionFor(
     stageId: parsed.stageId,
     template: snapshot.template,
     grantedFeatures,
-    artifacts: artifactRows.map(toArtifactRecord),
+    artifacts: artifactRows.map(toStageArtifactRecord),
     projectDecisions: stored,
     threads,
     now: now.toISOString(),
