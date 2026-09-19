@@ -19,6 +19,8 @@
   "delivery_os.audit.projects.delete": "Archive delivery project",
   "delivery_os.audit.projects.update": "Update delivery project",
   "delivery_os.audit.results.accept": "Accept result manifest",
+  "delivery_os.audit.stages.create_artifact": "Record delivery stage artifact",
+  "delivery_os.audit.stages.decide": "Decide delivery stage",
   "delivery_os.audit.tasks.create": "Create delivery task",
   "delivery_os.audit.tasks.delete": "Archive delivery task",
   "delivery_os.audit.tasks.import_plan": "Import plan proposal",

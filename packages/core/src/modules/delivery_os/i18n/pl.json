@@ -19,6 +19,8 @@
   "delivery_os.audit.projects.delete": "Archiwizuj projekt realizacji",
   "delivery_os.audit.projects.update": "Zaktualizuj projekt realizacji",
   "delivery_os.audit.results.accept": "Zaakceptuj manifest wyników",
+  "delivery_os.audit.stages.create_artifact": "Zapisz artefakt etapu dostawy",
+  "delivery_os.audit.stages.decide": "Zdecyduj o etapie dostawy",
   "delivery_os.audit.tasks.create": "Utwórz zadanie realizacji",
   "delivery_os.audit.tasks.delete": "Archiwizuj zadanie realizacji",
   "delivery_os.audit.tasks.import_plan": "Importuj propozycję planu",

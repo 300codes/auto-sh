@@ -7,6 +7,7 @@ import { useAppEvent } from '@open-mercato/ui/backend/injection/useAppEvent'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
+import { useT } from '@open-mercato/shared/lib/i18n/context'
 
 type AttemptState = {
   attemptId: string | null
@@ -20,6 +21,7 @@ export default function ProjectExecutionActionWidget({
   context,
 }: InjectionWidgetComponentProps<ExecutionWidgetContextV1, undefined>) {
   const { taskId } = context
+  const { t } = useT('delivery_agents')
   const [attempt, setAttempt] = React.useState<AttemptState>(INITIAL_ATTEMPT_STATE)
   const [busy, setBusy] = React.useState(false)
 
@@ -45,7 +47,7 @@ export default function ProjectExecutionActionWidget({
       }
       const data = res.result
       setAttempt({ attemptId: data?.attemptId ?? null, state: data?.state ?? 'reserved', stopConfirmation: null })
-      flash('Execution started', 'success')
+      flash(t('delivery_agents.widget.execute.started'), 'success')
       await context.refresh()
     } finally {
       setBusy(false)
@@ -65,7 +67,7 @@ export default function ProjectExecutionActionWidget({
         return
       }
       setAttempt((prev) => ({ ...prev, stopConfirmation: 'stop_unconfirmed' }))
-      flash('Cancellation requested', 'success')
+      flash(t('delivery_agents.widget.cancel.requested'), 'success')
       await context.refresh()
     } finally {
       setBusy(false)
@@ -91,9 +93,9 @@ export default function ProjectExecutionActionWidget({
           size="sm"
           onClick={handleExecute}
           disabled={busy}
-          aria-label="Execute delivery task via Cezar"
+          aria-label={t('delivery_agents.widget.execute.ariaLabel')}
         >
-          {busy ? 'Starting…' : 'Execute'}
+          {busy ? t('delivery_agents.widget.execute.starting') : t('delivery_agents.widget.execute.label')}
         </Button>
       )}
       {(isRunning || isCancelPending) && (
@@ -103,9 +105,9 @@ export default function ProjectExecutionActionWidget({
           size="sm"
           onClick={handleCancel}
           disabled={isCancelPending || busy}
-          aria-label="Cancel execution attempt"
+          aria-label={t('delivery_agents.widget.cancel.ariaLabel')}
         >
-          {isCancelPending ? 'Cancelling…' : 'Cancel'}
+          {isCancelPending ? t('delivery_agents.widget.cancel.cancelling') : t('delivery_agents.widget.cancel.label')}
         </Button>
       )}
     </div>

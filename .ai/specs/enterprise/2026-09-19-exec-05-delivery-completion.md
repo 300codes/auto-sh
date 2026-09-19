@@ -264,8 +264,22 @@ None — all design decisions are inherited from OSS-04 (merged) and EXEC-04 Faz
 
 | Phase | Status | Date | Notes |
 |-------|--------|------|-------|
-| Phase 1 — i18n | Not Started | — | Unblocks main CI |
-| Phase 2 — QA | Not Started | — | HTTP-layer only, no UI |
-| Phase 3.1 — executor swap | Not Started | — | Env change only |
-| Phase 3.2 — E2E vertical run | Not Started | — | After Phase 1 + 3.1 |
-| Phase 3.3 — cron + monitor | Not Started | — | Parallel with 3.2 |
+| Phase 1.1 — delivery_os i18n (2 keys × 5 locales) | Done | 2026-09-19 | yarn i18n:check-usage exits 0 |
+| Phase 1.2 — delivery_agents widget i18n | Done | 2026-09-19 | en.json created, widget refactored to useT() |
+| Phase 2 — QA (6 specs) | Done | 2026-09-19 | TC-DELIVERY-002/004/006/007/008 + EXEC-006 written |
+| Phase 3.1 — executor swap | Not Started | — | Env-only: DELIVERY_EXECUTOR=cezar; pending staging deploy |
+| Phase 3.2 — E2E vertical run | Not Started | — | After Phase 3.1 |
+| Phase 3.3 — cron worker | Done (pre-existing) | — | pending-delivery-scan.ts already implemented |
+
+### Phase 1 — Detailed Progress
+- [x] Step 1.1: Add `delivery_os.audit.stages.create_artifact` + `delivery_os.audit.stages.decide` to en/de/es/ko/pl.json
+- [x] Step 1.2: Create `packages/enterprise/src/modules/delivery_agents/i18n/en.json` (10 keys)
+- [x] Step 1.2: Refactor `widget.client.tsx` — add `useT('delivery_agents')`, replace 6 hardcoded strings
+
+### Phase 2 — Detailed Progress
+- [x] TC-DELIVERY-002: Baseline input modes (7 cases)
+- [x] TC-DELIVERY-004: Task plan validation and import (9 cases)
+- [x] TC-DELIVERY-006: Evidence recording edge cases (6 cases)
+- [x] TC-DELIVERY-007: Cancel and reconcile ACL + state transitions (5 cases)
+- [x] TC-DELIVERY-008: Evidence discriminator and review gate (6 cases)
+- [x] TC-DELIVERY-EXEC-006: Concurrent reservation (3 cases)
