@@ -90,14 +90,13 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
           ]),
         )
       }
-      if (revision && revision.kind !== profile.revisionKind) {
-        throw invalidRevision('revision_kind_mismatch', `Profile ${profile.id}@${profile.version} requires a ${profile.revisionKind} revision`)
-      }
-
       const baselineId = options.baselineId ?? project.activeBaselineId ?? null
       if (!baselineId) throw notFound('baselineId', 'no_active_baseline')
       const baseline = await findProjectBaseline(em, baselineId, project.id, scope)
       if (!baseline) throw notFound('baselineId', 'not_found')
+      if (revision && revision.kind !== profile.revisionKind) {
+        throw invalidRevision('revision_kind_mismatch', `Profile ${profile.id}@${profile.version} requires a ${profile.revisionKind} revision`)
+      }
       const content = requireVerifiedBaselineContent(baseline)
 
       const where = { projectId: project.id, ...scoped }

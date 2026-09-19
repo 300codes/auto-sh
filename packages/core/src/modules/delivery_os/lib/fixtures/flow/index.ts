@@ -23,32 +23,32 @@ import {
   type StageArtifactV1,
   type StageDecisionRequest,
 } from '../../contracts'
-import intakeJson from './intake.v1.json'
-import scopingProposalJson from './scoping-proposal.v1.json'
-import flowTemplateJson from './flow-template.v1.json'
-import stageArtifactScopeJson from './stage-artifact.scope.v1.json'
-import stageArtifactUxJson from './stage-artifact.ux.v1.json'
-import stageDecisionRequestJson from './stage-decision.request.v1.json'
-import flowStatusJson from './flow-status.v1.json'
-import commentImportJson from './comment-import.v1.json'
-import commentImportResultJson from './comment-import.result.v1.json'
-import staffLinkJson from './staff-link.v1.json'
-import publicationResultJson from './publication-result.v1.json'
-import intakeInvalidStepJson from './negative/intake.invalid-step.v1.json'
-import intakeUnknownSchemaVersionJson from './negative/intake.unknown-schema-version.v1.json'
-import scopingProposalScopeWithoutContentJson from './negative/scoping-proposal.scope-without-content.v1.json'
-import stageArtifactUnknownStageJson from './negative/stage-artifact.unknown-stage.v1.json'
-import stageArtifactDependencyNotUpstreamJson from './negative/stage-artifact.dependency-not-upstream.v1.json'
-import stageArtifactDuplicateDependencyJson from './negative/stage-artifact.duplicate-dependency.v1.json'
-import stageDecisionRejectedWithoutReasonJson from './negative/stage-decision.rejected-without-reason.v1.json'
-import stageDecisionClientApprovalWithoutNameJson from './negative/stage-decision.client-approval-without-name.v1.json'
-import commentImportDuplicateThreadKeyJson from './negative/comment-import.duplicate-thread-key.v1.json'
-import commentImportMissingThreadKeyJson from './negative/comment-import.missing-thread-key.v1.json'
-import commentImportDuplicateCommentKeyJson from './negative/comment-import.duplicate-comment-key.v1.json'
-import flowTemplateDuplicateStageJson from './negative/flow-template.duplicate-stage.v1.json'
-import flowTemplateDependencyCycleJson from './negative/flow-template.dependency-cycle.v1.json'
-import publicationResultVerifiedWithoutEvidenceJson from './negative/publication-result.verified-without-evidence.v1.json'
-import triageDeferredWithoutDeferralJson from './negative/triage.deferred-without-deferral.v1.json'
+import intakeJson from './intake.v1.json' with { type: 'json' }
+import scopingProposalJson from './scoping-proposal.v1.json' with { type: 'json' }
+import flowTemplateJson from './flow-template.v1.json' with { type: 'json' }
+import stageArtifactScopeJson from './stage-artifact.scope.v1.json' with { type: 'json' }
+import stageArtifactUxJson from './stage-artifact.ux.v1.json' with { type: 'json' }
+import stageDecisionRequestJson from './stage-decision.request.v1.json' with { type: 'json' }
+import flowStatusJson from './flow-status.v1.json' with { type: 'json' }
+import commentImportJson from './comment-import.v1.json' with { type: 'json' }
+import commentImportResultJson from './comment-import.result.v1.json' with { type: 'json' }
+import staffLinkJson from './staff-link.v1.json' with { type: 'json' }
+import publicationResultJson from './publication-result.v1.json' with { type: 'json' }
+import intakeInvalidStepJson from './negative/intake.invalid-step.v1.json' with { type: 'json' }
+import intakeUnknownSchemaVersionJson from './negative/intake.unknown-schema-version.v1.json' with { type: 'json' }
+import scopingProposalScopeWithoutContentJson from './negative/scoping-proposal.scope-without-content.v1.json' with { type: 'json' }
+import stageArtifactUnknownStageJson from './negative/stage-artifact.unknown-stage.v1.json' with { type: 'json' }
+import stageArtifactDependencyNotUpstreamJson from './negative/stage-artifact.dependency-not-upstream.v1.json' with { type: 'json' }
+import stageArtifactDuplicateDependencyJson from './negative/stage-artifact.duplicate-dependency.v1.json' with { type: 'json' }
+import stageDecisionRejectedWithoutReasonJson from './negative/stage-decision.rejected-without-reason.v1.json' with { type: 'json' }
+import stageDecisionClientApprovalWithoutNameJson from './negative/stage-decision.client-approval-without-name.v1.json' with { type: 'json' }
+import commentImportDuplicateThreadKeyJson from './negative/comment-import.duplicate-thread-key.v1.json' with { type: 'json' }
+import commentImportMissingThreadKeyJson from './negative/comment-import.missing-thread-key.v1.json' with { type: 'json' }
+import commentImportDuplicateCommentKeyJson from './negative/comment-import.duplicate-comment-key.v1.json' with { type: 'json' }
+import flowTemplateDuplicateStageJson from './negative/flow-template.duplicate-stage.v1.json' with { type: 'json' }
+import flowTemplateDependencyCycleJson from './negative/flow-template.dependency-cycle.v1.json' with { type: 'json' }
+import publicationResultVerifiedWithoutEvidenceJson from './negative/publication-result.verified-without-evidence.v1.json' with { type: 'json' }
+import triageDeferredWithoutDeferralJson from './negative/triage.deferred-without-deferral.v1.json' with { type: 'json' }
 
 export const positiveFlowFixtures = [
   { name: 'intake', schema: intakeV1Schema, document: intakeJson, versioned: true },

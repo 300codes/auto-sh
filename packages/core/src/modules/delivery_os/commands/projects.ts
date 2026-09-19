@@ -16,6 +16,7 @@ import {
 } from '../data/validators'
 import { emitDeliveryOsEvent } from '../events'
 import { isAttemptActive, parseAttemptRegister } from '../lib/attempts'
+import { canonicalize } from '../lib/hash'
 import {
   buildDeliveryError,
   DEFAULT_DELIVERY_LIMITS,
@@ -89,8 +90,16 @@ async function loadProjectSnapshot(ctx: CommandRuntimeContext, id: string): Prom
   return project ? toProjectSnapshot(project) : null
 }
 
+function isSameProjectValue(before: unknown, after: unknown): boolean {
+  try {
+    return canonicalize(before) === canonicalize(after)
+  } catch {
+    return JSON.stringify(before) === JSON.stringify(after)
+  }
+}
+
 function changedProjectKeys(before: ProjectSnapshot, after: ProjectSnapshot): string[] {
-  return PROJECT_CHANGE_KEYS.filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+  return PROJECT_CHANGE_KEYS.filter((key) => !isSameProjectValue(before[key], after[key]))
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

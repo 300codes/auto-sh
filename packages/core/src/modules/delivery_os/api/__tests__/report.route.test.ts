@@ -36,6 +36,7 @@ import {
 
 const OTHER_BASELINE_ID = '5b5b5b5b-5555-4555-8555-555555555555'
 const OTHER_PROJECT_ID = '45454545-4444-4444-8444-444444444444'
+const UNKNOWN_BASELINE_ID = '5c5c5c5c-5555-4555-8555-555555555555'
 const OTHER_REVISION: SourceRevision = { kind: 'git', commitSha: 'a'.repeat(40) }
 
 function getReport(query: Record<string, string> = {}, projectId: string = PROJECT_ID): Promise<Response> {
@@ -152,6 +153,17 @@ describe('GET /api/delivery_os/projects/:id/report', () => {
     const none = await expectFrozenError(await getReport(), 404, 'not_found')
     expect(detailCodesOf(none)).toEqual(['no_active_baseline'])
     expect((await getReport({ baselineId: BASELINE_ID })).status).toBe(200)
+  })
+
+  it('answers 404 for a foreign or unknown baseline before judging a wrong-kind revision', async () => {
+    seedReadyTask()
+    routeState.store.baselines.push(makeBaseline(undefined, { id: OTHER_BASELINE_ID, projectId: OTHER_PROJECT_ID }) as unknown as Row)
+    const snapshot = formatRevisionRef({ kind: 'snapshot', contentHash: 'b'.repeat(64), externalWorkspaceId: 'ws:1' })
+    for (const baselineId of [OTHER_BASELINE_ID, UNKNOWN_BASELINE_ID]) {
+      const body = await expectFrozenError(await getReport({ baselineId, revision: snapshot }), 404, 'not_found')
+      expect(detailCodesOf(body)).toEqual(['not_found'])
+    }
+    expectNoWrites()
   })
 
   it('answers 422 invalid_revision for an unparsable revision and for a snapshot on a git profile', async () => {

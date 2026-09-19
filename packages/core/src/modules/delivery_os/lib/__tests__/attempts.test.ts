@@ -147,6 +147,34 @@ describe('reserveAttempt', () => {
     expect(!result.ok && result.status).toBe(409)
   })
 
+  it('rejects the same key and payload when the baseline hash changed', () => {
+    const result = reserveAttempt([buildAttempt(1, 'reserved')], reserveInput(1, { baselineHash: 'd'.repeat(64) }))
+    expect(!result.ok && result.outcome).toBe('conflict')
+    expect(failureCode(result)).toBe('idempotency_conflict')
+  })
+
+  it('rejects the same key and payload when the baseline id changed', () => {
+    const result = reserveAttempt([buildAttempt(1, 'reserved')], reserveInput(1, { baselineId: ACTOR_ID }))
+    expect(failureCode(result)).toBe('idempotency_conflict')
+  })
+
+  it('rejects the same key and payload when the base revision changed', () => {
+    const otherRevision: SourceRevision = { kind: 'git', commitSha: 'e'.repeat(40) }
+    const result = reserveAttempt([buildAttempt(1, 'reserved')], reserveInput(1, { baseRevision: otherRevision }))
+    expect(failureCode(result)).toBe('idempotency_conflict')
+  })
+
+  it('rejects the same key and payload when the mode changed', () => {
+    const result = reserveAttempt([buildAttempt(1, 'reserved')], reserveInput(1, { mode: 'automatic' }))
+    expect(failureCode(result)).toBe('idempotency_conflict')
+  })
+
+  it('returns the existing attempt when key, payload and scope are all identical', () => {
+    const result = reserveAttempt([buildAttempt(1, 'reserved')], reserveInput(1, { newAttemptId: attemptId(2) }))
+    expect(result.ok && result.outcome).toBe('existing')
+    expect(result.ok && result.attempt.attemptId).toBe(attemptId(1))
+  })
+
   it('keeps the conflict for a reused key after its attempt closed, and rejects a payload that cannot be hashed', () => {
     const result = reserveAttempt([buildAttempt(1, 'closed')], reserveInput(1, { payload: payloadFor(snapshotRevision) }))
     expect(failureCode(result)).toBe('idempotency_conflict')

@@ -402,13 +402,13 @@ export const recordEvidenceSchema = z
   ])
   .superRefine((value, ctx) => {
     if (value.attemptId && !value.taskId) {
-      ctx.addIssue({ code: 'custom', path: ['taskId'], message: 'taskId is required when attemptId is given' })
+      addDeliveryIssue(ctx, 'validation_failed', ['taskId'], 'taskId is required when attemptId is given')
     }
     if (value.kind === 'review' && !value.taskId) {
-      ctx.addIssue({ code: 'custom', path: ['taskId'], message: 'A review must name the task it reviews' })
+      addDeliveryIssue(ctx, 'validation_failed', ['taskId'], 'A review must name the task it reviews')
     }
     if (REVISION_REQUIRED_KINDS.includes(value.kind) && !value.sourceRevision) {
-      ctx.addIssue({ code: 'custom', path: ['sourceRevision'], message: `sourceRevision is required for ${value.kind} evidence` })
+      addDeliveryIssue(ctx, 'validation_failed', ['sourceRevision'], `sourceRevision is required for ${value.kind} evidence`)
     }
     if (value.kind === 'deployment') {
       const { url, environment, buildId } = value.payload

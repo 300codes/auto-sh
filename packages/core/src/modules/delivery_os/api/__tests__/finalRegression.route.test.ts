@@ -287,7 +287,7 @@ describe('6.2 restart with an unknown attempt', () => {
     const archiveTask = await tasksRoute.DELETE(apiRequest('DELETE', `/tasks?id=${flow.taskId}`, { lock: taskVersion(flow.taskId) }))
     await expectFrozenError(archiveTask, 409, 'reconciliation_required')
     const archiveProject = await projectsRoute.DELETE(apiRequest('DELETE', `/projects?id=${flow.projectId}`, { lock: await projectVersion(flow.projectId) }))
-    expect(archiveProject.status).toBe(409)
+    await expectFrozenError(archiveProject, 409, 'reconciliation_required')
 
     expect(executor).toHaveBeenCalledTimes(1)
     expect(attemptsOf(flow.taskId)).toHaveLength(1)

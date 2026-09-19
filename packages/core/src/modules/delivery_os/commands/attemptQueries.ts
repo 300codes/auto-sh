@@ -1,4 +1,4 @@
-import type { EntityManager } from '@mikro-orm/postgresql'
+import type { EntityManager, FilterQuery } from '@mikro-orm/postgresql'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { DeliveryTask, type DeliveryProject } from '../data/entities'
 import { findAttempt, parseAttemptRegister } from '../lib/attempts'
@@ -124,12 +124,19 @@ export function createDeliveryOsAttemptQueries(rootEm: EntityManager): DeliveryO
       const limit = clampPendingLimit(options.limit)
       const em = rootEm.fork()
       const pending: PendingDelivery[] = []
-      for (let offset = 0; ; offset += PENDING_SCAN_PAGE_SIZE) {
-        const tasks = await findWithDecryption(
+      let lastId: string | null = null
+      for (;;) {
+        const where: FilterQuery<DeliveryTask> = {
+          tenantId: scope.tenantId,
+          organizationId: scope.organizationId,
+          attemptNumber: { $gt: 0 },
+          ...(lastId ? { id: { $gt: lastId } } : {}),
+        }
+        const tasks: DeliveryTask[] = await findWithDecryption(
           em,
           DeliveryTask,
-          { tenantId: scope.tenantId, organizationId: scope.organizationId, attemptNumber: { $gt: 0 } },
-          { orderBy: { updatedAt: 'asc', id: 'asc' }, limit: PENDING_SCAN_PAGE_SIZE, offset },
+          where,
+          { orderBy: { id: 'asc' }, limit: PENDING_SCAN_PAGE_SIZE },
           scope,
         )
         for (const task of tasks) {
@@ -148,6 +155,7 @@ export function createDeliveryOsAttemptQueries(rootEm: EntityManager): DeliveryO
           }
         }
         if (tasks.length < PENDING_SCAN_PAGE_SIZE) break
+        lastId = tasks[tasks.length - 1].id
       }
       return pending
     },

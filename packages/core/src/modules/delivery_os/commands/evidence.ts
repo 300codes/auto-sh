@@ -184,7 +184,7 @@ export async function acceptResultInTransaction(
   }
 
   assertDeliveryCheck(
-    canTransition(task.status, 'awaiting_review', { source: 'command', statusReason: task.statusReason ?? null }),
+    canTransition(task.status, 'awaiting_review', { source: 'command', currentStatusReason: task.statusReason ?? null }),
   )
   const artifacts = await verifyResultArtifacts(tx, ctx, evaluation.manifest.artifacts, scope)
   if (!artifacts.ok) throw deliveryHttpError(artifacts)
@@ -702,7 +702,7 @@ type ReviewDecisionInput = {
 function decideReviewTarget(decision: ReviewDecisionInput): TaskTarget | null {
   const { task, input } = decision
   if (input.payload.manualCheckId !== undefined) return null
-  const base = { source: 'command' as const, statusReason: task.statusReason ?? null }
+  const base = { source: 'command' as const, currentStatusReason: task.statusReason ?? null }
   if (input.payload.verdict === 'changes_requested') {
     const correction = { requested: countCorrectionRounds(decision.taskRows), max: decision.project.limits.maxCorrectionRounds }
     const outcome = changesRequestedOutcome(correction)
@@ -749,6 +749,7 @@ async function recordReviewInTransaction(
 ): Promise<RecordOutcome> {
   const attemptId = input.attemptId ?? null
   assertReviewer(input, ctx)
+  const tasks = await lockScopedProjectTasks(tx, project.id, scope)
   const taskRows = await loadTaskEvidence(tx, project, input.taskId, scope)
   const replay = findReviewReplay(taskRows, input, payloadHash)
   if (replay) {
@@ -757,7 +758,6 @@ async function recordReviewInTransaction(
   }
 
   const baseline = await requireEvidenceBaseline(tx, project, input.baselineId, scope)
-  const tasks = await lockScopedProjectTasks(tx, project.id, scope)
   const task = tasks.find((candidate) => candidate.id === input.taskId)
   if (!task) throw deliveryHttpError(foreignTaskError())
   assertTaskPins(task, input)

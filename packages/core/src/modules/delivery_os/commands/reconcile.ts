@@ -82,18 +82,18 @@ async function resolveReleaseTarget(
   scope: DeliveryScope,
 ): Promise<TaskTarget> {
   if (isCorrectionRound(register, attemptId)) {
-    assertDeliveryCheck(canTransition(task.status, 'changes_requested', { source: 'command', statusReason: null }))
+    assertDeliveryCheck(canTransition(task.status, 'changes_requested', { source: 'command', currentStatusReason: null }))
     return { status: 'changes_requested', statusReason: null }
   }
   const readiness = await checkReadyGate(tx, task, project, scope)
   const blockedAncestorIds = findBlockedAncestors(task.id, tasks.map(toLifecycleTask))
   const status: TaskStatus = readiness.ok && blockedAncestorIds.length === 0 ? 'ready' : 'blocked'
-  assertDeliveryCheck(canTransition(task.status, status, { source: 'command', statusReason: null, readiness, blockedAncestorIds }))
+  assertDeliveryCheck(canTransition(task.status, status, { source: 'command', currentStatusReason: null, readiness, blockedAncestorIds }))
   return { status, statusReason: blockedAncestorIds.length > 0 ? 'dependency_blocked' : null }
 }
 
 function resolveBlockTarget(from: TaskStatus): TaskTarget {
-  assertDeliveryCheck(canTransition(from, 'blocked', { source: 'command', statusReason: null }))
+  assertDeliveryCheck(canTransition(from, 'blocked', { source: 'command', currentStatusReason: null }))
   return { status: 'blocked', statusReason: 'reconciliation_required' }
 }
 

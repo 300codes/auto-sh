@@ -167,8 +167,64 @@ describe('deliveryOsAttemptQueries', () => {
     }
     expect(await queries.listPendingDeliveries(SCOPE, { limit: 500 })).toHaveLength(100)
     expect(await queries.listPendingDeliveries(SCOPE, { limit: 3 })).toHaveLength(3)
-    const options = findMock.findWithDecryption.mock.calls.map((call) => call[3])
-    expect(options[0]).toEqual({ orderBy: { updatedAt: 'asc', id: 'asc' }, limit: 200, offset: 0 })
-    expect(options[1]).toMatchObject({ offset: 200 })
+    const calls = findMock.findWithDecryption.mock.calls
+    expect(calls[0][3]).toEqual({ orderBy: { id: 'asc' }, limit: 200 })
+    expect(calls[0][2]).toEqual({ tenantId: TENANT_ID, organizationId: ORG_ID, attemptNumber: { $gt: 0 } })
+    expect(calls[1][3]).toEqual({ orderBy: { id: 'asc' }, limit: 200 })
+    expect(calls[1][2]).toEqual({
+      tenantId: TENANT_ID,
+      organizationId: ORG_ID,
+      attemptNumber: { $gt: 0 },
+      id: { $gt: '7c7c7c7c-7777-4777-8777-7777777700c7' },
+    })
+  })
+
+  it('listPendingDeliveries neither skips nor duplicates a task whose updatedAt changes mid-scan', async () => {
+    const pendingIndexes = [5, 200, 319]
+    const expectedAttemptIds: string[] = []
+    for (let index = 0; index < 320; index += 1) {
+      const suffix = index.toString(16).padStart(4, '0')
+      const attemptId = `3d3d3d3d-3333-4333-8333-33333333${suffix}`
+      if (pendingIndexes.includes(index)) expectedAttemptIds.push(attemptId)
+      seedTask({
+        id: `7c7c7c7c-7777-4777-8777-77777777${suffix}`,
+        executionAttempts: pendingIndexes.includes(index) ? [pendingAttempt(attemptId)] : [],
+      })
+    }
+    const original = findMock.findWithDecryption.getMockImplementation()
+    if (!original) throw new Error('[internal] findWithDecryption mock has no implementation')
+    const movedTask = routeState.store.tasks[5]
+    findMock.findWithDecryption.mockImplementation(async (emArg, entity, where, options) => {
+      const orderBy = Object.entries((options as unknown as { orderBy?: Record<string, 'asc' | 'desc'> } | undefined)?.orderBy ?? {})
+      const rankOf = (value: unknown): number | string =>
+        value instanceof Date ? value.getTime() : typeof value === 'number' ? value : String(value)
+      const compareRows = (left: Row, right: Row): number => {
+        for (const [key, direction] of orderBy) {
+          const leftRank = rankOf(left[key])
+          const rightRank = rankOf(right[key])
+          if (leftRank === rightRank) continue
+          const ordered =
+            typeof leftRank === 'number' && typeof rightRank === 'number'
+              ? Math.sign(leftRank - rightRank)
+              : String(leftRank) < String(rightRank)
+                ? -1
+                : 1
+          return direction === 'desc' ? -ordered : ordered
+        }
+        return 0
+      }
+      routeState.store.tasks.sort(compareRows)
+      const page = await original(emArg, entity, where, options)
+      movedTask.updatedAt = new Date('2026-09-19T12:00:00.000Z')
+      return page
+    })
+    try {
+      const pending = await queries.listPendingDeliveries(SCOPE)
+      expect(pending.map((entry) => entry.attemptId)).toEqual(expectedAttemptIds)
+      expect(new Set(pending.map((entry) => entry.attemptId)).size).toBe(pendingIndexes.length)
+      expect(findMock.findWithDecryption).toHaveBeenCalledTimes(2)
+    } finally {
+      findMock.findWithDecryption.mockImplementation(original)
+    }
   })
 })

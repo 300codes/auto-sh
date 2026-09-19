@@ -57,13 +57,15 @@ Runner: **local** (macOS, Node 24.15, yarn 4; no compose `app` container, so not
 | Suite | Owner | Cause |
 |---|---|---|
 | `core/explicit-sort-comparators` | OSS | Fixed in F1 (`compareCodeUnits`, hashes unchanged); green in 7b |
-| `core/auth/acl-feature-catalog.i18n` | auth i18n | 8 `delivery_os` ACL features lack titles → P1 |
+| `core/auth/acl-feature-catalog.i18n` | auth i18n | **closed in T049** (authorised): 11 `delivery_os` titles added in en/pl/es/de/ko, test green |
 | `core/warranty_claims/quantity` (2 tests) | not delivery_os | machine locale formats `2.5` as `2,5` |
 | `cli/module-facts.bc-guard` | UI stream | `delivery_os.projectExecution` host points to a page that does not exist on this branch → P3 |
-| `create-mercato-app/template-modules-parity` | template owner | `delivery_os` missing from template `modules.ts` → P4 |
+| `create-mercato-app/template-modules-parity` | template owner | **closed in T049** (authorised): one `delivery_os` line via `yarn template:sync:fix`, `node --test` 2/2 |
 | `create-mercato-app/release-upgrade-skill-contract` | release/changelog | changelog upgrade window date, unrelated |
 
 Not run: `open-mercato-docs` (Docusaurus site build, RAM rule), Playwright `yarn test:integration` (QA-owned).
+
+**Polish re-run (T049, `OSS-06-polish.md`):** delivery_os + ACL i18n + decoupling jest **67 suites / 1465 tests PASS**, core typecheck PASS, `yarn i18n:check-sync` PASS, eslint on delivery_os 0 findings, template parity 2/2, live H9 smoke 27/27 on :3100. Remaining red gate steps belong to other owners: `i18n:check-usage` (P2), `module-facts.bc-guard` (P3), `warranty_claims/quantity` and `release-upgrade-skill-contract` (unrelated).
 Migration review on a throw-away DB and the append-only audit: `OSS-06-migration-and-history.md`.
 
 ## 4. Test evidence per master-plan Progress row
@@ -107,16 +109,19 @@ present": the acceptance mark stays with the human.
 - **Workflow side is with EXEC:** OSS exposes `link_workflow`, `mark_delivery`, `listPendingDeliveries` and no workflow engine import.
   There is no `listOpenAttempts` query (request it from OSS if needed).
 - Route tests use an in-memory store: SQL-level rewrites are covered by the static scan and the migration review, not by runtime.
+- **Polish (T049):** the reviewer findings of OSS-01…06 are triaged in `OSS-06-polish.md` (fixed / acceptable / limitation). Kept as v1 limitations because a fix would change a frozen wire format or hash: integer-like key order in canonical JSON, `react-vite@1` roots without config files, double `base_revision_mismatch` detail, R18 `completed` without `results.import`, project-level evidence outside basic traceability, a new dependent of a blocked task staying `draft`; full list in the spec section “Known limitations after the OSS-06 polish”. The built `dist` fixtures still need the build-target patch P5 to load under plain Node ESM.
 - FLOW addendum: only F0 (contracts, schemas, fixtures, `checkFlowGate`) is done. **F1–F4 are not implemented**; fresh estimate in
   `FLOW-F0-contracts.md` (F1 ≈10 h, F2 ≈8 h, F3 ≈4 h, F4 ≈4 h). The v1 routes do not yet call `checkFlowGate`.
 
 ## 7. Consolidated patch requests for other owners
 
-- **P1 auth i18n** — `auth.acl.features.delivery_os.{projects.view,projects.manage,baselines.approve,results.import,attempts.manage,attempts.reconcile,deploy.approve,release.approve}` in `packages/core/src/modules/auth/i18n/{en,pl,es,de,ko}.json`; en values equal the `acl.ts` titles (exact texts in `OSS-06-gate.md`).
+- ~~P1 auth i18n~~ — done in T049 with the owner's authorisation (11 keys, five locales).
 - **P2 UI i18n (`delivery_os/i18n/**`)** — 17 `delivery_os.audit.*` labels (`projects.{create,update,delete}`, `tasks.{create,update,delete,import_plan}`, `baselines.{create,import_requirements}`, `decisions.{record,deploy,release}`, `attempts.{reserve,cancel,reconcile}`, `results.accept`, `evidence.record`; also `attempts.{claim,link_workflow,mark_delivery}` per H21) in all five locales.
 - **UI error codes** — `delivery_os.errors.<code>` for the 54 frozen codes (list in `OSS-02-H9.md`) plus detail codes (`OSS-04-H21.md`), and the R20/R21 keys and blocker/status labels in `OSS-05-H26.md`; unknown codes fall back to `error`.
-- **P3 UI** — page `backend/delivery/projects/[id]/page.tsx` must bind `extensionPoints.hosts.projectExecution`; then re-run `yarn workspace @open-mercato/cli jest src/lib/generators/__tests__/module-facts.bc-guard.test.ts --maxWorkers=2`.
-- **P4 template sync** — do not run `template:sync:fix` blindly; either exclude the `delivery_os` line in `scripts/template-sync.ts` or accept the drift (decision belongs to the maintainers; the template parity test currently fails).
+- **P3 UI** — page `backend/delivery/projects/[id]/page.tsx` must bind `extensionPoints.hosts.projectExecution` (spot `delivery_os.project.execution`, import `DELIVERY_EXECUTION_SPOT_ID` from `lib/contracts.ts`, context contract `delivery_os.project.execution.v1`); then re-run `yarn workspace @open-mercato/cli jest src/lib/generators/__tests__/module-facts.bc-guard.test.ts --maxWorkers=2`.
+- **Enterprise execute route (Marcin)** — build a request-less command context with an issued `trustedExecution` before calling `delivery_os.attempts.reserve`; over HTTP the option is ignored (R14/R16/R18/R19 tests).
+- ~~P4 template sync~~ — done in T049 with the owner's authorisation (only the `delivery_os` registration line changed).
+- **P5 core build (EXEC / maintainers)** — `packages/core/build.mjs`: `target: 'node22'` (or `supported: { 'import-attributes': true }`) so the fixture JSON import attributes reach `dist`; verified locally, details in `OSS-06-polish.md` §4.
 - **Optimistic-lock registration** — add `delivery_os: ['DeliveryProject', 'DeliveryTask']` to `moduleEntities` in `packages/core/src/__tests__/optimistic-lock-editable-entities.test.ts` (verified 114/114 on a temporary copy; baselines/decisions/evidence are append-only).
 - **EXEC bridge call order** — `reserve` (stable idempotency key, `trustedExecution`) → `startWorkflow` → `link_workflow` → `claim` with a worker ref stable across restarts (run the CLI only if `changed === true`) → executor reads `buildTaskPackage` → `results.accept` → on `evidence.recorded` with `completionDelivery:'pending'` signal then `mark_delivery`; on start `listPendingDeliveries`; never re-run the CLI for an unknown attempt, reconcile `unknown` instead (full text in `OSS-04-H21.md`). EXEC records preview as `deployment` evidence and never calls R20/R21.
 - **QA TC-DELIVERY candidates** — 003/004 (baseline and import smoke, `OSS-03-H14.md`), 006 (parallel replay on a real DB), 007 (cancel, foreign baseline, unknown after restart), 009 (publication chain and revision-change voiding, `OSS-05-H26.md`); for FLOW, the F0 negative fixtures list the F1/F2 integration cases (`FLOW-F0-contracts.md`).

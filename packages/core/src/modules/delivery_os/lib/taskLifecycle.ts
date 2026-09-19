@@ -42,7 +42,7 @@ export type VerificationContext = {
 
 export type TransitionContext = {
   source: 'status_update' | 'command'
-  statusReason?: string | null
+  currentStatusReason?: string | null
   readiness?: DeliveryCheckResult
   correction?: CorrectionBudget
   verification?: VerificationContext
@@ -140,14 +140,14 @@ export function canTransition(from: TaskStatus, to: TaskStatus, context: Transit
   if (!TASK_TRANSITIONS[from].includes(to)) {
     return invalidTransition(from, to, 'not_in_lifecycle', `${from} -> ${to} is not in the lifecycle table`)
   }
-  if (context.statusReason === 'reconciliation_required' && RECONCILIATION_LOCKED_TARGETS.includes(to)) {
+  if (context.currentStatusReason === 'reconciliation_required' && RECONCILIATION_LOCKED_TARGETS.includes(to)) {
     return reject('reconciliation_required', 'Reconcile the unknown attempt before continuing', {
       path: 'status',
       code: 'reconciliation_required',
       message: 'The external run state is unknown',
     })
   }
-  if (context.statusReason === 'correction_limit_reached' && to !== 'cancelled' && to !== 'blocked') {
+  if (context.currentStatusReason === 'correction_limit_reached' && to !== 'cancelled') {
     return reject('correction_limit_reached', 'Correction round limit reached; escalate to a human', {
       path: 'status',
       code: 'correction_limit_reached',

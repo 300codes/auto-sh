@@ -16,6 +16,7 @@ import {
   reconcileAttemptSchema,
   recordEvidenceSchema,
   releaseDecisionSchema,
+  reportQuerySchema,
   reserveAttemptBodySchema,
   resultsImportSchema,
   taskCreateSchema,
@@ -457,6 +458,20 @@ describe('evidence schemas', () => {
 
   it('rejects an attempt reference without a task', () => {
     expect(codeOf(recordEvidenceSchema, { ...bodies.screenshot, attemptId: ATTEMPT_ID }).paths).toEqual(['taskId'])
+  })
+
+  it('reports the cross-field evidence rules with the catalogued validation_failed detail code', () => {
+    const { taskId: _reviewTask, ...reviewWithoutTask } = bodies.review
+    const { sourceRevision: _testRevision, ...testWithoutRevision } = bodies.test
+    const cases = [{ ...bodies.screenshot, attemptId: ATTEMPT_ID }, reviewWithoutTask, testWithoutRevision]
+    for (const body of cases) {
+      const parsed = recordEvidenceSchema.safeParse(body)
+      if (parsed.success) throw new Error('[internal] expected the input to be rejected')
+      const error = deliveryErrorFromZod(parsed.error)
+      expect(error.body.code).toBe('validation_failed')
+      expect(error.body.details.length).toBeGreaterThan(0)
+      expect(error.body.details.map((detail) => detail.code)).toEqual(error.body.details.map(() => 'validation_failed'))
+    }
   })
 
   it('rejects a screenshot with a malformed hash', () => {
