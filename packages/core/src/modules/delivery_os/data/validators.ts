@@ -20,6 +20,7 @@ import {
   isoDateTimeSchema,
   proposalQuestionSchema,
   proposalRiskSchema,
+  publicationResultV1Schema,
   reconciliationResolutionSchema,
   repoRelativePathSchema,
   requirementSchema,
@@ -580,3 +581,21 @@ export const stageHistoryListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
 })
 export type StageHistoryListQuery = z.infer<typeof stageHistoryListQuerySchema>
+
+export const recordPublicationCommandInputSchema = z
+  .object({
+    projectId: uuidSchema,
+    publication: publicationResultV1Schema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.publication.projectId !== value.projectId) {
+      addDeliveryIssue(ctx, 'foreign_reference', ['publication', 'projectId'], 'Publication belongs to another project')
+    }
+  })
+export type RecordPublicationCommandInput = z.infer<typeof recordPublicationCommandInputSchema>
+
+export const publicationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+})
+export type PublicationListQuery = z.infer<typeof publicationListQuerySchema>
