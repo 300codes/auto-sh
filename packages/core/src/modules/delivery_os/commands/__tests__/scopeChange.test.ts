@@ -70,7 +70,7 @@ type Store = KitStore & { evidence: DeliveryEvidence[] }
 const MODULE_ROOT = join(__dirname, '..', '..')
 const V2_BASELINE_ID = '5a5a5a5a-5555-4555-8555-5555555555b2'
 const V2_TASK_ID = '66666666-6666-4666-8666-6666666666b2'
-const IMMUTABLE_SUBJECTS = ['baselines', 'decisions', 'results', 'evidence', 'artifacts']
+const IMMUTABLE_SUBJECTS = ['baselines', 'decisions', 'results', 'evidence', 'artifacts', 'publications']
 const WRITE_METHODS = ['PUT', 'PATCH', 'DELETE']
 const MUTATING_ACTIONS = /(^|[._])(update|delete|remove|edit|archive|replace|patch|override|expire|auto_approve)/
 
@@ -275,6 +275,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.projects.create',
       'delivery_os.projects.delete',
       'delivery_os.projects.update',
+      'delivery_os.publications.record',
       'delivery_os.results.accept',
       'delivery_os.stages.create_artifact',
       'delivery_os.stages.decide',
@@ -289,6 +290,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.baselines.import_requirements',
       'delivery_os.decisions.record',
       'delivery_os.evidence.record',
+      'delivery_os.publications.record',
       'delivery_os.results.accept',
     ])
     expect(appendOnly.filter((id) => MUTATING_ACTIONS.test(id.slice('delivery_os.'.length)))).toEqual([])

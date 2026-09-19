@@ -94,7 +94,7 @@ export async function loadFlowGateStates(em: EntityManager, project: PinnedFlowP
   return { template, states }
 }
 
-function unreadableSnapshotDetails(): DeliveryErrorDetail[] {
+export function unreadableSnapshotDetails(): DeliveryErrorDetail[] {
   return FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({
     path: `stages.${stageId}`,
     code: 'stage_not_approved',
