@@ -2,7 +2,15 @@ import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared
 import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
-import { DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../../data/entities'
+import {
+  DeliveryBaseline,
+  DeliveryCommentReply,
+  DeliveryCommentThread,
+  DeliveryDecision,
+  DeliveryProject,
+  DeliveryStaffLink,
+  DeliveryTask,
+} from '../../data/entities'
 import { draftSpecV1Schema } from '../../data/validators'
 import { hashBaseline } from '../../lib/baseline'
 import { DEFAULT_DELIVERY_LIMITS, deliveryErrorBodySchema, type BaselineContentV1 } from '../../lib/contracts'
@@ -27,6 +35,9 @@ export type Store = {
   decisions: DeliveryDecision[]
   tasks: DeliveryTask[]
   attachments: Row[]
+  staffLinks: Row[]
+  commentThreads: Row[]
+  commentReplies: Row[]
 }
 
 export type EmMock = {
@@ -38,7 +49,7 @@ export type EmMock = {
 }
 
 export function emptyStore(): Store {
-  return { projects: [], baselines: [], decisions: [], tasks: [], attachments: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], attachments: [], staffLinks: [], commentThreads: [], commentReplies: [] }
 }
 
 export function rowsFor(store: Store, entity: unknown): Row[] {
@@ -47,6 +58,9 @@ export function rowsFor(store: Store, entity: unknown): Row[] {
   if (entity === DeliveryDecision) return store.decisions as unknown as Row[]
   if (entity === DeliveryTask) return store.tasks as unknown as Row[]
   if (entity === Attachment) return store.attachments
+  if (entity === DeliveryStaffLink) return store.staffLinks
+  if (entity === DeliveryCommentThread) return store.commentThreads
+  if (entity === DeliveryCommentReply) return store.commentReplies
   throw new Error('[internal] unexpected entity in test store')
 }
 
@@ -55,6 +69,9 @@ export function matches(row: Row, where: Row): boolean {
     const actual = row[key] ?? null
     if (typeof expected === 'object' && expected !== null && '$in' in expected) {
       return (expected as { $in: unknown[] }).$in.includes(actual)
+    }
+    if (typeof expected === 'object' && expected !== null && '$ne' in expected) {
+      return actual !== ((expected as { $ne: unknown }).$ne ?? null)
     }
     if (typeof expected === 'object' && expected !== null && '$gt' in expected) {
       const bound = (expected as { $gt: number | string }).$gt

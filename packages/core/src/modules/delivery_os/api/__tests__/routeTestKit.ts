@@ -5,12 +5,15 @@ import { hasAllFeatures } from '@open-mercato/shared/security/features'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import {
   DeliveryBaseline,
+  DeliveryCommentReply,
+  DeliveryCommentThread,
   DeliveryDecision,
   DeliveryEvidence,
   DeliveryFlowStageArtifact,
   DeliveryFlowStageDecision,
   DeliveryIntake,
   DeliveryProject,
+  DeliveryStaffLink,
   DeliveryTask,
 } from '../../data/entities'
 import { deliveryErrorBodySchema } from '../../lib/contracts'
@@ -44,10 +47,13 @@ type RouteStore = {
   intakes: Row[]
   stageArtifacts: Row[]
   stageDecisions: Row[]
+  staffLinks: Row[]
+  commentThreads: Row[]
+  commentReplies: Row[]
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], staffLinks: [], commentThreads: [], commentReplies: [] }
 }
 
 export const routeState: {
@@ -79,6 +85,9 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryIntake) return store.intakes
   if (entity === DeliveryFlowStageArtifact) return store.stageArtifacts
   if (entity === DeliveryFlowStageDecision) return store.stageDecisions
+  if (entity === DeliveryStaffLink) return store.staffLinks
+  if (entity === DeliveryCommentThread) return store.commentThreads
+  if (entity === DeliveryCommentReply) return store.commentReplies
   throw new Error('[internal] unexpected entity in route test store')
 }
 

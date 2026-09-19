@@ -281,7 +281,7 @@ export function planStageDecision(input: {
     verdict: request.verdict,
     reason: request.reason ?? null,
     clientApproved: request.verdict === 'approved' && Boolean(request.clientApproval),
-    deferredThreadKeys: deferrals.map((deferral) => deferral.threadKey),
+    deferredThreadKeys: [...new Set(deferrals.map((deferral) => deferral.threadKey))],
   }
   const projected: StageDecisionRecord = {
     id: `pending:${input.idempotencyKey}`,
