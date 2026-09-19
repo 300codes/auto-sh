@@ -148,6 +148,8 @@
   "auth.acl.features.data_sync.configure": "Configure sync mappings and schedules",
   "auth.acl.features.data_sync.run": "Run sync operations",
   "auth.acl.features.data_sync.view": "View sync runs",
+  "auth.acl.features.delivery_agents.execute": "Execute delivery tasks via Cezar",
+  "auth.acl.features.delivery_agents.monitor": "Monitor execution status and attempt lifecycle",
   "auth.acl.features.delivery_os.attempts.manage": "Reserve, cancel and export execution attempts",
   "auth.acl.features.delivery_os.attempts.reconcile": "Reconcile execution attempts",
   "auth.acl.features.delivery_os.baselines.approve": "Approve delivery requirements and design",

@@ -90,7 +90,7 @@ async function scanContent(contentRoot: string, stagingRoot?: string) {
   async function visit(directory: string, relativeDirectory: string, depth: number): Promise<void> {
     if (depth > 32) throw toolError('deployment_package_limit')
     await assertSafeDirectory(directory)
-    for (const name of (await fs.readdir(directory)).sort()) {
+    for (const name of (await fs.readdir(directory)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) {
       if (++count > MAX_FILES || name.length > 255) throw toolError('deployment_package_limit')
       if (/[\u0000-\u001f\u007f\\:]/.test(name)) throw toolError('deployment_unsafe_path')
       const relative = relativeDirectory ? `${relativeDirectory}/${name}` : name

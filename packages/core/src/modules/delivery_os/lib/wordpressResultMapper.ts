@@ -88,8 +88,8 @@ export function mapWordpressResult(value: WordpressResultMappingInput) {
     const snapshot = frozen.snapshot
     if (snapshot.siteId !== trusted.siteId || snapshot.sourceRevision.kind !== 'snapshot' || snapshot.sourceRevision.externalWorkspaceId !== trusted.siteId) refuse('workspace_mismatch')
     if (snapshot.creationAttemptId !== trusted.creationAttemptId || snapshot.toolExecutionId !== trusted[kind === 'base' ? 'baseToolExecutionId' : 'resultToolExecutionId']) refuse('snapshot_binding_mismatch')
-    const paths = Object.keys(snapshot.themeFiles).sort()
-    if (paths.length === 0 || paths.length > 2048 || JSON.stringify(paths) !== JSON.stringify(Object.keys(frozen.theme).sort())) refuse('theme_artifact_mismatch')
+    const paths = Object.keys(snapshot.themeFiles).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
+    if (paths.length === 0 || paths.length > 2048 || JSON.stringify(paths) !== JSON.stringify(Object.keys(frozen.theme).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0)))) refuse('theme_artifact_mismatch')
     verifyArtifact(frozen.database, snapshot.databaseHash)
     let themeBytes = 0
     for (const path of paths) {
@@ -104,7 +104,7 @@ export function mapWordpressResult(value: WordpressResultMappingInput) {
   if (!isSameRevision(taskPackage.baseRevision, input.base.snapshot.sourceRevision)) refuse('base_revision_mismatch')
   const before = input.base.snapshot.themeFiles
   const after = input.result.snapshot.themeFiles
-  const changedPaths = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((path) => before[path] !== after[path]).sort()
+  const changedPaths = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((path) => before[path] !== after[path]).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
   if (!checkAllowedPathsForProfile(profile, changedPaths).ok) refuse('path_not_allowed')
   if (changedPaths.some((path) => !isPathAllowed(path, taskPackage.allowedPaths))) refuse('path_not_allowed')
   const checks = input.checks.map(({ check, definition, report }) => {

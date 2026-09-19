@@ -8,7 +8,7 @@ import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
-import { hasFeature } from '@open-mercato/shared/security/features'
+import { authorizeFeatures } from '@open-mercato/shared/security/featurePolicy'
 import { DeliveryCommentThread, DeliveryStaffLink } from '../data/entities'
 import { staffLinkCommandSchema, type StaffLinkCommandInput } from '../data/validators'
 import { buildDeliveryError, buildDeliveryFlowError, staffLinkSchema, type StaffLink } from '../lib/contracts'
@@ -116,7 +116,7 @@ async function assertStaffProjectAccess(
       tenantId: scope.tenantId,
       organizationId: scope.organizationId,
       userFeatures,
-      canManageAll: hasFeature(userFeatures, STAFF_MANAGE_ALL_FEATURE),
+      canManageAll: authorizeFeatures([STAFF_MANAGE_ALL_FEATURE], { grantedFeatures: userFeatures }),
     })
   } catch (error) {
     logger.warn('staff project access lookup failed closed', { err: error })

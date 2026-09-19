@@ -148,6 +148,8 @@
   "auth.acl.features.data_sync.configure": "Configure sync mappings and schedules",
   "auth.acl.features.data_sync.run": "Run sync operations",
   "auth.acl.features.data_sync.view": "View sync runs",
+  "auth.acl.features.delivery_agents.execute": "Cezar를 통해 납품 작업 실행",
+  "auth.acl.features.delivery_agents.monitor": "실행 상태 및 시도 수명 주기 모니터링",
   "auth.acl.features.delivery_os.attempts.manage": "실행 시도 예약, 취소 및 내보내기",
   "auth.acl.features.delivery_os.attempts.reconcile": "실행 시도 상태 확인 및 조정",
   "auth.acl.features.delivery_os.baselines.approve": "납품 요구 사항 및 설계 승인",

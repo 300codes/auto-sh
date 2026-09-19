@@ -148,6 +148,8 @@
   "auth.acl.features.data_sync.configure": "Konfiguruj mapowania i harmonogramy synchronizacji",
   "auth.acl.features.data_sync.run": "Uruchamiaj synchronizację",
   "auth.acl.features.data_sync.view": "Wyświetl przebiegi synchronizacji",
+  "auth.acl.features.delivery_agents.execute": "Wykonywanie zadań realizacji przez Cezara",
+  "auth.acl.features.delivery_agents.monitor": "Monitorowanie statusu wykonania i cyklu życia prób",
   "auth.acl.features.delivery_os.attempts.manage": "Rezerwowanie, anulowanie i eksportowanie prób wykonania",
   "auth.acl.features.delivery_os.attempts.reconcile": "Uzgadnianie stanu prób wykonania",
   "auth.acl.features.delivery_os.baselines.approve": "Zatwierdzanie wymagań i projektu rozwiązania",

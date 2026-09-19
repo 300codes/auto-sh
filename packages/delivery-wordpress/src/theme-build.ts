@@ -68,7 +68,7 @@ async function collectSources(themePath: string) {
   let entries = 0
   const visit = async (directory: string, depth: number): Promise<void> => {
     if (depth > 12) throw toolError('theme_input_limit')
-    for (const name of (await fs.readdir(directory)).sort()) {
+    for (const name of (await fs.readdir(directory)).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))) {
       if (++entries > 2048) throw toolError('theme_input_limit')
       const filename = path.join(directory, name)
       const info = await fs.lstat(filename)
@@ -183,7 +183,7 @@ async function worker() {
   const compile = z.object({ compile: z.custom<(css: string, options: { loadModule: () => never; loadStylesheet: () => never }) => Promise<{ build: (candidates: string[]) => string }>>((value) => typeof value === 'function') }).parse(compiler).compile
   const Scanner = z.object({ Scanner: z.custom<new(options: { sources: [] }) => { scanFiles: (sources: { content: string; extension: string }[]) => string[] }>((value) => typeof value === 'function') }).parse(scanner).Scanner
   const denied = (): never => { throw toolError('theme_external_load_forbidden') }
-  const candidates = new Scanner({ sources: [] }).scanFiles(input.sources.map(({ content, extension }) => ({ content, extension }))).sort()
+  const candidates = new Scanner({ sources: [] }).scanFiles(input.sources.map(({ content, extension }) => ({ content, extension }))).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
   const result = await compile(`${files.theme}\n${input.designCss}\n@tailwind utilities;`, { loadModule: denied, loadStylesheet: denied })
   const css = result.build(candidates)
   process.stdout.write(JSON.stringify(parseInput(compiledSchema, { css, candidateCount: candidates.length, compiler: { version: PINNED_VERSION, entryHash: files.compilerHash }, scanner: { version: PINNED_VERSION, entryHash: files.scannerHash }, defaultThemeHash: files.themeHash })))
