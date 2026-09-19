@@ -68,3 +68,9 @@ Stand-alone notes per stage live in `FLOW-F0-contracts.md`, `FLOW-F1-L13a-comman
   (`/tmp/t056/tsconfig.json`) shows only the two pre-existing `routeTestKit` `em` inference errors; eslint clean.
 - Open for L18b: `TC-DELIVERY-FLOW-03/04` integration specs against the real DB (the route suites use fakes), and the
   still thread-agnostic wording of the 428 lock-header message.
+
+## T057 FLOW-F2 L18b — integration specs and F2 close
+
+- `__integration__/TC-DELIVERY-FLOW-03-comment-import.spec.ts`, `TC-DELIVERY-FLOW-04-kanban-approval.spec.ts`; kit F2 helpers + staff cleanup in `flowSpecKit.ts` (`registry.staffProjectIds`, `createStaffProject`, `listStaff*`, `importComments`, `triageThread`; `createSiblingOrgUser` takes optional `features`).
+- Review fix: `storeSyncCursor` never rewinds a cursor an overlapping delivery already advanced (+ unit test); F11 OpenAPI lists `duplicate_stable_id` under 422.
+- Runner: `BASE_URL=http://localhost:3100 npx playwright test --config .ai/qa/tests/playwright.config.ts …/TC-DELIVERY-FLOW-0[34]-*.spec.ts --retries=0 --workers=1` → 4/4; jest delivery_os 98/1829. Stage hand-over: `FLOW-F2.md`.

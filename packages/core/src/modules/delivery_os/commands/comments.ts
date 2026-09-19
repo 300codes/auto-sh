@@ -513,6 +513,7 @@ async function storeSyncCursor(
     if (!link) return
     const now = new Date()
     const cursors = link.syncCursors ?? {}
+    if ((cursors[batch.fileKey]?.cursor ?? null) !== batch.cursor.after) return
     link.syncCursors = {
       ...cursors,
       [batch.fileKey]: advanceSyncCursor({
@@ -531,8 +532,9 @@ async function storeSyncCursor(
 
 /**
  * F11: imports one normalized page of source comments. One thread is one staff card and one reply is one staff comment;
- * every thread commits on its own, the file cursor and the batch key move only when all of them succeeded, and the staff
- * board is reached only through the `deliveryStaffKanbanAdapter` seam.
+ * every thread commits on its own, the file cursor and the batch key move only when all of them succeeded and the stored
+ * cursor still equals `cursor.after` (a concurrent delivery that already moved it is never rewound), and the staff board
+ * is reached only through the `deliveryStaffKanbanAdapter` seam.
  */
 const importCommand: CommandHandler<CommentImportCommandInput, CommentImportCommandResult> = {
   id: 'delivery_os.comments.import',

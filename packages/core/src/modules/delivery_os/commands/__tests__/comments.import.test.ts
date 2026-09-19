@@ -559,6 +559,19 @@ describe('delivery_os.comments.import (F11) — idempotency, failures and the cu
     expect(cursor()).toMatchObject({ cursor: 'page-2', lastBatchKey: null, lastBatchHash: null })
   })
 
+  it('never rewinds a cursor that a concurrent delivery of the same page already advanced', async () => {
+    const winner = { cursor: 'page-3', lastBatchKey: 'winner-key', lastBatchHash: 'a'.repeat(64), lastSyncAt: '2026-09-19T10:11:00.000Z', lastError: null }
+    adapter.createTask.mockImplementationOnce(async (input) => {
+      store.staffLinks[0].syncCursors = { [FILE_KEY]: winner }
+      const task = { id: nextId(), ...input }
+      staff.tasks.push(task)
+      return { taskId: task.id }
+    })
+    const result = await run()
+    expect(result.counts).toMatchObject({ threadsCreated: 1 })
+    expect(cursor()).toEqual(winner)
+  })
+
   it('skips every thread and keeps the cursor when the staff project has no status column', async () => {
     adapter.resolveDefaultStatusId.mockResolvedValueOnce(null)
     const result = await run({ batch: batch({ threads: [thread(), thread({ threadKey: 'thr-2' })] }) })

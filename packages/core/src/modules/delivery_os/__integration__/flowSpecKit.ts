@@ -51,10 +51,11 @@ export type Registry = {
   resourceIds: Set<string>
   userIds: string[]
   organizationIds: string[]
+  staffProjectIds: string[]
 }
 
 export function createRegistry(): Registry {
-  return { projectIds: [], attachmentIds: [], resourceIds: new Set<string>(), userIds: [], organizationIds: [] }
+  return { projectIds: [], attachmentIds: [], resourceIds: new Set<string>(), userIds: [], organizationIds: [], staffProjectIds: [] }
 }
 
 export function loadFixture<T>(relative: string): T {
@@ -362,13 +363,19 @@ export async function createScopedUser(
   return { userId, token, organizationId: input.organizationId, tenantId: input.tenantId }
 }
 
-/** A sibling organisation in the owner's tenant plus a user carrying `delivery_os.*` there. */
-export async function createSiblingOrgUser(request: APIRequestContext, ownerToken: string, registry: Registry, label: string): Promise<ForeignUser> {
+/** A sibling organisation in the owner's tenant plus a user carrying `features` (default `delivery_os.*`) there. */
+export async function createSiblingOrgUser(
+  request: APIRequestContext,
+  ownerToken: string,
+  registry: Registry,
+  label: string,
+  features?: string[],
+): Promise<ForeignUser> {
   const superadminToken = await getAuthToken(request, 'superadmin')
   const ownerScope = getTokenScope(ownerToken)
   const organizationId = await createOrganizationInDb({ name: `TC-DELIVERY-FLOW ${label} org B ${Date.now()}`, tenantId: ownerScope.tenantId })
   registry.organizationIds.push(organizationId)
-  return createScopedUser(request, superadminToken, registry, { tenantId: ownerScope.tenantId, organizationId, label: `${label}-org-b` })
+  return createScopedUser(request, superadminToken, registry, { tenantId: ownerScope.tenantId, organizationId, label: `${label}-org-b`, features })
 }
 
 /** A user in the owner's own organisation carrying only the given features (for 403 probes). */
@@ -399,13 +406,16 @@ export async function deliveryRowCounts(registry: Registry): Promise<number> {
      + (select count(*) from delivery_intakes where project_id = any($1::uuid[]))
      + (select count(*) from delivery_flow_stage_artifacts where project_id = any($1::uuid[]))
      + (select count(*) from delivery_flow_stage_decisions where project_id = any($1::uuid[]))
+     + (select count(*) from delivery_staff_links where project_id = any($1::uuid[]))
+     + (select count(*) from delivery_comment_threads where project_id = any($1::uuid[]))
+     + (select count(*) from delivery_comment_replies where thread_id in (select id from delivery_comment_threads where project_id = any($1::uuid[])))
      + (select count(*) from users where id = any($2::uuid[]))
      + (select count(*) from organizations where id = any($3::uuid[]))
      + (select count(*) from action_logs where resource_kind like 'delivery_os%'
           and (resource_id = any($4::text[]) or parent_resource_id = any($4::text[]))) as total`,
     [projectIds, registry.userIds, registry.organizationIds, indexedIds],
   )
-  return Number(rows[0]?.total ?? 0) + Number(indexRows[0]?.total ?? 0)
+  return Number(rows[0]?.total ?? 0) + Number(indexRows[0]?.total ?? 0) + (await staffRowCounts(registry))
 }
 
 export async function deleteProjectsInDb(registry: Registry): Promise<void> {
@@ -420,7 +430,10 @@ export async function deleteProjectsInDb(registry: Registry): Promise<void> {
        union all select id::text from delivery_evidence where project_id = any($1::uuid[])
        union all select id::text from delivery_intakes where project_id = any($1::uuid[])
        union all select id::text from delivery_flow_stage_artifacts where project_id = any($1::uuid[])
-       union all select id::text from delivery_flow_stage_decisions where project_id = any($1::uuid[])`,
+       union all select id::text from delivery_flow_stage_decisions where project_id = any($1::uuid[])
+       union all select id::text from delivery_staff_links where project_id = any($1::uuid[])
+       union all select id::text from delivery_comment_threads where project_id = any($1::uuid[])
+       union all select id::text from delivery_comment_replies where thread_id in (select id from delivery_comment_threads where project_id = any($1::uuid[]))`,
       [projectIds],
     )
     const resourceIds = owned.rows.map((row) => row.id)
@@ -433,7 +446,8 @@ export async function deleteProjectsInDb(registry: Registry): Promise<void> {
       `delete from action_logs where resource_kind like 'delivery_os%' and (resource_id = any($1::text[]) or parent_resource_id = any($1::text[]))`,
       [indexedIds],
     )
-    for (const table of ['delivery_flow_stage_decisions', 'delivery_flow_stage_artifacts', 'delivery_intakes', 'delivery_evidence', 'delivery_decisions', 'delivery_tasks', 'delivery_baselines']) {
+    await client.query('delete from delivery_comment_replies where thread_id in (select id from delivery_comment_threads where project_id = any($1::uuid[]))', [projectIds])
+    for (const table of ['delivery_comment_threads', 'delivery_staff_links', 'delivery_flow_stage_decisions', 'delivery_flow_stage_artifacts', 'delivery_intakes', 'delivery_evidence', 'delivery_decisions', 'delivery_tasks', 'delivery_baselines']) {
       await client.query(`delete from ${table} where project_id = any($1::uuid[])`, [projectIds])
     }
     await client.query('delete from delivery_projects where id = any($1::uuid[])', [projectIds])
@@ -461,6 +475,7 @@ export async function deleteUsersAndOrgsInDb(registry: Registry): Promise<void> 
 /** Full teardown for a spec: rows by project id, attachments via the API, users and organisations; idempotent. */
 export async function cleanupRegistry(request: APIRequestContext, token: string | null, registry: Registry): Promise<void> {
   await deleteProjectsInDb(registry).catch(() => undefined)
+  await deleteStaffProjectsInDb(registry).catch(() => undefined)
   const adminToken = token ?? (await getAuthToken(request, 'admin'))
   for (const attachmentId of registry.attachmentIds) await deleteAttachmentIfExists(request, adminToken, attachmentId)
   await deleteUsersAndOrgsInDb(registry).catch(() => undefined)
@@ -471,4 +486,123 @@ export async function expectNothingLeft(request: APIRequestContext, registry: Re
   const leftAttachments = await sql<{ total: string }>('select count(*) as total from attachments where id = any($1::uuid[])', [registry.attachmentIds])
   expect(leftAttachments[0]?.total, 'no attachment of this spec is left behind').toBe('0')
   expect(await deliveryRowCounts(registry), 'no row of this spec is left behind').toBe(0)
+}
+
+export const STAFF_API = '/api/staff/timesheets'
+export const STAFF_FEATURES = ['delivery_os.*', 'staff.*']
+
+export type StaffStatus = { id: string; name: string; isDefault: boolean; isDone: boolean }
+export type StaffTask = { id: string; title: string; description: string | null; taskStatusId: string; updatedAt: string }
+export type StaffComment = { id: string; body: string; authorUserId: string | null }
+
+function staffOwnedIdsSql(): string {
+  return `select id::text as id from staff_time_projects where id = any($1::uuid[])
+     union all select id::text from staff_time_task_statuses where time_project_id = any($1::uuid[])
+     union all select id::text from staff_time_tasks where time_project_id = any($1::uuid[])
+     union all select c.id::text from staff_time_task_comments c join staff_time_tasks t on t.id = c.task_id where t.time_project_id = any($1::uuid[])
+     union all select id::text from staff_time_project_members where time_project_id = any($1::uuid[])
+     union all select tt.id::text from staff_time_task_tags tt join staff_time_tasks t on t.id = tt.task_id where t.time_project_id = any($1::uuid[])`
+}
+
+/** Staff projects, their board, cards, card comments and members, plus the query-index and audit rows they produced. */
+export async function staffRowCounts(registry: Registry): Promise<number> {
+  if (registry.staffProjectIds.length === 0) return 0
+  const rows = await sql<{ total: string }>(
+    `with owned as (${staffOwnedIdsSql()})
+     select (select count(*) from owned)
+          + (select count(*) from entity_indexes where entity_type like 'staff:%' and entity_id in (select id from owned))
+          + (select count(*) from search_tokens where entity_type like 'staff:%' and entity_id in (select id from owned))
+          + (select count(*) from action_logs where resource_kind like 'staff.%' and (resource_id in (select id from owned) or parent_resource_id in (select id from owned))) as total`,
+    [registry.staffProjectIds],
+  )
+  return Number(rows[0]?.total ?? 0)
+}
+
+/** Hard-deletes every staff row this spec created (the staff API only soft-deletes and refuses a project with cards). */
+export async function deleteStaffProjectsInDb(registry: Registry): Promise<void> {
+  const staffProjectIds = registry.staffProjectIds
+  if (staffProjectIds.length === 0) return
+  await withClient(async (client) => {
+    const owned = (await client.query<{ id: string }>(staffOwnedIdsSql(), [staffProjectIds])).rows.map((row) => row.id)
+    for (const table of INDEX_TABLES) {
+      await client.query(`delete from ${table} where entity_type like 'staff:%' and entity_id = any($1::text[])`, [owned])
+    }
+    await client.query(
+      `delete from action_logs where resource_kind like 'staff.%' and (resource_id = any($1::text[]) or parent_resource_id = any($1::text[]))`,
+      [owned],
+    )
+    for (const table of ['staff_time_task_comments', 'staff_time_task_tags']) {
+      await client.query(`delete from ${table} where task_id in (select id from staff_time_tasks where time_project_id = any($1::uuid[]))`, [staffProjectIds])
+    }
+    for (const table of ['staff_time_tasks', 'staff_time_task_statuses', 'staff_time_project_members']) {
+      await client.query(`delete from ${table} where time_project_id = any($1::uuid[])`, [staffProjectIds])
+    }
+    await client.query('delete from staff_time_projects where id = any($1::uuid[])', [staffProjectIds])
+  })
+}
+
+/** A staff time project through the public staff API; its create command seeds the default board in the same transaction. */
+export async function createStaffProject(call: Call, registry: Registry, label: string): Promise<string> {
+  const code = `TCF-${Date.now().toString(36)}-${randomUUID().slice(0, 6)}`.toUpperCase()
+  const created = await call('POST', `${STAFF_API}/time-projects`, { body: { name: `TC-DELIVERY-FLOW ${label}`, code, customerId: randomUUID() } })
+  expect(created.status, `staff project: ${JSON.stringify(created.body)}`).toBe(201)
+  const id = created.body.id as string
+  registry.staffProjectIds.push(id)
+  return id
+}
+
+export async function listStaffStatuses(call: Call, staffProjectId: string): Promise<StaffStatus[]> {
+  const listed = await call('GET', `${STAFF_API}/task-statuses?timeProjectId=${staffProjectId}&pageSize=100`)
+  expect(listed.status, `staff statuses: ${JSON.stringify(listed.body)}`).toBe(200)
+  return (listed.body.items as Json[]).map((item) => ({
+    id: String(item.id),
+    name: String(item.name),
+    isDefault: Boolean(item.is_default ?? item.isDefault),
+    isDone: Boolean(item.is_done ?? item.isDone),
+  }))
+}
+
+export async function listStaffTasks(call: Call, staffProjectId: string): Promise<StaffTask[]> {
+  const listed = await call('GET', `${STAFF_API}/tasks?timeProjectId=${staffProjectId}&pageSize=100`)
+  expect(listed.status, `staff tasks: ${JSON.stringify(listed.body)}`).toBe(200)
+  return (listed.body.items as Json[]).map((item) => ({
+    id: String(item.id),
+    title: String(item.title),
+    description: (item.description as string | null) ?? null,
+    taskStatusId: String(item.task_status_id ?? item.taskStatusId),
+    updatedAt: new Date(String(item.updated_at ?? item.updatedAt)).toISOString(),
+  }))
+}
+
+export async function listStaffComments(call: Call, staffTaskId: string): Promise<StaffComment[]> {
+  const listed = await call('GET', `${STAFF_API}/tasks/${staffTaskId}/comments`)
+  expect(listed.status, `staff comments: ${JSON.stringify(listed.body)}`).toBe(200)
+  return (listed.body.items as Json[]).map((item) => ({ id: String(item.id), body: String(item.body), authorUserId: (item.authorUserId as string | null) ?? null }))
+}
+
+export function putStaffLink(call: Call, projectId: string, staffProjectId: string, lock: string | null): Promise<CallResult> {
+  return call('PUT', `${API}/projects/${projectId}/staff-link`, { body: { staffProjectId }, lock: lock ?? undefined })
+}
+
+export async function linkStaffProject(call: Call, projectId: string, staffProjectId: string): Promise<Json> {
+  const linked = await putStaffLink(call, projectId, staffProjectId, await projectVersion(call, projectId))
+  expect(linked.status, `F10 link: ${JSON.stringify(linked.body)}`).toBe(200)
+  return linked.body
+}
+
+/** The frozen `comment-import.v1.json` fixture re-targeted at a project; `overrides` replaces top-level batch fields. */
+export function commentBatch(projectId: string, overrides: Json = {}): Json {
+  return { ...loadFixture<Json>('flow/comment-import.v1.json'), projectId, ...overrides }
+}
+
+export function importComments(call: Call, projectId: string, batch: unknown, key: string): Promise<CallResult> {
+  return call('POST', `${API}/projects/${projectId}/comment-imports`, { body: batch, headers: { 'Idempotency-Key': key } })
+}
+
+export function listCommentThreads(call: Call, projectId: string, query = ''): Promise<CallResult> {
+  return call('GET', `${API}/projects/${projectId}/comment-threads${query}`)
+}
+
+export function triageThread(call: Call, projectId: string, threadId: string, body: unknown, lock: string | null): Promise<CallResult> {
+  return call('POST', `${API}/projects/${projectId}/comment-threads/${threadId}/triage`, { body, lock: lock ?? undefined })
 }

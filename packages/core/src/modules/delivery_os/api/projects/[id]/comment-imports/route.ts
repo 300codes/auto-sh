@@ -68,7 +68,7 @@ export const openApi: OpenApiRouteDoc = {
         { status: 200, description: 'Same key and batch already imported (replayed: true)', schema: commentImportResultSchema },
       ],
       errors: [
-        { status: 400, description: 'idempotency_key_required, validation_failed, duplicate_stable_id', schema: deliveryFlowErrorBodySchema },
+        { status: 400, description: 'idempotency_key_required or validation_failed', schema: deliveryFlowErrorBodySchema },
         { status: 403, description: 'Missing feature or signed-in user', schema: deliveryFlowErrorBodySchema },
         { status: 404, description: 'Project not found in this scope', schema: deliveryFlowErrorBodySchema },
         {
@@ -79,7 +79,7 @@ export const openApi: OpenApiRouteDoc = {
         { status: 413, description: 'Request body is too large', schema: deliveryFlowErrorBodySchema },
         {
           status: 422,
-          description: 'unsupported_schema_version, staff_link_required, flow_not_pinned, stage_unknown, foreign_reference',
+          description: 'unsupported_schema_version, duplicate_stable_id, staff_link_required, flow_not_pinned, stage_unknown, foreign_reference',
           schema: deliveryFlowErrorBodySchema,
         },
       ],
