@@ -276,6 +276,8 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.projects.delete',
       'delivery_os.projects.update',
       'delivery_os.results.accept',
+      'delivery_os.stages.create_artifact',
+      'delivery_os.stages.decide',
       'delivery_os.tasks.create',
       'delivery_os.tasks.delete',
       'delivery_os.tasks.import_plan',
