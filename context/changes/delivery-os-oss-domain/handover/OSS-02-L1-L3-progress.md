@@ -87,3 +87,30 @@ and routes; the export test with real decisions comes with them.
   `acl.ts` (same as customers), so no i18n keys are required.
 - **For EXEC/enterprise:** subscribe to `delivery_os.evidence.recorded` (`duplicate`, `completionDelivery`). Gate with
   the feature IDs above, never role names.
+
+## Addendum — L4b project commands (T010)
+
+- Commands: `delivery_os.projects.create | update | delete` (`commands/projects.ts`), helpers in `commands/shared.ts`.
+  Results are `{ projectId }`. Delete input is the CRUD shape `{ body?: { id }, query?: { id } }`.
+- **For the routes (next OSS task):** map HTTP to these commands; require the lock header on PUT/DELETE and answer
+  `428 optimistic_lock_required` there (commands stay header-optional so workers can call them). The stale-write body is
+  the platform one (`code: optimistic_lock_conflict`, `currentUpdatedAt`, `expectedUpdatedAt`), so
+  `surfaceRecordConflict` works unchanged.
+- **For the attempts command (next OSS task):** lock order is project → tasks. Reserve locks the task row and must then
+  load the project with `requireScopedProject` (archived → 404), otherwise it can race the archive guard.
+- **For new command files:** reuse `resolveDeliveryScope`, `parseDeliveryInput`, `assertDeliveryCheck`,
+  `requireScopedTask`, `lockScopedTask`; never read `tenantId`/`organizationId` from input.
+- **For UI:** archive errors carry `details[]` with `path` `tasks.<taskId>[.attempts.<attemptId>]` and code
+  `attempt_reserved | attempt_claimed | attempt_cancel_requested | task_executing | reconciliation_required |
+  unreadable_attempt_register`. Audit labels need i18n keys `delivery_os.audit.projects.{create,update,delete}`
+  (English fallbacks are in code).
+- **Scope rule:** `resolveDeliveryScope` trusts `ctx.selectedOrganizationId` only when the caller also passes the
+  platform `organizationScope` (makeCrudRoute does). Custom routes must resolve and pass it; workers act in
+  `auth.orgId`. A selection nobody vouches for answers `403 forbidden` / `scope_not_allowed`.
+- **Task delete (next OSS task):** must refuse a task with an active or unknown attempt — the project archive guard
+  only looks at live tasks.
+- Delivery errors are built with `deliveryHttpError` instead of the shared `notFound()` helpers on purpose: the frozen
+  body needs `code` and `details[]`.
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 14 suites, 427 tests
+  green; `tsc --noEmit` for `@open-mercato/core` clean. No migration, no workspace change; `yarn generate` output is
+  gitignored.

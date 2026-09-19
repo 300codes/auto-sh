@@ -4,9 +4,11 @@ import {
   assertRevisionKind,
   checkAllowedPathsForProfile,
   countsAsAcEvidence,
+  getLatestTargetProfile,
   getTargetProfile,
   isEvidenceKindPermitted,
   isPathWithinProfileRoots,
+  pickLatestProfile,
   targetProfileSchema,
   type TargetProfile,
 } from '../targetProfiles'
@@ -49,6 +51,23 @@ describe('target profiles', () => {
     expect(getTargetProfile('react-vite', 2)).toBeUndefined()
     expect(getTargetProfile('angular', 1)).toBeUndefined()
     expect(getTargetProfile('', 1)).toBeUndefined()
+  })
+
+  it('resolves the newest version of a known profile id and nothing for an unknown id', () => {
+    for (const profile of TARGET_PROFILES) {
+      const newest = Math.max(...TARGET_PROFILES.filter((candidate) => candidate.id === profile.id).map((candidate) => candidate.version))
+      expect(getLatestTargetProfile(profile.id)?.version).toBe(newest)
+    }
+    expect(getLatestTargetProfile('angular')).toBeUndefined()
+    expect(getLatestTargetProfile('')).toBeUndefined()
+  })
+
+  it('picks the highest version whatever the order of the list', () => {
+    const base = TARGET_PROFILES[0]
+    const versions = [2, 3, 1].map((version) => ({ ...base, version }))
+    expect(pickLatestProfile(versions, base.id)?.version).toBe(3)
+    expect(pickLatestProfile([...versions].reverse(), base.id)?.version).toBe(3)
+    expect(pickLatestProfile(versions, 'angular')).toBeUndefined()
   })
 
   it('is immutable data', () => {

@@ -143,6 +143,16 @@ export function getTargetProfile(id: string, version: number): TargetProfile | u
   return TARGET_PROFILES.find((profile) => profile.id === id && profile.version === version)
 }
 
+export function pickLatestProfile(profiles: readonly TargetProfile[], id: string): TargetProfile | undefined {
+  return profiles
+    .filter((profile) => profile.id === id)
+    .reduce<TargetProfile | undefined>((latest, profile) => (!latest || profile.version > latest.version ? profile : latest), undefined)
+}
+
+export function getLatestTargetProfile(id: string): TargetProfile | undefined {
+  return pickLatestProfile(TARGET_PROFILES, id)
+}
+
 export function assertRevisionKind(profile: TargetProfile, revision: SourceRevision): DeliveryCheckResult {
   if (revision.kind === profile.revisionKind) return { ok: true }
   return {
