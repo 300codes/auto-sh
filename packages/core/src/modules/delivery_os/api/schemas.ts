@@ -106,6 +106,8 @@ export const deployDecisionCreateResponseSchema = z.object({
   projectUpdatedAt: isoDateTimeSchema,
 })
 
+export const releaseDecisionCreateResponseSchema = deployDecisionCreateResponseSchema
+
 export const taskDtoSchema = z.object({
   id: uuidSchema,
   projectId: uuidSchema,

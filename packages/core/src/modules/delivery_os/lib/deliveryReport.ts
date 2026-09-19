@@ -254,6 +254,18 @@ function buildScans(profile: TargetProfile, onRevision: readonly DeliveryReportE
   })
 }
 
+export function isVerifiedDeploymentPayload(payload: unknown): boolean {
+  const parsed = deploymentPayloadSchema.safeParse(payload)
+  if (!parsed.success) return false
+  return (
+    deriveDeploymentVerificationStatus({
+      buildId: parsed.data.buildId,
+      uploadStatus: parsed.data.uploadStatus,
+      verification: parsed.data.verification ?? null,
+    }) === 'verified'
+  )
+}
+
 function buildDeployment(onRevision: readonly DeliveryReportEvidence[]): ReportDeployment {
   const newest = newestOf(onRevision.filter((row) => row.kind === 'deployment'))
   if (!newest) return { status: 'missing', verificationStatus: null, evidenceId: null, url: null, environment: null, buildId: null }

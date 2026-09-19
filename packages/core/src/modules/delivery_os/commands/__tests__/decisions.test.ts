@@ -263,10 +263,8 @@ describe('delivery_os.decisions.record', () => {
     expectFrozenBody(await catchHttpError(() => decide({ verdict: 'rejected', reason: '   ' })), 422, 'reason_required')
   })
 
-  it('answers a clear 422 for the release kind until R21', async () => {
-    const error = await catchHttpError(() => decide({ kind: 'release' }))
-    expectFrozenBody(error, 422, 'unsupported_evidence_kind')
-    expect(detailCodes(error)).toEqual(['decision_kind_not_supported'])
+  it('routes the release kind to its own schema and refuses unknown kinds', async () => {
+    expectFrozenBody(await catchHttpError(() => decide({ kind: 'release' })), 400, 'validation_failed')
     expectFrozenBody(await catchHttpError(() => decide({ kind: 'scope' })), 400, 'validation_failed')
   })
 
@@ -478,5 +476,261 @@ describe('delivery_os.decisions.record — deploy (publish consent)', () => {
     await deploy({ verdict: 'rejected', reason: 'Wait for the copy fix' })
     expect(store.decisions.map((decision) => decision.verdict)).toEqual(['approved', 'rejected'])
     expect(store.decisions[1].decidedAt.getTime()).toBeGreaterThan(store.decisions[0].decidedAt.getTime())
+  })
+})
+
+const DEPLOYMENT_BUILD = 'build-42'
+
+function deploymentPayload(overrides: Row = {}): Row {
+  return {
+    url: 'https://preview.example.test',
+    environment: 'preview',
+    buildId: DEPLOYMENT_BUILD,
+    deployedAt: '2026-09-19T10:30:00.000Z',
+    uploadStatus: 'succeeded',
+    verification: { status: 'verified', checkedAt: '2026-09-19T10:31:00.000Z', method: 'http-probe', observedBuildId: DEPLOYMENT_BUILD },
+    ...overrides,
+  }
+}
+
+function manualReviewRow(revision: SourceRevision = REVISION): Row {
+  return evidenceRow(
+    'review',
+    { verdict: 'approved', summary: 'Looks right', findings: [], manualCheckId: 'MC-visual-001', reviewer: { kind: 'human' } },
+    { sourceRevision: revision },
+  )
+}
+
+function greenEvidence(revision: SourceRevision = REVISION): void {
+  const tests = testRow()
+  evidence.push(
+    { ...tests, sourceRevision: revision, payload: retargetChecks(tests.payload, revision) },
+    { ...scanRow(), sourceRevision: revision },
+    manualReviewRow(revision),
+  )
+}
+
+function retargetChecks(payload: unknown, revision: SourceRevision): unknown {
+  const typed = payload as { rawReportHash: string; checks: Row[] }
+  return { ...typed, checks: typed.checks.map((check) => ({ ...check, sourceRevision: revision })) }
+}
+
+let decisionSeq = 0
+
+function deployDecisionRow(verdict: string, revision: SourceRevision = REVISION, overrides: Row = {}): Row {
+  decisionSeq += 1
+  return {
+    id: `dddddddd-dddd-4ddd-8ddd-${String(decisionSeq).padStart(12, '0')}`,
+    tenantId: TENANT_ID,
+    organizationId: ORG_ID,
+    projectId: PROJECT_ID,
+    kind: 'deploy',
+    subjectType: 'baseline',
+    subjectId: BASELINE_ID,
+    subjectHash: store.baselines[0].contentHash,
+    subjectVersion: 1,
+    sourceRevision: revision,
+    verdict,
+    reason: verdict === 'approved' ? null : 'No',
+    actorUserId: ACTOR_ID,
+    decidedAt: new Date(Date.UTC(2026, 8, 19, 9, 0, decisionSeq)),
+    ...overrides,
+  }
+}
+
+function seedDeployment(payload: Row = deploymentPayload(), revision: SourceRevision = REVISION): string {
+  const row = evidenceRow('deployment', payload, { sourceRevision: revision })
+  evidence.push(row)
+  return row.id as string
+}
+
+function release(
+  overrides: Row = {},
+  options: { headers?: Record<string, string>; orgId?: string } = {},
+): Promise<DecisionCommandResult> {
+  const { ctx } = makeHarness(store, {
+    headers: options.headers ?? headersFor(store.projects[0]),
+    orgId: options.orgId,
+    services: { deliveryOsReportQueries: reportQueries() },
+  })
+  return Promise.resolve(record.execute({ kind: 'release', projectId: PROJECT_ID, verdict: 'approved', ...overrides }, ctx))
+}
+
+describe('delivery_os.decisions.record — release (final acceptance)', () => {
+  beforeEach(() => {
+    store.projects[0].activeBaselineId = BASELINE_ID
+  })
+
+  it('records an approved release when deploy consent, a verified deployment and the releasable report agree on one revision', async () => {
+    greenEvidence()
+    store.decisions.push(deployDecisionRow('approved') as never)
+    const deploymentId = seedDeployment()
+    const before = store.projects[0].updatedAt
+    const result = await release({ deploymentEvidenceId: deploymentId })
+
+    expect(result).toMatchObject({ kind: 'release', verdict: 'approved', baselineId: BASELINE_ID, activeBaselineChanged: false })
+    const stored = store.decisions[1]
+    expect(stored).toMatchObject({
+      kind: 'release',
+      subjectType: 'deployment_evidence',
+      subjectId: deploymentId,
+      subjectHash: store.baselines[0].contentHash,
+      subjectVersion: 1,
+      sourceRevision: REVISION,
+      verdict: 'approved',
+      actorUserId: ACTOR_ID,
+    })
+    expect(store.projects[0].updatedAt.getTime()).toBeGreaterThan(before.getTime())
+    expect(result.projectUpdatedAt).toBe(store.projects[0].updatedAt.toISOString())
+
+    stored.id = 'ffffffff-ffff-4fff-8fff-000000000001'
+    const scope = { tenantId: TENANT_ID, organizationId: ORG_ID }
+    const onRevision = await reportQueries().buildReport(scope, PROJECT_ID, { revision: REVISION })
+    expect(onRevision.gates.releasable.ok).toBe(true)
+    expect(onRevision.decisions.find((decision) => decision.kind === 'release')).toMatchObject({ subjectId: deploymentId, appliesToRevision: true })
+    const onOther = await reportQueries().buildReport(scope, PROJECT_ID, { revision: OTHER_REVISION })
+    expect(onOther.decisions.find((decision) => decision.kind === 'release')).toMatchObject({ appliesToRevision: false })
+  })
+
+  it('answers 422 deployment_unverified without a verification, with a failed one or a build mismatch', async () => {
+    greenEvidence()
+    store.decisions.push(deployDecisionRow('approved') as never)
+    const variants = [
+      deploymentPayload({ verification: null }),
+      deploymentPayload({ verification: { status: 'failed', checkedAt: '2026-09-19T10:31:00.000Z', method: 'http-probe', observedBuildId: DEPLOYMENT_BUILD } }),
+      deploymentPayload({ verification: { status: 'verified', checkedAt: '2026-09-19T10:31:00.000Z', method: 'http-probe', observedBuildId: 'build-41' } }),
+      deploymentPayload({ uploadStatus: 'failed' }),
+    ]
+    for (const payload of variants) {
+      const error = await catchHttpError(() => release({ deploymentEvidenceId: seedDeployment(payload) }))
+      expectFrozenBody(error, 422, 'deployment_unverified')
+    }
+    expect(store.decisions).toHaveLength(1)
+  })
+
+  it('answers 422 revision_mismatch when the deployment is on revision B and consent names revision A', async () => {
+    greenEvidence()
+    greenEvidence(OTHER_REVISION)
+    store.decisions.push(deployDecisionRow('approved', REVISION) as never)
+    const error = await catchHttpError(() => release({ deploymentEvidenceId: seedDeployment(deploymentPayload(), OTHER_REVISION) }))
+    expectFrozenBody(error, 422, 'revision_mismatch')
+    expect(detailCodes(error)).toEqual(['deploy_revision_mismatch'])
+    expect(store.decisions).toHaveLength(1)
+  })
+
+  it('answers 422 deploy_decision_missing without consent and when a later reject wins over an earlier approve', async () => {
+    greenEvidence()
+    const deploymentId = seedDeployment()
+    const none = await catchHttpError(() => release({ deploymentEvidenceId: deploymentId }))
+    expectFrozenBody(none, 422, 'deploy_decision_missing')
+    expect(detailCodes(none)).toEqual(['deploy_decision_missing'])
+
+    store.decisions.push(deployDecisionRow('approved') as never, deployDecisionRow('rejected') as never)
+    const rejected = await catchHttpError(() => release({ deploymentEvidenceId: deploymentId }))
+    expectFrozenBody(rejected, 422, 'deploy_decision_missing')
+    expect(detailCodes(rejected)).toEqual(['deploy_decision_rejected'])
+  })
+
+  it('ignores consent given for another baseline hash', async () => {
+    greenEvidence()
+    store.decisions.push(deployDecisionRow('approved', REVISION, { subjectHash: 'f'.repeat(64) }) as never)
+    const error = await catchHttpError(() => release({ deploymentEvidenceId: seedDeployment() }))
+    expectFrozenBody(error, 422, 'deploy_decision_missing')
+  })
+
+  it('answers 422 report_not_green with the release blockers when an AC is only manual_pending or a newer deployment failed', async () => {
+    evidence.push(testRow(), scanRow())
+    store.decisions.push(deployDecisionRow('approved') as never)
+    const deploymentId = seedDeployment()
+    const pending = await catchHttpError(() => release({ deploymentEvidenceId: deploymentId }))
+    expectFrozenBody(pending, 422, 'report_not_green')
+    expect(blockerPaths(pending)).toEqual(['ac:AC-003=manual_pending'])
+
+    evidence.push(manualReviewRow())
+    const newer = seedDeployment(deploymentPayload({ verification: null }))
+    const shadowed = await catchHttpError(() => release({ deploymentEvidenceId: deploymentId }))
+    expectFrozenBody(shadowed, 422, 'report_not_green')
+    expect(blockerPaths(shadowed)).toEqual([`deployment:${newer}=unverified`])
+    expect(store.decisions).toHaveLength(1)
+  })
+
+  it('always allows a reject with a reason, even for an unverified deployment, and requires the reason', async () => {
+    const deploymentId = seedDeployment(deploymentPayload({ verification: null }))
+    expectFrozenBody(await catchHttpError(() => release({ deploymentEvidenceId: deploymentId, verdict: 'rejected' })), 422, 'reason_required')
+    const result = await release({ deploymentEvidenceId: deploymentId, verdict: 'rejected', reason: 'Header overlaps the menu' })
+    expect(result.verdict).toBe('rejected')
+    expect(store.decisions[0]).toMatchObject({
+      kind: 'release',
+      verdict: 'rejected',
+      subjectId: deploymentId,
+      reason: 'Header overlaps the menu',
+      sourceRevision: REVISION,
+    })
+  })
+
+  it('refuses a row that is not a deployment, a deployment of an inactive baseline and an unknown row', async () => {
+    const scan = scanRow()
+    evidence.push(scan)
+    const notDeployment = await catchHttpError(() => release({ deploymentEvidenceId: scan.id }))
+    expectFrozenBody(notDeployment, 422, 'unsupported_evidence_kind')
+    expect(detailCodes(notDeployment)).toEqual(['not_deployment_evidence'])
+
+    const deploymentId = seedDeployment()
+    store.projects[0].activeBaselineId = null
+    expectFrozenBody(await catchHttpError(() => release({ deploymentEvidenceId: deploymentId, verdict: 'rejected', reason: 'x' })), 422, 'baseline_not_active')
+    store.projects[0].activeBaselineId = BASELINE_ID
+
+    const missing = await catchHttpError(() => release({ deploymentEvidenceId: '9a9a9a9a-9999-4999-8999-999999999999' }))
+    expectFrozenBody(missing, 404, 'not_found')
+    const foreignProject = seedDeployment()
+    evidence[evidence.length - 1].projectId = '8b8b8b8b-8888-4888-8888-888888888888'
+    expectFrozenBody(await catchHttpError(() => release({ deploymentEvidenceId: foreignProject })), 404, 'not_found')
+    expect(store.decisions).toHaveLength(0)
+  })
+
+  it('answers 422 deployment_incomplete for a row without a revision and invalid_revision for a snapshot on a git profile', async () => {
+    const withoutRevision = seedDeployment()
+    evidence[evidence.length - 1].sourceRevision = null
+    const incomplete = await catchHttpError(() => release({ deploymentEvidenceId: withoutRevision, verdict: 'rejected', reason: 'x' }))
+    expectFrozenBody(incomplete, 422, 'deployment_incomplete')
+    expect(detailCodes(incomplete)).toEqual(['deployment_revision_missing'])
+
+    const snapshot = { kind: 'snapshot', contentHash: 'c'.repeat(64), externalWorkspaceId: 'wp:1' } as SourceRevision
+    const onSnapshot = seedDeployment(deploymentPayload(), snapshot)
+    const invalid = await catchHttpError(() => release({ deploymentEvidenceId: onSnapshot }))
+    expectFrozenBody(invalid, 422, 'invalid_revision')
+    expect(detailCodes(invalid)).toEqual(['revision_kind_mismatch'])
+    expect(store.decisions).toHaveLength(0)
+  })
+
+  it('refuses a reject that names a row which is not a deployment', async () => {
+    const scan = scanRow()
+    evidence.push(scan)
+    expectFrozenBody(await catchHttpError(() => release({ deploymentEvidenceId: scan.id, verdict: 'rejected', reason: 'x' })), 422, 'unsupported_evidence_kind')
+    expect(store.decisions).toHaveLength(0)
+  })
+
+  it('answers 404 for a deployment row of another organization on the same project id', async () => {
+    greenEvidence()
+    store.decisions.push(deployDecisionRow('approved') as never)
+    const foreign = seedDeployment()
+    evidence[evidence.length - 1].organizationId = FOREIGN_ORG_ID
+    const error = await catchHttpError(() => release({ deploymentEvidenceId: foreign }))
+    expectFrozenBody(error, 404, 'not_found')
+    expect(detailCodes(error)).toEqual(['not_found'])
+    expect(store.decisions).toHaveLength(1)
+  })
+
+  it('answers 409 for a stale project version, 428 without the header and 404 for another organization', async () => {
+    greenEvidence()
+    store.decisions.push(deployDecisionRow('approved') as never)
+    const deploymentId = seedDeployment()
+    const stale = await catchHttpError(() =>
+      release({ deploymentEvidenceId: deploymentId }, { headers: { [OPTIMISTIC_LOCK_HEADER_NAME]: STALE_UPDATED_AT } }),
+    )
+    expect(stale.status).toBe(409)
+    expectFrozenBody(await catchHttpError(() => release({ deploymentEvidenceId: deploymentId }, { headers: {} })), 428, 'optimistic_lock_required')
+    expectFrozenBody(await catchHttpError(() => release({ deploymentEvidenceId: deploymentId }, { orgId: FOREIGN_ORG_ID })), 404, 'not_found')
+    expect(store.decisions).toHaveLength(1)
   })
 })
