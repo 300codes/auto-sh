@@ -1,6 +1,6 @@
 # FLOW-F0 hand-over — flow delta v1 contracts and fixtures (T040)
 
-> **Contract published, domain NOT implemented.** Every route below answers 404 until F1–F4 land. Build UI,
+> **Contract published; F1 (ops F1–F9) implemented — see `FLOW-F1.md`; F10–F15 still answer 404 until F2–F4 land.** Build UI,
 > providers and workflow steps against the schemas and fixtures; integrate against the real API when the F1/F2
 > hand-overs name the commit.
 
@@ -28,6 +28,8 @@ Parse an incoming flow document with `parseFlowVersioned(deliveryFlowDocumentSch
 `{ error, code, details[] }` exactly as v1, with `code` from `deliveryAllErrorCodes`.
 
 ## Operation table (condensed — full columns in the spec)
+
+Implemented at: F1/F2/F3/F4/F6 routes `b995312c3`; F5 command `ec0502d7a`; F7/F8/F9 `04e13ab01` (commands) + `b3d3581de` (routes); integration specs FLOW-01/02/09 `e71dc11c4`. F10–F15: pending (F2–F4).
 
 | # | Operation | Owner who calls it | Body / result schema |
 |---|---|---|---|
@@ -107,4 +109,4 @@ staff task / file ids, cursor conflict, active attempt on a new artifact.
   Studio-published v2 needs his provider.
 - **Publication target** — Michał's target + verification access. F14 accepts `unverified` results; a `verified`
   one needs a real check with an evidence row. Fixture publications never count as live.
-- **Nothing implemented yet** — do not point demo flows at F1–F15 before the F1 hand-over names a commit.
+- **Implementation status** — F1–F9 implemented (commits in `FLOW-F1.md`; routes at `b995312c3` / `b3d3581de`, specs at `e71dc11c4`). Do not point demo flows at F10–F15 (comments, staff link, publications) before the F2/F4 hand-overs name a commit.

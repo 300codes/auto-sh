@@ -1466,6 +1466,54 @@ export const stageDecisionResponseSchema = z.object({
 })
 export type StageDecisionResponse = z.infer<typeof stageDecisionResponseSchema>
 
+export const STAGE_HISTORY_MAX_PAGE_SIZE = 100
+
+export const stageArtifactListItemSchema = z.object({
+  artifactId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  version: z.number().int().positive(),
+  contentHash: sha256Schema,
+  source: stageArtifactSourceSchema,
+  content: z.record(z.string(), z.unknown()),
+  dependsOn: z.array(stageArtifactDependencySchema).max(3),
+  attachmentIds: z.array(uuidSchema).max(200),
+  templateHash: sha256Schema,
+  createdBy: uuidSchema.nullable(),
+  createdAt: isoDateTimeSchema,
+})
+export type StageArtifactListItem = z.infer<typeof stageArtifactListItemSchema>
+
+export const stageArtifactListResponseSchema = z.object({
+  items: z.array(stageArtifactListItemSchema).max(STAGE_HISTORY_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type StageArtifactListResponse = z.infer<typeof stageArtifactListResponseSchema>
+
+export const stageDecisionListItemSchema = z.object({
+  decisionId: uuidSchema,
+  projectId: uuidSchema,
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema,
+  subjectHash: sha256Schema,
+  subjectVersion: z.number().int().positive(),
+  verdict: stageDecisionVerdictSchema,
+  reason: z.string().max(4000).nullable(),
+  actorUserId: uuidSchema,
+  decidedAt: isoDateTimeSchema,
+  clientApproved: z.boolean(),
+  clientApproval: clientApprovalSchema.nullable(),
+  deferredThreadKeys: z.array(z.string().min(1).max(200)).max(200),
+  templateHash: sha256Schema,
+})
+export type StageDecisionListItem = z.infer<typeof stageDecisionListItemSchema>
+
+export const stageDecisionListResponseSchema = z.object({
+  items: z.array(stageDecisionListItemSchema).max(STAGE_HISTORY_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type StageDecisionListResponse = z.infer<typeof stageDecisionListResponseSchema>
+
 // --- Flow status (read model) ----------------------------------------------
 
 export const flowBlockerKindSchema = z.enum([
