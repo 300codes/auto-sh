@@ -29,7 +29,7 @@ Parse an incoming flow document with `parseFlowVersioned(deliveryFlowDocumentSch
 
 ## Operation table (condensed — full columns in the spec)
 
-Implemented at: F1/F2/F3/F4/F6 routes `b995312c3`; F5 command `ec0502d7a`; F7/F8/F9 `04e13ab01` (commands) + `b3d3581de` (routes); integration specs FLOW-01/02/09 `e71dc11c4`. F10–F15: pending (F2–F4).
+Implemented at: F1/F2/F3/F4/F6 routes `b995312c3`; F5 command `ec0502d7a`; F7/F8/F9 `04e13ab01` (commands) + `b3d3581de` (routes); integration specs FLOW-01/02/09 `e71dc11c4`. F10–F13 commands T054/T055, routes T056 (this branch). F14–F15: pending (F3–F4).
 
 | # | Operation | Owner who calls it | Body / result schema |
 |---|---|---|---|

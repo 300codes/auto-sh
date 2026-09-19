@@ -316,6 +316,29 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
     }
   })
 
+  it('exposes the F2 staff-link and comment routes with their documented methods and no way to edit an imported reply', () => {
+    const routes = routeMethods()
+    const expected: Record<string, string[]> = {
+      'projects/[id]/staff-link/route.ts': ['GET', 'PUT'],
+      'projects/[id]/comment-imports/route.ts': ['POST'],
+      'projects/[id]/comment-threads/route.ts': ['GET'],
+      'projects/[id]/comment-threads/[threadId]/triage/route.ts': ['POST'],
+    }
+    for (const [path, methods] of Object.entries(expected)) {
+      expect({ path, methods: [...(routes.get(path) ?? [])].sort() }).toEqual({ path, methods: [...methods].sort() })
+    }
+    const commentRoutes = [...routes.keys()].filter((path) => path.includes('comment-')).sort()
+    expect(commentRoutes).toEqual([
+      'projects/[id]/comment-imports/route.ts',
+      'projects/[id]/comment-threads/[threadId]/triage/route.ts',
+      'projects/[id]/comment-threads/route.ts',
+    ])
+    for (const path of commentRoutes) {
+      const writes = [...(routes.get(path) ?? [])].filter((method) => WRITE_METHODS.includes(method))
+      expect({ path, writes }).toEqual({ path, writes: [] })
+    }
+  })
+
   it('keeps the internal attempt commands off every route and off the workflow-safe command list', () => {
     const internalIds = [
       'delivery_os.attempts.claim',

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  commentThreadTriageStatusSchema,
   deliveryErrorBodySchema,
   deliveryLimitsSchema,
   executionAttemptSchema,
@@ -177,4 +178,10 @@ export const attemptReconcileResponseSchema = z.object({
   taskStatus: taskStatusSchema,
   taskUpdatedAt: isoDateTimeSchema,
   evidenceId: uuidSchema.optional(),
+})
+
+export const commentThreadTriageResponseSchema = z.object({
+  threadId: uuidSchema,
+  triageStatus: commentThreadTriageStatusSchema,
+  updatedAt: isoDateTimeSchema,
 })

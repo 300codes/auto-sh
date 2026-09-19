@@ -3,6 +3,7 @@ import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
 import { hasAllFeatures } from '@open-mercato/shared/security/features'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
+import type { DeliveryStaffKanbanAdapter } from '../../commands/staffKanbanAdapter'
 import {
   DeliveryBaseline,
   DeliveryCommentReply,
@@ -29,6 +30,14 @@ import {
   type Row,
 } from '../../commands/__tests__/baselineTestKit'
 
+/**
+ * Copies of `STAFF_ACCESS_RESOLVER_KEY` (commands/staffLink.ts) and `DELIVERY_STAFF_KANBAN_ADAPTER_KEY`
+ * (commands/staffKanbanAdapter.ts). They are literals here because importing the owning command module from the kit
+ * would close a require cycle with the mocked encryption helpers; `staffLink.route.test.ts` asserts they still match.
+ */
+export const STAFF_ACCESS_RESOLVER_KEY = 'timeTrackingAccessResolver'
+export const DELIVERY_STAFF_KANBAN_ADAPTER_KEY = 'deliveryStaffKanbanAdapter'
+
 export const FOREIGN_TENANT_ID = '99999999-9999-4999-8999-999999999991'
 export const TASK_ID = '7c7c7c7c-7777-4777-8777-777777777777'
 export const ALL_FEATURES = ['delivery_os.*']
@@ -36,6 +45,11 @@ export const VIEW_ONLY = ['delivery_os.projects.view']
 export const EMPLOYEE_FEATURES = ['delivery_os.projects.view', 'delivery_os.projects.manage', 'delivery_os.results.import']
 
 type AuthState = { sub: string; tenantId: string; orgId: string } | null
+
+/** Mirrors the shape `commands/staffLink.ts` resolves from DI; a `null` slot means the staff module is absent. */
+export type StaffAccessResolverMock = {
+  resolveProjectAccess: (ctx: { userId: string; tenantId: string; organizationId: string }) => Promise<{ canManageAll: boolean; projectIds: string[] }>
+}
 
 type RouteStore = {
   projects: Row[]
@@ -63,6 +77,8 @@ export const routeState: {
   selectionRejected: boolean
   store: RouteStore
   queryEngine: { query: jest.Mock }
+  staffAccess: StaffAccessResolverMock | null
+  kanbanAdapter: DeliveryStaffKanbanAdapter | null
   writes: number
 } = {
   auth: null,
@@ -71,6 +87,8 @@ export const routeState: {
   selectionRejected: false,
   store: emptyRouteStore(),
   queryEngine: { query: jest.fn() },
+  staffAccess: null,
+  kanbanAdapter: null,
   writes: 0,
 }
 
@@ -91,8 +109,8 @@ function rowsFor(entity: unknown): Row[] {
   throw new Error('[internal] unexpected entity in route test store')
 }
 
-/** Only the stage history entities honour `orderBy`; the v1 suites rely on insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision])
+/** Only the stage history and comment entities honour `orderBy`; the v1 suites rely on insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryCommentThread, DeliveryCommentReply])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()
@@ -203,6 +221,8 @@ export const containerMock = {
       if (name === 'deliveryOsAttachmentInspector') {
         return makeAttachmentInspector(() => routeState.store.attachments)
       }
+      if (name === STAFF_ACCESS_RESOLVER_KEY) return routeState.staffAccess ?? undefined
+      if (name === DELIVERY_STAFF_KANBAN_ADAPTER_KEY) return routeState.kanbanAdapter ?? undefined
       if (name === 'deliveryOsAttemptQueries') {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
         return createDeliveryOsAttemptQueries(em)
@@ -250,6 +270,8 @@ export function resetRouteState(): void {
   routeState.rbacAvailable = true
   routeState.selectionRejected = false
   routeState.store = emptyRouteStore()
+  routeState.staffAccess = null
+  routeState.kanbanAdapter = null
   routeState.writes = 0
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()

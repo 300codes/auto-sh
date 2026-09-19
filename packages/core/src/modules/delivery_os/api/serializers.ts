@@ -1,6 +1,8 @@
 import { toIntakeDocument, toIntakeResponse } from '../commands/intake'
 import type {
   DeliveryBaseline,
+  DeliveryCommentReply,
+  DeliveryCommentThread,
   DeliveryDecision,
   DeliveryFlowStageArtifact,
   DeliveryFlowStageDecision,
@@ -13,6 +15,8 @@ import {
   baselineContentV1Schema,
   clientApprovalSchema,
   type ClientApproval,
+  type CommentThreadListItem,
+  type CommentThreadReplyItem,
   type IntakeResponse,
   type StageArtifactListItem,
   type StageDecisionListItem,
@@ -181,5 +185,50 @@ export function serializeStageDecision(row: DeliveryFlowStageDecision): StageDec
     clientApproval: readClientApproval(row),
     deferredThreadKeys: row.deferredThreadKeys,
     templateHash: row.templateHash,
+  }
+}
+
+export { toStaffLink as serializeStaffLink } from '../commands/staffLink'
+
+function serializeCommentReply(row: DeliveryCommentReply): CommentThreadReplyItem {
+  return {
+    replyId: row.id,
+    commentKey: row.commentKey,
+    revision: row.revision,
+    author: row.author,
+    body: row.body,
+    sourceCreatedAt: requireIso(row.sourceCreatedAt),
+    editedAt: toIso(row.editedAt),
+    deleted: row.deleted,
+    staffCommentId: row.staffCommentId ?? null,
+    fetchedAt: requireIso(row.fetchedAt),
+  }
+}
+
+/** Author and body arrive decrypted: threads and replies are loaded with `findWithDecryption` for the session scope. */
+export function serializeCommentThread(row: DeliveryCommentThread, replies: DeliveryCommentReply[]): CommentThreadListItem {
+  return {
+    threadId: row.id,
+    threadKey: row.threadKey,
+    source: row.source,
+    fileKey: row.fileKey,
+    stageId: row.stageId,
+    artifactId: row.artifactId ?? null,
+    nodeId: row.nodeId ?? null,
+    sourceUrl: row.sourceUrl,
+    author: row.author,
+    body: row.body,
+    sourceCreatedAt: requireIso(row.sourceCreatedAt),
+    sourceUpdatedAt: toIso(row.sourceUpdatedAt),
+    sourceStatus: row.sourceStatus,
+    figmaVersion: row.figmaVersion ?? null,
+    versionConfirmed: row.versionConfirmed,
+    fetchedAt: requireIso(row.fetchedAt),
+    staffTaskId: row.staffTaskId ?? null,
+    triageStatus: row.triageStatus,
+    deferral: row.deferral ?? null,
+    linkedDeliveryTaskId: row.linkedDeliveryTaskId ?? null,
+    replies: replies.map(serializeCommentReply),
+    updatedAt: requireIso(row.updatedAt),
   }
 }

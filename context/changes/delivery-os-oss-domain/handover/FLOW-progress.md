@@ -44,3 +44,27 @@ Stand-alone notes per stage live in `FLOW-F0-contracts.md`, `FLOW-F1-L13a-comman
   `fork({keepTransactionContext:true})` + `isInTransaction()` make staff's `withAtomicFlush` join our thread transaction.
 - Patch request (UI owner): i18n key `delivery_os.audit.comments.import`.
 - Tests: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 94 suites green; core typecheck + scoped test tsconfig (`/tmp/t055/tsconfig.json`) green; eslint on touched files clean.
+
+## T056 — FLOW-F2 L18a: the four F10–F13 routes
+
+- Exists now: `api/projects/[id]/staff-link/route.ts` (GET/PUT), `.../comment-imports/route.ts` (POST),
+  `.../comment-threads/route.ts` (GET), `.../comment-threads/[threadId]/triage/route.ts` (POST); serializers
+  `serializeStaffLink` (re-export of the command's `toStaffLink`) + `serializeCommentThread`; route schema
+  `commentThreadTriageResponseSchema`. All four paths are in `apps/mercato/.mercato/generated/openapi.generated.json`.
+- For Adam: `PUT staff-link` answers exactly `staffLinkSchema` (no `unchanged` flag; a same-id replay is 200 and needs no
+  version header); `GET staff-link` is 404 while unlinked; `POST comment-imports` needs `Idempotency-Key`, caps the body
+  at 1 MB and answers 201 new / 200 replayed; `GET comment-threads?stageId=&status=&triage=&page=&pageSize=` is newest
+  `updatedAt` first with the replies inline; triage takes the **thread** `updatedAt` as the lock header.
+- Test kit: `api/__tests__/commentRouteKit.ts` (`prepareLinkedProject`, `registerStaffProjects`, `registerFakeKanban`,
+  `batchFixture`, `postCommentImport`, `listCommentThreads`, `postTriage`); `routeTestKit` gained the
+  `staffAccess` / `kanbanAdapter` slots and orders the two comment entities. Helper names must not start with `use`
+  (react-hooks lint).
+- Live proof on :3100 (`/tmp/t056-smoke.sh`, project `1f143b7d…`): link 428→200→200 replay, GET link 200, import 400 (no
+  key) →201→200 replay, thread list shows `staffTaskId` + `staffCommentId`, `pageSize=101` 400, triage 428→200→409 stale.
+  The real staff card ("The booking button is hard to find on mobile.") exists in `staff_time_tasks` — first live run of
+  the default `deliveryStaffKanbanAdapter`. The dev server MUST be restarted after the F2 entities landed, otherwise
+  every F2 route answers 500 (stale ORM metadata).
+- Tests: `jest src/modules/delivery_os --maxWorkers=2` → 98 suites / 1828 green; core typecheck green; scoped test tsc
+  (`/tmp/t056/tsconfig.json`) shows only the two pre-existing `routeTestKit` `em` inference errors; eslint clean.
+- Open for L18b: `TC-DELIVERY-FLOW-03/04` integration specs against the real DB (the route suites use fakes), and the
+  still thread-agnostic wording of the 428 lock-header message.
