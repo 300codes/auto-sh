@@ -174,9 +174,21 @@ Zależy nam na:
 
 Preferowany kierunek kolorystyczny:
 
-- jasne tło,
-- atramentowy / bardzo ciemny tekst,
-- miedziany kolor akcentowy.
+- granat jako kolor bazowy marki (`#082C55`),
+- niebieski (`#0757B8`) i cyjan (`#12B8DB`) jako akcenty nawiązujące do logotypu,
+- jasne tło sekcji treści z granatowym tekstem,
+- możliwość ciemnego hero z jasnym tekstem i niebiesko-cyjanową grafiką.
+
+Ten kierunek zastępuje wcześniejszy miedziany akcent. Cyjan służy przede wszystkim
+do akcentów graficznych; kolory tekstu, przycisków i focusu wymagają sprawdzenia
+kontrastu na konkretnym tle. Paletę wdrożyć przez tokeny design systemu witryny.
+
+Logotyp dostarczony przez użytkownika wyznacza tożsamość marki: sześć połączonych
+węzłów wokół centralnego znaku A. Do nawigacji używamy czytelnej wersji wektorowej
+bez poświaty, na przezroczystym tle. Obecna wersja ma granatowy napis i wymaga jasnego tła lub jasnego pola pod logo;
+wariant z jasnym napisem na ciemny hero wymaga osobnego przygotowania.
+Sam sygnet służy do małych zastosowań po kontroli czytelności.
+[Pliki SVG i zasady użycia](assets/aster-works/README.md).
 
 W sekcji hero może pojawić się autorska ilustracja przedstawiająca przepływ dokumentów lub informacji przez uporządkowany proces.
 
