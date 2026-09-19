@@ -151,10 +151,12 @@ function seed(options: { profileId?: string; task?: Partial<DeliveryTask> } = {}
   }
 }
 
+let createdRows = 0
+
 function makeHarness(options: { orgId?: string; sub?: string } = {}) {
   const em: EmMock = {
     fork: jest.fn(),
-    create: jest.fn((_entity: unknown, data: Row) => ({ createdAt: UPDATED_AT, ...data })),
+    create: jest.fn((_entity: unknown, data: Row) => ({ createdAt: new Date(UPDATED_AT.getTime() + 60_000 * ++createdRows), ...data })),
     persist: jest.fn((row: Row) => {
       store.evidence.push(row as unknown as DeliveryEvidence)
     }),
@@ -528,16 +530,10 @@ describe('delivery_os.evidence.record: rules per kind', () => {
     expect(store.evidence).toHaveLength(1)
   })
 
-  it('permits reference material only where the profile does and leaves review to the next command', async () => {
+  it('permits reference material only where the profile does', async () => {
     const notPermitted = await catchHttpError(() => record(input(bodies.reference_material())))
     expectFrozenBody(notPermitted, 422, 'unsupported_evidence_kind')
     expect(detailCodes(notPermitted)).toEqual(['kind_not_permitted_for_profile'])
-
-    const review = await catchHttpError(() =>
-      record(input({ kind: 'review', taskId: taskPackage.taskId, sourceRevision: GIT_REVISION, payload: { verdict: 'approved', summary: 'ok', reviewer: { kind: 'human' } } })),
-    )
-    expectFrozenBody(review, 422, 'unsupported_evidence_kind')
-    expect(detailCodes(review)).toEqual(['review_not_yet_supported'])
 
     const unknown = await catchHttpError(() => record(input({ kind: 'result_manifest', payload: {} })))
     expectFrozenBody(unknown, 422, 'unsupported_evidence_kind')
@@ -582,5 +578,298 @@ describe('delivery_os.evidence.record: reference material never counts as proof'
     expect(rows.length).toBeGreaterThan(0)
     expect(rows.every((row) => row.countsAsAcEvidence === false)).toBe(true)
     expect(store.tasks[0].status).toBe('awaiting_review')
+  })
+})
+
+const DEPENDANT_ID = 'f6f6f6f6-6666-4666-8666-666666666666'
+const OTHER_REVISION: SourceRevision = { kind: 'git', commitSha: '1'.repeat(40) }
+const AC_002_TEST = 'service catalogue AC-002: category filter narrows the list'
+const TASK_EVENT = 'delivery_os.task.updated'
+
+type ManifestCheck = (typeof manifest.checks)[number]
+
+function manifestWith(mutate: (check: ManifestCheck) => ManifestCheck | null): Row {
+  return { ...manifest, checks: manifest.checks.map(mutate).filter((check): check is ManifestCheck => check !== null) }
+}
+
+function seedResult(overrides: Row = {}): Row {
+  const row: Row = {
+    id: `a0a0a0a0-0000-4000-8000-${String(store.evidence.length + 1).padStart(12, '0')}`,
+    tenantId: TENANT_ID,
+    organizationId: ORG_ID,
+    projectId: taskPackage.projectId,
+    baselineId: taskPackage.baselineId,
+    taskId: taskPackage.taskId,
+    attemptId: taskPackage.attemptId,
+    kind: 'result_manifest',
+    source: 'adapter',
+    sourceRevision: GIT_REVISION,
+    payload: manifest,
+    payloadHash: SHA_A,
+    rawReportHash: null,
+    attachmentIds: [],
+    recordedBy: null,
+    createdAt: new Date('2026-09-19T08:30:00.000Z'),
+    ...overrides,
+  }
+  store.evidence.push(row as unknown as DeliveryEvidence)
+  return row
+}
+
+function review(payload: Row, overrides: Row = {}): Row {
+  return input(
+    { kind: 'review', taskId: taskPackage.taskId, sourceRevision: GIT_REVISION, payload: { summary: 'Reviewed the result', reviewer: { kind: 'human' }, ...payload } },
+    overrides,
+  )
+}
+
+function taskEvents(): Row[] {
+  return mockEmitDeliveryOsEvent.mock.calls.filter(([id]) => id === TASK_EVENT).map(([, payload]) => payload as Row)
+}
+
+function task(): DeliveryTask {
+  return store.tasks[0]
+}
+
+describe('delivery_os.evidence.record: review approves only what the system can prove', () => {
+  it('moves awaiting_review to verified when every required test passed on the result revision', async () => {
+    seedResult()
+    const result = await record(review({ verdict: 'approved' }))
+    expect(result).toEqual({
+      evidenceId: expect.any(String),
+      duplicate: false,
+      kind: 'review',
+      taskStatus: 'verified',
+      taskStatusReason: null,
+      taskUpdatedAt: UPDATED_AT.toISOString(),
+      propagatedTaskIds: [],
+    })
+    expect(task()).toMatchObject({ status: 'verified', statusReason: null })
+    expect(store.evidence).toHaveLength(2)
+    expect(store.evidence[1]).toMatchObject({ kind: 'review', taskId: taskPackage.taskId, attemptId: null, source: 'manual', recordedBy: ACTOR_ID })
+    expect(emitted()).toHaveLength(1)
+    expect(emitted()[0]).toMatchObject({ kind: 'review', taskId: taskPackage.taskId, duplicate: false })
+    expect(taskEvents()).toEqual([expect.objectContaining({ taskId: taskPackage.taskId, status: 'verified', statusReason: null })])
+  })
+
+  it('lets an agent approve when the proof is complete and stores who reviewed', async () => {
+    seedResult()
+    const result = await record(review({ verdict: 'approved', reviewer: { kind: 'agent', ref: 'reviewer-agent' } }), { sub: 'agent-runner' })
+    expect(result.taskStatus).toBe('verified')
+    expect(store.evidence[1]).toMatchObject({ payload: expect.objectContaining({ reviewer: { kind: 'agent', ref: 'reviewer-agent' } }), recordedBy: null })
+  })
+
+  it.each([
+    ['not_run', (check: ManifestCheck) => (check.testId === AC_002_TEST ? { ...check, status: 'not_run' as const } : check)],
+    ['failed', (check: ManifestCheck) => (check.testId === AC_002_TEST ? { ...check, status: 'failed' as const } : check)],
+    ['missing', (check: ManifestCheck) => (check.testId === AC_002_TEST ? null : check)],
+  ])('refuses approval while a required test is %s and leaves the task untouched', async (_label, mutate) => {
+    seedResult({ payload: manifestWith(mutate) })
+    const error = await catchHttpError(() => record(review({ verdict: 'approved' })))
+    expectFrozenBody(error, 422, 'missing_required_tests')
+    expect(detailCodes(error)).toEqual(['ac_unproven'])
+    expect((error.body.details as Row[])[0].path).toBe('acIds.AC-002')
+    expect(task()).toMatchObject({ status: 'awaiting_review', statusReason: null })
+    expect(store.evidence).toHaveLength(1)
+    expect(taskEvents()).toEqual([])
+  })
+
+  it('counts test evidence only on the result revision, also project-level rows', async () => {
+    seedResult({ payload: manifestWith((check) => (check.testId === AC_002_TEST ? null : check)) })
+    const testRow = (revision: SourceRevision, overrides: Row = {}): Row => ({
+      ...seedResult({ kind: 'test', attemptId: null, sourceRevision: revision, payload: { rawReportHash: SHA_B, checks: manifest.checks.filter((check) => check.testId === AC_002_TEST).map((check) => ({ ...check, sourceRevision: revision })) }, ...overrides }),
+    })
+    testRow(OTHER_REVISION)
+    const stillUnproven = await catchHttpError(() => record(review({ verdict: 'approved' })))
+    expectFrozenBody(stillUnproven, 422, 'missing_required_tests')
+
+    testRow(GIT_REVISION, { taskId: null, baselineId: OTHER_BASELINE_ID })
+    const otherBaseline = await catchHttpError(() => record(review({ verdict: 'approved' })))
+    expectFrozenBody(otherBaseline, 422, 'missing_required_tests')
+
+    testRow(GIT_REVISION, { taskId: null })
+    const result = await record(review({ verdict: 'approved' }))
+    expect(result.taskStatus).toBe('verified')
+  })
+
+  it('reviews the result of the named attempt when attemptId is given', async () => {
+    seedResult({
+      sourceRevision: OTHER_REVISION,
+      payload: { ...manifest, resultRevision: OTHER_REVISION, checks: manifest.checks.map((check) => ({ ...check, sourceRevision: OTHER_REVISION })) },
+    })
+    seedResult({ attemptId: UNKNOWN_ID, createdAt: new Date('2026-09-19T08:45:00.000Z') })
+    const wrongAttempt = await catchHttpError(() => record(review({ verdict: 'approved' }, { attemptId: taskPackage.attemptId })))
+    expectFrozenBody(wrongAttempt, 422, 'missing_required_tests')
+    expect(detailCodes(wrongAttempt)).toEqual(['revision_mismatch'])
+
+    const result = await record(review({ verdict: 'approved' }, { sourceRevision: OTHER_REVISION, attemptId: taskPackage.attemptId }))
+    expect(result.taskStatus).toBe('verified')
+    expect(store.evidence.at(-1)).toMatchObject({ kind: 'review', attemptId: taskPackage.attemptId })
+  })
+
+  it('answers a review that names another revision than the accepted result with revision_mismatch', async () => {
+    seedResult()
+    const error = await catchHttpError(() => record(review({ verdict: 'approved' }, { sourceRevision: OTHER_REVISION })))
+    expectFrozenBody(error, 422, 'missing_required_tests')
+    expect(detailCodes(error)).toEqual(['revision_mismatch'])
+    expect(task().status).toBe('awaiting_review')
+  })
+
+  it('needs an accepted result on the pinned baseline', async () => {
+    const noResult = await catchHttpError(() => record(review({ verdict: 'approved' })))
+    expectFrozenBody(noResult, 422, 'missing_required_tests')
+    expect(detailCodes(noResult)).toEqual(['missing_evidence'])
+
+    seedResult({ baselineId: OTHER_BASELINE_ID })
+    const otherBaseline = await catchHttpError(() => record(review({ verdict: 'changes_requested' })))
+    expectFrozenBody(otherBaseline, 422, 'baseline_mismatch')
+    expect(task().status).toBe('awaiting_review')
+    expect(store.evidence).toHaveLength(1)
+  })
+
+  it('refuses a reviewedEvidenceId of another task and accepts one of this task', async () => {
+    const result = seedResult()
+    const foreign = await catchHttpError(() => record(review({ verdict: 'approved', reviewedEvidenceId: UNKNOWN_ID })))
+    expectFrozenBody(foreign, 422, 'foreign_reference')
+    expect(detailCodes(foreign)).toEqual(['foreign_evidence'])
+
+    const accepted = await record(review({ verdict: 'approved', reviewedEvidenceId: result.id }))
+    expect(accepted.taskStatus).toBe('verified')
+  })
+
+  it('returns dependency-blocked descendants to draft when the task is verified', async () => {
+    seedResult()
+    store.tasks.push(makeTask({ id: DEPENDANT_ID, status: 'blocked', statusReason: 'dependency_blocked', dependsOnTaskIds: [taskPackage.taskId], executionAttempts: [] }))
+    const result = await record(review({ verdict: 'approved' }))
+    expect(result.propagatedTaskIds).toEqual([DEPENDANT_ID])
+    expect(store.tasks[1]).toMatchObject({ status: 'draft', statusReason: null })
+    expect(taskEvents().map((event) => [event.taskId, event.status])).toEqual([[taskPackage.taskId, 'verified'], [DEPENDANT_ID, 'draft']])
+  })
+})
+
+describe('delivery_os.evidence.record: review correction rounds', () => {
+  it('opens correction rounds and blocks the task once the limit is reached', async () => {
+    seedResult()
+    store.tasks.push(makeTask({ id: DEPENDANT_ID, status: 'ready', dependsOnTaskIds: [taskPackage.taskId], executionAttempts: [] }))
+
+    const first = await record(review({ verdict: 'changes_requested', summary: 'Round one' }))
+    expect(first).toMatchObject({ taskStatus: 'changes_requested', taskStatusReason: null, propagatedTaskIds: [] })
+    expect(task()).toMatchObject({ status: 'changes_requested', statusReason: null })
+
+    task().status = 'awaiting_review'
+    const second = await record(review({ verdict: 'changes_requested', summary: 'Round two' }))
+    expect(second.taskStatus).toBe('changes_requested')
+
+    task().status = 'awaiting_review'
+    const third = await record(review({ verdict: 'changes_requested', summary: 'Round three' }))
+    expect(third).toMatchObject({ taskStatus: 'blocked', taskStatusReason: 'correction_limit_reached', propagatedTaskIds: [DEPENDANT_ID] })
+    expect(task()).toMatchObject({ status: 'blocked', statusReason: 'correction_limit_reached' })
+    expect(store.tasks[1]).toMatchObject({ status: 'blocked', statusReason: 'dependency_blocked' })
+    expect(store.evidence.filter((row) => row.kind === 'review')).toHaveLength(3)
+    expect(taskEvents().at(-1)).toMatchObject({ taskId: DEPENDANT_ID, status: 'blocked', statusReason: 'dependency_blocked' })
+
+    const afterLimit = await catchHttpError(() => record(review({ verdict: 'changes_requested', summary: 'Round four' })))
+    expectFrozenBody(afterLimit, 409, 'invalid_transition')
+    expect(detailCodes(afterLimit)).toEqual(['task_not_awaiting_review'])
+  })
+
+  it('treats the same words as a replay only while nothing happened since', async () => {
+    seedResult()
+    const first = await record(review({ verdict: 'changes_requested' }))
+    task().status = 'awaiting_review'
+    const replay = await record(review({ verdict: 'changes_requested' }))
+    expect(replay).toEqual({
+      evidenceId: first.evidenceId,
+      duplicate: true,
+      kind: 'review',
+      taskStatus: 'awaiting_review',
+      taskStatusReason: null,
+      taskUpdatedAt: UPDATED_AT.toISOString(),
+      propagatedTaskIds: [],
+    })
+    expect(task().status).toBe('awaiting_review')
+    expect(emitted().map((event) => event.duplicate)).toEqual([false, true])
+
+    seedResult({ createdAt: new Date('2026-09-19T12:00:00.000Z'), sourceRevision: GIT_REVISION })
+    const afterNewResult = await record(review({ verdict: 'changes_requested' }))
+    expect(afterNewResult.duplicate).toBe(false)
+    expect(afterNewResult.taskStatus).toBe('changes_requested')
+    expect(store.evidence.filter((row) => row.kind === 'review')).toHaveLength(2)
+  })
+
+  it.each(['draft', 'ready', 'executing', 'changes_requested', 'blocked', 'verified', 'cancelled'] as const)('answers 409 invalid_transition for a review while %s', async (status) => {
+    seedResult()
+    task().status = status
+    const error = await catchHttpError(() => record(review({ verdict: 'changes_requested' })))
+    expectFrozenBody(error, 409, 'invalid_transition')
+    expect(detailCodes(error)).toEqual(['task_not_awaiting_review'])
+    expect(task().status).toBe(status)
+    expect(store.evidence).toHaveLength(1)
+  })
+})
+
+describe('delivery_os.evidence.record: manual checks and reviewers', () => {
+  const MANUAL_TASK = { acIds: ['AC-001', 'AC-002', 'AC-003'] }
+
+  it('keeps a manual AC unproven until a human approves its manual check, then verifies', async () => {
+    seed({ task: MANUAL_TASK })
+    seedResult()
+    const unproven = await catchHttpError(() => record(review({ verdict: 'approved' })))
+    expectFrozenBody(unproven, 422, 'missing_required_tests')
+    expect((unproven.body.details as Row[]).map((detail) => detail.path)).toEqual(['acIds.AC-003'])
+
+    const agentVerdict = await catchHttpError(() => record(review({ verdict: 'approved', manualCheckId: 'MC-visual-001', reviewer: { kind: 'agent' } })))
+    expectFrozenBody(agentVerdict, 400, 'validation_failed')
+    expect(detailCodes(agentVerdict)).toEqual(['human_reviewer_required'])
+
+    const unknownCheck = await catchHttpError(() => record(review({ verdict: 'approved', manualCheckId: 'MC-nope' })))
+    expectFrozenBody(unknownCheck, 422, 'unknown_test_id')
+    expect(detailCodes(unknownCheck)).toEqual(['unknown_manual_check'])
+
+    const rejected = await record(review({ verdict: 'changes_requested', manualCheckId: 'MC-visual-001', summary: 'Spacing is off' }))
+    expect(rejected).toMatchObject({ duplicate: false, taskStatus: 'awaiting_review' })
+    const stillFailed = await catchHttpError(() => record(review({ verdict: 'approved' })))
+    expectFrozenBody(stillFailed, 422, 'missing_required_tests')
+
+    const approvedCheck = await record(review({ verdict: 'approved', manualCheckId: 'MC-visual-001', summary: 'Matches the design' }))
+    expect(approvedCheck).toMatchObject({ duplicate: false, taskStatus: 'awaiting_review', taskStatusReason: null })
+    expect(taskEvents()).toEqual([])
+
+    const verified = await record(review({ verdict: 'approved' }))
+    expect(verified.taskStatus).toBe('verified')
+    expect(store.evidence.filter((row) => row.kind === 'review')).toHaveLength(3)
+  })
+
+  it('does not count manual-check verdicts as correction rounds', async () => {
+    seed({ task: MANUAL_TASK })
+    seedResult()
+    await record(review({ verdict: 'changes_requested', manualCheckId: 'MC-visual-001', summary: 'One' }))
+    await record(review({ verdict: 'changes_requested', manualCheckId: 'MC-visual-001', summary: 'Two' }))
+    await record(review({ verdict: 'changes_requested', manualCheckId: 'MC-visual-001', summary: 'Three' }))
+    const round = await record(review({ verdict: 'changes_requested' }))
+    expect(round.taskStatus).toBe('changes_requested')
+  })
+
+  it('needs a signed-in user for a human review but not for an agent review', async () => {
+    seedResult()
+    const noUser = await catchHttpError(() => record(review({ verdict: 'changes_requested' }), { sub: 'agent-runner' }))
+    expectFrozenBody(noUser, 403, 'forbidden')
+    expect(detailCodes(noUser)).toEqual(['actor_required'])
+    expect(store.evidence).toHaveLength(1)
+
+    await record(review({ verdict: 'changes_requested' }))
+    task().status = 'awaiting_review'
+    const replayWithoutUser = await catchHttpError(() => record(review({ verdict: 'changes_requested' }), { sub: 'agent-runner' }))
+    expectFrozenBody(replayWithoutUser, 403, 'forbidden')
+
+    const agent = await record(review({ verdict: 'changes_requested', reviewer: { kind: 'agent', ref: 'reviewer-agent' } }), { sub: 'agent-runner' })
+    expect(agent.taskStatus).toBe('changes_requested')
+  })
+
+  it('refuses a review of a task outside the project', async () => {
+    seedResult()
+    const error = await catchHttpError(() => record(review({ verdict: 'approved' }, { taskId: UNKNOWN_ID })))
+    expectFrozenBody(error, 422, 'foreign_reference')
+    expect(detailCodes(error)).toEqual(['foreign_task'])
   })
 })
