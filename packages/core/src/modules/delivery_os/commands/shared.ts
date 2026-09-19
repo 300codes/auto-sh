@@ -165,3 +165,38 @@ export async function lockScopedProjectTasks(
     scope,
   )
 }
+
+export type LockedTaskForWrite = {
+  project: DeliveryProject
+  tasks: DeliveryTask[]
+  task: DeliveryTask
+}
+
+export async function lockTaskForWrite(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  id: string,
+  scope: DeliveryScope,
+): Promise<LockedTaskForWrite> {
+  const found = await findOneWithDecryption(
+    tx.fork({ keepTransactionContext: true }),
+    DeliveryTask,
+    { id, tenantId: scope.tenantId, organizationId: scope.organizationId, deletedAt: null },
+    undefined,
+    scope,
+  )
+  const project = found ? await findScopedProject(tx, found.projectId, scope, { lock: true }) : null
+  const tasks = project ? await lockScopedProjectTasks(tx, project.id, scope) : []
+  const task = tasks.find((candidate) => candidate.id === id)
+  if (!project || !task) {
+    enforceRecordGoneIsConflict({ resourceKind: DELIVERY_TASK_RESOURCE_KIND, resourceId: id, request: ctx.request ?? null })
+    throw notFoundError('taskId')
+  }
+  await enforceCommandOptimisticLockWithGuards(ctx.container, {
+    resourceKind: DELIVERY_TASK_RESOURCE_KIND,
+    resourceId: task.id,
+    current: task.updatedAt,
+    request: ctx.request ?? null,
+  })
+  return { project, tasks, task }
+}

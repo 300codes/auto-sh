@@ -121,7 +121,15 @@ function resolveTargetProfile(id: string, version: number | undefined): TargetPr
   )
 }
 
-export function checkProjectArchivable(tasks: readonly DeliveryTask[]): DeliveryCheckResult {
+export function checkProjectArchivable(
+  tasks: readonly DeliveryTask[],
+  subject: 'project' | 'task' = 'project',
+): DeliveryCheckResult {
+  const unknownMessage =
+    subject === 'project'
+      ? 'Reconcile unknown attempts before archiving the project'
+      : 'Reconcile the unknown attempt before changing the task'
+  const activeMessage = subject === 'project' ? 'Project has an active attempt or task' : 'Task has an active attempt'
   const unknown: DeliveryErrorDetail[] = []
   const active: DeliveryErrorDetail[] = []
   for (const task of tasks) {
@@ -142,14 +150,11 @@ export function checkProjectArchivable(tasks: readonly DeliveryTask[]): Delivery
   if (unknown.length > 0) {
     return {
       ok: false,
-      ...buildDeliveryError('reconciliation_required', 'Reconcile unknown attempts before archiving the project', [
-        ...unknown,
-        ...active,
-      ]),
+      ...buildDeliveryError('reconciliation_required', unknownMessage, [...unknown, ...active]),
     }
   }
   if (active.length > 0) {
-    return { ok: false, ...buildDeliveryError('attempt_active', 'Project has an active attempt or task', active) }
+    return { ok: false, ...buildDeliveryError('attempt_active', activeMessage, active) }
   }
   return { ok: true }
 }

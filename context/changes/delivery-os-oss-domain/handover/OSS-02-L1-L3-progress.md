@@ -114,3 +114,25 @@ and routes; the export test with real decisions comes with them.
 - Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 14 suites, 427 tests
   green; `tsc --noEmit` for `@open-mercato/core` clean. No migration, no workspace change; `yarn generate` output is
   gitignored.
+
+## Addendum — L4c task commands (T011)
+
+- Commands: `delivery_os.tasks.create | update | delete` (`commands/tasks.ts`). Result
+  `{ taskId, projectId, status, updatedAt, propagatedTaskIds }`. Create input is `{ projectId, ...body }` — **the route
+  must copy `projectId` from the path** (`/projects/:id/tasks`); only `source: 'manual'` is accepted here.
+- New shared helper `lockTaskForWrite(tx, ctx, id, scope) → { project, tasks, task }`: project row lock → live project
+  task locks → optimistic check on the task. Attempt/result commands that change several tasks should reuse it.
+  `checkProjectArchivable(tasks, 'task')` is the single classifier for live/unknown attempts.
+- Exported for reuse: `countCorrectionRounds(evidence)` (OSS-04 review flow), `checkTaskDeletable`, `checkKnownAcIds`.
+- **For UI:** detail codes to render — `foreign_baseline`, `unknown_ac` (path `acIds.<id>`), `other_project`,
+  `other_baseline`, `unknown_dependency`, `cycle`, `task_not_editable`, `not_user_settable`, `dependency_blocked`,
+  `baseline_not_active`, `result_awaits_review`, `<kind>_decision_missing|rejected`, `missing_render`, `missing_required_tests`,
+  `has_dependents` (path `tasks.<dependentId>.dependsOnTaskIds`), attempt codes as in the project archive.
+  Blocking a task changes its descendants too: their `updatedAt` moves and each gets a `delivery_os.task.updated`
+  event — refresh the list on that event. Audit labels need `delivery_os.audit.tasks.{create,update,delete}`.
+- Scope fields (`acIds`, `dependsOnTaskIds`, `allowedPaths`) are editable only in `draft`/`blocked` before any attempt;
+  `title`/`description` always. A dependency on a `cancelled` task is accepted (the task can then never be reserved).
+- Status updates never reopen a task that already has an accepted result (`result_awaits_review`) — OSS-04 review
+  commands own that path; archiving a `verified`/`awaiting_review` task is allowed (soft delete, evidence stays).
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 15 suites, 462 tests
+  green; `tsc --noEmit` for `@open-mercato/core` clean. No migration, no workspace change.
