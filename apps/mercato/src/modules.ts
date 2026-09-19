@@ -220,4 +220,7 @@ if (enterpriseModulesEnabled && enterpriseAgentsEnabled) {
   // brand-new module (see apps/mercato/src/modules/agent_examples/README.md).
   // It imports the orchestrator SDK, so it is only enabled alongside it.
   enabledModules.push({ id: 'agent_examples', from: '@app' })
+  // Delivery agents: enterprise execution bridge for autonomous software delivery.
+  // Depends on delivery_os (OSS domain) which must also be enabled.
+  enabledModules.push({ id: 'delivery_agents', from: '@open-mercato/enterprise' })
 }
