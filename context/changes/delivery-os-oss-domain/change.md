@@ -1,7 +1,7 @@
 ---
 id: delivery-os-oss-domain
 title: "Delivery OS — OSS stream: domain, contracts and integration"
-status: implementing
+status: handed_over
 created: 2026-09-19
 updated: 2026-09-19
 ---
@@ -28,3 +28,5 @@ Strictly additive; not mirrored into the create-app template. Not in scope: `pac
 |------|------|
 | OSS-01 (T001) | [`handover/OSS-01-readiness.md`](handover/OSS-01-readiness.md) — environment, runner, ports, queue settings, baseline build, gate timing, H3 blockers, patch text for `hackathon/delivery-demo/readiness.md` |
 | OSS-01 (T003) | [`handover/OSS-01-api-and-tests.md`](handover/OSS-01-api-and-tests.md) — frozen v1 API paths R1–R22, internal commands, planned test files per layer; specs `.ai/specs/2026-09-18-delivery-os-hackathon.md` and `.ai/specs/enterprise/2026-09-18-delivery-agents-hackathon.md` |
+| OSS-06 (T039) | [`handover/OSS-06-final.md`](handover/OSS-06-final.md) — final commit, versions, commit table, gate results, evidence per Progress row, manual rows left open, limitations, patch requests, A1 note, judge talking points; also `OSS-06-gate.md`, `OSS-06-migration-and-history.md`, `FLOW-F0-contracts.md` |
+| FLOW-F1 L13a (T044) | [`handover/FLOW-F1-L13a-commands.md`](handover/FLOW-F1-L13a-commands.md) — intake/flow-pin/link commands, flow ACL features, events, template provider DI, unit tests |

@@ -1,4 +1,4 @@
-import { MAX_CANONICAL_DEPTH, SHA256_HEX_PATTERN, canonicalize, hashCanonical, sha256Hex } from '../hash'
+import { MAX_CANONICAL_DEPTH, SHA256_HEX_PATTERN, canonicalize, compareCodeUnits, hashCanonical, sha256Hex } from '../hash'
 
 describe('delivery_os canonical hash', () => {
   it('matches the published sha256 test vector for "abc"', () => {
@@ -11,6 +11,12 @@ describe('delivery_os canonical hash', () => {
     expect(canonicalize(value)).toBe('{"a":{"c":"x","d":[3,1,2]},"b":1}')
     expect(hashCanonical(value)).toBe(sha256Hex('{"a":{"c":"x","d":[3,1,2]},"b":1}'))
     expect(hashCanonical(value)).toMatch(SHA256_HEX_PATTERN)
+  })
+
+  it('orders keys by UTF-16 code unit, not by locale, so stored hashes stay stable', () => {
+    const keys = ['b', 'B', 'a', '_', 'Z', '10', '9', 'ä', 'é', 'A']
+    expect([...keys].sort(compareCodeUnits)).toEqual(['10', '9', 'A', 'B', 'Z', '_', 'a', 'b', 'ä', 'é'])
+    expect(canonicalize({ b: 1, B: 2, 'ä': 3, a: 4 })).toBe('{"B":2,"a":4,"b":1,"ä":3}')
   })
 
   it('gives the same hash regardless of key order at every depth', () => {

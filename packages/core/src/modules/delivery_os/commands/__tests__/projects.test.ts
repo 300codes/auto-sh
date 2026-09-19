@@ -439,6 +439,24 @@ describe('delivery_os.projects.update', () => {
     expect(log?.changes).toEqual({ name: { from: 'Customer portal', to: 'Renamed' } })
     expect(log?.resourceKind).toBe('delivery_os.project')
   })
+
+  it('does not log a draft whose key order changed but whose content is canonically equal', async () => {
+    const { ctx } = makeHarness()
+    const stored = draftSpecV1Schema.parse(validDraft)
+    const reordered = Object.fromEntries(Object.entries(stored).reverse()) as typeof stored
+    expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(stored))
+    mockFindOneWithDecryption.mockResolvedValueOnce(makeProject({ draftSpec: stored }))
+    const prepared = await update.prepare?.({ id: PROJECT_ID, draftSpec: reordered }, ctx)
+    mockFindOneWithDecryption.mockResolvedValueOnce(makeProject({ draftSpec: reordered }))
+    const after = await update.captureAfter?.({ id: PROJECT_ID }, { projectId: PROJECT_ID }, ctx)
+    const log = await update.buildLog?.({
+      input: { id: PROJECT_ID },
+      result: { projectId: PROJECT_ID },
+      ctx,
+      snapshots: { before: prepared?.before, after },
+    })
+    expect(log?.changes).toEqual({})
+  })
 })
 
 describe('delivery_os.projects.delete', () => {

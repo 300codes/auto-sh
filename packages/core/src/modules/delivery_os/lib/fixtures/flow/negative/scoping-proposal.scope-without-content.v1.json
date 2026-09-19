@@ -1,0 +1,30 @@
+{
+  "description": "A scope proposal without scope content.",
+  "expected": {
+    "stage": "schema",
+    "code": "manifest_required",
+    "status": 422
+  },
+  "documentType": "versioned",
+  "document": {
+    "schemaVersion": "delivery.scoping-proposal/v1",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "manifestId": "scope-2026-09-19-001",
+    "kind": "scope",
+    "questions": [
+      {
+        "id": "Q-001",
+        "text": "Should the booking form send confirmation emails?",
+        "askedBy": "agent",
+        "blocking": true,
+        "answer": null
+      }
+    ],
+    "scope": null,
+    "platform": null,
+    "producedBy": {
+      "tool": "delivery.scoping",
+      "sessionRef": null
+    }
+  }
+}

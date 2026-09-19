@@ -81,6 +81,23 @@ function pickDraftAcEntries(acTestMap: Record<string, string[]>, draft: Record<s
   return Object.fromEntries(Object.entries(acTestMap).filter(([acId]) => draftAcIds.has(acId)))
 }
 
+function readDraftAcTestMap(draft: Record<string, unknown>): Record<string, string[]> {
+  if (!isRecord(draft.acTestMap)) return {}
+  return Object.fromEntries(
+    Object.entries(draft.acTestMap).flatMap(([acId, testIds]) =>
+      Array.isArray(testIds) ? [[acId, testIds.filter((testId): testId is string => typeof testId === 'string')]] : [],
+    ),
+  )
+}
+
+function concurrentImportError() {
+  return deliveryHttpError(
+    buildDeliveryError('idempotency_conflict', 'A concurrent import created a conflicting baseline; retry with the current state', [
+      { path: 'manifest', code: 'concurrent_import', message: 'Another import committed a conflicting baseline for this project' },
+    ]),
+  )
+}
+
 function notApprovedError(details: DeliveryErrorDetail[]) {
   return deliveryHttpError(buildDeliveryError('baseline_not_approved', 'The plan needs the active approved baseline', details))
 }
@@ -267,7 +284,10 @@ const importPlanCommand: CommandHandler<unknown, PlanImportCommandResult> = {
           ...draft,
           architectureSummary: plan.baselineContent.architectureSummary,
           planSummary: plan.baselineContent.planSummary,
-          acTestMap: pickDraftAcEntries(plan.baselineContent.acTestMap, draft),
+          acTestMap: {
+            ...pickDraftAcEntries(readDraftAcTestMap(draft), draft),
+            ...pickDraftAcEntries(plan.baselineContent.acTestMap, draft),
+          },
           declaredTests: plan.baselineContent.declaredTests,
         }
         project.updatedAt = new Date()
@@ -279,7 +299,7 @@ const importPlanCommand: CommandHandler<unknown, PlanImportCommandResult> = {
       const recoveryEm = resolveDeliveryEm(ctx)
       const project = await requireScopedProject(recoveryEm, projectId, scope)
       const winner = await findReplay(recoveryEm, project, await listProjectBaselines(recoveryEm, projectId, scope), identity, scope)
-      if (!winner) throw error
+      if (!winner) throw concurrentImportError()
       outcome = winner
     }
 

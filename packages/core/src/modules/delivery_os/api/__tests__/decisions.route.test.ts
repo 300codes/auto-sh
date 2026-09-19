@@ -108,6 +108,24 @@ describe('delivery_os baseline decisions route', () => {
     expect(routeState.store.decisions).toHaveLength(0)
   })
 
+  it('never records a deploy or release decision, so baselines.approve cannot bypass deploy.approve', async () => {
+    routeState.store.projects[0].activeBaselineId = BASELINE_ID
+    signInAs({ features: ['delivery_os.baselines.approve'] })
+    for (const kind of ['deploy', 'release']) {
+      const body = {
+        kind,
+        projectId: routeState.store.projects[0].id,
+        sourceRevision: { kind: 'git', commitSha: 'a'.repeat(40) },
+        verdict: 'rejected',
+        reason: 'bypass attempt',
+      }
+      const response = await POST(apiRequest('POST', path, { body, lock: UPDATED_AT }), routeParams(BASELINE_ID))
+      const error = await expectFrozenError(response, 422, 'unsupported_evidence_kind')
+      expect(detailCodesOf(error)).toEqual(['decision_kind_not_supported'])
+    }
+    expect(routeState.store.decisions).toHaveLength(0)
+  })
+
   it('answers 404 for a second tenant, a second organization and a malformed id', async () => {
     for (const session of [{ tenantId: FOREIGN_TENANT_ID }, { orgId: FOREIGN_ORG_ID }]) {
       signInAs(session)

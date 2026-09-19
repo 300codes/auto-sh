@@ -3,6 +3,7 @@ import {
   baselineContentV1Schema,
   deliveryErrorBodySchema,
   deliveryErrorCodeSchema,
+  deliveryReportV1Schema,
   designManifestV1Schema,
   executionWidgetContextV1Schema,
   planProposalV1Schema,
@@ -12,6 +13,7 @@ import {
   taskPackageV1Schema,
   type BaselineContentV1,
   type DeliveryErrorBody,
+  type DeliveryReportV1,
   type DesignManifestV1,
   type ExecutionWidgetContextV1,
   type PlanProposalV1,
@@ -23,35 +25,36 @@ import {
 import { hashBaseline } from '../baseline'
 import type { PlanProposalContext } from '../proposals'
 import { getTargetProfile } from '../targetProfiles'
-import taskPackageJson from './task-package.v1.json'
-import taskPackageSnapshotJson from './task-package.snapshot.v1.json'
-import resultManifestJson from './result-manifest.v1.json'
-import resultManifestSnapshotJson from './result-manifest.snapshot.v1.json'
-import baselineContentJson from './baseline-content.v1.json'
-import requirementsProposalJson from './requirements-proposal.v1.json'
-import planProposalJson from './plan-proposal.v1.json'
-import designManifestJson from './design-manifest.v1.json'
-import executionWidgetContextJson from './execution-widget-context.v1.json'
-import reserveResponseJson from './reserve-response.v1.json'
-import errorBodyJson from './error-body.v1.json'
-import taskPackageUnknownSchemaVersionJson from './negative/task-package.unknown-schema-version.v1.json'
-import resultManifestForeignTaskJson from './negative/result-manifest.foreign-task.v1.json'
-import resultManifestForeignAttemptJson from './negative/result-manifest.foreign-attempt.v1.json'
-import resultManifestSnapshotForReactJson from './negative/result-manifest.snapshot-for-react.v1.json'
-import resultManifestMissingCheckFieldsJson from './negative/result-manifest.missing-check-fields.v1.json'
-import resultManifestPathEscapeJson from './negative/result-manifest.path-escape.v1.json'
-import resultManifestStatusSkippedJson from './negative/result-manifest.status-skipped.v1.json'
-import resultManifestUnknownTestJson from './negative/result-manifest.unknown-test.v1.json'
-import reserveDuplicateKeyJson from './negative/reserve.duplicate-key.v1.json'
-import reserveAutomaticModeJson from './negative/reserve.automatic-mode.v1.json'
-import planProposalCycleJson from './negative/plan-proposal.cycle.v1.json'
-import planProposalSelfCycleJson from './negative/plan-proposal.self-cycle.v1.json'
-import planProposalPathTraversalJson from './negative/plan-proposal.path-traversal.v1.json'
-import planProposalAbsolutePathJson from './negative/plan-proposal.absolute-path.v1.json'
-import planProposalOutsideProfileRootsJson from './negative/plan-proposal.outside-profile-roots.v1.json'
-import planProposalForeignBaselineJson from './negative/plan-proposal.foreign-baseline.v1.json'
-import planProposalPathEscapeJson from './negative/plan-proposal.path-escape.v1.json'
-import planProposalFalseTestMappingJson from './negative/plan-proposal.false-test-mapping.v1.json'
+import taskPackageJson from './task-package.v1.json' with { type: 'json' }
+import taskPackageSnapshotJson from './task-package.snapshot.v1.json' with { type: 'json' }
+import resultManifestJson from './result-manifest.v1.json' with { type: 'json' }
+import resultManifestSnapshotJson from './result-manifest.snapshot.v1.json' with { type: 'json' }
+import baselineContentJson from './baseline-content.v1.json' with { type: 'json' }
+import requirementsProposalJson from './requirements-proposal.v1.json' with { type: 'json' }
+import planProposalJson from './plan-proposal.v1.json' with { type: 'json' }
+import designManifestJson from './design-manifest.v1.json' with { type: 'json' }
+import executionWidgetContextJson from './execution-widget-context.v1.json' with { type: 'json' }
+import reserveResponseJson from './reserve-response.v1.json' with { type: 'json' }
+import errorBodyJson from './error-body.v1.json' with { type: 'json' }
+import deliveryReportJson from './delivery-report.v1.json' with { type: 'json' }
+import taskPackageUnknownSchemaVersionJson from './negative/task-package.unknown-schema-version.v1.json' with { type: 'json' }
+import resultManifestForeignTaskJson from './negative/result-manifest.foreign-task.v1.json' with { type: 'json' }
+import resultManifestForeignAttemptJson from './negative/result-manifest.foreign-attempt.v1.json' with { type: 'json' }
+import resultManifestSnapshotForReactJson from './negative/result-manifest.snapshot-for-react.v1.json' with { type: 'json' }
+import resultManifestMissingCheckFieldsJson from './negative/result-manifest.missing-check-fields.v1.json' with { type: 'json' }
+import resultManifestPathEscapeJson from './negative/result-manifest.path-escape.v1.json' with { type: 'json' }
+import resultManifestStatusSkippedJson from './negative/result-manifest.status-skipped.v1.json' with { type: 'json' }
+import resultManifestUnknownTestJson from './negative/result-manifest.unknown-test.v1.json' with { type: 'json' }
+import reserveDuplicateKeyJson from './negative/reserve.duplicate-key.v1.json' with { type: 'json' }
+import reserveAutomaticModeJson from './negative/reserve.automatic-mode.v1.json' with { type: 'json' }
+import planProposalCycleJson from './negative/plan-proposal.cycle.v1.json' with { type: 'json' }
+import planProposalSelfCycleJson from './negative/plan-proposal.self-cycle.v1.json' with { type: 'json' }
+import planProposalPathTraversalJson from './negative/plan-proposal.path-traversal.v1.json' with { type: 'json' }
+import planProposalAbsolutePathJson from './negative/plan-proposal.absolute-path.v1.json' with { type: 'json' }
+import planProposalOutsideProfileRootsJson from './negative/plan-proposal.outside-profile-roots.v1.json' with { type: 'json' }
+import planProposalForeignBaselineJson from './negative/plan-proposal.foreign-baseline.v1.json' with { type: 'json' }
+import planProposalPathEscapeJson from './negative/plan-proposal.path-escape.v1.json' with { type: 'json' }
+import planProposalFalseTestMappingJson from './negative/plan-proposal.false-test-mapping.v1.json' with { type: 'json' }
 
 export { buildResultManifest, deriveFakeResultRevision, type ResultManifestOverrides } from './builders'
 export type { PlanProposalContext } from '../proposals'
@@ -68,6 +71,7 @@ export const positiveDeliveryFixtures = [
   { name: 'execution-widget-context', schema: executionWidgetContextV1Schema, document: executionWidgetContextJson },
   { name: 'reserve-response', schema: reserveAttemptResponseSchema, document: reserveResponseJson },
   { name: 'error-body', schema: deliveryErrorBodySchema, document: errorBodyJson },
+  { name: 'delivery-report', schema: deliveryReportV1Schema, document: deliveryReportJson },
 ] as const
 
 export type PositiveDeliveryFixtureName = (typeof positiveDeliveryFixtures)[number]['name']
@@ -122,6 +126,10 @@ export function loadDesignManifestFixture(): DesignManifestV1 {
 
 export function loadReserveResponseFixture(): ReserveAttemptResponse {
   return parseFixture(reserveAttemptResponseSchema, reserveResponseJson, 'reserve-response')
+}
+
+export function loadDeliveryReportFixture(): DeliveryReportV1 {
+  return parseFixture(deliveryReportV1Schema, deliveryReportJson, 'delivery-report')
 }
 
 export function loadErrorBodyFixture(): DeliveryErrorBody {

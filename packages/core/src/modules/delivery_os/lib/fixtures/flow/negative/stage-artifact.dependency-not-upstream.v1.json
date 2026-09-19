@@ -1,0 +1,63 @@
+{
+  "description": "A ux artifact declares a dependency on key_visual, which is downstream.",
+  "expected": {
+    "stage": "schema",
+    "code": "foreign_dependency",
+    "status": 422
+  },
+  "documentType": "versioned",
+  "document": {
+    "schemaVersion": "delivery.stage-artifact/v1",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "stageId": "ux",
+    "source": "figma",
+    "dependsOn": [
+      {
+        "stageId": "key_visual",
+        "artifactId": "aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+        "version": 1,
+        "contentHash": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    ],
+    "attachments": [
+      {
+        "attachmentId": "55555555-5555-4555-8555-555555555555",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "sizeBytes": 20480,
+        "mimeType": "image/png"
+      }
+    ],
+    "producedBy": null,
+    "content": {
+      "summary": "Low-fi wireframes for home and booking.",
+      "figmaRefs": [
+        {
+          "fileKey": "FIGFILE0001",
+          "nodeId": "12:34",
+          "name": "Home wireframe",
+          "figmaVersion": "1234567890",
+          "url": "https://www.figma.com/design/FIGFILE0001?node-id=12-34"
+        }
+      ],
+      "screens": [
+        {
+          "fileKey": "FIGFILE0001",
+          "nodeId": "12:34",
+          "name": "Home wireframe",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "attachmentId": "55555555-5555-4555-8555-555555555555",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "capturedAt": "2026-09-19T10:00:00.000Z",
+          "figmaVersion": "1234567890",
+          "sizeBytes": 20480,
+          "mimeType": "image/png"
+        }
+      ],
+      "notes": null,
+      "resolvedThreadKeys": []
+    }
+  }
+}

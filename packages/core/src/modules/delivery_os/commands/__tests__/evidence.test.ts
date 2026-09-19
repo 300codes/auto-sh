@@ -797,6 +797,41 @@ describe('delivery_os.evidence.record: review correction rounds', () => {
     expect(store.evidence.filter((row) => row.kind === 'review')).toHaveLength(2)
   })
 
+  it('locks the task rows before reading the evidence so a result accepted meanwhile is reviewed, not replayed', async () => {
+    seedResult()
+    const first = await record(review({ verdict: 'changes_requested' }))
+    task().status = 'awaiting_review'
+    const readsInOrder: string[] = []
+    mockFindWithDecryption.mockImplementation(async (_em: unknown, entity: unknown, where: Row, options?: Row) => {
+      if (entity === DeliveryTask && options?.lockMode === LockMode.PESSIMISTIC_WRITE) {
+        readsInOrder.push('lock_tasks')
+        seedResult({ createdAt: new Date('2026-09-19T12:00:00.000Z'), sourceRevision: GIT_REVISION })
+      }
+      if (entity === DeliveryEvidence) readsInOrder.push('load_evidence')
+      return rowsFor(entity).filter((row) => matches(row, where))
+    })
+
+    const afterRace = await record(review({ verdict: 'changes_requested' }))
+    expect(readsInOrder.indexOf('lock_tasks')).toBeLessThan(readsInOrder.indexOf('load_evidence'))
+    expect(afterRace.duplicate).toBe(false)
+    expect(afterRace.evidenceId).not.toBe(first.evidenceId)
+    expect(afterRace.taskStatus).toBe('changes_requested')
+    expect(store.evidence.filter((row) => row.kind === 'review')).toHaveLength(2)
+  })
+
+  it('answers a review replay without writes after taking the task locks', async () => {
+    seedResult()
+    const first = await record(review({ verdict: 'changes_requested' }))
+    task().status = 'awaiting_review'
+    const { ctx, services } = makeHarness()
+    const replay = await handler().execute(review({ verdict: 'changes_requested' }), ctx)
+    const taskLock = mockFindWithDecryption.mock.calls.find(([, entity, , options]) => entity === DeliveryTask && (options as Row | undefined)?.lockMode === LockMode.PESSIMISTIC_WRITE)
+    expect(taskLock).toBeDefined()
+    expect(replay).toMatchObject({ evidenceId: first.evidenceId, duplicate: true, taskStatus: 'awaiting_review' })
+    expect((services.em as EmMock).persist).not.toHaveBeenCalled()
+    expect(store.evidence.filter((row) => row.kind === 'review')).toHaveLength(1)
+  })
+
   it.each(['draft', 'ready', 'executing', 'changes_requested', 'blocked', 'verified', 'cancelled'] as const)('answers 409 invalid_transition for a review while %s', async (status) => {
     seedResult()
     task().status = status
