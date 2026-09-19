@@ -343,13 +343,13 @@ Ostatnia komenda ma nie zwrócić nic. Runner (local albo Docker) wybrać raz dl
 
 #### Automated
 
-- [ ] 1.1 `yarn build:packages && yarn generate` przechodzi; rejestr zawiera nową stronę listy.
-- [ ] 1.2 `yarn workspace @open-mercato/core test --testPathPatterns='delivery_os' --maxWorkers=4` przechodzi.
-- [ ] 1.3 `yarn typecheck` i `yarn lint` przechodzą.
-- [ ] 1.4 `yarn i18n:check-sync` i `yarn i18n:check-usage` bez braków; brak nowych literałów użytkownika.
-- [ ] 1.5 `git diff --stat` nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`.
-- [ ] 1.6 Testy pokrywają odpowiedzi 200/409/404 archiwizacji i obecność nagłówka optimistic lock.
-- [ ] 1.7 Test potwierdza, że wiersz bez `updatedAt` nie wysyła DELETE.
+- [x] 1.1 `yarn build:packages && yarn generate` przechodzi; rejestr zawiera nową stronę listy.
+- [x] 1.2 `yarn workspace @open-mercato/core test --testPathPatterns='delivery_os' --maxWorkers=4` przechodzi.
+- [x] 1.3 `yarn typecheck` i `yarn lint` przechodzą.
+- [x] 1.4 `yarn i18n:check-sync` i `yarn i18n:check-usage` bez braków; brak nowych literałów użytkownika.
+- [x] 1.5 `git diff --stat` nie pokazuje zmian w `api/`, `commands/`, `data/`, `lib/`.
+- [x] 1.6 Testy pokrywają odpowiedzi 200/409/404 archiwizacji i obecność nagłówka optimistic lock.
+- [x] 1.7 Test potwierdza, że wiersz bez `updatedAt` nie wysyła DELETE.
 
 #### Manual
 
