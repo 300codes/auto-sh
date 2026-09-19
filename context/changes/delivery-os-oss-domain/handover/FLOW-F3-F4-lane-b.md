@@ -11,8 +11,9 @@ Scope: F3 (`flow` section on the R22 report, `deliveryOsFlowQueries`, provider s
 | T060 F4 L20b | `31732ea0e` | `publications.record` with deploy consent correlation, flow gate, deployment evidence in one tx |
 | T061 F4 L20c | `13213a102` | publications route, fake deploy adapter, publication chain test |
 | T062 FLOW-07 | `63360dfe0` | publications integration spec, FLOW-08 regression rerun |
+| T064 F4 fix | `e9001c592` | bind publication verification evidence to baseline and revision |
 
-T063 (this hand-over + spec status/changelog) is docs only.
+T063 (this hand-over + spec status/changelog, `d321f18fc`) is docs only.
 
 ## Contract
 
@@ -20,6 +21,7 @@ T063 (this hand-over + spec status/changelog) is docs only.
 - List (`GET /projects/:id/publications`): `publicationListResponseSchema { items, total }`, items = `publicationListItemSchema` (stored PublicationResult fields without `releaseDecisionId`, plus `publicationId`, `deploymentEvidenceId`, `recordedBy`, `createdAt`; `publishedAt` in UTC), newest first, `pageSize` ≤ `PUBLICATION_LIST_MAX_PAGE_SIZE` (100), archived projects readable.
 - F15: `deliveryReportWithFlowSchema` (optional `flow`, pinned projects only; legacy body byte-identical).
 - Errors on F14: `deploy_decision_missing`, `revision_mismatch`, `stage_not_approved` (pinned projects; v1 routes keep `baseline_not_approved`), `deployment_unverified`, `foreign_reference`, `unsupported_schema_version` (422), 413 over 1 MB.
+- Since T064 the verification evidence is also checked against the publication: `baseline_mismatch` when its baseline differs, and `revision_mismatch` now also covers `verification.evidenceId` (details path `verification.evidenceId`). Evidence with a null `sourceRevision` is accepted on the baseline check alone; check order is `foreign_evidence`, baseline, revision.
 
 ## Migration
 
@@ -27,7 +29,7 @@ T063 (this hand-over + spec status/changelog) is docs only.
 
 ## Runner and tests (local, capped, one at a time)
 
-- `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2 --ci` → 96 suites / 1771 tests green.
+- `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2 --ci` → 96 suites / 1771 tests green at T062; repeated after T064 (`e9001c592`): 96 suites / 1774 tests green, 1 snapshot passed.
 - `yarn workspace @open-mercato/core jest src/__tests__/module-decoupling` → 12/12.
 - `yarn turbo run typecheck --filter=@open-mercato/core --concurrency=2` → green.
 - `npx playwright test --config .ai/qa/tests/playwright.config.ts --list TC-DELIVERY-FLOW-07` → 2 tests listed (not run).
@@ -48,7 +50,8 @@ All gitignored under `apps/mercato/.mercato/generated/` (api-routes, api-route-m
 1. Run `yarn test:integration packages/core/src/modules/delivery_os/__integration__/TC-DELIVERY-FLOW-07-publications.spec.ts` after merge, on a server running lane-B code with the F4 migration applied (the shared :3100 server ran lane A code, so it was not used).
 2. Live R22 check: `curl` the report of a pinned project after merge (`flow` section) — not run here.
 3. FLOW-07 live needs Michał's publication target and verification access.
-4. Manual acceptance items in the master plan (Progress 5.1, 5.4) stay unticked; this hand-over is evidence only.
+4. This hand-over is final for lane B at `e9001c592` (plus this docs commit); no further F3/F4 code is planned.
+5. Manual acceptance items in the master plan (Progress 5.1, 5.4) stay unticked; this hand-over is evidence only.
 
 ## Merge notes for lane A
 
