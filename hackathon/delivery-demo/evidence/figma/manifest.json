@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "op": "create",
+      "nodeId": "3:2",
+      "prompt": "patrz prompts.md → krok create",
+      "render": "create-3-2.png",
+      "sha256": "3ec45456c3a66193e1bafe5e1417807ecf2c4ed77eae1de6bc7180ecf3f8930b",
+      "bytes": 54547,
+      "at": "2026-09-19T07:41:00Z",
+      "renderUrl": "https://www.figma.com/api/mcp/asset/c48e8fb7-e564-4701-9f6c-3d6b01897f13.png"
+    },
+    {
+      "op": "update",
+      "nodeId": "3:2",
+      "prompt": "patrz prompts.md → krok update",
+      "render": "update-3-2.png",
+      "sha256": "0b2ef079584dc60d34575335cdd232ff2ec773624bf8944d06e6ce1473170e9c",
+      "bytes": 58886,
+      "at": "2026-09-19T07:41:48Z",
+      "renderUrl": "https://www.figma.com/api/mcp/asset/8ba72241-9094-4d30-8f39-cbff92bd857b.png"
+    }
+  ],
+  "capturedAt": "2026-09-19T07:41:48Z",
+  "workstation": "ak-300codes",
+  "figma": {
+    "fileKey": "5wOkFtN959W4MFmgRuaU8S",
+    "fileUrl": "https://www.figma.com/design/5wOkFtN959W4MFmgRuaU8S",
+    "seat": "full",
+    "role": "owner"
+  },
+  "client": {
+    "name": "claude-code",
+    "version": "2.1.266",
+    "mcpServer": "https://mcp.figma.com/mcp"
+  }
+}
