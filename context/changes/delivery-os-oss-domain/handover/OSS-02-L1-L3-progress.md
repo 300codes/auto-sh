@@ -208,3 +208,44 @@ and routes; the export test with real decisions comes with them.
   green; `tsc --noEmit` for `@open-mercato/core` clean; eslint of the touched files clean. No migration, no workspace
   or dependency change. Rows: 2.1 (one key reserves one attempt, stale update rejected, foreign scope 404) and 4.1
   (OSS side, reservation).
+
+## Addendum — L4f minimal result acceptance (T014)
+
+- `commands/evidence.ts` registers `delivery_os.results.accept`: input `{ taskId, attemptId, manifest, source }`, result
+  `{ evidenceId, duplicate, taskStatus, taskUpdatedAt }`. DTO v1 unchanged; profile versions unchanged.
+- Pure core: `lib/resultAcceptance.ts#evaluateResultAcceptance({ manifestRaw, task, attempt, taskPackage, existingResult })`
+  → `accept` | `duplicate` | failure. Order: schema → attempt exists → **idempotency** → result gate → package failure →
+  revision kind vs profile → correlation → OSS-04 seams. New pure helpers in `lib/attempts.ts`:
+  `checkAttemptAcceptsResult`, `recordAttemptResult`. `buildTaskPackageV1` has an optional `{ attemptGate: 'none' }`.
+- The idempotency hash is `hashCanonical` of the parsed manifest (unknown keys such as `tenantId` are stripped first)
+  and is stored as `DeliveryEvidence.payloadHash`. The attempt keeps only `resultEvidenceId` — the attempt DTO is frozen.
+- Accept: one `result_manifest` row, attempt `result_received`, `completionDelivery = 'pending'` only with `workflowRef`,
+  task → `awaiting_review` (also from `blocked`/`reconciliation_required` after a `completed` reconciliation, never
+  `verified`). Duplicate: no write, no audit entry, `evidence.recorded { duplicate: true, completionDelivery }` re-emitted.
+- **OSS-04 seams (not implemented):** `checkChangedPathsAllowed` (changedPaths within `allowedPaths`),
+  `checkArtifactAttachments` (attachment scope + sha256), `checkResultSizeLimits`; all listed in
+  `RESULT_ACCEPTANCE_PENDING_CHECKS` and currently pass. Also left for OSS-04: closing the attempt
+  (`closedAt`, `outcome = 'result_accepted'`), `mark_delivery`, `listPendingDeliveries`, cancel/reconcile commands.
+- **Route R16:** build the input as `{ taskId from the path, attemptId + manifest from resultsImportSchema, source: 'manual' }`,
+  always pass `request`, check `delivery_os.results.import` (the command checks no feature), answer 201 for
+  `duplicate: false` and 200 for `duplicate: true`. No lock header.
+- **For EXEC:** call in-process without `ctx.request` and with `source: 'adapter'`; `ctx.auth` carries `tenantId`/`orgId`.
+  `source: 'adapter'` with a request answers `403 forbidden` / `trusted_execution_required`. Subscribe to
+  `delivery_os.evidence.recorded` and retry the delivery whenever `completionDelivery === 'pending'` (also on
+  `duplicate: true`). OSS never signals a workflow. Never register the command as workflow-safe.
+- **For UI:** codes to render: `result_conflict`, `attempt_cancelled`, `attempt_closed`, `reconciliation_required`,
+  `attempt_not_found`, `correlation_mismatch`, `baseline_mismatch`, `base_revision_mismatch`, `revision_kind_mismatch`,
+  `unsupported_schema_version`, `invalid_transition`. Audit label key `delivery_os.audit.results.accept`.
+- A manifest of attempt B posted against attempt A that already has a result answers `409 result_conflict`
+  (idempotency runs before correlation); without a stored result it answers `422 correlation_mismatch`.
+- A `result_received` attempt is not closed here (`closedAt`, `outcome`) and is not "active", so after
+  `changes_requested` a new attempt can be reserved next to it; results stay separate per attempt. If a post-commit
+  side effect throws, a retry answers `duplicate` and re-emits only `evidence.recorded` (same as the sibling commands).
+- Limitations: descendants of a `blocked` task are not unblocked when it moves to `awaiting_review`; the unique-index
+  race is simulated on a mocked EM (real two-connection race → QA TC-DELIVERY-006); `taskUpdatedAt` comes from the ORM
+  `onUpdate` hook at flush — check it over HTTP in the routes task. No route exists yet.
+- Evidence: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 21 suites, 603 tests
+  green; `yarn workspace @open-mercato/core typecheck` clean; eslint of the touched files clean; grep shows only
+  `tx.create` + find for `DeliveryEvidence`. No migration, no workspace or dependency change. Rows: 2.1 (unknown schema
+  rejected, foreign scope 404, tenant in manifest ignored); groundwork for 4.1 and 4.7 (duplicate does not duplicate
+  evidence and re-emits the pending signal).

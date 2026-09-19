@@ -24,6 +24,7 @@ export const DELIVERY_PROJECT_RESOURCE_KIND = 'delivery_os.project'
 export const DELIVERY_TASK_RESOURCE_KIND = 'delivery_os.task'
 export const DELIVERY_BASELINE_RESOURCE_KIND = 'delivery_os.baseline'
 export const DELIVERY_DECISION_RESOURCE_KIND = 'delivery_os.decision'
+export const DELIVERY_EVIDENCE_RESOURCE_KIND = 'delivery_os.evidence'
 
 export type DeliveryScope = {
   tenantId: string

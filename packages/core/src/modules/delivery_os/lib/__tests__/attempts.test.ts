@@ -13,6 +13,7 @@ import {
   isAttemptActive,
   parseAttemptRegister,
   reconcileAttempt,
+  recordAttemptResult,
   requestCancellation,
   reserveAttempt,
   type ReserveAttemptInput,
@@ -356,5 +357,43 @@ describe('isArchiveBlocked', () => {
     expect(isArchiveBlocked([buildAttempt(1, 'cancel_requested')])).toBe(true)
     expect(isArchiveBlocked([buildAttempt(1, 'reconciliation_required')])).toBe(true)
     expect(findAttempt([buildAttempt(1, 'closed')], attemptId(1))?.state).toBe('closed')
+  })
+})
+
+describe('recordAttemptResult', () => {
+  const EVIDENCE_ID = '6b6b6b6b-6666-4666-8666-666666666666'
+  const input = { attemptId: attemptId(1), evidenceId: EVIDENCE_ID, externalRunId: 'run-from-manifest' }
+
+  it('marks the attempt result_received without a pending delivery when no workflow is linked', () => {
+    const register = [buildAttempt(1, 'claimed')]
+    const result = recordAttemptResult(register, input)
+    if (!result.ok) throw new Error('[internal] expected a recorded result')
+    expect(result.attempt).toMatchObject({
+      state: 'result_received',
+      resultEvidenceId: EVIDENCE_ID,
+      externalRunId: 'run-from-manifest',
+      completionDelivery: null,
+      closedAt: null,
+      outcome: null,
+    })
+    expect(register[0].state).toBe('claimed')
+    expectValidRegister(result.register)
+    expect(isAttemptActive(result.attempt)).toBe(false)
+  })
+
+  it('sets the pending delivery only with a workflowRef and keeps a known externalRunId', () => {
+    const linked = buildAttempt(1, 'claimed', { workflowRef: 'wf-instance-1', workflowStepId: 'wait-result', externalRunId: 'run-known' })
+    const result = recordAttemptResult([linked], input)
+    expect(result.ok && result.attempt.completionDelivery).toBe('pending')
+    expect(result.ok && result.attempt.externalRunId).toBe('run-known')
+  })
+
+  it('rejects cancelled, unknown, closed and missing attempts', () => {
+    expect(failureCode(recordAttemptResult([buildAttempt(1, 'cancel_requested')], input))).toBe('attempt_cancelled')
+    expect(failureCode(recordAttemptResult([buildAttempt(1, 'reconciliation_required')], input))).toBe('reconciliation_required')
+    expect(failureCode(recordAttemptResult([buildAttempt(1, 'closed')], input))).toBe('attempt_closed')
+    expect(failureCode(recordAttemptResult([buildAttempt(1, 'closed', { outcome: 'cancelled' })], input))).toBe('attempt_cancelled')
+    expect(failureCode(recordAttemptResult([buildAttempt(1, 'result_received')], input))).toBe('attempt_closed')
+    expect(failureCode(recordAttemptResult([], input))).toBe('attempt_not_found')
   })
 })

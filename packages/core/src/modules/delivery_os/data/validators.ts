@@ -256,6 +256,12 @@ export const resultsImportSchema = z.object({
 })
 export type ResultsImportInput = z.infer<typeof resultsImportSchema>
 
+export const acceptResultCommandSchema = resultsImportSchema.extend({
+  taskId: uuidSchema,
+  source: z.enum(['manual', 'adapter']),
+})
+export type AcceptResultCommandInput = z.infer<typeof acceptResultCommandSchema>
+
 const evidenceBaseShape = {
   baselineId: uuidSchema,
   taskId: uuidSchema.optional(),

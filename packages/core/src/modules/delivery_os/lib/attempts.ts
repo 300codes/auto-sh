@@ -265,3 +265,41 @@ export function reconcileAttempt(register: AttemptRegister, input: ReconcileAtte
     taskEffect: RECONCILIATION_TASK_EFFECTS[input.resolution],
   }
 }
+
+export type RecordAttemptResultInput = { attemptId: string; evidenceId: string; externalRunId: string }
+
+export type RecordAttemptResultResult = { ok: true; attempt: ExecutionAttempt; register: ExecutionAttempt[] } | AttemptFailure
+
+export function checkAttemptAcceptsResult(attempt: ExecutionAttempt | undefined): DeliveryCheckResult {
+  if (!attempt) return fail('attempt_not_found', 'Attempt not found', 'attemptId', 'No such attempt on this task')
+  if (attempt.state === 'reserved' || attempt.state === 'claimed') return { ok: true }
+  const isConfirmedCompleted = attempt.reconciliation?.resolution === 'completed'
+  if (attempt.state === 'cancel_requested') {
+    if (isConfirmedCompleted) return { ok: true }
+    return fail('attempt_cancelled', 'Attempt was cancelled', 'attemptId', 'A result arrives too late after a cancellation request')
+  }
+  if (attempt.state === 'reconciliation_required') {
+    if (isConfirmedCompleted) return { ok: true }
+    return fail('reconciliation_required', 'Reconcile the unknown attempt before continuing', 'attemptId', 'The external run state is unknown')
+  }
+  if (attempt.outcome === 'cancelled') {
+    return fail('attempt_cancelled', 'Attempt was cancelled', 'attemptId', 'The attempt was closed as cancelled')
+  }
+  return fail('attempt_closed', 'Attempt is closed', 'attemptId', `Attempt is ${attempt.state}`)
+}
+
+export function recordAttemptResult(register: AttemptRegister, input: RecordAttemptResultInput): RecordAttemptResultResult {
+  const attempt = findAttempt(register, input.attemptId)
+  if (!attempt) return attemptNotFound(input.attemptId)
+  const accepts = checkAttemptAcceptsResult(attempt)
+  if (!accepts.ok) return accepts
+  const validated = validateAttempt({
+    ...attempt,
+    state: 'result_received',
+    resultEvidenceId: input.evidenceId,
+    externalRunId: attempt.externalRunId ?? input.externalRunId,
+    completionDelivery: attempt.workflowRef ? 'pending' : null,
+  })
+  if (!validated.ok) return validated
+  return { ok: true, attempt: validated.attempt, register: replaceAttempt(register, validated.attempt) }
+}

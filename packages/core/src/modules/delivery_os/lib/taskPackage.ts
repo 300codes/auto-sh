@@ -52,6 +52,8 @@ export type TaskPackageFailure = { ok: false } & DeliveryErrorResult
 
 export type TaskPackageResult = { ok: true; taskPackage: TaskPackageV1 } | TaskPackageFailure
 
+export type TaskPackageOptions = { attemptGate?: 'open' | 'none' }
+
 function fail(code: DeliveryErrorCode, error: string, details: DeliveryErrorDetail[]): TaskPackageFailure {
   return { ok: false, ...buildDeliveryError(code, error, details) }
 }
@@ -88,10 +90,17 @@ function isStoredHashIntact(baseline: TaskPackageBaseline): boolean {
   }
 }
 
-export function buildTaskPackageV1(input: TaskPackageInput): TaskPackageResult {
+export function buildTaskPackageV1(input: TaskPackageInput, options: TaskPackageOptions = {}): TaskPackageResult {
   const { project, task, baseline, attempt, profile } = input
-  const open = checkAttemptOpen(attempt)
-  if (!open.ok || !attempt) return open.ok ? fail('attempt_not_found', 'Attempt not found', []) : open
+  if (!attempt) {
+    return fail('attempt_not_found', 'Attempt not found', [
+      { path: 'attemptId', code: 'attempt_not_found', message: 'No such attempt on this task' },
+    ])
+  }
+  if (options.attemptGate !== 'none') {
+    const open = checkAttemptOpen(attempt)
+    if (!open.ok) return open
+  }
   const pinFailure = checkPins(input, attempt)
   if (pinFailure) return pinFailure
   const revisionKind = assertRevisionKind(profile, attempt.baseRevision)

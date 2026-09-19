@@ -90,6 +90,18 @@ function expectFailure(input: TaskPackageInput, status: number, code: string): v
 }
 
 describe('buildTaskPackageV1', () => {
+  it('builds the package for a non-open attempt only when the open gate is switched off', () => {
+    const { expected, input } = gitInput()
+    const cancelled = requestCancellation([reserve(expected)], { attemptId: expected.attemptId, now: NOW })
+    if (!cancelled.ok) throw new Error('[internal] fixture cancellation failed')
+    expectFailure({ ...input, attempt: cancelled.attempt }, 409, 'attempt_cancelled')
+    const result = buildTaskPackageV1({ ...input, attempt: cancelled.attempt }, { attemptGate: 'none' })
+    expect(result.ok).toBe(true)
+    const missing = buildTaskPackageV1({ ...input, attempt: undefined }, { attemptGate: 'none' })
+    expect(missing.ok).toBe(false)
+    if (!missing.ok) expect(missing.body.code).toBe('attempt_not_found')
+  })
+
   it('builds the published git package from the published baseline', () => {
     const { expected, input } = gitInput()
     expect(expected.baselineHash).toBe(hashBaseline(loadBaselineContentFixture()))
