@@ -262,6 +262,7 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
       'delivery_os.attempts.claim',
       'delivery_os.attempts.link_workflow',
       'delivery_os.attempts.mark_delivery',
+      'delivery_os.attempts.reconcile',
       'delivery_os.attempts.reserve',
       'delivery_os.baselines.create',
       'delivery_os.baselines.import_requirements',

@@ -77,7 +77,7 @@ function requireIdempotencyKey(rawInput: unknown): void {
   )
 }
 
-function unreadableRegisterError(): ReturnType<typeof deliveryHttpError> {
+export function unreadableRegisterError(): ReturnType<typeof deliveryHttpError> {
   return deliveryHttpError(
     buildDeliveryError('reconciliation_required', 'Reconcile the unknown attempt before continuing', [
       { path: 'executionAttempts', code: 'unreadable_attempt_register' },

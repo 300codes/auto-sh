@@ -171,7 +171,7 @@ function toGraphNode(task: DeliveryTask): TaskGraphNode {
   return { id: task.id, projectId: task.projectId, baselineId: task.baselineId, dependsOnTaskIds: task.dependsOnTaskIds }
 }
 
-function toLifecycleTask(task: DeliveryTask): LifecycleTask {
+export function toLifecycleTask(task: DeliveryTask): LifecycleTask {
   return { id: task.id, status: task.status, statusReason: task.statusReason ?? null, dependsOnTaskIds: task.dependsOnTaskIds }
 }
 
@@ -339,7 +339,7 @@ export async function loadBaselineDecisionRecords(
   }))
 }
 
-async function checkReadyGate(
+export async function checkReadyGate(
   tx: EntityManager,
   task: ReadinessTask & { baselineId: string },
   project: DeliveryProject,
@@ -401,7 +401,7 @@ function planPropagation(task: DeliveryTask, from: TaskStatus, tasks: readonly D
   return []
 }
 
-function applyPropagation(changes: readonly PlannedStatusChange[], tasks: readonly DeliveryTask[]): DeliveryTask[] {
+export function applyPropagation(changes: readonly PlannedStatusChange[], tasks: readonly DeliveryTask[]): DeliveryTask[] {
   const tasksById = new Map(tasks.map((candidate) => [candidate.id, candidate]))
   const changed: DeliveryTask[] = []
   for (const change of changes) {

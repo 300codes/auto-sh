@@ -43,7 +43,7 @@ export type ResultAcceptCommandResult = {
 
 type CompletionDelivery = ExecutionAttempt['completionDelivery']
 
-type AcceptOutcome = {
+export type AcceptOutcome = {
   task: DeliveryTask
   evidenceId: string
   evidence: DeliveryEvidence | null
@@ -100,6 +100,114 @@ function toResult(outcome: AcceptOutcome): ResultAcceptCommandResult {
   }
 }
 
+export type AcceptResultInput = {
+  task: DeliveryTask
+  scope: DeliveryScope
+  attemptId: string
+  manifest: unknown
+  source: 'manual' | 'adapter'
+  recordedBy: string | null
+  register?: readonly ExecutionAttempt[]
+  onEvaluated?: (manifestHash: string) => void
+}
+
+export async function acceptResultInTransaction(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  input: AcceptResultInput,
+): Promise<AcceptOutcome> {
+  const { task, scope } = input
+  const project = await requireScopedProject(tx, task.projectId, scope)
+  const register = input.register ?? readAttemptRegister(task)
+  const attempt = findAttempt(register, input.attemptId)
+  const taskPackage = await loadTaskPackage(tx, { task, project, attempt, scope }, { attemptGate: 'none' })
+  const existing = attempt ? await findResultEvidence(tx, task.id, attempt.attemptId, scope) : null
+
+  const evaluation = evaluateResultAcceptance({
+    manifestRaw: input.manifest,
+    task,
+    attempt,
+    taskPackage,
+    existingResult: existing ? { evidenceId: existing.id, payloadHash: existing.payloadHash } : null,
+  })
+  if (!evaluation.ok) throw deliveryHttpError(evaluation)
+  input.onEvaluated?.(evaluation.manifestHash)
+  if (evaluation.outcome === 'duplicate') {
+    return { task, evidenceId: evaluation.evidenceId, evidence: null, completionDelivery: attempt?.completionDelivery ?? null }
+  }
+
+  assertDeliveryCheck(
+    canTransition(task.status, 'awaiting_review', { source: 'command', statusReason: task.statusReason ?? null }),
+  )
+  const artifacts = await verifyResultArtifacts(tx, ctx, evaluation.manifest.artifacts, scope)
+  if (!artifacts.ok) throw deliveryHttpError(artifacts)
+  const evidenceId = randomUUID()
+  const recorded = recordAttemptResult(register, {
+    attemptId: input.attemptId,
+    evidenceId,
+    externalRunId: evaluation.manifest.externalRunId,
+  })
+  if (!recorded.ok) throw deliveryHttpError(recorded)
+  const closed = closeAttempt(recorded.register, { attemptId: input.attemptId, now: new Date().toISOString() })
+  if (!closed.ok) throw deliveryHttpError(closed)
+
+  const evidence = tx.create(DeliveryEvidence, {
+    id: evidenceId,
+    tenantId: scope.tenantId,
+    organizationId: scope.organizationId,
+    projectId: project.id,
+    baselineId: task.baselineId,
+    taskId: task.id,
+    attemptId: input.attemptId,
+    kind: 'result_manifest',
+    source: input.source,
+    sourceRevision: evaluation.manifest.resultRevision,
+    payload: evaluation.manifest,
+    payloadHash: evaluation.manifestHash,
+    rawReportHash: null,
+    attachmentIds: artifacts.attachmentIds,
+    recordedBy: input.recordedBy,
+  })
+  tx.persist(evidence)
+  task.executionAttempts = closed.register
+  task.status = 'awaiting_review'
+  task.statusReason = null
+  return { task, evidenceId, evidence, completionDelivery: closed.attempt.completionDelivery }
+}
+
+export async function emitResultAccepted(
+  ctx: CommandRuntimeContext,
+  scope: DeliveryScope,
+  attemptId: string,
+  outcome: AcceptOutcome,
+): Promise<void> {
+  await emitDeliveryOsEvent(
+    'delivery_os.evidence.recorded',
+    {
+      projectId: outcome.task.projectId,
+      taskId: outcome.task.id,
+      attemptId,
+      evidenceId: outcome.evidenceId,
+      kind: 'result_manifest',
+      duplicate: outcome.evidence === null,
+      completionDelivery: outcome.completionDelivery,
+      tenantId: scope.tenantId,
+      organizationId: scope.organizationId,
+    },
+    { persistent: true, tenantId: scope.tenantId, organizationId: scope.organizationId },
+  )
+  if (!outcome.evidence) return
+  await emitCrudSideEffects({
+    dataEngine: ctx.container.resolve('dataEngine') as DataEngine,
+    action: 'created',
+    entity: outcome.evidence,
+    identifiers: { id: outcome.evidenceId, organizationId: scope.organizationId, tenantId: scope.tenantId },
+    indexer: evidenceCrudIndexer,
+  })
+  await emitTaskSideEffects(ctx, 'updated', outcome.task)
+  await emitTaskUpdated(outcome.task)
+}
+
 const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = {
   id: 'delivery_os.results.accept',
   async execute(rawInput, ctx) {
@@ -114,62 +222,17 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
     try {
       outcome = await em.transactional(async (tx): Promise<AcceptOutcome> => {
         const task = await lockScopedTask(tx, parsed.taskId, scope)
-        const project = await requireScopedProject(tx, task.projectId, scope)
-        const register = readAttemptRegister(task)
-        const attempt = findAttempt(register, parsed.attemptId)
-        const taskPackage = await loadTaskPackage(tx, { task, project, attempt, scope }, { attemptGate: 'none' })
-        const existing = attempt ? await findResultEvidence(tx, task.id, attempt.attemptId, scope) : null
-
-        const evaluation = evaluateResultAcceptance({
-          manifestRaw: parsed.manifest,
+        return acceptResultInTransaction(tx, ctx, {
           task,
-          attempt,
-          taskPackage,
-          existingResult: existing ? { evidenceId: existing.id, payloadHash: existing.payloadHash } : null,
-        })
-        if (!evaluation.ok) throw deliveryHttpError(evaluation)
-        evaluated.manifestHash = evaluation.manifestHash
-        if (evaluation.outcome === 'duplicate') {
-          return { task, evidenceId: evaluation.evidenceId, evidence: null, completionDelivery: attempt?.completionDelivery ?? null }
-        }
-
-        assertDeliveryCheck(
-          canTransition(task.status, 'awaiting_review', { source: 'command', statusReason: task.statusReason ?? null }),
-        )
-        const artifacts = await verifyResultArtifacts(tx, ctx, evaluation.manifest.artifacts, scope)
-        if (!artifacts.ok) throw deliveryHttpError(artifacts)
-        const evidenceId = randomUUID()
-        const recorded = recordAttemptResult(register, {
+          scope,
           attemptId: parsed.attemptId,
-          evidenceId,
-          externalRunId: evaluation.manifest.externalRunId,
-        })
-        if (!recorded.ok) throw deliveryHttpError(recorded)
-        const closed = closeAttempt(recorded.register, { attemptId: parsed.attemptId, now: new Date().toISOString() })
-        if (!closed.ok) throw deliveryHttpError(closed)
-
-        const evidence = tx.create(DeliveryEvidence, {
-          id: evidenceId,
-          tenantId: scope.tenantId,
-          organizationId: scope.organizationId,
-          projectId: project.id,
-          baselineId: task.baselineId,
-          taskId: task.id,
-          attemptId: parsed.attemptId,
-          kind: 'result_manifest',
+          manifest: parsed.manifest,
           source: parsed.source,
-          sourceRevision: evaluation.manifest.resultRevision,
-          payload: evaluation.manifest,
-          payloadHash: evaluation.manifestHash,
-          rawReportHash: null,
-          attachmentIds: artifacts.attachmentIds,
           recordedBy: recordedBy.success ? recordedBy.data : null,
+          onEvaluated: (manifestHash) => {
+            evaluated.manifestHash = manifestHash
+          },
         })
-        tx.persist(evidence)
-        task.executionAttempts = closed.register
-        task.status = 'awaiting_review'
-        task.statusReason = null
-        return { task, evidenceId, evidence, completionDelivery: closed.attempt.completionDelivery }
       })
     } catch (error) {
       if (!evaluated.manifestHash || !isUniqueViolation(error, RESULT_MANIFEST_UNIQUE_INDEX)) throw error
@@ -188,32 +251,7 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
       outcome = { task, evidenceId: winner.id, evidence: null, completionDelivery: committed?.completionDelivery ?? null }
     }
 
-    await emitDeliveryOsEvent(
-      'delivery_os.evidence.recorded',
-      {
-        projectId: outcome.task.projectId,
-        taskId: outcome.task.id,
-        attemptId: parsed.attemptId,
-        evidenceId: outcome.evidenceId,
-        kind: 'result_manifest',
-        duplicate: outcome.evidence === null,
-        completionDelivery: outcome.completionDelivery,
-        tenantId: scope.tenantId,
-        organizationId: scope.organizationId,
-      },
-      { persistent: true, tenantId: scope.tenantId, organizationId: scope.organizationId },
-    )
-    if (outcome.evidence) {
-      await emitCrudSideEffects({
-        dataEngine: ctx.container.resolve('dataEngine') as DataEngine,
-        action: 'created',
-        entity: outcome.evidence,
-        identifiers: { id: outcome.evidenceId, organizationId: scope.organizationId, tenantId: scope.tenantId },
-        indexer: evidenceCrudIndexer,
-      })
-      await emitTaskSideEffects(ctx, 'updated', outcome.task)
-      await emitTaskUpdated(outcome.task)
-    }
+    await emitResultAccepted(ctx, scope, parsed.attemptId, outcome)
     return toResult(outcome)
   },
   buildLog: async ({ input, result, ctx }) => {
