@@ -21,6 +21,7 @@ import {
   type PublicationResultV1,
 } from '../lib/contracts'
 import { checkFlowGate } from '../lib/flowRules'
+import { hashCanonical } from '../lib/hash'
 import { buildDeploymentEvidencePayload, checkPublicationDeployConsent, hashPublicationPayload } from '../lib/publicationRules'
 import { emitDeliveryOsEvent } from '../events'
 import { checkDeployConsent } from './decisions'
@@ -125,12 +126,27 @@ async function assertVerificationEvidence(tx: EntityManager, project: DeliveryPr
     undefined,
     scope,
   )
-  if (row) return
-  throw deliveryHttpError(
-    buildDeliveryError('foreign_reference', 'The verification evidence does not belong to this project', [
-      { path: 'verification.evidenceId', code: 'foreign_evidence' },
-    ]),
-  )
+  if (!row) {
+    throw deliveryHttpError(
+      buildDeliveryError('foreign_reference', 'The verification evidence does not belong to this project', [
+        { path: 'verification.evidenceId', code: 'foreign_evidence' },
+      ]),
+    )
+  }
+  if (row.baselineId !== publication.baselineId) {
+    throw deliveryHttpError(
+      buildDeliveryError('baseline_mismatch', 'The verification evidence belongs to another baseline', [
+        { path: 'verification.evidenceId', code: 'baseline_mismatch' },
+      ]),
+    )
+  }
+  if (row.sourceRevision && hashCanonical(row.sourceRevision) !== hashCanonical(publication.sourceRevision)) {
+    throw deliveryHttpError(
+      buildDeliveryError('revision_mismatch', 'The verification evidence was recorded on another revision', [
+        { path: 'verification.evidenceId', code: 'revision_mismatch' },
+      ]),
+    )
+  }
 }
 
 /**

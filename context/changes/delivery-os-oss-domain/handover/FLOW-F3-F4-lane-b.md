@@ -41,7 +41,6 @@ All gitignored under `apps/mercato/.mercato/generated/` (api-routes, api-route-m
 - No publication event: the derived `deployment` evidence re-uses `delivery_os.evidence.recorded`.
 - An `unverified` publication is allowed and stored; it yields deployment evidence `unverified` and R21 refuses release (`deployment_unverified`).
 - Fixture/fake-adapter publications never count as live FLOW-07; live proof needs a real target.
-- The verification `evidenceId` is checked against the project only, not its kind or revision (review follow-up).
 - `releaseDecisionId` has no column; the list does not return it.
 
 ## Blockers for the human

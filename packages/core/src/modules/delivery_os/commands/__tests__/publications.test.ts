@@ -551,6 +551,34 @@ describe('delivery_os.publications.record — refusals', () => {
     expectNothingWritten()
   })
 
+  it('answers 422 baseline_mismatch for a verification evidence recorded on another baseline', async () => {
+    seedApprovedDeploy()
+    store.evidence.push(evidenceRow('screenshot', {}, { baselineId: OTHER_BASELINE_ID }))
+    const evidenceId = store.evidence.at(-1)?.id as string
+    const error = await catchHttpError(() => run(publication({ verification: { status: 'verified', method: 'http', checkedAt: CHECKED_AT, httpStatus: 200, evidenceId } })))
+    expectFrozenBody(error, 422, 'baseline_mismatch')
+    expect(detailCodes(error)).toEqual(['baseline_mismatch'])
+    expectNothingWritten()
+  })
+
+  it('answers 422 revision_mismatch for a verification evidence recorded on another revision', async () => {
+    seedApprovedDeploy()
+    store.evidence.push(evidenceRow('screenshot', {}, { sourceRevision: { ...REVISION, commitSha: 'f'.repeat(40) } }))
+    const evidenceId = store.evidence.at(-1)?.id as string
+    const error = await catchHttpError(() => run(publication({ verification: { status: 'verified', method: 'http', checkedAt: CHECKED_AT, httpStatus: 200, evidenceId } })))
+    expectFrozenBody(error, 422, 'revision_mismatch')
+    expect(detailCodes(error)).toEqual(['revision_mismatch'])
+    expectNothingWritten()
+  })
+
+  it('accepts a verification evidence without a source revision on the same baseline', async () => {
+    seedApprovedDeploy()
+    store.evidence.push(evidenceRow('reference_material', {}, { sourceRevision: null }))
+    const evidenceId = store.evidence.at(-1)?.id as string
+    const result = await run(publication({ verification: { status: 'verified', method: 'http', checkedAt: CHECKED_AT, httpStatus: 200, evidenceId } }))
+    expect(result.duplicate).toBe(false)
+  })
+
   it('answers 422 deployment_unverified from the schema for verified without method, time and evidence', async () => {
     seedApprovedDeploy()
     const error = await catchHttpError(() => run(publication({ verification: { status: 'verified', method: null, checkedAt: null, httpStatus: 200, evidenceId: null } })))

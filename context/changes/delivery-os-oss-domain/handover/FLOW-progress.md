@@ -47,3 +47,5 @@ Stand-alone notes per stage live in `FLOW-F0-contracts.md`, `FLOW-F1-L13a-comman
 ## T063 — FLOW-F4 lane-B close-out (docs only)
 
 - Lane-B hand-over: `handover/FLOW-F3-F4-lane-b.md` (SHAs, migration, tests, blockers, merge notes). Spec status line and changelog updated in `.ai/specs/2026-09-18-delivery-os-hackathon.md`; F3 and F4 are complete for this lane. Progress rows 5.1 and 5.4: evidence pointers only, nothing ticked.
+
+- T064 FLOW-F4: F14 `verification.evidenceId` now bound to the publication baseline (422 baseline_mismatch) and, when non-null, revision (422 revision_mismatch); null-revision evidence accepted. commands/publications.ts + 3 tests in commands/__tests__/publications.test.ts.
