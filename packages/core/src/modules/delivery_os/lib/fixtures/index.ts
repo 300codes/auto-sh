@@ -3,6 +3,7 @@ import {
   baselineContentV1Schema,
   deliveryErrorBodySchema,
   deliveryErrorCodeSchema,
+  deliveryReportV1Schema,
   designManifestV1Schema,
   executionWidgetContextV1Schema,
   planProposalV1Schema,
@@ -12,6 +13,7 @@ import {
   taskPackageV1Schema,
   type BaselineContentV1,
   type DeliveryErrorBody,
+  type DeliveryReportV1,
   type DesignManifestV1,
   type ExecutionWidgetContextV1,
   type PlanProposalV1,
@@ -34,6 +36,7 @@ import designManifestJson from './design-manifest.v1.json'
 import executionWidgetContextJson from './execution-widget-context.v1.json'
 import reserveResponseJson from './reserve-response.v1.json'
 import errorBodyJson from './error-body.v1.json'
+import deliveryReportJson from './delivery-report.v1.json'
 import taskPackageUnknownSchemaVersionJson from './negative/task-package.unknown-schema-version.v1.json'
 import resultManifestForeignTaskJson from './negative/result-manifest.foreign-task.v1.json'
 import resultManifestForeignAttemptJson from './negative/result-manifest.foreign-attempt.v1.json'
@@ -68,6 +71,7 @@ export const positiveDeliveryFixtures = [
   { name: 'execution-widget-context', schema: executionWidgetContextV1Schema, document: executionWidgetContextJson },
   { name: 'reserve-response', schema: reserveAttemptResponseSchema, document: reserveResponseJson },
   { name: 'error-body', schema: deliveryErrorBodySchema, document: errorBodyJson },
+  { name: 'delivery-report', schema: deliveryReportV1Schema, document: deliveryReportJson },
 ] as const
 
 export type PositiveDeliveryFixtureName = (typeof positiveDeliveryFixtures)[number]['name']
@@ -122,6 +126,10 @@ export function loadDesignManifestFixture(): DesignManifestV1 {
 
 export function loadReserveResponseFixture(): ReserveAttemptResponse {
   return parseFixture(reserveAttemptResponseSchema, reserveResponseJson, 'reserve-response')
+}
+
+export function loadDeliveryReportFixture(): DeliveryReportV1 {
+  return parseFixture(deliveryReportV1Schema, deliveryReportJson, 'delivery-report')
 }
 
 export function loadErrorBodyFixture(): DeliveryErrorBody {

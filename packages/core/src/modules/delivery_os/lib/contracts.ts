@@ -722,6 +722,138 @@ export const executionWidgetContextV1Schema = z.object({
 })
 export type ExecutionWidgetContextV1 = z.infer<typeof executionWidgetContextV1Schema>
 
+export const reportAcStatusSchema = z.enum(['passed', 'failed', 'not_run', 'missing', 'manual_pending'])
+export type ReportAcStatus = z.infer<typeof reportAcStatusSchema>
+
+export const reportTestStatusSchema = z.enum(['passed', 'failed', 'not_run', 'missing'])
+export const reportManualCheckStatusSchema = z.enum(['approved', 'changes_requested', 'missing'])
+
+export const reportScanStatusSchema = z.enum(['present', 'missing', 'failed'])
+export type ReportScanStatus = z.infer<typeof reportScanStatusSchema>
+
+export const reportDeploymentStatusSchema = z.enum(['verified', 'unverified', 'missing'])
+export type ReportDeploymentStatus = z.infer<typeof reportDeploymentStatusSchema>
+
+export const reportRevisionSourceSchema = z.enum(['selected', 'latest_result', 'none'])
+export type ReportRevisionSource = z.infer<typeof reportRevisionSourceSchema>
+
+export const reportGateBlockerSchema = z.object({
+  kind: z.enum(['revision', 'ac', 'scan', 'deployment', 'deploy_decision']),
+  id: z.string().min(1).max(512),
+  status: z.string().min(1).max(64),
+})
+export type ReportGateBlocker = z.infer<typeof reportGateBlockerSchema>
+
+export const reportGateSchema = z.object({ ok: z.boolean(), blocking: z.array(reportGateBlockerSchema).max(2000) })
+export type ReportGate = z.infer<typeof reportGateSchema>
+
+export const reportTestProofSchema = z.object({
+  testId: testIdSchema,
+  status: reportTestStatusSchema,
+  evidenceId: uuidSchema.nullable(),
+  rawReportHash: sha256Schema.nullable(),
+})
+export type ReportTestProof = z.infer<typeof reportTestProofSchema>
+
+export const reportManualCheckProofSchema = z.object({
+  manualCheckId: stableIdSchema,
+  status: reportManualCheckStatusSchema,
+  evidenceId: uuidSchema.nullable(),
+})
+export type ReportManualCheckProof = z.infer<typeof reportManualCheckProofSchema>
+
+export const reportAcceptanceCriterionSchema = z.object({
+  acId: stableIdSchema,
+  requirementId: stableIdSchema,
+  description: z.string(),
+  status: reportAcStatusSchema,
+  taskIds: z.array(uuidSchema).max(100),
+  tests: z.array(reportTestProofSchema).max(200),
+  manualCheck: reportManualCheckProofSchema.nullable(),
+})
+export type ReportAcceptanceCriterion = z.infer<typeof reportAcceptanceCriterionSchema>
+
+export const deliveryReportRowSchema = z.object({
+  requirementId: stableIdSchema.nullable(),
+  acId: stableIdSchema.nullable(),
+  acStatus: reportAcStatusSchema.nullable(),
+  taskId: uuidSchema.nullable(),
+  taskStatus: taskStatusSchema.nullable(),
+  testId: testIdSchema.nullable(),
+  testStatus: reportTestStatusSchema.nullable(),
+  manualCheckId: stableIdSchema.nullable(),
+  manualCheckStatus: reportManualCheckStatusSchema.nullable(),
+  evidenceId: uuidSchema.nullable(),
+  rawReportHash: sha256Schema.nullable(),
+  deploymentEvidenceId: uuidSchema.nullable(),
+})
+export type DeliveryReportRow = z.infer<typeof deliveryReportRowSchema>
+
+export const reportScanSchema = z.object({
+  checkId: stableIdSchema,
+  status: reportScanStatusSchema,
+  reportedStatus: checkStatusSchema.nullable(),
+  evidenceId: uuidSchema.nullable(),
+  rawReportHash: sha256Schema.nullable(),
+})
+export type ReportScan = z.infer<typeof reportScanSchema>
+
+export const reportDeploymentSchema = z.object({
+  status: reportDeploymentStatusSchema,
+  verificationStatus: z.enum(['verified', 'unverified', 'failed']).nullable(),
+  evidenceId: uuidSchema.nullable(),
+  url: z.string().max(2000).nullable(),
+  environment: z.string().max(100).nullable(),
+  buildId: z.string().max(200).nullable(),
+})
+export type ReportDeployment = z.infer<typeof reportDeploymentSchema>
+
+export const reportDecisionSchema = z.object({
+  id: uuidSchema,
+  kind: z.enum(['requirements', 'design', 'deploy', 'release']),
+  verdict: z.enum(['approved', 'rejected']),
+  subjectType: z.enum(['baseline', 'deployment_evidence']),
+  subjectId: uuidSchema,
+  subjectHash: z.string().min(1).max(200),
+  sourceRevision: sourceRevisionSchema.nullable(),
+  decidedAt: isoDateTimeSchema,
+  reason: z.string().max(2000).nullable(),
+  appliesToRevision: z.boolean(),
+})
+export type ReportDecision = z.infer<typeof reportDecisionSchema>
+
+export const reportProgressSchema = z.object({
+  proven: z.number().int().min(0),
+  total: z.number().int().min(0),
+  unit: z.literal('ac'),
+  percent: z.number().int().min(0).max(100).nullable(),
+})
+
+export const reportUsageSchema = usageSchema.extend({ evidenceId: uuidSchema })
+
+export const deliveryReportV1Schema = z.object({
+  schemaVersion: z.literal(DELIVERY_SCHEMA_VERSIONS.report),
+  projectId: uuidSchema,
+  baselineId: uuidSchema,
+  baselineHash: sha256Schema,
+  targetProfile: z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }),
+  revision: sourceRevisionSchema.nullable(),
+  revisionSource: reportRevisionSourceSchema,
+  acceptanceCriteria: z.array(reportAcceptanceCriterionSchema).max(500),
+  rows: z.array(deliveryReportRowSchema).max(1000),
+  totalRows: z.number().int().min(0),
+  truncated: z.boolean(),
+  limit: z.number().int().min(1).max(1000),
+  issues: z.array(z.object({ code: z.literal('unknown_ac'), taskId: uuidSchema, acId: z.string().min(1) })).max(1000),
+  scans: z.array(reportScanSchema).max(50),
+  deployment: reportDeploymentSchema,
+  gates: z.object({ publishable: reportGateSchema, releasable: reportGateSchema }),
+  decisions: z.array(reportDecisionSchema).max(1000),
+  progress: reportProgressSchema,
+  usage: z.array(reportUsageSchema).max(100),
+})
+export type DeliveryReportV1 = z.infer<typeof deliveryReportV1Schema>
+
 export const deliveryDocumentSchemas = {
   [DELIVERY_SCHEMA_VERSIONS.taskPackage]: taskPackageV1Schema,
   [DELIVERY_SCHEMA_VERSIONS.resultManifest]: resultManifestV1Schema,
@@ -729,6 +861,7 @@ export const deliveryDocumentSchemas = {
   [DELIVERY_SCHEMA_VERSIONS.requirementsProposal]: requirementsProposalV1Schema,
   [DELIVERY_SCHEMA_VERSIONS.planProposal]: planProposalV1Schema,
   [DELIVERY_SCHEMA_VERSIONS.designManifest]: designManifestV1Schema,
+  [DELIVERY_SCHEMA_VERSIONS.report]: deliveryReportV1Schema,
 } as const
 
 export type VersionedSchemaMap = Record<string, z.ZodType>
