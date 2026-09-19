@@ -555,6 +555,10 @@ Nie pozostają nierozstrzygnięte wybory produktowe. Readiness środowiska jest 
 
 ### Phase 2: Fundament OSS i kontrakt enterprise
 
+> Współodbiór 2.3 i 2.4: OSS-02, EXEC-02, UI-02, QA-02. Dowody UI-02 — zakres dostarczony, zakres
+> pominięty, luki pokrycia i dwa warunkowe kryteria — w [workstreams/ui-02/handoff.md](workstreams/ui-02/handoff.md).
+> Status zaznacza jedna wyznaczona osoba po dowodach od wszystkich czterech stron; żaden strumień nie zalicza ich sam.
+
 #### Automated
 
 - [ ] 2.1 Testy DTO, cykli zależności i statusu projektu przechodzą; nieznana wersja manifestu jest odrzucana.
