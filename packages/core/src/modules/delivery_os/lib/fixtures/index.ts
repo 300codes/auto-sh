@@ -29,8 +29,10 @@ import type { PlanProposalContext } from '../proposals'
 import { getTargetProfile } from '../targetProfiles'
 import taskPackageJson from './task-package.v1.json' with { type: 'json' }
 import taskPackageSnapshotJson from './task-package.snapshot.v1.json' with { type: 'json' }
+import taskPackageOpenMercatoJson from './task-package.open-mercato.v1.json' with { type: 'json' }
 import resultManifestJson from './result-manifest.v1.json' with { type: 'json' }
 import resultManifestSnapshotJson from './result-manifest.snapshot.v1.json' with { type: 'json' }
+import resultManifestOpenMercatoJson from './result-manifest.open-mercato.v1.json' with { type: 'json' }
 import baselineContentJson from './baseline-content.v1.json' with { type: 'json' }
 import requirementsProposalJson from './requirements-proposal.v1.json' with { type: 'json' }
 import planProposalJson from './plan-proposal.v1.json' with { type: 'json' }
@@ -68,8 +70,10 @@ export type { PlanProposalContext } from '../proposals'
 export const positiveDeliveryFixtures = [
   { name: 'task-package', schema: taskPackageV1Schema, document: taskPackageJson },
   { name: 'task-package.snapshot', schema: taskPackageV1Schema, document: taskPackageSnapshotJson },
+  { name: 'task-package.open-mercato', schema: taskPackageV1Schema, document: taskPackageOpenMercatoJson },
   { name: 'result-manifest', schema: resultManifestV1Schema, document: resultManifestJson },
   { name: 'result-manifest.snapshot', schema: resultManifestV1Schema, document: resultManifestSnapshotJson },
+  { name: 'result-manifest.open-mercato', schema: resultManifestV1Schema, document: resultManifestOpenMercatoJson },
   { name: 'baseline-content', schema: baselineContentV1Schema, document: baselineContentJson },
   { name: 'requirements-proposal', schema: requirementsProposalV1Schema, document: requirementsProposalJson },
   { name: 'plan-proposal', schema: planProposalV1Schema, document: planProposalJson },
@@ -95,9 +99,17 @@ export function loadTaskPackageFixture(variant: FixtureVariant = 'git'): TaskPac
   return parseFixture(taskPackageV1Schema, document, `task-package (${variant})`)
 }
 
+export function loadOpenMercatoTaskPackageFixture(): TaskPackageV1 {
+  return parseFixture(taskPackageV1Schema, taskPackageOpenMercatoJson, 'task-package (open-mercato)')
+}
+
 export function loadResultManifestFixture(variant: FixtureVariant = 'git'): ResultManifestV1 {
   const document = variant === 'git' ? resultManifestJson : resultManifestSnapshotJson
   return parseFixture(resultManifestV1Schema, document, `result-manifest (${variant})`)
+}
+
+export function loadOpenMercatoResultManifestFixture(): ResultManifestV1 {
+  return parseFixture(resultManifestV1Schema, resultManifestOpenMercatoJson, 'result-manifest (open-mercato)')
 }
 
 export function loadBaselineContentFixture(): BaselineContentV1 {
