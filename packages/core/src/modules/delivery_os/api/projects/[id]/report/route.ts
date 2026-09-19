@@ -1,10 +1,11 @@
+import { deliveryReportResponseSchema } from '@open-mercato/core/modules/delivery_os/lib/reportContracts'
 import { NextResponse } from 'next/server'
 import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
 import { z } from 'zod'
 import type { DeliveryOsReportQueries } from '@open-mercato/core/modules/delivery_os/commands/reportQueries'
 import { parseDeliveryInput, resolveDeliveryScope } from '@open-mercato/core/modules/delivery_os/commands/shared'
 import { reportQuerySchema } from '@open-mercato/core/modules/delivery_os/data/validators'
-import { deliveryReportV1Schema, uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import { uuidSchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { DELIVERY_OS_OPENAPI_TAG } from '@open-mercato/core/modules/delivery_os/api/openapi'
 import {
   deliveryErrorResponse,
@@ -46,7 +47,7 @@ export const openApi: OpenApiRouteDoc = {
       description:
         'Read-only: evaluates every acceptance criterion of the baseline (default: the active baseline) on one revision (default: the newest accepted result) and the project target profile, from stored evidence and decisions only. `revision` is `git:<commitSha>` or `snapshot:<sha256>:<externalWorkspaceId>`. Rows are capped by `limit` (default and maximum 1000) with `truncated`. Archived projects stay readable.',
       query: reportQuerySchema,
-      responses: [{ status: 200, description: 'DeliveryReport v1', schema: deliveryReportV1Schema }],
+      responses: [{ status: 200, description: 'DeliveryReport v1', schema: deliveryReportResponseSchema }],
       errors: [
         { status: 400, description: 'Malformed baselineId or limit', schema: deliveryErrorBodySchema },
         { status: 404, description: 'Project or baseline not found in this scope, or no active baseline', schema: deliveryErrorBodySchema },

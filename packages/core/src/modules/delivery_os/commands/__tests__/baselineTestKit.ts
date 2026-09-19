@@ -2,7 +2,7 @@ import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared
 import { commandRegistry } from '@open-mercato/shared/lib/commands/registry'
 import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
-import { DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../../data/entities'
+import { DeliveryReleaseCandidate, DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../../data/entities'
 import { draftSpecV1Schema } from '../../data/validators'
 import { hashBaseline } from '../../lib/baseline'
 import { DEFAULT_DELIVERY_LIMITS, deliveryErrorBodySchema, type BaselineContentV1 } from '../../lib/contracts'
@@ -42,6 +42,7 @@ export function emptyStore(): Store {
 }
 
 export function rowsFor(store: Store, entity: unknown): Row[] {
+  if (entity === DeliveryReleaseCandidate) return []
   if (entity === DeliveryProject) return store.projects as unknown as Row[]
   if (entity === DeliveryBaseline) return store.baselines as unknown as Row[]
   if (entity === DeliveryDecision) return store.decisions as unknown as Row[]

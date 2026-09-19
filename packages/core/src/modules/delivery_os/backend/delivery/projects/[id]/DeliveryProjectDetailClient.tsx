@@ -240,6 +240,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
             ) : null}
           />
           <EvidenceSection
+            projectId={params.id}
             progress={state.project.progress}
             taskCounts={state.project.taskCounts}
             attention={state.project.attention}

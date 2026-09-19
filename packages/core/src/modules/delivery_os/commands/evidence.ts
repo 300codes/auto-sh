@@ -1,3 +1,4 @@
+import { assertPublicationGate } from './publicationGate'
 import { randomUUID } from 'node:crypto'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
@@ -525,6 +526,7 @@ async function recordEvidenceInTransaction(
     ? requireTaskProfile(task.targetProfileId, task.targetProfileVersion)
     : requireTaskProfile(project.targetProfileId, project.targetProfileVersion)
   assertKindRules(input, profile, baseline, task)
+  if (input.kind === 'deployment' && input.sourceRevision) await assertPublicationGate(tx, scope, project, baseline.id, input.sourceRevision)
   const attachments = await verifyEvidenceAttachments(
     tx,
     ctx,

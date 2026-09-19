@@ -5,6 +5,7 @@ import { hasAllFeatures } from '@open-mercato/shared/security/features'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import {
   DeliveryBaseline,
+  DeliveryReleaseCandidate,
   DeliveryDecision,
   DeliveryEvidence,
   DeliveryFlowStageArtifact,
@@ -40,6 +41,7 @@ type RouteStore = {
   decisions: Row[]
   tasks: Row[]
   evidence: Row[]
+  candidates: Row[]
   attachments: Row[]
   intakes: Row[]
   stageArtifacts: Row[]
@@ -47,7 +49,7 @@ type RouteStore = {
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [] }
 }
 
 export const routeState: {
@@ -70,6 +72,7 @@ export const routeState: {
 
 function rowsFor(entity: unknown): Row[] {
   const { store } = routeState
+  if (entity === DeliveryReleaseCandidate) return store.candidates
   if (entity === DeliveryProject) return store.projects
   if (entity === DeliveryBaseline) return store.baselines
   if (entity === DeliveryDecision) return store.decisions
