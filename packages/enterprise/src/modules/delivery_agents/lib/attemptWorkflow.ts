@@ -57,12 +57,14 @@ function buildCezarAttemptWorkflowDefinition(): unknown {
       {
         transitionId: 't_start',
         transitionName: 'Start',
+        trigger: 'auto',
         fromStepId: 'start',
         toStepId: DELIVERY_AGENTS_WAIT_STEP_ID,
       },
       {
         transitionId: 't_done',
         transitionName: 'Done',
+        trigger: 'auto',
         fromStepId: DELIVERY_AGENTS_WAIT_STEP_ID,
         toStepId: DELIVERY_AGENTS_END_STEP_ID,
       },
