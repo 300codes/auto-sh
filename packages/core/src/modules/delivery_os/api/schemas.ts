@@ -129,3 +129,10 @@ export const taskUpdateResponseSchema = z.object({
   updatedAt: isoDateTimeSchema,
   status: taskStatusSchema,
 })
+
+export const resultAcceptResponseSchema = z.object({
+  evidenceId: uuidSchema,
+  duplicate: z.boolean(),
+  taskStatus: taskStatusSchema,
+  taskUpdatedAt: isoDateTimeSchema,
+})

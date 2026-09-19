@@ -9,15 +9,14 @@ import type { DataEngine } from '@open-mercato/shared/lib/data/engine'
 import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { E } from '#generated/entities.ids.generated'
-import { DeliveryEvidence, type DeliveryProject, type DeliveryTask } from '../data/entities'
+import { DeliveryEvidence, type DeliveryTask } from '../data/entities'
 import { acceptResultCommandSchema, type AcceptResultCommandInput } from '../data/validators'
 import { findAttempt, parseAttemptRegister, recordAttemptResult } from '../lib/attempts'
 import { buildDeliveryError, uuidSchema, type ExecutionAttempt, type TaskStatus } from '../lib/contracts'
 import { evaluateResultAcceptance } from '../lib/resultAcceptance'
 import { canTransition } from '../lib/taskLifecycle'
-import { getTargetProfile } from '../lib/targetProfiles'
-import { buildTaskPackageV1, type TaskPackageResult } from '../lib/taskPackage'
 import { emitDeliveryOsEvent } from '../events'
+import { loadTaskPackage } from './attemptQueries'
 import {
   assertDeliveryCheck,
   DELIVERY_EVIDENCE_RESOURCE_KIND,
@@ -31,7 +30,7 @@ import {
   resolveDeliveryScope,
   type DeliveryScope,
 } from './shared'
-import { emitTaskSideEffects, emitTaskUpdated, findProjectBaseline } from './tasks'
+import { emitTaskSideEffects, emitTaskUpdated } from './tasks'
 
 export type ResultAcceptCommandResult = {
   evidenceId: string
@@ -89,43 +88,6 @@ function findResultEvidence(
   )
 }
 
-async function buildResultPackage(
-  tx: EntityManager,
-  task: DeliveryTask,
-  project: DeliveryProject,
-  attempt: ExecutionAttempt | undefined,
-  scope: DeliveryScope,
-): Promise<TaskPackageResult> {
-  const baseline = await findProjectBaseline(tx, task.baselineId, project.id, scope)
-  if (!baseline) {
-    return {
-      ok: false,
-      ...buildDeliveryError('foreign_reference', 'Baseline does not belong to this project', [
-        { path: 'baselineId', code: 'foreign_baseline' },
-      ]),
-    }
-  }
-  const profile = getTargetProfile(task.targetProfileId, task.targetProfileVersion)
-  if (!profile) {
-    return {
-      ok: false,
-      ...buildDeliveryError('unknown_target_profile', 'Unknown target profile', [
-        { path: 'targetProfileId', code: 'unknown_target_profile' },
-      ]),
-    }
-  }
-  return buildTaskPackageV1(
-    {
-      project: { id: project.id, repositoryRef: project.repositoryRef ?? null, limits: project.limits },
-      task,
-      baseline,
-      attempt,
-      profile,
-    },
-    { attemptGate: 'none' },
-  )
-}
-
 function toResult(outcome: AcceptOutcome): ResultAcceptCommandResult {
   return {
     evidenceId: outcome.evidenceId,
@@ -152,7 +114,7 @@ const acceptResultCommand: CommandHandler<unknown, ResultAcceptCommandResult> = 
         const project = await requireScopedProject(tx, task.projectId, scope)
         const register = readAttemptRegister(task)
         const attempt = findAttempt(register, parsed.attemptId)
-        const taskPackage = await buildResultPackage(tx, task, project, attempt, scope)
+        const taskPackage = await loadTaskPackage(tx, { task, project, attempt, scope }, { attemptGate: 'none' })
         const existing = attempt ? await findResultEvidence(tx, task.id, attempt.attemptId, scope) : null
 
         const evaluation = evaluateResultAcceptance({

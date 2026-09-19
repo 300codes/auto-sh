@@ -54,6 +54,9 @@ export function matches(row: Row, where: Row): boolean {
     if (typeof expected === 'object' && expected !== null && '$in' in expected) {
       return (expected as { $in: unknown[] }).$in.includes(actual)
     }
+    if (typeof expected === 'object' && expected !== null && '$gt' in expected) {
+      return typeof actual === 'number' && actual > (expected as { $gt: number }).$gt
+    }
     return actual === (expected ?? null)
   })
 }

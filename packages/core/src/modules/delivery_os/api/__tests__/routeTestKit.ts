@@ -71,30 +71,37 @@ function rowsFor(entity: unknown): Row[] {
 export const findMock = {
   findOneWithDecryption: async (_em: unknown, entity: unknown, where: Row) =>
     rowsFor(entity).find((row) => matches(row, where)) ?? null,
-  findWithDecryption: async (_em: unknown, entity: unknown, where: Row) =>
-    rowsFor(entity).filter((row) => matches(row, where)),
+  findWithDecryption: jest.fn(async (_em: unknown, entity: unknown, where: Row, options?: { limit?: number; offset?: number }) => {
+    const rows = rowsFor(entity).filter((row) => matches(row, where))
+    const offset = options?.offset ?? 0
+    return rows.slice(offset, options?.limit === undefined ? undefined : offset + options.limit)
+  }),
 }
 
 const createdEntities = new WeakMap<object, unknown>()
 
-const em = {
+export const em = {
   fork: () => em,
-  transactional: async (work: (tx: unknown) => Promise<unknown>) => work(em),
+  transactional: jest.fn(async (work: (tx: unknown) => Promise<unknown>) => work(em)),
   create: (entity: unknown, data: Row) => {
     const now = new Date()
     const row: Row = { id: randomUUID(), createdAt: now, updatedAt: now, decidedAt: now, deletedAt: null, ...data }
     createdEntities.set(row, entity)
     return row
   },
-  persist: (row: Row) => {
+  persist: jest.fn((row: Row) => {
     const entity = createdEntities.get(row)
     if (entity && !rowsFor(entity).includes(row)) rowsFor(entity).push(row)
     routeState.writes += 1
     return em
-  },
-  flush: async () => undefined,
+  }),
+  flush: jest.fn(async () => undefined),
+  nativeInsert: jest.fn(async () => undefined),
+  nativeUpdate: jest.fn(async () => 0),
   findOne: async () => null,
 }
+
+export const EM_WRITE_METHODS = ['transactional', 'persist', 'flush', 'nativeInsert', 'nativeUpdate'] as const
 
 const dataEngine = {
   markOrmEntityChange: () => {
@@ -134,6 +141,10 @@ export const containerMock = {
         if (!routeState.rbacAvailable) throw new Error('[internal] rbacService is not registered')
         return rbacService
       }
+      if (name === 'deliveryOsAttemptQueries') {
+        const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
+        return createDeliveryOsAttemptQueries(em)
+      }
       return services[name]
     },
   }),
@@ -166,6 +177,8 @@ export function resetRouteState(): void {
   routeState.selectionRejected = false
   routeState.store = { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] }
   routeState.writes = 0
+  for (const method of EM_WRITE_METHODS) em[method].mockClear()
+  findMock.findWithDecryption.mockClear()
   routeState.queryEngine.query.mockReset()
   routeState.queryEngine.query.mockResolvedValue({ items: [], total: 0 })
 }

@@ -291,3 +291,38 @@ no error code, path, schema version, event, feature or migration changed.
 - Evidence: see the T015 task notes (jest 25 suites / 653 tests, core typecheck, eslint, live curl transcript). Rows:
   2.2 (CRUD, scope 404, 403 per feature, stale 409, pageSize) and 2.3 (manual baseline → real decisions → task ready
   over HTTP without enterprise); co-acceptance 2.4 stays open.
+
+## Addendum — L5b routes R14–R16 and `deliveryOsAttemptQueries` (T016)
+
+- Routes (all with `metadata`, `openApi`, frozen error bodies, mutation guard on writes):
+  - R14 `POST /api/delivery_os/tasks/:id/attempts` — `delivery_os.attempts.manage`; header `Idempotency-Key`
+    (checked first → `400 idempotency_key_required`), body `{ mode: 'manual_handoff', baseRevision }`; `201` new key,
+    `200` same key + payload (before the lock, header may be stale or missing); a new key needs the **task**
+    `updatedAt` lock header (`428` / platform `409`). Body-sent `trustedExecution`/`taskId` are ignored.
+  - R15 `GET /api/delivery_os/tasks/:id/package?attemptId=` — `delivery_os.attempts.manage`; `200 TaskPackage v1`,
+    no writes; `404 attempt_not_found`, `409 attempt_cancelled | attempt_closed | reconciliation_required`,
+    `400 validation_failed` for a missing/malformed `attemptId`. After a result is accepted the package answers
+    `409 attempt_closed` — export it before importing.
+  - R16 `POST /api/delivery_os/tasks/:id/results` — `delivery_os.results.import`; body `{ attemptId, manifest }`;
+    `201 { evidenceId, duplicate: false, taskStatus, taskUpdatedAt }`, identical replay `200 … duplicate: true`;
+    `413 payload_too_large`; no lock header.
+- **For EXEC:** `container.resolve('deliveryOsAttemptQueries')` (type `DeliveryOsAttemptQueries` from
+  `commands/attemptQueries.ts`): `getAttempt(scope, taskId, attemptId)` → attempt or `null`;
+  `buildTaskPackage(scope, taskId, attemptId)` → TaskPackage v1 or throws `CrudHttpError` with the frozen body
+  (`isCrudHttpError`); `listPendingDeliveries(scope, { limit })` (1–100, default 50; pages through attempted tasks,
+  oldest first). `getAttempt` also reads archived tasks; `buildTaskPackage` answers 404 for them. Scope `{ tenantId, organizationId }` is mandatory — a missing one throws an `[internal]` Error.
+  Read-only: forked EM, no flush, no transaction. Empty in OSS-only because only the trusted executor sets `workflowRef`.
+- **For UI:** the 428 on R14 reuses the shared message "The project version header is required" although the expected
+  version is the task's — render by `code`, not by text. New request header name: `Idempotency-Key`.
+- **For QA (TC-DELIVERY-005/006):** routes are live; build a valid manifest with
+  `buildResultManifest(taskPackage)` from `lib/fixtures/builders.ts`. Two-connection races stay with QA.
+- Live evidence (2026-09-19, :3100, admin@acme.com, real attachment upload → draftSpec → baseline → both decisions →
+  task ready): reserve `201` then `200` with the same `attemptId`; two package GETs left the row counts of all five
+  tables, `delivery_tasks.updated_at` and the register length unchanged; result import `201 duplicate:false` then
+  `200 duplicate:true` with one `delivery_evidence` row; a different manifest → `409 result_conflict`;
+  `taskUpdatedAt` in the response equals `delivery_tasks.updated_at` (ORM hook confirmed). Records removed afterwards.
+- Evidence: jest 29 suites / 681 tests; core typecheck; eslint clean. Rows: 2.1 (one key reserves one attempt, GET
+  does not mutate, stale update rejected), 2.2 (scope 404, 403 per feature), 2.3 (manual flow without enterprise),
+  evidence toward 4.1 (duplicate does not double evidence). Still OSS-04: claim, cancel, reconcile, mark_delivery,
+  closing the attempt, the pass-through result checks.
+

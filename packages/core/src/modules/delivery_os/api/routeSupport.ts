@@ -103,6 +103,32 @@ export async function readRouteBody(request: Request): Promise<Record<string, un
   return typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
 }
 
+export async function readCappedRouteBody(request: Request, maxBytes: number): Promise<Record<string, unknown>> {
+  const tooLarge = deliveryHttpError(
+    buildDeliveryError('payload_too_large', 'Request body is too large', [{ path: 'body', code: 'payload_too_large' }]),
+  )
+  const declared = Number(request.headers.get('content-length') ?? '0')
+  if (Number.isFinite(declared) && declared > maxBytes) throw tooLarge
+  const reader = request.body?.getReader()
+  if (!reader) return {}
+  const chunks: Uint8Array[] = []
+  let received = 0
+  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+    received += chunk.value.byteLength
+    if (received > maxBytes) {
+      await reader.cancel()
+      throw tooLarge
+    }
+    chunks.push(chunk.value)
+  }
+  try {
+    const body: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+    return typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
+}
+
 export function resolveRouteEm(ctx: CommandRuntimeContext): EntityManager {
   return (ctx.container.resolve('em') as EntityManager).fork()
 }
