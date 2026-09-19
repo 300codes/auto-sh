@@ -92,7 +92,8 @@ const openMercatoModuleV1: TargetProfile = {
   version: 1,
   label: 'Open Mercato app module',
   revisionKind: 'git',
-  allowedPathRoots: ['src/modules/**'],
+  // Corrected from 'src/modules/**': auto-sh monorepo places modules under packages/core/src/modules/
+  allowedPathRoots: ['packages/core/src/modules/**'],
   commandProfiles: {
     'jest-module': { command: 'yarn jest --maxWorkers=2' },
     typecheck: { command: 'yarn typecheck' },
@@ -103,7 +104,16 @@ const openMercatoModuleV1: TargetProfile = {
     { checkId: 'typecheck', commandProfileId: 'typecheck', kind: 'typecheck', required: true },
     { checkId: 'dependency-audit', commandProfileId: 'yarn-audit', kind: 'scan', required: true },
   ],
-  testCatalogue: [],
+  testCatalogue: [
+    {
+      testId: 'open-mercato-module AC-OM-001: profile validates against schema',
+      file: 'packages/core/src/modules/delivery_os/lib/__tests__/targetProfiles.test.ts',
+    },
+    {
+      testId: 'open-mercato-module AC-OM-002: OM profile uses git revision',
+      file: 'packages/core/src/modules/delivery_os/lib/__tests__/targetProfiles.test.ts',
+    },
+  ],
   requiredEvidenceKinds: ['result_manifest', 'test', 'scan'],
   permittedEvidenceKinds: ['result_manifest', 'test', 'review', 'screenshot', 'deployment', 'scan'],
 }
