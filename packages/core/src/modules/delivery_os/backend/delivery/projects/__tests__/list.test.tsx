@@ -2,6 +2,9 @@
 import * as React from 'react'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { OPTIMISTIC_LOCK_HEADER_NAME } from '@open-mercato/shared/lib/crud/optimistic-lock-headers'
+// NOT mocked on purpose: the point is to check the shape of the error the list
+// actually throws, not the behaviour of a stubbed conflict surface.
+import { extractOptimisticLockConflict } from '@open-mercato/ui/backend/utils/optimisticLock'
 import DeliveryProjectListPage from '../page'
 import { metadata } from '../page.meta'
 
@@ -189,6 +192,7 @@ it('routes a stale-version 409 to the shared conflict surface instead of a gener
   })
   await act(async () => { screen.getByTestId('row-action-delete').click() })
   await waitFor(() => expect(surfaceRecordConflictMock).toHaveBeenCalled())
+  expect(extractOptimisticLockConflict(surfaceRecordConflictMock.mock.calls[0][0])).toBeTruthy()
   expect(flashMock).not.toHaveBeenCalledWith('delivery_os.projects.list.archive.error', 'error')
   expect(flashMock).not.toHaveBeenCalledWith('delivery_os.projects.list.archive.success', 'success')
 })
@@ -198,6 +202,8 @@ it('names the blocking attempt on a domain 409 rather than claiming a concurrent
   apiCallMock.mockResolvedValue({ ok: false, status: 409, result: { error: 'Attempt active', code: 'attempt_active', details: [] } })
   await act(async () => { screen.getByTestId('row-action-delete').click() })
   await waitFor(() => expect(flashMock).toHaveBeenCalledWith('delivery_os.projects.list.archive.blocked', 'error'))
+  // A domain 409 must NOT look like a stale-version conflict to the shared surface.
+  expect(extractOptimisticLockConflict(surfaceRecordConflictMock.mock.calls[0][0])).toBeNull()
 })
 
 it('reports a 404 as a scope loss and refreshes the list', async () => {

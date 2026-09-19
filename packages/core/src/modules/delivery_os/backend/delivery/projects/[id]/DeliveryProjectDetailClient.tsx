@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
+import { useOrganizationScopeVersion } from '@open-mercato/shared/lib/frontend/useOrganizationScope'
 import { Page, PageBody } from '@open-mercato/ui/backend/Page'
 import { FormHeader } from '@open-mercato/ui/backend/forms'
 import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
@@ -49,6 +50,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(() => readSelectedTaskFromUrl())
   const requestSequence = React.useRef(0)
   const { retryLastMutation } = useGuardedMutation({ contextId: `delivery_os.project.${params.id}` })
+  const scopeVersion = useOrganizationScopeVersion()
 
   // The widget's `refresh` has to reload the project AND the sections, because an
   // execution result changes task status. It is held in a ref so the context the
@@ -89,7 +91,7 @@ export function DeliveryProjectDetailClient({ params }: { params: { id: string }
     } catch {
       if (sequence === requestSequence.current) setState({ status: 'error' })
     }
-  }, [params.id, retryLastMutation, widgetRefresh])
+  }, [params.id, retryLastMutation, widgetRefresh, scopeVersion])
 
   // Declared before the section sources so the project request — the one that
   // gates the whole page — is the first one this component issues on mount.

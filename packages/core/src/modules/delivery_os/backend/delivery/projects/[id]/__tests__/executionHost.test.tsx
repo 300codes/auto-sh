@@ -15,12 +15,15 @@ const EXECUTE_FEATURE = 'delivery_agents.execute'
  * real `InjectionSpot`, so spot routing and ACL filtering are exercised for real.
  * The widget's own internals are proven where the widget lives.
  */
+let receivedContext: unknown = null
+
 const executionWidgetModule = {
   metadata: { id: 'delivery_agents.project-execution-action', features: [EXECUTE_FEATURE] },
   moduleId: 'delivery_agents',
   key: 'delivery_agents/project-execution-action',
-  Widget: ({ context }: { context: { projectId: string; taskId?: string | null } }) =>
-    context.taskId
+  Widget: ({ context }: { context: { projectId: string; taskId?: string | null } }) => {
+    receivedContext = context
+    return context.taskId
       ? (
         <div
           data-testid="delivery-execution-action"
@@ -28,7 +31,8 @@ const executionWidgetModule = {
           data-task-id={context.taskId}
         />
       )
-      : null,
+      : null
+  },
 }
 
 let registeredWidgets: unknown[] = []
@@ -128,6 +132,7 @@ async function renderDetail(): Promise<void> {
 }
 
 beforeEach(() => {
+  receivedContext = null
   apiCallMock.mockReset()
   injectionSpotSpy.mockClear()
   registeredWidgets = [executionWidgetModule]
@@ -149,21 +154,21 @@ it('mounts the execution extension with the selected task and records it in the 
   expect(new URLSearchParams(window.location.search).get('taskId')).toBe(taskId)
 })
 
-it('keeps the context valid against the frozen contract once a task is selected', async () => {
+it('keeps the context the host actually built valid against the frozen contract', async () => {
   await renderDetail()
   await act(async () => { (await screen.findByTestId(`delivery-task-${taskId}`)).click() })
   await screen.findByTestId('delivery-execution-action')
 
-  const context = {
+  // The context under test is the one the widget received, not one written here.
+  const parsed = executionWidgetContextV1Schema.safeParse(receivedContext)
+  expect(parsed.success).toBe(true)
+  expect(parsed.success && parsed.data).toMatchObject({
     schemaVersion: 'delivery_os.project.execution.v1',
     projectId,
     taskId,
     baselineId,
     updatedAt: now,
-    retryLastMutation: async () => false,
-    refresh: async () => undefined,
-  }
-  expect(executionWidgetContextV1Schema.safeParse(context).success).toBe(true)
+  })
 })
 
 it('restores the selection from the URL so a reload and a deep link keep the context', async () => {

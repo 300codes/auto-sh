@@ -10,6 +10,10 @@
   kontenera `app` nie ma, więc tryb Docker nie ma zastosowania.
 - **Uwaga o środowisku:** drzewo nie miało `node_modules` — przed pierwszą bramką wykonano
   `yarn install --immutable` (native build `cpu-features` nie przechodzi; to opcjonalna zależność `ssh2`, nie blokuje).
+- **Review wdrożenia:** [`reviews/impl-review.md`](reviews/impl-review.md) — 0 critical, 6 warnings, 4 observations.
+  Po triażu naprawiono F2–F7 i F9; F1 przyjęto jako ryzyko (patrz niżej), F8 zamieniono na trzecią prośbę do OSS,
+  F10 nie wymagało działania. Jedna podpowiedź z F10 — wyeksportowanie stałej `data-testid` z `lib/contracts.ts` —
+  **nie została wykonana**, bo `lib/` to powierzchnia OSS, której UI-02 nie wolno dotykać; do uzgodnienia z OSS.
 
 ## Zależność zapisana z góry: fixture domenowy
 
@@ -114,6 +118,18 @@ brakującego endpointu, a nie że dowodów nie ma. Bez tego rozróżnienia odbie
   `deriveProjectStatus` per wiersz — inaczej strona listy z 50 projektami robi 200 zapytań.
 - UI-02 nie doliczało statusu po stronie klienta, żeby nie powstało drugie miejsce z logiką statusu.
 
+### (c) Paginacja `GET /projects/[id]/tasks` i `GET /projects/[id]/baselines`
+
+Oba route'y zwracają **wszystkie** nieusunięte rekordy, bez `limit` i bez parametrów stronicowania
+(`api/projects/[id]/tasks/route.ts` → `findWithDecryption` z samym `orderBy`). Sekcje szczegółów renderują
+je w całości; lista projektów tnie na 50, więc ekran szczegółów jest jedyną nieograniczoną powierzchnią
+tej zmiany. Dziś nie ma projektu, który by to przełamał — ale przełamie go pierwszy realny plan.
+
+- **Konsument:** sekcje zadań i designu UI-02 oraz ekran zadań UI-04.
+- **Kształt sugerowany:** `page`/`pageSize` jak w `projectListQuerySchema`, odpowiedź `{ items, total, totalPages }`.
+- UI-02 świadomie nie dokłada sztucznego cięcia po stronie klienta: bez API byłby to półśrodek do usunięcia,
+  a licznik „pokazano N z M" bez `total` z serwera kłamałby o reszcie.
+
 ## Wynik walidacji, ograniczenia i luki pokrycia
 
 ### Co przeszło (runner: local)
@@ -138,6 +154,20 @@ a serwer dev nie działa. Doprowadzenie do stanu wykonywalnego wymaga `yarn db:m
 czyli operacji, których `AGENTS.md` zabrania wykonywać bez zgody.
 
 W konsekwencji **kryteria 3.1 i 3.2 pozostają niezaznaczone.** Nie zostały obejrzane jako zrobione.
+
+**To jest świadoma decyzja prowadzącego zmianę (2026-09-19), nie przeoczenie.** Uruchomienie specu odłożono
+do momentu, w którym środowisko będzie gotowe — najpewniej razem z fixture'em domenowym od OSS-02/QA-02,
+który i tak jest potrzebny do 2.10/2.11.
+
+### Ryzyko przyjęte świadomie po review wdrożenia
+
+**Sekcja zadań mówi „brak baseline'u" także wtedy, gdy stan baseline'u jest nieznany.**
+`hasActiveBaseline` ma typ `boolean | null`; host podaje `null` dla każdego stanu `/baselines` innego niż
+`ready`, a render zwija `null` do gałęzi negatywnej. Skutek: przy trwałym błędzie `GET /projects/{id}/baselines`
+sekcja zadań poda **nieprawdziwą przyczynę** braku zadań (powie „nie ma baseline'u", gdy w rzeczywistości nie
+udało się go pobrać — co sekcje obok pokazują poprawnie jako błąd). Finding F1 z review wdrożenia;
+**decyzja: przyjęte, nie naprawiane w UI-02.** Naprawa to jedna zmiana warunku w `TasksSection.tsx`
+(nie renderować pustego stanu, dopóki `hasActiveBaseline === null`) — do wzięcia przez UI-03 albo UI-04.
 
 ### Luki pokrycia, które trzeba znać
 

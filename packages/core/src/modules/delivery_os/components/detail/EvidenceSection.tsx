@@ -4,7 +4,9 @@ import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
 import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
+import { Alert } from '@open-mercato/ui/primitives/alert'
 import { Badge } from '@open-mercato/ui/primitives/badge'
+import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import { Button } from '@open-mercato/ui/primitives/button'
 import type { BaselineDto, ProjectDetail } from '@open-mercato/core/modules/delivery_os/api/schemas'
 import { resolveActiveBaseline } from './baselineContent'
@@ -58,22 +60,22 @@ export function EvidenceSection({ progress, taskCounts, attention, baselines, on
             <span className="text-xs text-muted-foreground">{t('delivery_os.project.sections.evidence.noTaskCounts')}</span>
           ) : (
             counts.map(([status, count]) => (
-              <Badge key={status} variant="neutral" size="sm">
-                {`${t(`delivery_os.project.sections.tasks.status.${status}`)}: ${count}`}
-              </Badge>
+              <StatusBadge key={status} variant="neutral">
+                {`${t(`delivery_os.project.sections.tasks.status.${status}`, status)}: ${count}`}
+              </StatusBadge>
             ))
           )}
           {attention.blockedTaskIds.length > 0 ? (
-            <Badge variant="error" size="sm">
+            <StatusBadge variant="error">
               {t('delivery_os.project.sections.evidence.blocked', { count: attention.blockedTaskIds.length })}
-            </Badge>
+            </StatusBadge>
           ) : null}
           {attention.reconciliationRequiredTaskIds.length > 0 ? (
-            <Badge variant="warning" size="sm">
+            <StatusBadge variant="warning">
               {t('delivery_os.project.sections.evidence.reconciliation', {
                 count: attention.reconciliationRequiredTaskIds.length,
               })}
-            </Badge>
+            </StatusBadge>
           ) : null}
         </div>
       </div>
@@ -111,13 +113,10 @@ export function EvidenceSection({ progress, taskCounts, attention, baselines, on
       </div>
 
       {/* Platform gap, not a domain result: the read endpoint does not exist yet. */}
-      <div
-        data-testid="delivery-evidence-list-unavailable"
-        className="rounded border border-status-info-border bg-status-info-bg px-3 py-2 text-sm text-status-info-text"
-      >
+      <Alert status="information" data-testid="delivery-evidence-list-unavailable">
         <p className="font-medium">{t('delivery_os.project.sections.evidence.listUnavailable')}</p>
         <p>{t('delivery_os.project.sections.evidence.listUnavailableDescription')}</p>
-      </div>
+      </Alert>
     </section>
   )
 }

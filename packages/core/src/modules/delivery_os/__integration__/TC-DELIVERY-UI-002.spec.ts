@@ -102,24 +102,47 @@ test('TC-DELIVERY-UI-002: an operator walks the manual flow from the sidebar to 
       await expect(section).toBeVisible({ timeout: 15_000 })
     }
 
-    const noBaselineText = (await requirements.innerText()).trim()
-    const noTasksText = (await tasks.innerText()).trim()
+    // Compare the empty-state NODES, not whole sections: section headings differ
+    // on their own, so comparing sections would pass even if all three empty
+    // states said exactly the same thing — and that distinction is the point.
+    const noBaselineNode = page.getByTestId('delivery-requirements-section-empty')
+    const noTasksNode = page.getByTestId('delivery-tasks-empty')
     const evidenceNotice = page.getByTestId('delivery-evidence-list-unavailable')
-    await expect(evidenceNotice).toBeVisible()
+    for (const node of [noBaselineNode, noTasksNode, evidenceNotice]) {
+      await expect(node).toBeVisible({ timeout: 15_000 })
+    }
+    const noBaselineText = (await noBaselineNode.innerText()).trim()
+    const noTasksText = (await noTasksNode.innerText()).trim()
     const noEvidenceEndpointText = (await evidenceNotice.innerText()).trim()
-    expect(new Set([noBaselineText, noTasksText, noEvidenceEndpointText]).size).toBe(3)
+    for (const text of [noBaselineText, noTasksText, noEvidenceEndpointText]) {
+      expect(text.length).toBeGreaterThan(0)
+    }
+    expect(noBaselineText).not.toBe(noTasksText)
+    expect(noTasksText).not.toBe(noEvidenceEndpointText)
+    expect(noBaselineText).not.toBe(noEvidenceEndpointText)
 
     // A project without acceptance criteria shows no percentage at all.
     await expect(page.getByTestId('delivery-evidence-percent')).toHaveText('—')
 
-    // 4. Find the project again from the list search.
+    // 4. Find the project again from the list search. The search box is
+    //    debounced, so wait for the filtered response before touching the table.
     await page.goto(LIST_PATH)
+    const searchResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/delivery_os/projects?') && response.url().includes('search='),
+    )
     await fillControlledInput(page.getByRole('textbox').first(), name)
-    const projectLink = page.locator(`a[href="${LIST_PATH}/${projectId}"]`).first()
+    await searchResponse
+    const projectLinkSelector = `a[href="${LIST_PATH}/${projectId}"]`
+    const projectLink = page.locator(projectLinkSelector).first()
     await expect(projectLink).toBeVisible({ timeout: 15_000 })
 
-    // 5. Archive it from the list, through the confirmation dialog.
-    const rowActionsTrigger = page.getByRole('button', { name: /open actions/i }).first()
+    // 5. Archive it from the list, through the confirmation dialog. The trigger is
+    //    scoped to the row that holds THIS project's link — `.first()` on the page
+    //    would archive whatever row happens to be on top, which in a shared tenant
+    //    means destroying someone else's record.
+    const projectRow = page.locator('tr', { has: page.locator(projectLinkSelector) })
+    await expect(projectRow).toHaveCount(1, { timeout: 15_000 })
+    const rowActionsTrigger = projectRow.getByRole('button', { name: /open actions/i }).first()
     await rowActionsTrigger.click({ timeout: 10_000 })
     const archiveItem = page.locator('[role="menu"] [role="menuitem"].text-destructive').first()
     await expect(archiveItem).toBeVisible({ timeout: 10_000 })
@@ -135,6 +158,7 @@ test('TC-DELIVERY-UI-002: an operator walks the manual flow from the sidebar to 
 
     const archived = await deleteResponse
     expect(archived.status()).toBe(200)
+    expect(archived.url(), 'the DELETE must target this project, not another row').toContain(projectId!)
     expect(
       archived.request().headers()[OPTIMISTIC_LOCK_HEADER_NAME],
       'the archive request must carry the record version',

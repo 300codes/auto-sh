@@ -319,10 +319,13 @@ describe('evidence section', () => {
 })
 
 describe('three empty states stay disjoint', () => {
+  // Comparing whole SECTIONS would pass even if all three empty states said the
+  // same thing, because the section headings differ on their own. Compare the
+  // empty-state nodes themselves.
   it('uses a different message for no baseline, no tasks and no evidence endpoint', () => {
     const noBaseline = render(
       <RequirementsSection state={ready<BaselineDto[]>([])} onRetry={() => undefined} />,
-    ).container.textContent
+    ).getByTestId('delivery-requirements-section-empty').textContent ?? ''
     const noTasks = render(
       <TasksSection
         state={ready<TaskDto[]>([])}
@@ -332,7 +335,7 @@ describe('three empty states stay disjoint', () => {
         onSelectTask={() => undefined}
         onRetry={() => undefined}
       />,
-    ).container.textContent
+    ).getByTestId('delivery-tasks-empty').textContent ?? ''
     const noEvidenceEndpoint = render(
       <EvidenceSection
         progress={{ proven: 0, total: 0, unit: 'ac', percent: null }}
@@ -341,12 +344,15 @@ describe('three empty states stay disjoint', () => {
         baselines={ready([baseline()])}
         onRetry={() => undefined}
       />,
-    ).container.textContent
+    ).getByTestId('delivery-evidence-list-unavailable').textContent ?? ''
 
     expect(noBaseline).toContain('delivery_os.project.sections.baselines.none.title')
     expect(noTasks).toContain('delivery_os.project.sections.tasks.empty.baselineWithoutTasks')
     expect(noEvidenceEndpoint).toContain('delivery_os.project.sections.evidence.listUnavailable')
-    expect(new Set([noBaseline, noTasks, noEvidenceEndpoint]).size).toBe(3)
+    for (const text of [noBaseline, noTasks, noEvidenceEndpoint]) expect(text.length).toBeGreaterThan(0)
+    expect(noBaseline).not.toBe(noTasks)
+    expect(noTasks).not.toBe(noEvidenceEndpoint)
+    expect(noBaseline).not.toBe(noEvidenceEndpoint)
   })
 })
 

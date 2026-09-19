@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
 import { LoadingMessage, ErrorMessage, TabEmptyState } from '@open-mercato/ui/backend/detail'
-import { Badge } from '@open-mercato/ui/primitives/badge'
+import { StatusBadge, type StatusMap } from '@open-mercato/ui/primitives/status-badge'
 import { Button } from '@open-mercato/ui/primitives/button'
 import type { ProjectDetail, TaskDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
 import type { SectionSource } from './useProjectSections'
@@ -18,14 +18,16 @@ export type TasksSectionProps = {
   onRetry: () => void
 }
 
-const VERIFIED_STATUSES = new Set(['verified'])
-const BLOCKING_STATUSES = new Set(['blocked', 'cancelled'])
-
-function statusVariant(status: string): 'success' | 'error' | 'warning' | 'neutral' {
-  if (VERIFIED_STATUSES.has(status)) return 'success'
-  if (BLOCKING_STATUSES.has(status)) return 'error'
-  if (status === 'executing' || status === 'awaiting_review' || status === 'changes_requested') return 'warning'
-  return 'neutral'
+/** Module-owned status map, as the design system requires for entity status. */
+export const deliveryTaskStatusMap: StatusMap<TaskDto['status']> = {
+  draft: 'neutral',
+  ready: 'info',
+  executing: 'warning',
+  awaiting_review: 'warning',
+  changes_requested: 'warning',
+  verified: 'success',
+  blocked: 'error',
+  cancelled: 'error',
 }
 
 /**
@@ -38,9 +40,9 @@ function AttemptRegister({ task }: { task: TaskDto }) {
   const t = useT()
   if (!task.attemptRegisterReadable) {
     return (
-      <Badge variant="error" size="sm" data-testid={`attempt-register-unreadable-${task.id}`}>
-        {t('delivery_os.project.sections.tasks.attempts.unreadable')}
-      </Badge>
+      <span data-testid={`attempt-register-unreadable-${task.id}`}>
+        <StatusBadge variant="error">{t('delivery_os.project.sections.tasks.attempts.unreadable')}</StatusBadge>
+      </span>
     )
   }
   if (task.executionAttempts.length === 0) {
@@ -83,18 +85,20 @@ export function TasksSection({
         />
       ) : null}
       {state.status === 'ready' && state.data.length === 0 ? (
-        <TabEmptyState
-          title={t(
-            hasActiveBaseline
-              ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasks'
-              : 'delivery_os.project.sections.tasks.empty.noBaseline',
-          )}
-          description={t(
-            hasActiveBaseline
-              ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasksDescription'
-              : 'delivery_os.project.sections.tasks.empty.noBaselineDescription',
-          )}
-        />
+        <div data-testid="delivery-tasks-empty">
+          <TabEmptyState
+            title={t(
+              hasActiveBaseline
+                ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasks'
+                : 'delivery_os.project.sections.tasks.empty.noBaseline',
+            )}
+            description={t(
+              hasActiveBaseline
+                ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasksDescription'
+                : 'delivery_os.project.sections.tasks.empty.noBaselineDescription',
+            )}
+          />
+        </div>
       ) : null}
       {state.status === 'ready' && state.data.length > 0 ? (
         <ul className="space-y-2">
@@ -111,16 +115,16 @@ export function TasksSection({
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">{task.title}</span>
-                    <Badge variant={statusVariant(task.status)} size="sm">
+                    <StatusBadge variant={deliveryTaskStatusMap[task.status] ?? 'neutral'} dot>
                       {t(`delivery_os.project.sections.tasks.status.${task.status}`)}
-                    </Badge>
+                    </StatusBadge>
                     {blocked.has(task.id) ? (
-                      <Badge variant="error" size="sm">{t('delivery_os.project.sections.tasks.attention.blocked')}</Badge>
+                      <StatusBadge variant="error">{t('delivery_os.project.sections.tasks.attention.blocked')}</StatusBadge>
                     ) : null}
                     {reconciliation.has(task.id) ? (
-                      <Badge variant="warning" size="sm">
+                      <StatusBadge variant="warning">
                         {t('delivery_os.project.sections.tasks.attention.reconciliation')}
-                      </Badge>
+                      </StatusBadge>
                     ) : null}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

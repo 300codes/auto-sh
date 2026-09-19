@@ -46,10 +46,12 @@ export function BaselineSectionFrame({ testId, titleKey, countOf, state, onRetry
         />
       ) : null}
       {active?.kind === 'none' ? (
-        <TabEmptyState
-          title={t('delivery_os.project.sections.baselines.none.title')}
-          description={t('delivery_os.project.sections.baselines.none.description')}
-        />
+        <div data-testid={`${testId}-empty`}>
+          <TabEmptyState
+            title={t('delivery_os.project.sections.baselines.none.title')}
+            description={t('delivery_os.project.sections.baselines.none.description')}
+          />
+        </div>
       ) : null}
       {active?.kind === 'unreadable' ? (
         <ErrorMessage

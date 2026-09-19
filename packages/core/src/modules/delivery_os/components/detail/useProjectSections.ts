@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useOrganizationScopeVersion } from '@open-mercato/shared/lib/frontend/useOrganizationScope'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
 import {
   baselineListResponseSchema,
@@ -38,11 +39,16 @@ function parseTasks(value: unknown): TaskDto[] | null {
  * for a project the operator already navigated away from can never fill the
  * section of the project now on screen, and a failure of one source never
  * takes down the others.
+ *
+ * `scopeVersion` is a dependency, not a value: switching organization has to
+ * refetch, otherwise the sections keep showing the previous scope's records
+ * until someone presses Retry.
  */
 function useProjectResource<TData>(
   projectId: string,
   path: string,
   parse: (value: unknown) => TData | null,
+  scopeVersion: number,
 ): { state: SectionSource<TData>; reload: () => Promise<void> } {
   const [state, setState] = React.useState<SectionSource<TData>>({ status: 'loading' })
   const requestSequence = React.useRef(0)
@@ -58,7 +64,7 @@ function useProjectResource<TData>(
     } catch {
       if (sequence === requestSequence.current) setState({ status: 'error' })
     }
-  }, [projectId, path, parse])
+  }, [projectId, path, parse, scopeVersion])
 
   React.useEffect(() => {
     void reload()
@@ -69,8 +75,9 @@ function useProjectResource<TData>(
 }
 
 export function useProjectSections(projectId: string): ProjectSections {
-  const baselines = useProjectResource(projectId, 'baselines', parseBaselines)
-  const tasks = useProjectResource(projectId, 'tasks', parseTasks)
+  const scopeVersion = useOrganizationScopeVersion()
+  const baselines = useProjectResource(projectId, 'baselines', parseBaselines, scopeVersion)
+  const tasks = useProjectResource(projectId, 'tasks', parseTasks, scopeVersion)
 
   const reloadSections = React.useCallback(async (): Promise<void> => {
     await Promise.all([baselines.reload(), tasks.reload()])
