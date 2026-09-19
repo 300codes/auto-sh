@@ -11,6 +11,7 @@ import {
   DeliveryFlowStageDecision,
   DeliveryIntake,
   DeliveryProject,
+  DeliveryPublication,
   DeliveryTask,
 } from '../../data/entities'
 import { deliveryErrorBodySchema } from '../../lib/contracts'
@@ -44,10 +45,11 @@ type RouteStore = {
   intakes: Row[]
   stageArtifacts: Row[]
   stageDecisions: Row[]
+  publications: Row[]
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [] }
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], publications: [] }
 }
 
 export const routeState: {
@@ -81,11 +83,12 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryIntake) return store.intakes
   if (entity === DeliveryFlowStageArtifact) return store.stageArtifacts
   if (entity === DeliveryFlowStageDecision) return store.stageDecisions
+  if (entity === DeliveryPublication) return store.publications
   throw new Error('[internal] unexpected entity in route test store')
 }
 
-/** Only the stage history entities honour `orderBy`; the v1 suites rely on insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision])
+/** Only the stage history and publication entities honour `orderBy`; the v1 suites rely on insertion order. */
+const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryPublication])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()

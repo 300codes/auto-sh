@@ -6,6 +6,7 @@ import type {
   DeliveryFlowStageDecision,
   DeliveryIntake,
   DeliveryProject,
+  DeliveryPublication,
   DeliveryTask,
 } from '../data/entities'
 import { parseAttemptRegister } from '../lib/attempts'
@@ -13,7 +14,9 @@ import {
   baselineContentV1Schema,
   clientApprovalSchema,
   type ClientApproval,
+  DELIVERY_FLOW_SCHEMA_VERSIONS,
   type IntakeResponse,
+  type PublicationListItem,
   type StageArtifactListItem,
   type StageDecisionListItem,
 } from '../lib/contracts'
@@ -181,5 +184,25 @@ export function serializeStageDecision(row: DeliveryFlowStageDecision): StageDec
     clientApproval: readClientApproval(row),
     deferredThreadKeys: row.deferredThreadKeys,
     templateHash: row.templateHash,
+  }
+}
+
+export function serializePublication(row: DeliveryPublication): PublicationListItem {
+  return {
+    schemaVersion: DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult,
+    publicationId: row.id,
+    projectId: row.projectId,
+    baselineId: row.baselineId,
+    sourceRevision: row.sourceRevision,
+    snapshotRef: row.snapshotRef ?? null,
+    target: row.target,
+    url: row.url,
+    deployDecisionId: row.deployDecisionId,
+    deploymentEvidenceId: row.deploymentEvidenceId,
+    publishedAt: requireIso(row.publishedAt),
+    publishedBy: row.publishedBy ?? null,
+    verification: row.verification,
+    recordedBy: row.recordedBy ?? null,
+    createdAt: requireIso(row.createdAt),
   }
 }

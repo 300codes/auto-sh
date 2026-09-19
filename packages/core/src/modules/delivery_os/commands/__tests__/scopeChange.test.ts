@@ -297,13 +297,14 @@ describe('(1) baselines, decisions and evidence are append-only', () => {
     expect(appendOnly.filter((id) => commandRegistry.get(id)?.undo)).toEqual([])
   })
 
-  it('exposes no PUT, PATCH or DELETE on any baseline, decision, result, evidence or stage artifact route', () => {
+  it('exposes no PUT, PATCH or DELETE on any baseline, decision, result, evidence, publication or stage artifact route', () => {
     const routes = routeMethods()
     const appendOnlyRoutes = [...routes.keys()].filter((path) => IMMUTABLE_SUBJECTS.some((subject) => path.split('/').includes(subject)))
     expect(appendOnlyRoutes.sort()).toEqual([
       'baselines/[id]/decisions/route.ts',
       'projects/[id]/baselines/route.ts',
       'projects/[id]/evidence/route.ts',
+      'projects/[id]/publications/route.ts',
       'projects/[id]/stages/[stageId]/artifacts/route.ts',
       'projects/[id]/stages/[stageId]/decisions/route.ts',
       'tasks/[id]/results/route.ts',

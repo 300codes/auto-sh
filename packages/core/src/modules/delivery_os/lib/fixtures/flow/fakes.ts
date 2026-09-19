@@ -1,4 +1,11 @@
-import { flowTemplateV1Schema, type FlowTemplateV1 } from '../../contracts'
+import {
+  DELIVERY_FLOW_SCHEMA_VERSIONS,
+  flowTemplateV1Schema,
+  type AttachmentRef,
+  type FlowTemplateV1,
+  type PublicationResultV1,
+  type SourceRevision,
+} from '../../contracts'
 import type { DeliveryFlowTemplateProvider, FlowTemplateLookup } from '../../../commands/flowTemplateProvider'
 import { hashFlowTemplate } from '../../flowRules'
 import { DEFAULT_FLOW_TEMPLATE } from '../../flowTemplates'
@@ -61,6 +68,68 @@ export function createFakeTemplateProvider(initial: readonly FlowTemplateV1[] = 
       calls.push({ templateId, version })
       const template = published.get(`${templateId}@${version}`)
       return template ? { template, hash: hashFlowTemplate(template) } : null
+    },
+  }
+}
+
+export type FakeDeployInput = {
+  projectId: string
+  baselineId: string
+  sourceRevision: SourceRevision
+  deployDecisionId: string
+  target: PublicationResultV1['target']
+  verified: boolean
+  evidenceId?: string | null
+  url?: string
+  snapshotRef?: AttachmentRef | null
+  publishedBy?: string | null
+}
+
+export type FakeDeployAdapter = {
+  publish(input: FakeDeployInput): PublicationResultV1
+  readonly calls: FakeDeployInput[]
+}
+
+export const FAKE_DEPLOY_EPOCH = Date.parse('2026-09-19T12:00:00.000Z')
+const FAKE_DEPLOY_STEP_MS = 60_000
+const FAKE_DEPLOY_CHECK_DELAY_MS = 30_000
+
+/**
+ * Deterministic stand-in for a deploy target (Michał's WordPress publication seam): no clock, no randomness. Each call
+ * publishes one minute after the previous one. The result is `verified` only when the caller asks for it AND names
+ * the URL-check evidence; otherwise it is `unverified` with null method, checkedAt, httpStatus and evidenceId.
+ */
+export function createFakeDeployAdapter(): FakeDeployAdapter {
+  const calls: FakeDeployInput[] = []
+  return {
+    calls,
+    publish(input) {
+      calls.push(input)
+      const publishedAt = FAKE_DEPLOY_EPOCH + (calls.length - 1) * FAKE_DEPLOY_STEP_MS
+      const evidenceId = input.evidenceId ?? null
+      const verified = input.verified && evidenceId !== null
+      return {
+        schemaVersion: DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult,
+        projectId: input.projectId,
+        baselineId: input.baselineId,
+        sourceRevision: input.sourceRevision,
+        snapshotRef: input.snapshotRef ?? null,
+        target: input.target,
+        url: input.url ?? `https://preview.example.test/${encodeURIComponent(input.target.ref)}`,
+        deployDecisionId: input.deployDecisionId,
+        publishedAt: new Date(publishedAt).toISOString(),
+        publishedBy: input.publishedBy ?? null,
+        verification: verified
+          ? {
+              status: 'verified',
+              method: 'http',
+              checkedAt: new Date(publishedAt + FAKE_DEPLOY_CHECK_DELAY_MS).toISOString(),
+              httpStatus: 200,
+              evidenceId,
+            }
+          : { status: 'unverified', method: null, checkedAt: null, httpStatus: null, evidenceId: null },
+        releaseDecisionId: null,
+      }
     },
   }
 }

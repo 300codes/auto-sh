@@ -20,6 +20,7 @@ import {
   isoDateTimeSchema,
   proposalQuestionSchema,
   proposalRiskSchema,
+  PUBLICATION_LIST_MAX_PAGE_SIZE,
   publicationResultV1Schema,
   reconciliationResolutionSchema,
   repoRelativePathSchema,
@@ -596,6 +597,6 @@ export type RecordPublicationCommandInput = z.infer<typeof recordPublicationComm
 
 export const publicationListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  pageSize: z.coerce.number().int().min(1).max(PUBLICATION_LIST_MAX_PAGE_SIZE).default(50),
 })
 export type PublicationListQuery = z.infer<typeof publicationListQuerySchema>

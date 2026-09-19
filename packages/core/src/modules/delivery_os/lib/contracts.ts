@@ -1797,3 +1797,21 @@ export const deliveryFlowDocumentSchemas = {
   [DELIVERY_FLOW_SCHEMA_VERSIONS.flowStatus]: flowStatusV1Schema,
   [DELIVERY_FLOW_SCHEMA_VERSIONS.publicationResult]: publicationResultV1Schema,
 } as const
+
+// --- Publication list (F14 GET) ----------------------------------------------
+
+export const PUBLICATION_LIST_MAX_PAGE_SIZE = 100
+
+export const publicationListItemSchema = publicationResultV1Schema.omit({ releaseDecisionId: true }).extend({
+  publicationId: uuidSchema,
+  deploymentEvidenceId: uuidSchema,
+  recordedBy: uuidSchema.nullable(),
+  createdAt: isoDateTimeSchema,
+})
+export type PublicationListItem = z.infer<typeof publicationListItemSchema>
+
+export const publicationListResponseSchema = z.object({
+  items: z.array(publicationListItemSchema).max(PUBLICATION_LIST_MAX_PAGE_SIZE),
+  total: z.number().int().min(0),
+})
+export type PublicationListResponse = z.infer<typeof publicationListResponseSchema>
