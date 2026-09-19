@@ -249,3 +249,45 @@ and routes; the export test with real decisions comes with them.
   `tx.create` + find for `DeliveryEvidence`. No migration, no workspace or dependency change. Rows: 2.1 (unknown schema
   rejected, foreign scope 404, tenant in manifest ignored); groundwork for 4.1 and 4.7 (duplicate does not duplicate
   evidence and re-emits the pending signal).
+
+## Addendum — L5a API routes R1–R13 (T015)
+
+Real HTTP for projects, baselines, decisions and tasks. Contract version unchanged (`DELIVERY_CONTRACT_VERSION = 1`);
+no error code, path, schema version, event, feature or migration changed.
+
+- Files: `api/{openapi,schemas,serializers,routeSupport}.ts`, `api/projects/route.ts` (R1–R4, `makeCrudRoute` +
+  command actions), `api/projects/[id]/route.ts` (R5), `api/projects/[id]/baselines/route.ts` (R6/R7),
+  `api/baselines/[id]/decisions/route.ts` (R8), `api/projects/[id]/tasks/route.ts` (R9/R10), `api/tasks/[id]/route.ts`
+  (R11), `api/tasks/route.ts` (R12/R13, exports PUT and DELETE only). Every file exports `metadata` and `openApi`.
+- **Read DTOs (camelCase, zod in `api/schemas.ts`):** list item `{ id, name, inputMode, brief, targetProfileId,
+  targetProfileVersion, repositoryRef, activeBaselineId, createdAt, updatedAt, archivedAt }`; `ProjectDetail` = list
+  item + `{ draftSpec, limits, status, progress { proven, total, unit: 'ac', percent }, taskCounts, attention }`;
+  `BaselineDto { id, projectId, version, contentHash, source, parentBaselineId, content, attachmentIds, createdBy,
+  createdAt, isActive, decisions[{ id, kind, verdict, subjectHash, subjectVersion, reason, actorUserId, decidedAt }] }`
+  (no baseline detail route exists, so R6 carries what the approval screen needs); `TaskDto { …task fields, status,
+  statusReason, attemptNumber, executionAttempts[], attemptRegisterReadable, proposalTaskKey, createdAt, updatedAt,
+  archivedAt }`. R6 and R9 answer `{ items, total }` without pagination (R6 newest version first, R9 oldest first,
+  archived tasks hidden).
+- **For UI:** R1 accepts `page, pageSize ≤ 100, search, includeArchived, sortField (name|createdAt|updatedAt), sortDir`;
+  `pageSize=101` answers the factory's `400 { error: 'Invalid input', details }` (the only non-frozen 400). Send
+  `x-om-ext-optimistic-lock-expected-updated-at` with the PROJECT `updatedAt` on R3/R4/R7/R8 and the TASK `updatedAt`
+  on R12/R13; after R8 use `projectUpdatedAt` from the response for the next decision. A write against an id that does
+  not exist in the caller's scope answers `404 not_found` without the header and the platform `409` with it (the
+  record "vanished" for that client) — identical for missing and foreign ids, so nothing leaks. Archived projects and
+  tasks stay readable on R5/R6/R9/R11. `source: requirements_proposal | plan_proposal` answers `403` without
+  `delivery_os.results.import`, otherwise `400 validation_failed` / `unsupported_source` until OSS-03 (the frozen
+  catalogue has no 422 code for it). The platform guard's own 403 body is `{ error: 'Forbidden', requiredFeatures }`;
+  the in-handler per-source 403 uses the frozen body with `details[].message` = the missing feature id.
+- Bodies that are NOT frozen-shaped (platform-owned): `401 { error }`, the declarative `403 { error, requiredFeatures }`,
+  `422 { error, code: 'organization_selection_invalid' }` (stale organization cookie), mutation-guard / interceptor
+  rejections, the list-query 400 and `5xx { error }`. List export (`format=csv`) is disabled on R1.
+- **For QA (TC-DELIVERY-001…004):** the routes are live. The ORM `onUpdate` hook was confirmed over HTTP: every PUT,
+  decision and task transition returns a newer `updatedAt`, and reusing the older one answers the platform 409.
+- **Operational gotcha:** a dev server started before the `delivery_os` entities existed answers
+  `500 Metadata for entity DeliveryProject not found` on the first write; restart `yarn dev` once after pulling.
+- Limitations: R5 computes status from all project baselines/tasks on every call (bounded by project size);
+  R7/R10 POST declare `delivery_os.projects.view` in `metadata` and enforce the per-source feature in the handler
+  (fail closed when `rbacService` is unavailable); hash/size verification of attachment bytes is still OSS-03.
+- Evidence: see the T015 task notes (jest 25 suites / 653 tests, core typecheck, eslint, live curl transcript). Rows:
+  2.2 (CRUD, scope 404, 403 per feature, stale 409, pageSize) and 2.3 (manual baseline → real decisions → task ready
+  over HTTP without enterprise); co-acceptance 2.4 stays open.

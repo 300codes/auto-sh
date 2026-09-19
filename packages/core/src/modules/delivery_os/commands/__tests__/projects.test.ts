@@ -77,7 +77,7 @@ function getHandler<TInput, TResult>(id: string): CommandHandler<TInput, TResult
 function makeHarness(options: { headers?: Record<string, string>; auth?: CommandRuntimeContext['auth'] } = {}): Harness {
   const em: EmMock = {
     fork: jest.fn(),
-    create: jest.fn((_entity: unknown, data: Record<string, unknown>) => ({ id: PROJECT_ID, ...data })),
+    create: jest.fn((_entity: unknown, data: Record<string, unknown>) => ({ id: PROJECT_ID, updatedAt: UPDATED_AT, ...data })),
     persist: jest.fn(),
     flush: jest.fn(async () => undefined),
     remove: jest.fn(),
@@ -215,7 +215,7 @@ describe('delivery_os.projects.create', () => {
       { ...validCreateInput, tenantId: FOREIGN_TENANT_ID, organizationId: FOREIGN_ORG_ID },
       ctx,
     )
-    expect(result).toEqual({ projectId: PROJECT_ID })
+    expect(result).toEqual({ projectId: PROJECT_ID, updatedAt: UPDATED_AT.toISOString() })
     const created = em.create.mock.calls[0][1]
     expect(em.create.mock.calls[0][0]).toBe(DeliveryProject)
     expect(created.tenantId).toBe(TENANT_ID)
@@ -323,7 +323,7 @@ describe('delivery_os.projects.update', () => {
       { id: PROJECT_ID, name: 'Renamed', draftSpec: validDraft, tenantId: FOREIGN_TENANT_ID, activeBaselineId: null },
       ctx,
     )
-    expect(result).toEqual({ projectId: PROJECT_ID })
+    expect(result).toEqual({ projectId: PROJECT_ID, updatedAt: UPDATED_AT.toISOString() })
     expect(project.name).toBe('Renamed')
     expect(project.draftSpec).toEqual(draftSpecV1Schema.parse(validDraft))
     expect(project.draftSpec.planSummary).toBeNull()
@@ -462,7 +462,7 @@ describe('delivery_os.projects.delete', () => {
     mockFindOneWithDecryption.mockResolvedValueOnce(project)
     mockFindWithDecryption.mockResolvedValueOnce([task])
     const result = await remove.execute(deleteInput, ctx)
-    expect(result).toEqual({ projectId: PROJECT_ID })
+    expect(result).toEqual({ projectId: PROJECT_ID, updatedAt: UPDATED_AT.toISOString() })
     expect(project.deletedAt).toBeInstanceOf(Date)
     expect(project.activeBaselineId).toBe(BASELINE_ID)
     expect(JSON.stringify(task)).toBe(taskBefore)

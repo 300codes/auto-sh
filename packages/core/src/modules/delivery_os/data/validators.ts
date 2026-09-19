@@ -164,10 +164,9 @@ export const projectListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
   search: z.string().trim().max(200).optional(),
   includeArchived: z
-    .string()
-    .max(10)
+    .union([z.boolean(), z.string().max(10)])
     .optional()
-    .transform((value) => parseBooleanWithDefault(value, false)),
+    .transform((value) => (typeof value === 'boolean' ? value : parseBooleanWithDefault(value, false))),
 })
 export type ProjectListQuery = z.infer<typeof projectListQuerySchema>
 

@@ -37,7 +37,7 @@ import {
   resolveDeliveryScope,
 } from './shared'
 
-type ProjectCommandResult = { projectId: string }
+export type ProjectCommandResult = { projectId: string; updatedAt: string }
 
 type ProjectDeleteInput = { body?: Record<string, unknown>; query?: Record<string, unknown> }
 
@@ -204,7 +204,7 @@ const createProjectCommand: CommandHandler<ProjectCreateInput, ProjectCommandRes
       { persistent: true, tenantId: scope.tenantId, organizationId: scope.organizationId },
     )
 
-    return { projectId: project.id }
+    return { projectId: project.id, updatedAt: project.updatedAt.toISOString() }
   },
   captureAfter: (_input, result, ctx) => loadProjectSnapshot(ctx, result.projectId),
   buildLog: async ({ result, snapshots }) => {
@@ -243,7 +243,7 @@ const updateProjectCommand: CommandHandler<ProjectUpdateInput, ProjectCommandRes
     })
 
     await emitProjectSideEffects(ctx, 'updated', project)
-    return { projectId: project.id }
+    return { projectId: project.id, updatedAt: project.updatedAt.toISOString() }
   },
   captureAfter: (_input, result, ctx) => loadProjectSnapshot(ctx, result.projectId),
   buildLog: async ({ result, snapshots }) => {
@@ -283,7 +283,7 @@ const deleteProjectCommand: CommandHandler<ProjectDeleteInput, ProjectCommandRes
     })
 
     await emitProjectSideEffects(ctx, 'deleted', project)
-    return { projectId: project.id }
+    return { projectId: project.id, updatedAt: project.updatedAt.toISOString() }
   },
   buildLog: async ({ result, snapshots }) => {
     const before = (snapshots.before as ProjectSnapshot | undefined) ?? null
