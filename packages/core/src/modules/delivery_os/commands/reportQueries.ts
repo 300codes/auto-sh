@@ -1,27 +1,44 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { DeliveryDecision, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../data/entities'
+import { createLogger } from '@open-mercato/shared/lib/logger'
 import {
   buildDeliveryError,
   sourceRevisionSchema,
+  type DeliveryReportFlowSection,
   type DeliveryReportV1,
+  type DeliveryReportWithFlow,
   type SourceRevision,
 } from '../lib/contracts'
 import { buildDeliveryReport } from '../lib/deliveryReport'
+import { buildDeliveryReportFlowSection, buildUnreadableReportFlowSection } from '../lib/flowStatus'
 import { getTargetProfile } from '../lib/targetProfiles'
 import { MAX_TRACEABILITY_ROWS } from '../lib/traceability'
 import { requireVerifiedBaselineContent } from './evidence'
 import { deliveryHttpError, type DeliveryScope } from './shared'
 import { findProjectBaseline } from './tasks'
+import {
+  isFlowPinned,
+  loadStageArtifactRows,
+  loadStageDecisionRows,
+  readPinnedTemplate,
+  readPinnedTemplateRef,
+  toStageArtifactRecord,
+  toStageDecisionRecord,
+} from './flowGate'
+
+const logger = createLogger('delivery_os')
 
 export type ReportOptions = {
   baselineId?: string | null
   revision?: string | SourceRevision | null
   limit?: number
+  /** F15: attach the optional `flow` section for pinned projects. Off by default so in-process callers keep the v1 object. */
+  includeFlow?: boolean
 }
 
 export type DeliveryOsReportQueries = {
-  buildReport(scope: DeliveryScope, projectId: string, options?: ReportOptions): Promise<DeliveryReportV1>
+  buildReport(scope: DeliveryScope, projectId: string, options?: ReportOptions): Promise<DeliveryReportWithFlow>
 }
 
 function assertQueryScope(scope: DeliveryScope | null | undefined): DeliveryScope {
@@ -72,6 +89,23 @@ function resolveRevision(raw: ReportOptions['revision']): SourceRevision | null 
   throw invalidRevision('revision_unparsable', 'Revision must be git:<commitSha> or snapshot:<sha256>:<externalWorkspaceId>')
 }
 
+async function loadReportFlowSection(em: EntityManager, project: DeliveryProject, scope: DeliveryScope): Promise<DeliveryReportFlowSection> {
+  const templateRef = readPinnedTemplateRef(project)
+  const template = readPinnedTemplate(project)
+  if (!template || !templateRef) {
+    logger.warn('pinned flow template snapshot is unreadable; report flow section fails closed', { projectId: project.id, templateId: project.flowTemplateId })
+    return buildUnreadableReportFlowSection(templateRef)
+  }
+  const artifacts = (await loadStageArtifactRows(em, project.id, scope)).map(toStageArtifactRecord)
+  const decisions = (await loadStageDecisionRows(em, project.id, scope)).map(toStageDecisionRecord)
+  const section = buildDeliveryReportFlowSection({
+    project: { projectId: project.id, template, templateRef, workflowInstanceId: null, updatedAt: project.updatedAt.toISOString() },
+    artifacts,
+    decisions,
+  })
+  return section ?? buildUnreadableReportFlowSection(templateRef)
+}
+
 export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOsReportQueries {
   return {
     async buildReport(rawScope, projectId, options = {}) {
@@ -110,7 +144,7 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
       )
       const decisions = await findWithDecryption(em, DeliveryDecision, where, { orderBy: { decidedAt: 'asc', id: 'asc' } }, scope)
 
-      return buildDeliveryReport({
+      const report: DeliveryReportV1 = buildDeliveryReport({
         projectId: project.id,
         baseline: { id: baseline.id, projectId: baseline.projectId, contentHash: baseline.contentHash, content },
         tasks: tasks.map((task) => ({
@@ -148,6 +182,8 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
         revision,
         limit: options.limit ?? MAX_TRACEABILITY_ROWS,
       })
+      if (!options.includeFlow || !isFlowPinned(project)) return report
+      return { ...report, flow: await loadReportFlowSection(em, project, scope) }
     },
   }
 }

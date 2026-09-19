@@ -58,6 +58,7 @@ export const routeState: {
   store: RouteStore
   queryEngine: { query: jest.Mock }
   writes: number
+  flowTemplateProvider: unknown
 } = {
   auth: null,
   features: [],
@@ -66,6 +67,7 @@ export const routeState: {
   store: emptyRouteStore(),
   queryEngine: { query: jest.fn() },
   writes: 0,
+  flowTemplateProvider: null,
 }
 
 function rowsFor(entity: unknown): Row[] {
@@ -203,6 +205,7 @@ export const containerMock = {
         return createDeliveryOsFlowQueries(em)
       }
       if (name === 'deliveryFlowTemplateProvider') {
+        if (routeState.flowTemplateProvider) return routeState.flowTemplateProvider
         const { createBuiltInFlowTemplateProvider } = jest.requireActual('../../commands/flowTemplateProvider')
         return createBuiltInFlowTemplateProvider()
       }
@@ -242,6 +245,7 @@ export function resetRouteState(): void {
   routeState.selectionRejected = false
   routeState.store = emptyRouteStore()
   routeState.writes = 0
+  routeState.flowTemplateProvider = null
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()
   routeState.queryEngine.query.mockReset()

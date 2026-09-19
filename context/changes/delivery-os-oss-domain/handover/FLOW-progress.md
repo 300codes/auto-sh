@@ -8,3 +8,9 @@ Stand-alone notes per stage live in `FLOW-F0-contracts.md`, `FLOW-F1-L13a-comman
 - Gate key: `flowTemplateId` non-null only (`grep -n flowTemplateId packages/core/src/modules/delivery_os/commands/*.ts`); unpinned projects issue no stage query. Unreadable snapshot fails closed. Required stages are the four `FLOW_APPROVAL_STAGE_ORDER` stages, the same list F6 `flowStatus.ts#gateFrom` uses (the template schema requires exactly one stage of each kind).
 - Tests: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2` → 83 suites / 1627 tests green (local runner); new `flowGate.test.ts` (8) and `flowRegression.test.ts` (7).
 - Route-level evidence for UA-48 (R10/R12/R14/R20 answering the gated body) is L14's route tests + L15 `TC-DELIVERY-FLOW-02`; no route or registry changed here, dev server untouched.
+
+## T058 — FLOW-F3 L19 report flow section (lane B, 2026-09-19)
+
+- Exists now: R22 answers `flow` for pinned projects (`commands/reportQueries.ts` option `includeFlow`, `lib/flowStatus.ts#buildUnreadableReportFlowSection`, `lib/contracts.ts#deliveryReportWithFlowSchema`); fake v1/v2 provider `lib/fixtures/flow/fakes.ts`; route-kit override `routeState.flowTemplateProvider`.
+- Stand-alone hand-over for the workflow owner: `FLOW-F3.md`.
+- Tests: `yarn workspace @open-mercato/core jest src/modules/delivery_os --maxWorkers=2 --ci` → 89 suites / 1702 tests, 1 snapshot green (local runner); `yarn turbo run typecheck --filter=@open-mercato/core --concurrency=2` green. Live R22 curl not run (shared server runs lane A) — after merge.

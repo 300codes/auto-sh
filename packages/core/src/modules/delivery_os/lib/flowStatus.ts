@@ -193,6 +193,23 @@ export function buildFlowStatus(input: FlowStatusInput): FlowStatusV1 {
   }
 }
 
+/**
+ * The decision that made `approvedArtifact` effective (latest on that artifact and hash), so a row never mixes an
+ * older approved version with a newer version's rejection or pending state.
+ */
+function approvingDecisionOf(
+  approved: { artifactId: string; contentHash: string } | null,
+  decisions: readonly StageDecisionRecord[],
+): { decisionId: string | null; clientApproved: boolean } {
+  if (!approved) return { decisionId: null, clientApproved: false }
+  let latest: StageDecisionRecord | null = null
+  for (const decision of decisions) {
+    if (decision.artifactId !== approved.artifactId || decision.subjectHash !== approved.contentHash) continue
+    if (!latest || decision.decidedAt > latest.decidedAt || (decision.decidedAt === latest.decidedAt && decision.id > latest.id)) latest = decision
+  }
+  return latest ? { decisionId: latest.id, clientApproved: latest.clientApproved } : { decisionId: null, clientApproved: false }
+}
+
 /** F15: the optional `flow` section of the v1 report. `null` for legacy projects so the R22 answer stays untouched. */
 export function buildDeliveryReportFlowSection(input: Pick<FlowStatusInput, 'project' | 'artifacts' | 'decisions'>): DeliveryReportFlowSection | null {
   const { project } = input
@@ -204,9 +221,18 @@ export function buildDeliveryReportFlowSection(input: Pick<FlowStatusInput, 'pro
       stageId,
       currency: states[stageId].currency,
       approvedArtifact: states[stageId].approvedArtifact,
-      decisionId: states[stageId].latestDecision?.decisionId ?? null,
-      clientApproved: states[stageId].latestDecision?.clientApproved ?? false,
+      ...approvingDecisionOf(states[stageId].approvedArtifact, input.decisions),
     })),
     gate: gateFrom(states),
+  }
+}
+
+/** F15 for a pinned project whose snapshot no longer parses: never omitted (that would read as legacy), gate closed. */
+export function buildUnreadableReportFlowSection(templateRef: FlowTemplateRef | null): DeliveryReportFlowSection {
+  const blocking: FlowBlocker[] = FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ kind: 'artifact_missing', stageId, ref: null }))
+  return {
+    template: templateRef,
+    stages: FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, currency: 'missing', approvedArtifact: null, decisionId: null, clientApproved: false })),
+    gate: { ok: false, blocking },
   }
 }

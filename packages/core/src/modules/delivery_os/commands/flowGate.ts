@@ -8,6 +8,7 @@ import {
   flowTemplateV1Schema,
   type DeliveryCheckResult,
   type DeliveryErrorDetail,
+  type FlowTemplateRef,
   type FlowTemplateV1,
 } from '../lib/contracts'
 import {
@@ -69,9 +70,14 @@ export function isFlowPinned(project: Pick<DeliveryProject, 'flowTemplateId'>): 
   return project.flowTemplateId !== null && project.flowTemplateId !== undefined
 }
 
-function readPinnedTemplate(project: PinnedFlowProject): FlowTemplateV1 | null {
+export function readPinnedTemplate(project: Pick<DeliveryProject, 'flowTemplateSnapshot'>): FlowTemplateV1 | null {
   const parsed = flowTemplateV1Schema.safeParse(project.flowTemplateSnapshot)
   return parsed.success ? parsed.data : null
+}
+
+export function readPinnedTemplateRef(project: Pick<DeliveryProject, 'flowTemplateId' | 'flowTemplateVersion' | 'flowTemplateHash'>): FlowTemplateRef | null {
+  if (!project.flowTemplateId || !project.flowTemplateVersion || !project.flowTemplateHash) return null
+  return { templateId: project.flowTemplateId, version: project.flowTemplateVersion, hash: project.flowTemplateHash }
 }
 
 /**

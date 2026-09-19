@@ -11,8 +11,10 @@ jest.mock('../../events', () => ({ emitDeliveryOsEvent: jest.fn(async () => unde
 
 import '@open-mercato/core/modules/delivery_os/commands'
 import { POST, metadata, openApi } from '../projects/[id]/flow/pin/route'
+import { GET as GET_FLOW } from '../projects/[id]/flow/route'
 import { FOREIGN_ORG_ID, STALE_UPDATED_AT } from '../../commands/__tests__/baselineTestKit'
-import { deliveryFlowErrorBodySchema, flowPinResponseSchema } from '../../lib/contracts'
+import { deliveryFlowErrorBodySchema, flowPinResponseSchema, flowStatusV1Schema } from '../../lib/contracts'
+import { createFakeTemplateProvider, FAKE_TEMPLATE_V1, FAKE_TEMPLATE_V2 } from '../../lib/fixtures/flow/fakes'
 import { hashFlowTemplate } from '../../lib/flowRules'
 import { DEFAULT_FLOW_TEMPLATE } from '../../lib/flowTemplates'
 import { createProject, expectStatus, projectVersion, type Json } from './flowHelpers'
@@ -100,6 +102,53 @@ describe('POST /projects/:id/flow/pin (F4)', () => {
     const lock = await projectVersion(projectId)
     signInAs(foreign)
     await expectFlowError(await pin(projectId, PIN_BODY, lock), 404, 'not_found')
+    expect(routeState.store.projects[0].flowTemplateId ?? null).toBeNull()
+  })
+})
+
+describe('per-project pinning with a published v2 (D7, FLOW-05 domain side)', () => {
+  const V2_BODY = { templateId: FAKE_TEMPLATE_V2.templateId, templateVersion: FAKE_TEMPLATE_V2.version }
+
+  async function flowTemplateOf(projectId: string) {
+    const response = await GET_FLOW(apiRequest('GET', `/projects/${projectId}/flow`), routeParams(projectId))
+    return flowStatusV1Schema.parse(await readBody(response)).template
+  }
+
+  it('keeps a v1-pinned project on its snapshot after v2 is published while a new project pins v2', async () => {
+    const provider = createFakeTemplateProvider([FAKE_TEMPLATE_V1])
+    routeState.flowTemplateProvider = provider
+    const v1Hash = hashFlowTemplate(FAKE_TEMPLATE_V1)
+    const v2Hash = hashFlowTemplate(FAKE_TEMPLATE_V2)
+    expect(v2Hash).not.toBe(v1Hash)
+
+    const oldProject = await newProject()
+    await expectStatus(await pin(oldProject, PIN_BODY, await projectVersion(oldProject)), 201)
+    const newProjectId = await newProject()
+    await expectFlowError(await pin(newProjectId, V2_BODY, await projectVersion(newProjectId)), 422, 'unknown_flow_template')
+
+    provider.publish(FAKE_TEMPLATE_V2)
+    const pinned = flowPinResponseSchema.parse(await expectStatus(await pin(newProjectId, V2_BODY, await projectVersion(newProjectId)), 201))
+    expect(pinned.template).toEqual({ templateId: V2_BODY.templateId, version: 2, hash: v2Hash })
+
+    provider.unpublish(FAKE_TEMPLATE_V1.templateId, FAKE_TEMPLATE_V1.version)
+    const callsBefore = provider.calls.length
+    const replay = flowPinResponseSchema.parse(await expectStatus(await pin(oldProject, PIN_BODY, null), 200))
+    expect(replay.template).toEqual({ templateId: PIN_BODY.templateId, version: 1, hash: v1Hash })
+    expect(provider.calls.length).toBe(callsBefore)
+    await expectFlowError(await pin(oldProject, V2_BODY, await projectVersion(oldProject)), 409, 'flow_already_pinned')
+
+    const stored = routeState.store.projects.find((row) => row.id === oldProject)
+    expect(stored).toMatchObject({ flowTemplateVersion: 1, flowTemplateHash: v1Hash, flowTemplateSnapshot: FAKE_TEMPLATE_V1 })
+    expect(await flowTemplateOf(oldProject)).toEqual({ templateId: PIN_BODY.templateId, version: 1, hash: v1Hash })
+    expect(await flowTemplateOf(newProjectId)).toEqual({ templateId: V2_BODY.templateId, version: 2, hash: v2Hash })
+  })
+
+  it('refuses a provider that states a hash its template does not have (422 flow_template_hash_mismatch)', async () => {
+    routeState.flowTemplateProvider = {
+      getTemplate: async () => ({ template: FAKE_TEMPLATE_V2, hash: hashFlowTemplate(FAKE_TEMPLATE_V1) }),
+    }
+    const projectId = await newProject()
+    await expectFlowError(await pin(projectId, V2_BODY, await projectVersion(projectId)), 422, 'flow_template_hash_mismatch')
     expect(routeState.store.projects[0].flowTemplateId ?? null).toBeNull()
   })
 })

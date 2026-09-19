@@ -1614,6 +1614,10 @@ export const deliveryReportFlowSectionSchema = z.object({
 })
 export type DeliveryReportFlowSection = z.infer<typeof deliveryReportFlowSectionSchema>
 
+/** F15: the R22 answer — v1 report plus the optional flow section (present only for pinned projects). */
+export const deliveryReportWithFlowSchema = deliveryReportV1Schema.extend({ flow: deliveryReportFlowSectionSchema.optional() })
+export type DeliveryReportWithFlow = z.infer<typeof deliveryReportWithFlowSchema>
+
 // --- Staff Kanban link and comment import ----------------------------------
 
 const externalKeySchema = z.string().min(1).max(200)
