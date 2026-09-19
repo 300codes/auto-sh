@@ -9,6 +9,7 @@ import type { AttemptReserveResult } from '@open-mercato/core/modules/delivery_o
 import { issueTrustedExecution, type TrustedExecutionVersion } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import { DELIVERY_AGENTS_WORKFLOW_ID, DELIVERY_AGENTS_WAIT_STEP_ID } from './attemptWorkflow'
 import { getDeliveryAgentsQueue, DELIVERY_EXECUTE_QUEUE, type ExecuteTaskJobPayload } from './queue'
+import { findDeliveryWorkflowInstance, isParkedAtEvidenceWait, type DeliveryWorkflowInstance } from './workflowInstance'
 
 const logger = createLogger('delivery_agents').child({ component: 'execution-bridge' })
 
@@ -29,12 +30,6 @@ type WorkflowExecutorLike = {
     },
   ) => Promise<{ id: string; version?: number }>
   executeWorkflow: (em: EntityManager, container: unknown, instanceId: string) => Promise<unknown>
-}
-
-type WorkflowInstanceLike = {
-  id: string
-  status: string
-  currentStepId?: string | null
 }
 
 function tryResolveWorkflowExecutor(container: AppContainer): WorkflowExecutorLike | null {
@@ -62,20 +57,13 @@ async function pollForPark(
   scope: DeliveryScope,
 ): Promise<void> {
   for (let attempt = 0; attempt < PARK_POLL_ATTEMPTS; attempt++) {
+    let instance: DeliveryWorkflowInstance | null
     try {
-      const { WorkflowInstance } = (await import('@open-mercato/core/modules/workflows/data/entities')) as {
-        WorkflowInstance: new () => WorkflowInstanceLike
-      }
-      const instance = await em.fork().findOne(WorkflowInstance as never, {
-        id: instanceId,
-        tenantId: scope.tenantId,
-        organizationId: scope.organizationId,
-      } as never)
-      const parked = instance as unknown as WorkflowInstanceLike | null
-      if (parked?.status === 'PAUSED' && parked.currentStepId === DELIVERY_AGENTS_WAIT_STEP_ID) return
+      instance = await findDeliveryWorkflowInstance(em, { id: instanceId }, scope)
     } catch {
       throw new Error('[internal] Unable to confirm delivery workflow wait state')
     }
+    if (isParkedAtEvidenceWait(instance)) return
     if (attempt < PARK_POLL_ATTEMPTS - 1) {
       await new Promise((resolve) => setTimeout(resolve, PARK_POLL_DELAY_MS))
     }
@@ -129,40 +117,35 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
   })
 
   const attemptId = reservation.attemptId
+  const queries = container.resolve('deliveryOsAttemptQueries') as DeliveryOsAttemptQueries
 
-  // Idempotent: attempt with this key already exists — find the workflow instance from the attempt
   if (!reservation.created) {
-    const queries = container.resolve('deliveryOsAttemptQueries') as {
-      getAttempt: (scope: DeliveryScope, taskId: string, attemptId: string) => Promise<{ workflowRef?: string | null } | null>
-    }
     const existing = await queries.getAttempt(scope, taskId, attemptId)
     const existingWorkflowRef = existing?.workflowRef ?? null
-    return {
-      attemptId,
-      workflowInstanceId: existingWorkflowRef ?? '',
-      state: 'reserved',
+    if (!existing || existing.state !== 'reserved' || existing.dispatchedAt) {
+      return { attemptId, workflowInstanceId: existingWorkflowRef ?? '', state: 'reserved' }
     }
+    logger.info('resuming an undispatched reservation on replay', { attemptId, ...scope })
   }
 
-  // 2. Start workflow instance
   const workflowExecutor = tryResolveWorkflowExecutor(container)
   if (!workflowExecutor) {
     logger.warn('workflows peer unavailable — attempt reserved without workflow', { attemptId, ...scope })
     return { attemptId, workflowInstanceId: '', state: 'reserved' }
   }
 
-  const queries = container.resolve('deliveryOsAttemptQueries') as DeliveryOsAttemptQueries
-  await queries.assertExecutionReady(scope, taskId, attemptId)
   const correlationKey = attemptId
-  const instance = await workflowExecutor.startWorkflow(em, {
+  await queries.assertExecutionReady(scope, taskId, attemptId)
+  const startedInstance = await findDeliveryWorkflowInstance(em, { correlationKey }, scope).catch(() => {
+    throw new Error('[internal] Unable to confirm delivery workflow state')
+  })
+  const workflowInstanceId = startedInstance?.id ?? (await workflowExecutor.startWorkflow(em, {
     workflowId: DELIVERY_AGENTS_WORKFLOW_ID,
     correlationKey,
     tenantId: scope.tenantId,
     organizationId: scope.organizationId,
-  })
-  const workflowInstanceId = instance.id
+  })).id
 
-  // 3. Link workflow to attempt (must precede enqueue)
   await commandBus.execute('delivery_os.attempts.link_workflow', {
     input: {
       taskId,
@@ -175,14 +158,12 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
     ctx,
   })
 
-  // 4. Execute workflow to park at WAIT_FOR_SIGNAL
-  await queries.assertExecutionReady(scope, taskId, attemptId)
-  await workflowExecutor.executeWorkflow(em, container, workflowInstanceId)
-
-  // 5. Poll to confirm parking (max 3×500ms)
+  if (!isParkedAtEvidenceWait(startedInstance)) {
+    await queries.assertExecutionReady(scope, taskId, attemptId)
+    await workflowExecutor.executeWorkflow(em, container, workflowInstanceId)
+  }
   await pollForPark(em, workflowInstanceId, scope)
 
-  // 6. Enqueue execute-task job
   const jobPayload: ExecuteTaskJobPayload = {
     attemptId,
     taskId,
@@ -192,6 +173,18 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
   }
   await queries.assertExecutionReady(scope, taskId, attemptId)
   await getDeliveryAgentsQueue(DELIVERY_EXECUTE_QUEUE).enqueue(jobPayload as Record<string, unknown>)
+
+  await commandBus.execute('delivery_os.attempts.link_workflow', {
+    input: {
+      taskId,
+      attemptId,
+      workflowRef: correlationKey,
+      workflowStepId: DELIVERY_AGENTS_WAIT_STEP_ID,
+      dispatched: true,
+      trustedExecution,
+    },
+    ctx,
+  })
 
   return { attemptId, workflowInstanceId, state: 'reserved' }
 }

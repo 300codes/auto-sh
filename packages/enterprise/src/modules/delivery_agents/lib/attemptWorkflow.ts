@@ -8,6 +8,7 @@ export const DELIVERY_AGENTS_WORKFLOW_ID = 'delivery-cezar-attempt'
 export const DELIVERY_AGENTS_OWNER_MODULE = 'delivery_agents'
 export const DELIVERY_AGENTS_OWNER_ID = 'delivery-cezar-attempt'
 export const DELIVERY_AGENTS_WAIT_STEP_ID = 'wait_for_evidence'
+export const DELIVERY_AGENTS_END_STEP_ID = 'end'
 export const DELIVERY_AGENTS_SIGNAL_NAME = 'evidence-ready'
 
 type WorkflowDefinitionAuthoringLike = {
@@ -50,7 +51,7 @@ function buildCezarAttemptWorkflowDefinition(): unknown {
         stepType: 'WAIT_FOR_SIGNAL',
         signalConfig: { signalName: DELIVERY_AGENTS_SIGNAL_NAME },
       },
-      { stepId: 'end', stepName: 'Done', stepType: 'END' },
+      { stepId: DELIVERY_AGENTS_END_STEP_ID, stepName: 'Done', stepType: 'END' },
     ],
     transitions: [
       {
@@ -63,7 +64,7 @@ function buildCezarAttemptWorkflowDefinition(): unknown {
         transitionId: 't_done',
         transitionName: 'Done',
         fromStepId: DELIVERY_AGENTS_WAIT_STEP_ID,
-        toStepId: 'end',
+        toStepId: DELIVERY_AGENTS_END_STEP_ID,
       },
     ],
   }

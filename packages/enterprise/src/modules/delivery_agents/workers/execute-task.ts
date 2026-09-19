@@ -3,6 +3,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
+import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 import { mapCezarRunToResultManifest } from '@open-mercato/delivery-cezar/lib/resultManifest'
 import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import type { ITaskExecutor } from '../lib/fakeExecutor'
@@ -44,6 +45,25 @@ function buildTrustedCtx(container: unknown, scope: DeliveryScope, userId: strin
   }
 }
 
+const CLAIM_REFUSAL_CODES = new Set(['attempt_active', 'attempt_closed', 'attempt_cancelled', 'attempt_not_found'])
+
+type ClaimOutcome = 'claimed' | 'uncertain_start' | 'refused'
+
+async function claimAttempt(
+  commandBus: CommandBus,
+  ctx: CommandRuntimeContext,
+  input: { taskId: string; attemptId: string; workerRef: string; trustedExecution: ReturnType<typeof issueTrustedExecution> },
+): Promise<ClaimOutcome> {
+  try {
+    const { result } = await commandBus.execute<unknown, { changed?: boolean }>('delivery_os.attempts.claim', { input, ctx })
+    return result?.changed === false ? 'uncertain_start' : 'claimed'
+  } catch (error) {
+    const code = error instanceof CrudHttpError ? error.body?.code : undefined
+    if (typeof code === 'string' && CLAIM_REFUSAL_CODES.has(code)) return 'refused'
+    throw error
+  }
+}
+
 export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx: JobContext): Promise<void> {
   const payload = job.payload
   if (!payload?.attemptId || !payload?.taskId || !payload?.tenantId || !payload?.organizationId) {
@@ -64,11 +84,11 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
   const ctx = buildTrustedCtx(container, scope, userId)
   const trustedExecution = issueTrustedExecution(userId)
 
-  // Claim the attempt
-  await commandBus.execute('delivery_os.attempts.claim', {
-    input: { taskId, attemptId, workerRef: `worker:execute-task:${job.id ?? 'unknown'}`, trustedExecution },
-    ctx,
-  })
+  const claim = await claimAttempt(commandBus, ctx, { taskId, attemptId, workerRef: `worker:execute-task:${job.id ?? 'unknown'}`, trustedExecution })
+  if (claim !== 'claimed') {
+    logger.warn('execute-task skipped without starting the executor', { taskId, attemptId, reason: claim })
+    return
+  }
 
   // Build the task package
   let taskPackage: unknown

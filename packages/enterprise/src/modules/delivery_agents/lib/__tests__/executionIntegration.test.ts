@@ -13,7 +13,7 @@ jest.mock('@open-mercato/core/modules/workflows/data/entities', () => ({
   WorkflowInstance: class WorkflowInstance {},
 }))
 jest.mock('@open-mercato/shared/lib/logger', () => ({
-  createLogger: () => ({ child: () => ({ warn: jest.fn() }) }),
+  createLogger: () => ({ child: () => ({ warn: jest.fn(), info: jest.fn() }) }),
 }))
 
 const actorUserId = '7e21256a-4849-442b-b96d-f9c26037832b'
@@ -24,7 +24,8 @@ const scope = {
 
 function fixture() {
   const execute = jest.fn().mockResolvedValue({ result: { attemptId: 'attempt', created: true } })
-  const findOne = jest.fn().mockResolvedValue({ id: 'workflow', status: 'PAUSED', currentStepId: 'wait_for_evidence' })
+  const parked = { id: 'workflow', status: 'PAUSED', currentStepId: 'wait_for_evidence' }
+  const findOne = jest.fn(async (_entity: unknown, where: { correlationKey?: string }) => (where.correlationKey ? null : parked))
   const workflowExecutor = {
     startWorkflow: jest.fn().mockResolvedValue({ id: 'workflow' }),
     executeWorkflow: jest.fn().mockResolvedValue({ status: 'RUNNING' }),
@@ -129,5 +130,48 @@ test('never fabricates a workspace revision from a baseline when no revision is 
   await expect(startExecution({ ...setup.startInput, baseRevision: undefined })).rejects.toThrow()
   expect(setup.execute).not.toHaveBeenCalled()
   expect(setup.workflowExecutor.startWorkflow).not.toHaveBeenCalled()
+  expect(mockEnqueue).not.toHaveBeenCalled()
+})
+
+test('marks the attempt dispatched only after the execute job is enqueued', async () => {
+  const setup = fixture()
+  await startExecution(setup.startInput)
+  const links = setup.execute.mock.calls.filter(([id]) => id === 'delivery_os.attempts.link_workflow').map(([, options]) => options.input.dispatched)
+  expect(links).toEqual([false, true])
+  const dispatchCall = setup.execute.mock.calls.findIndex(([id, options]) => id === 'delivery_os.attempts.link_workflow' && options.input.dispatched)
+  expect(setup.execute.mock.invocationCallOrder[dispatchCall]).toBeGreaterThan(mockEnqueue.mock.invocationCallOrder[0])
+})
+
+test('resumes an undispatched replay by reusing the started workflow instead of starting another', async () => {
+  const setup = fixture()
+  setup.execute.mockResolvedValue({ result: { attemptId: 'attempt', created: false } })
+  setup.getAttempt.mockResolvedValue({ state: 'reserved', workflowRef: 'attempt', dispatchedAt: null })
+  setup.findOne.mockImplementation(async (_entity: unknown, where: { correlationKey?: string }) =>
+    where.correlationKey ? { id: 'workflow', status: 'RUNNING', currentStepId: 'start' } : { id: 'workflow', status: 'PAUSED', currentStepId: 'wait_for_evidence' })
+  await expect(startExecution(setup.startInput)).resolves.toEqual({ attemptId: 'attempt', workflowInstanceId: 'workflow', state: 'reserved' })
+  expect(setup.workflowExecutor.startWorkflow).not.toHaveBeenCalled()
+  expect(setup.workflowExecutor.executeWorkflow).toHaveBeenCalledWith(expect.anything(), setup.container, 'workflow')
+  expect(mockEnqueue).toHaveBeenCalledTimes(1)
+})
+
+test('resumes a replay whose workflow was never started', async () => {
+  const setup = fixture()
+  setup.execute.mockResolvedValue({ result: { attemptId: 'attempt', created: false } })
+  setup.getAttempt.mockResolvedValue({ state: 'reserved', workflowRef: null, dispatchedAt: null })
+  await expect(startExecution(setup.startInput)).resolves.toMatchObject({ workflowInstanceId: 'workflow' })
+  expect(setup.workflowExecutor.startWorkflow).toHaveBeenCalledTimes(1)
+  expect(mockEnqueue).toHaveBeenCalledTimes(1)
+})
+
+test.each([
+  { state: 'reserved', workflowRef: 'attempt', dispatchedAt: '2026-09-19T10:00:00.000Z' },
+  { state: 'claimed', workflowRef: 'attempt', dispatchedAt: null },
+])('does not re-dispatch a replay of %j', async (attempt) => {
+  const setup = fixture()
+  setup.execute.mockResolvedValue({ result: { attemptId: 'attempt', created: false } })
+  setup.getAttempt.mockResolvedValue(attempt)
+  await startExecution(setup.startInput)
+  expect(setup.workflowExecutor.startWorkflow).not.toHaveBeenCalled()
+  expect(setup.workflowExecutor.executeWorkflow).not.toHaveBeenCalled()
   expect(mockEnqueue).not.toHaveBeenCalled()
 })

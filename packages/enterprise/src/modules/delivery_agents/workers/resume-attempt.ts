@@ -7,6 +7,7 @@ import { createLogger } from '@open-mercato/shared/lib/logger'
 import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import { DELIVERY_RESUME_QUEUE, type ResumeAttemptJobPayload } from '../lib/queue'
 import { DELIVERY_AGENTS_SIGNAL_NAME } from '../lib/attemptWorkflow'
+import { findDeliveryWorkflowInstance, hasLeftEvidenceWait } from '../lib/workflowInstance'
 
 const logger = createLogger('delivery_agents').child({ worker: 'resume-attempt' })
 
@@ -84,6 +85,18 @@ async function sendSignalWithRetry(
   return false
 }
 
+async function workflowLeftEvidenceWait(em: EntityManager, workflowRef: string, scope: DeliveryScope): Promise<boolean> {
+  try {
+    return hasLeftEvidenceWait(await findDeliveryWorkflowInstance(em, { correlationKey: workflowRef }, scope))
+  } catch (error) {
+    logger.warn('workflow state lookup failed; treating the signal as undelivered', {
+      workflowRef,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false
+  }
+}
+
 export default async function handle(job: QueuedJob<ResumeAttemptJobPayload>, _ctx: JobContext): Promise<void> {
   const payload = job.payload
   if (!payload?.attemptId || !payload?.taskId || !payload?.workflowRef || !payload?.tenantId || !payload?.organizationId) {
@@ -117,8 +130,10 @@ export default async function handle(job: QueuedJob<ResumeAttemptJobPayload>, _c
   // Send evidence-ready signal with retry
   const queries = container.resolve('deliveryOsAttemptQueries') as DeliveryOsAttemptQueries
   const signaled = await sendSignalWithRetry(signalHandler, em, container, scope, workflowRef, () => queries.assertExecutionReady(scope, taskId, attemptId, 'resume', workflowRef))
+  const alreadyResumed = !signaled && await workflowLeftEvidenceWait(em, workflowRef, scope)
+  if (alreadyResumed) logger.info('evidence-ready signal was consumed by an earlier delivery', { attemptId, workflowRef })
 
-  if (!signaled) {
+  if (!signaled && !alreadyResumed) {
     logger.error('failed to send evidence-ready signal after all retries', { attemptId, workflowRef, ...scope })
     // Mark delivery as failed so the attempt shows the error
     try {
