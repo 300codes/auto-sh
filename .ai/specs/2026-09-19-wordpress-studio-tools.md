@@ -1,5 +1,7 @@
 # WordPress Studio tools
 
+> **Korekta kierunku — 2026-09-19:** [dodatek produktowy](2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../../context/changes/autonomous-software-delivery/flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
+
 Status: **implemented locally; manual acceptance pending** · Created: 2026-09-19 · Owner: delivery-wordpress
 
 ## TLDR

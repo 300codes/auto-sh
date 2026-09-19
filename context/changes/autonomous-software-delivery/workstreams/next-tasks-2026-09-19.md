@@ -1,5 +1,7 @@
 # Kolejna runda — po przeglądzie nocnych branchy, 2026-09-19
 
+> **Korekta kierunku — 2026-09-19:** [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
+
 Plan pracy integracyjnej: przegląd trzech branchy → scalenie w izolowanym worktree → poprawki i kontrole kontraktów → lekkie kontrole → push do main (bez buildów i pełnego gate OM na polecenie użytkownika). Osobny [raport integracji](../overnight-integration-2026-09-19.md) zapisuje faktyczny wynik publikacji i testów.
 
 ## Co jest już w kodzie

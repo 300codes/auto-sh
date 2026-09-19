@@ -1,5 +1,7 @@
 # Równoległe plany wdrożenia — 4 osoby, H0–H36
 
+> **Korekta kierunku — 2026-09-19:** [dodatek produktowy](../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
+
 Data rozpiski: 2026-09-19. Źródło: [zatwierdzony plan po review](../plan.md). Ten dokument rozdziela wykonanie; nie zmienia architektury, zakresu ani kryteriów odbioru. GitHub Issues i etykiety nie są używane — ustalenie użytkownika. Zadania identyfikujemy w Markdown i commitach. Data startu nie jest narzucona: H0 oznacza wspólny start zespołu.
 
 Drzewo kolejności i rozgałęzień: [task-tree.md](task-tree.md).

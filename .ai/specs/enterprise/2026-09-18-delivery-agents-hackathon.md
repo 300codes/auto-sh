@@ -1,5 +1,7 @@
 # Delivery Agents (hackathon) — enterprise execution: OSS boundary
 
+> **Korekta kierunku — 2026-09-19:** [dodatek produktowy](../2026-09-19-delivery-project-flow-addendum.md) ma pierwszeństwo w zakresie domyślnego flow, osobnych akceptacji UX/KV/DS/UI, komentarzy Figma → Kanban, ustawień procesu i WordPress E2E jako głównego demo. [Nowe pakiety dla zespołu](../../../context/changes/autonomous-software-delivery/flow-handoff/README.md). Poniższy dokument zachowuje wcześniejsze ustalenia techniczne; dawne React-first/WP-PoC i estymaty nie stanowią odbioru ani wyceny rozszerzonego zakresu. To zmiana wymagań, nie potwierdzenie implementacji.
+
 > Status: **Draft — boundary only** (OSS-01, T003). The OSS stream fixed the boundary. Execution sections are **Pending — to be completed by EXEC** (EXEC-02, EXEC-04).
 > Master plan (source of truth for architecture, scope and acceptance): [`context/changes/autonomous-software-delivery/plan.md`](../../../context/changes/autonomous-software-delivery/plan.md). Execution workstream: [`workstreams/02-execution.md`](../../../context/changes/autonomous-software-delivery/workstreams/02-execution.md).
 > OSS counterpart (data model, API, error codes): [`../2026-09-18-delivery-os-hackathon.md`](../2026-09-18-delivery-os-hackathon.md).
