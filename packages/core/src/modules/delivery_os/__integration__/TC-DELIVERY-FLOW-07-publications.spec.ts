@@ -12,9 +12,11 @@ import { buildResultManifest } from '../lib/fixtures/builders'
 import { createFakeDeployAdapter, type FakeDeployAdapter } from '../lib/fixtures/flow/fakes'
 import {
   deliveryFlowErrorBodySchema,
+  deliveryReportFlowSectionSchema,
   publicationListResponseSchema,
   type BaselineContentV1,
   type ClientApproval,
+  type DeliveryReportFlowSection,
   type FlowStageId,
   type PublicationResultV1,
   type SourceRevision,
@@ -28,11 +30,14 @@ import {
  * Owner: OSS stream (FLOW-07 seam, FLOW-08 regression; Progress 5.4, 6.2 automated evidence). The jest chain test
  * runs the same handlers over an in-memory store; this spec proves on Postgres that a publication and its derived v1
  * `deployment` evidence land together, that only a verified publication unlocks the release decision, that an identical
- * replay writes nothing, that a foreign tenant sees neither the list nor the write, and that a pinned project cannot
- * publish until every approval stage is approved and current.
+ * replay writes nothing, that neither a foreign tenant nor a second organization of the same tenant sees the list or the
+ * write, and that a pinned project cannot publish until every approval stage is approved and current (F15 shows the same
+ * gate in the report `flow` section). Addendum FLOW-07 negatives: no consent, consent on another revision, a missing
+ * lock header and a publication naming its own deployment evidence as the URL check are refused without a write.
  *
  * Publication bodies come from the deterministic fake deploy adapter (the same seam the WordPress host calls); the URL
- * check is a `reference_material` evidence, which is why both projects use the `wordpress-theme` profile.
+ * check is a passed `scan` evidence on the published revision (F14 accepts only `test`, `screenshot`, `scan` and `review`
+ * as verification evidence). Both projects use the `wordpress-theme` profile, the profile of the WordPress host.
  *
  * ENVIRONMENT: mixes API fixtures with DB fixtures (`withClient` reads DATABASE_URL), so the app and the fixtures must
  * share one database. Decisions, evidence, stage rows and publications are append-only without a delete route, so
@@ -203,6 +208,26 @@ async function publish(call: Call, projectId: string, body: PublicationResultV1)
   return call('POST', `${API}/projects/${projectId}/publications`, { body, lock: await projectVersion(call, projectId) })
 }
 
+async function publicationTotal(call: Call, projectId: string): Promise<number> {
+  const listed = await call('GET', `${API}/projects/${projectId}/publications`)
+  expect(listed.status, 'F14 list').toBe(200)
+  return publicationListResponseSchema.parse(listed.body).total
+}
+
+function otherRevision(revision: SourceRevision): SourceRevision {
+  return revision.kind === 'git' ? { ...revision, commitSha: 'b'.repeat(40) } : { ...revision, contentHash: 'b'.repeat(64) }
+}
+
+function revisionRef(revision: SourceRevision): string {
+  return revision.kind === 'git' ? `git:${revision.commitSha}` : `snapshot:${revision.contentHash}:${revision.externalWorkspaceId}`
+}
+
+async function reportFlowSection(call: Call, projectId: string, revision: SourceRevision, label: string): Promise<DeliveryReportFlowSection> {
+  const report = await call('GET', `${API}/projects/${projectId}/report?revision=${encodeURIComponent(revisionRef(revision))}`)
+  expect(report.status, `R22 report ${label}: ${JSON.stringify(report.body)}`).toBe(200)
+  return deliveryReportFlowSectionSchema.parse(report.body.flow)
+}
+
 function clientApproval(): ClientApproval {
   return {
     approverName: 'Anna Client',
@@ -290,22 +315,27 @@ async function leftoverRows(projectIds: string[]): Promise<number> {
 
 type ForeignFixture = { userIds: string[]; organizationIds: string[]; tenantIds: string[] }
 
+/** A user homed in a new organization of `tenantId` with `delivery_os.*`; the ACL row is written before the first login so no RBAC cache entry predates it. */
+async function createScopedUser(request: APIRequestContext, superadminToken: string, fixture: ForeignFixture, tenantId: string, label: string): Promise<string> {
+  const organizationId = await createOrganizationInDb({ name: `TC-DELIVERY-FLOW-07 org ${label} ${Date.now()}`, tenantId })
+  fixture.organizationIds.push(organizationId)
+  const email = `tc-delivery-flow-07-${label}-${Date.now()}@example.com`
+  const userId = await createUserFixture(request, superadminToken, { email, password: FOREIGN_PASSWORD, organizationId, roles: [] })
+  fixture.userIds.push(userId)
+  createdUserIds.push(userId)
+  await setUserAclInDb({ userId, tenantId, features: ['delivery_os.*'], organizations: [organizationId] })
+  const token = await getAuthToken(request, email, FOREIGN_PASSWORD)
+  expect(getTokenScope(token)).toMatchObject({ tenantId, organizationId })
+  return token
+}
+
 async function createForeignTenantUser(request: APIRequestContext, superadminToken: string, fixture: ForeignFixture): Promise<string> {
   const tenantId = (await sql<{ id: string }>(
     `insert into tenants (id, name, is_active, created_at, updated_at) values (gen_random_uuid(), $1, true, now(), now()) returning id`,
     [`TC-DELIVERY-FLOW-07 tenant ${Date.now()}`],
   ))[0].id
   fixture.tenantIds.push(tenantId)
-  const organizationId = await createOrganizationInDb({ name: `TC-DELIVERY-FLOW-07 org ${Date.now()}`, tenantId })
-  fixture.organizationIds.push(organizationId)
-  const email = `tc-delivery-flow-07-${Date.now()}@example.com`
-  const userId = await createUserFixture(request, superadminToken, { email, password: FOREIGN_PASSWORD, organizationId, roles: [] })
-  fixture.userIds.push(userId)
-  createdUserIds.push(userId)
-  await setUserAclInDb({ userId, tenantId, features: ['delivery_os.*'], organizations: [organizationId] })
-  const token = await getAuthToken(request, email, FOREIGN_PASSWORD)
-  expect(getTokenScope(token).tenantId).toBe(tenantId)
-  return token
+  return createScopedUser(request, superadminToken, fixture, tenantId, 'tenant-c')
 }
 
 async function deleteForeignFixture(fixture: ForeignFixture): Promise<void> {
@@ -343,7 +373,7 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
     expect(await leftoverRows(createdProjectIds), 'no delivery_os row of this spec is left behind').toBe(0)
   })
 
-  test('legacy WordPress project: consent → unverified publication → URL check → verified publication → release, replay and foreign tenant', async ({ request }) => {
+  test('legacy WordPress project: refused without consent, on another revision, without a lock and with its own deployment evidence; consent → unverified → URL check → verified → release, replay, second organization and foreign tenant', async ({ request }) => {
     test.setTimeout(TEST_TIMEOUT_MS)
     let token: string | null = null
     const projectIds: string[] = []
@@ -358,7 +388,23 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       const seed = await seedReadyTask(request, token, call, projectId, 'legacy')
       attachmentIds.push(seed.attachmentId)
       const revision = await deliverResult(call, seed, 'legacy')
+
+      const noConsent = await publish(call, projectId, publicationBody(adapter, seed, revision, randomUUID()))
+      expectFlowError(noConsent, 422, 'deploy_decision_missing', 'F14 before any deploy consent')
+      expect(await publicationTotal(call, projectId), 'a publication without consent is not listed').toBe(0)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a publication without consent writes no evidence').toBe(0)
+
       const consentId = await deployConsent(call, seed, revision)
+
+      const staleRevision = await publish(call, projectId, publicationBody(adapter, seed, otherRevision(revision), consentId))
+      expectFlowError(staleRevision, 422, 'revision_mismatch', 'F14 on another revision than the consent names')
+      expect(await publicationTotal(call, projectId), 'a publication of another revision is not listed').toBe(0)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a publication of another revision writes no evidence').toBe(0)
+
+      const noLock = await call('POST', `${API}/projects/${projectId}/publications`, { body: publicationBody(adapter, seed, revision, consentId) })
+      expectFlowError(noLock, 428, 'optimistic_lock_required', 'F14 new publication without the lock header')
+      expect(await publicationTotal(call, projectId), 'a publication without the lock header is not listed').toBe(0)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a publication without the lock header writes no evidence').toBe(0)
 
       const unverified = await publish(call, projectId, publicationBody(adapter, seed, revision, consentId))
       expect(unverified.status, `F14 unverified: ${JSON.stringify(unverified.body)}`).toBe(201)
@@ -374,12 +420,18 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       expect(blockedRelease.body.code).toBe('deployment_unverified')
       expect(await countRows('delivery_decisions', projectId, `and kind = 'release'`), 'no release decision row').toBe(0)
 
+      const selfVerified = await publish(call, projectId, publicationBody(adapter, seed, revision, consentId, unverified.body.deploymentEvidenceId as string))
+      expectFlowError(selfVerified, 422, 'unsupported_evidence_kind', 'F14 verified by its own deployment evidence')
+      expect(deliveryFlowErrorBodySchema.parse(selfVerified.body).details[0]?.path, 'the verification evidence is named').toBe('verification.evidenceId')
+      expect(await publicationTotal(call, projectId), 'a self-verified publication is not listed').toBe(1)
+      expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a self-verified publication writes no evidence').toBe(1)
+
       const urlCheck = await call('POST', `${API}/projects/${projectId}/evidence`, {
         body: {
           baselineId: seed.baselineId,
-          kind: 'reference_material',
+          kind: 'scan',
           sourceRevision: revision,
-          payload: { title: 'Publication URL check', description: 'HTTP 200 on the published home page', origin: 'https://preview.example.test/psi-fryzjer-preview' },
+          payload: { checkId: 'publication-url-check', scanner: 'http-url-check', status: 'passed', rawReportHash: 'c'.repeat(64) },
         },
       })
       expect(urlCheck.status, `R19 URL check: ${JSON.stringify(urlCheck.body)}`).toBe(201)
@@ -424,23 +476,29 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
         `select (select updated_at from delivery_projects where id = $1) as project, (select count(*) from delivery_publications where project_id = $1) as publications`,
         [projectId],
       )
-      const foreignCall = caller(request, await createForeignTenantUser(request, await getAuthToken(request, 'superadmin'), foreign))
-      const probes: Array<[string, () => Promise<CallResult>]> = [
-        ['F14 list', () => foreignCall('GET', `${API}/projects/${projectId}/publications`)],
-        ['F14 record', () => foreignCall('POST', `${API}/projects/${projectId}/publications`, { body: verifiedBody })],
-        ['F14 record with a lock header', () => foreignCall('POST', `${API}/projects/${projectId}/publications`, { body: publicationBody(adapter, seed, revision, consentId), lock: ownerLock })],
+      const superadminToken = await getAuthToken(request, 'superadmin')
+      const outsiders: Array<[string, Call]> = [
+        ['a second-organization user of the same tenant', caller(request, await createScopedUser(request, superadminToken, foreign, getTokenScope(token).tenantId, 'org-b'))],
+        ['a foreign-tenant user', caller(request, await createForeignTenantUser(request, superadminToken, foreign))],
       ]
-      for (const [label, probe] of probes) {
-        const result = await probe()
-        expect(result.status, `${label} as a foreign-tenant user: ${JSON.stringify(result.body)}`).toBe(404)
-        expect(JSON.stringify(result.body), `${label} leaks nothing`).not.toContain(projectId)
-        expect(JSON.stringify(result.body), `${label} leaks no publication id`).not.toContain(String(verified.body.publicationId))
+      for (const [who, foreignCall] of outsiders) {
+        const probes: Array<[string, () => Promise<CallResult>]> = [
+          ['F14 list', () => foreignCall('GET', `${API}/projects/${projectId}/publications`)],
+          ['F14 record', () => foreignCall('POST', `${API}/projects/${projectId}/publications`, { body: verifiedBody })],
+          ['F14 record with a lock header', () => foreignCall('POST', `${API}/projects/${projectId}/publications`, { body: publicationBody(adapter, seed, revision, consentId), lock: ownerLock })],
+        ]
+        for (const [label, probe] of probes) {
+          const result = await probe()
+          expect(result.status, `${label} as ${who}: ${JSON.stringify(result.body)}`).toBe(404)
+          expect(JSON.stringify(result.body), `${label} leaks nothing to ${who}`).not.toContain(projectId)
+          expect(JSON.stringify(result.body), `${label} leaks no publication id to ${who}`).not.toContain(String(verified.body.publicationId))
+        }
       }
       const ownerAfter = await sql(
         `select (select updated_at from delivery_projects where id = $1) as project, (select count(*) from delivery_publications where project_id = $1) as publications`,
         [projectId],
       )
-      expect(ownerAfter, 'owner rows untouched by the foreign probes').toEqual(ownerBefore)
+      expect(ownerAfter, 'owner rows untouched by the second-organization and foreign-tenant probes').toEqual(ownerBefore)
     } finally {
       await cleanup(request, token, projectIds, attachmentIds)
       await deleteForeignFixture(foreign).catch(() => undefined)
@@ -491,6 +549,10 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       expect(staleUi.body.details, 'the UI stage is named as stale').toEqual(
         expect.arrayContaining([expect.objectContaining({ path: 'stages.design_system_ui', code: 'stage_dependency_stale' })]),
       )
+      const closedFlow = await reportFlowSection(call, projectId, revision, 'with a stale UI stage')
+      expect(closedFlow.gate.ok, `F15 flow.gate while the UI stage is stale: ${JSON.stringify(closedFlow.gate)}`).toBe(false)
+      expect(closedFlow.gate.blocking.map((blocker) => blocker.stageId), 'the stale UI stage blocks the report gate').toContain('design_system_ui')
+      expect(closedFlow.stages.find((stage) => stage.stageId === 'design_system_ui')?.currency, 'F15 names the UI stage stale').toBe('stale')
 
       const uiV2 = await recordArtifact(
         call,
@@ -503,6 +565,9 @@ test.describe('TC-DELIVERY-FLOW-07: publications on the real database', () => {
       expect(await countRows('delivery_evidence', projectId, `and kind = 'deployment'`), 'a refused publication writes no evidence').toBe(0)
 
       await approveStage(call, projectId, 'design_system_ui', uiV2)
+      const openFlow = await reportFlowSection(call, projectId, revision, 'after the UI re-approval')
+      expect(openFlow.gate, 'F15 flow.gate after the UI re-approval').toEqual({ ok: true, blocking: [] })
+      expect(openFlow.stages.map((stage) => stage.currency), 'every approval stage is current').toEqual(['approved', 'approved', 'approved', 'approved'])
       const published = await publish(call, projectId, body)
       expect(published.status, `F14 after the last approval: ${JSON.stringify(published.body)}`).toBe(201)
       expect(published.body.duplicate).toBe(false)

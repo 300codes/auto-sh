@@ -93,17 +93,40 @@ export type FakeDeployAdapter = {
 export const FAKE_DEPLOY_EPOCH = Date.parse('2026-09-19T12:00:00.000Z')
 const FAKE_DEPLOY_STEP_MS = 60_000
 const FAKE_DEPLOY_CHECK_DELAY_MS = 30_000
+export const FAKE_DEPLOY_HOST_SUFFIX = 'example.test'
+export const FAKE_DEPLOY_REF_PREFIX = 'fixture:'
+const FAKE_DEPLOY_HOST_ERROR = '[internal] the fake deploy adapter only publishes to *.example.test hosts'
+
+function resolveFakeDeployUrl(url: string | undefined, ref: string): string {
+  if (url === undefined) return `https://preview.${FAKE_DEPLOY_HOST_SUFFIX}/${encodeURIComponent(ref)}`
+  let hostname: string
+  try {
+    hostname = new URL(url).hostname
+  } catch {
+    throw new Error(FAKE_DEPLOY_HOST_ERROR)
+  }
+  if (hostname !== FAKE_DEPLOY_HOST_SUFFIX && !hostname.endsWith(`.${FAKE_DEPLOY_HOST_SUFFIX}`)) {
+    throw new Error(FAKE_DEPLOY_HOST_ERROR)
+  }
+  return url
+}
+
+function markFakeDeployRef(ref: string): string {
+  return ref.startsWith(FAKE_DEPLOY_REF_PREFIX) ? ref : `${FAKE_DEPLOY_REF_PREFIX}${ref}`
+}
 
 /**
  * Deterministic stand-in for a deploy target (Michał's WordPress publication seam): no clock, no randomness. Each call
  * publishes one minute after the previous one. The result is `verified` only when the caller asks for it AND names
  * the URL-check evidence; otherwise it is `unverified` with null method, checkedAt, httpStatus and evidenceId.
+ * Results are fixture-marked (reserved `*.example.test` host, `fixture:` ref prefix) so a live FLOW-07 checklist can reject them.
  */
 export function createFakeDeployAdapter(): FakeDeployAdapter {
   const calls: FakeDeployInput[] = []
   return {
     calls,
     publish(input) {
+      const url = resolveFakeDeployUrl(input.url, input.target.ref)
       calls.push(input)
       const publishedAt = FAKE_DEPLOY_EPOCH + (calls.length - 1) * FAKE_DEPLOY_STEP_MS
       const evidenceId = input.evidenceId ?? null
@@ -114,8 +137,8 @@ export function createFakeDeployAdapter(): FakeDeployAdapter {
         baselineId: input.baselineId,
         sourceRevision: input.sourceRevision,
         snapshotRef: input.snapshotRef ?? null,
-        target: input.target,
-        url: input.url ?? `https://preview.example.test/${encodeURIComponent(input.target.ref)}`,
+        target: { ...input.target, ref: markFakeDeployRef(input.target.ref) },
+        url,
         deployDecisionId: input.deployDecisionId,
         publishedAt: new Date(publishedAt).toISOString(),
         publishedBy: input.publishedBy ?? null,

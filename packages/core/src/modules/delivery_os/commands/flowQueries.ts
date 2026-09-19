@@ -5,18 +5,24 @@ import { DeliveryIntake, DeliveryProject, DeliveryTask } from '../data/entities'
 import {
   buildDeliveryError,
   FLOW_APPROVAL_STAGE_ORDER,
-  flowTemplateV1Schema,
   type ExecutionAttempt,
   type FlowBlocker,
   type FlowStatusV1,
   type FlowTemplateRef,
-  type FlowTemplateV1,
 } from '../lib/contracts'
 import { parseAttemptRegister } from '../lib/attempts'
 import { computeStageCurrency } from '../lib/flowRules'
 import { buildFlowStatus, countBlockingThreadsByStage, type FlowStatusProject } from '../lib/flowStatus'
 import type { CommentThreadRecord } from '../lib/stageDecisions'
-import { isFlowPinned, loadStageArtifactRows, loadStageDecisionRows, toStageArtifactRecord, toStageDecisionRecord } from './flowGate'
+import {
+  isFlowPinned,
+  loadStageArtifactRows,
+  loadStageDecisionRows,
+  readPinnedTemplate,
+  readPinnedTemplateRef,
+  toStageArtifactRecord,
+  toStageDecisionRecord,
+} from './flowGate'
 import { deliveryHttpError, type DeliveryScope } from './shared'
 import { loadStageCommentThreads } from './stages'
 
@@ -31,16 +37,6 @@ function assertQueryScope(scope: DeliveryScope | null | undefined): DeliveryScop
     return { tenantId: scope.tenantId, organizationId: scope.organizationId }
   }
   throw new Error('[internal] deliveryOsFlowQueries requires tenantId and organizationId')
-}
-
-function readTemplateRef(project: DeliveryProject): FlowTemplateRef | null {
-  if (!project.flowTemplateId || !project.flowTemplateVersion || !project.flowTemplateHash) return null
-  return { templateId: project.flowTemplateId, version: project.flowTemplateVersion, hash: project.flowTemplateHash }
-}
-
-function readTemplate(project: DeliveryProject): FlowTemplateV1 | null {
-  const parsed = flowTemplateV1Schema.safeParse(project.flowTemplateSnapshot)
-  return parsed.success ? parsed.data : null
 }
 
 function collectAttempts(tasks: readonly DeliveryTask[]): ExecutionAttempt[] {
@@ -83,8 +79,8 @@ export function createDeliveryOsFlowQueries(rootEm: EntityManager): DeliveryOsFl
       const intake = await findOneWithDecryption(em, DeliveryIntake, { projectId: project.id, ...scoped }, undefined, scope)
       const tasks = await findWithDecryption(em, DeliveryTask, { projectId: project.id, ...scoped, deletedAt: null }, undefined, scope)
       const pinned = isFlowPinned(project)
-      const template = pinned ? readTemplate(project) : null
-      const templateRef = pinned ? readTemplateRef(project) : null
+      const template = pinned ? readPinnedTemplate(project) : null
+      const templateRef = pinned ? readPinnedTemplateRef(project) : null
       const artifactRows = pinned ? await loadStageArtifactRows(em, project.id, scope) : []
       const decisionRows = pinned ? await loadStageDecisionRows(em, project.id, scope) : []
       const artifacts = artifactRows.map((row) => ({ ...toStageArtifactRecord(row), createdAt: row.createdAt.toISOString() }))

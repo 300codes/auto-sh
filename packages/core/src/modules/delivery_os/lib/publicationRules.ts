@@ -1,9 +1,7 @@
 import {
   buildDeliveryError,
-  deliveryErrorFromZod,
   isSameRevision,
   publicationResultV1Schema,
-  publicationVerificationSchema,
   sourceRevisionSchema,
   type DeliveryCheckResult,
   type PublicationResultV1,
@@ -38,7 +36,12 @@ export type PublicationDeploymentEvidencePayload = {
   verification: { status: 'verified'; checkedAt: string; method: string; observedBuildId: string } | null
 }
 
+export type PublicationVerificationEvidence = { kind: string; payload: unknown }
+
+export const VERIFICATION_EVIDENCE_KINDS = ['test', 'screenshot', 'scan', 'review'] as const
+
 const DEPLOY_DECISION_PATH = 'deployDecisionId'
+const VERIFICATION_EVIDENCE_PATH = 'verification.evidenceId'
 
 function formatRevision(revision: SourceRevision): string {
   return revision.kind === 'git' ? `git:${revision.commitSha}` : `snapshot:${revision.contentHash}:${revision.externalWorkspaceId}`
@@ -86,10 +89,46 @@ export function checkPublicationDeployConsent(input: PublicationDeployConsentInp
   return { ok: true }
 }
 
-export function checkPublicationVerification(verification: unknown): DeliveryCheckResult {
-  const parsed = publicationVerificationSchema.safeParse(verification)
-  if (parsed.success) return { ok: true }
-  return { ok: false, ...deliveryErrorFromZod(parsed.error) }
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasOnlyPassedChecks(payload: Record<string, unknown>): boolean {
+  const { checks } = payload
+  if (!Array.isArray(checks) || checks.length === 0) return false
+  return checks.every((check) => isPlainRecord(check) && check.status === 'passed')
+}
+
+function verificationEvidenceFailure(kind: string, payload: unknown): string | null {
+  if (kind === 'screenshot') return null
+  const record = isPlainRecord(payload) ? payload : {}
+  if (kind === 'scan') return record.status === 'passed' ? null : 'The scan evidence did not pass'
+  if (kind === 'review') return record.verdict === 'approved' ? null : 'The review evidence is not an approval'
+  return hasOnlyPassedChecks(record) ? null : 'The test evidence holds a check that did not pass'
+}
+
+export function checkVerificationEvidenceKind(evidence: PublicationVerificationEvidence): DeliveryCheckResult {
+  const allowed: readonly string[] = VERIFICATION_EVIDENCE_KINDS
+  if (!allowed.includes(evidence.kind)) {
+    return {
+      ok: false,
+      ...buildDeliveryError('unsupported_evidence_kind', 'This evidence kind cannot verify a publication', [
+        {
+          path: VERIFICATION_EVIDENCE_PATH,
+          code: 'verification_evidence_kind',
+          message: `Evidence kind ${evidence.kind} cannot verify a publication; allowed kinds: ${VERIFICATION_EVIDENCE_KINDS.join(', ')}`,
+        },
+      ]),
+    }
+  }
+  const failure = verificationEvidenceFailure(evidence.kind, evidence.payload)
+  if (failure === null) return { ok: true }
+  return {
+    ok: false,
+    ...buildDeliveryError('unsupported_evidence_kind', 'The verification evidence did not pass', [
+      { path: VERIFICATION_EVIDENCE_PATH, code: 'verification_evidence_not_passed', message: failure },
+    ]),
+  }
 }
 
 export function publicationBuildId(revision: SourceRevision): string {
@@ -113,6 +152,30 @@ export function buildDeploymentEvidencePayload(publication: PublicationResultV1)
   }
 }
 
+function canonicalTimestamp(value: string): string {
+  return new Date(value).toISOString()
+}
+
+/** Identifier case and timestamp spelling never make a replay a second publication; the stored row keeps the sent values. */
+function normalizePublicationForHash(publication: PublicationResultV1): PublicationResultV1 {
+  const { snapshotRef, verification } = publication
+  return {
+    ...publication,
+    projectId: publication.projectId.toLowerCase(),
+    baselineId: publication.baselineId.toLowerCase(),
+    deployDecisionId: publication.deployDecisionId.toLowerCase(),
+    releaseDecisionId: publication.releaseDecisionId === null ? null : publication.releaseDecisionId.toLowerCase(),
+    publishedBy: publication.publishedBy === null ? null : publication.publishedBy.toLowerCase(),
+    publishedAt: canonicalTimestamp(publication.publishedAt),
+    snapshotRef: snapshotRef === null ? null : { ...snapshotRef, attachmentId: snapshotRef.attachmentId.toLowerCase() },
+    verification: {
+      ...verification,
+      checkedAt: verification.checkedAt === null ? null : canonicalTimestamp(verification.checkedAt),
+      evidenceId: verification.evidenceId === null ? null : verification.evidenceId.toLowerCase(),
+    },
+  }
+}
+
 export function hashPublicationPayload(publication: PublicationResultV1): string {
-  return hashCanonical(publicationResultV1Schema.parse(publication))
+  return hashCanonical(normalizePublicationForHash(publicationResultV1Schema.parse(publication)))
 }

@@ -56,6 +56,7 @@ const DECISION_ID = 'dddddddd-dddd-4ddd-8ddd-000000000001'
 const CHECK_EVIDENCE_ID = 'eeeeeeee-eeee-4eee-8eee-000000000001'
 const PUBLISHED_AT = '2026-09-19T12:00:00.000Z'
 const CHECKED_AT = '2026-09-19T12:01:00.000Z'
+const RAW_REPORT_HASH = 'd'.repeat(64)
 let clock = Date.parse('2026-09-19T10:00:00.000Z')
 
 function tick(): void {
@@ -92,10 +93,10 @@ function checkEvidence(overrides: Row = {}): Row {
     baselineId: BASELINE_ID,
     taskId: null,
     attemptId: null,
-    kind: 'reference_material',
+    kind: 'scan',
     sourceRevision: REVISION,
-    payload: { title: 'URL check', origin: 'https://preview.example.com/site' },
-    rawReportHash: null,
+    payload: { checkId: 'publication-url-check', scanner: 'http-url-check', status: 'passed', rawReportHash: RAW_REPORT_HASH },
+    rawReportHash: RAW_REPORT_HASH,
     attachmentIds: [],
     createdAt: new Date('2026-09-19T09:40:00.000Z'),
     ...overrides,
@@ -278,6 +279,32 @@ describe('F14 POST /api/delivery_os/projects/:id/publications', () => {
       expect.arrayContaining(['stages.scope', 'stages.ux', 'stages.key_visual', 'stages.design_system_ui']),
     )
     expectNothingWritten()
+  })
+
+  it('answers 422 unsupported_evidence_kind when the verification evidence is not a passing check', async () => {
+    Object.assign(routeState.store.evidence[0], { kind: 'reference_material', payload: { title: 'URL check', origin: 'https://preview.example.com/site' } })
+    const wrongKind = await expectError(await post(publication()), 422, 'unsupported_evidence_kind')
+    expect(wrongKind.details).toEqual([
+      { path: 'verification.evidenceId', code: 'verification_evidence_kind', message: expect.stringContaining('reference_material') },
+    ])
+
+    const failedScan = { checkId: 'publication-url-check', scanner: 'http-url-check', status: 'failed', rawReportHash: RAW_REPORT_HASH }
+    Object.assign(routeState.store.evidence[0], checkEvidence({ payload: failedScan }))
+    const failed = await expectError(await post(publication()), 422, 'unsupported_evidence_kind')
+    expect((failed.details as Array<{ code: string }>).map((detail) => detail.code)).toEqual(['verification_evidence_not_passed'])
+    expectNothingWritten()
+
+    const unverified = await post(publication({ verification: { status: 'unverified', method: null, checkedAt: null, httpStatus: null, evidenceId: null } }))
+    expect(unverified.status).toBe(201)
+    const selfEvidenceId = (await readBody(unverified)).deploymentEvidenceId as string
+    const selfVerified = await expectError(
+      await post(publication({ verification: { status: 'verified', method: 'http', checkedAt: CHECKED_AT, httpStatus: 200, evidenceId: selfEvidenceId } })),
+      422,
+      'unsupported_evidence_kind',
+    )
+    expect((selfVerified.details as Array<{ path: string }>).map((detail) => detail.path)).toEqual(['verification.evidenceId'])
+    expect(routeState.store.publications).toHaveLength(1)
+    expect(routeState.store.evidence.filter((row) => row.kind === 'deployment')).toHaveLength(1)
   })
 })
 

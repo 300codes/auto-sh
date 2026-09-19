@@ -179,6 +179,16 @@ function publication(overrides: Partial<PublicationResultV1> = {}): PublicationR
   }
 }
 
+function verifiedBy(evidenceId: string): Partial<PublicationResultV1> {
+  return { verification: { status: 'verified', method: 'http', checkedAt: CHECKED_AT, httpStatus: 200, evidenceId } }
+}
+
+function seedEvidence(kind: string, payload: unknown, overrides: Row = {}): string {
+  const row = evidenceRow(kind, payload, overrides)
+  store.evidence.push(row)
+  return row.id as string
+}
+
 function unverified(): Partial<PublicationResultV1> {
   return { verification: { status: 'unverified', method: null, checkedAt: null, httpStatus: null, evidenceId: null } }
 }
@@ -433,6 +443,24 @@ describe('delivery_os.publications.record — happy path (F14, UA-43)', () => {
     expectFrozenBody(foreign, 422, 'foreign_reference')
   })
 
+  it('names snapshotRef.attachmentId, not attachmentIds.0, when the snapshot attachment is unknown', async () => {
+    seedApprovedDeploy()
+    const error = await catchHttpError(() => run(publication({ snapshotRef: { attachmentId: UNKNOWN_ID, sha256: 'a'.repeat(64) } })))
+    expectFrozenBody(error, 422, 'foreign_reference')
+    expect(stageDetails(error).map((detail) => detail.path)).toEqual(['snapshotRef.attachmentId'])
+    expect(detailCodes(error)).toEqual(['attachment_scope_mismatch'])
+    expect(error.message).toContain('[internal] delivery_os foreign_reference')
+    expectNothingWritten()
+  })
+
+  it('accepts a release decision of this project as releaseDecisionId', async () => {
+    seedApprovedDeploy()
+    const releaseId = seedApprovedDeploy(REVISION, { kind: 'release', subjectType: 'evidence' })
+    const result = await run(publication({ releaseDecisionId: releaseId }))
+    expect(result.duplicate).toBe(false)
+    expect(store.publications).toHaveLength(1)
+  })
+
   it('answers duplicate: true on a replay of the same payload without the lock header and without writes', async () => {
     seedApprovedDeploy()
     const input = publication()
@@ -443,6 +471,35 @@ describe('delivery_os.publications.record — happy path (F14, UA-43)', () => {
     expect(em.transactional).not.toHaveBeenCalled()
     expect(store.publications).toHaveLength(1)
     expect(store.evidence.filter((row) => row.kind === 'deployment')).toHaveLength(1)
+  })
+
+  it('answers duplicate: true for a replay that spells identifiers in uppercase and timestamps without milliseconds or with an offset', async () => {
+    seedApprovedDeploy()
+    const input = publication()
+    const first = await run(input)
+    const stored = { ...store.publications[0] }
+    const respelled = publication({
+      baselineId: input.baselineId.toUpperCase(),
+      deployDecisionId: input.deployDecisionId.toUpperCase(),
+      publishedBy: ACTOR_ID.toUpperCase(),
+      publishedAt: '2026-09-19T12:00:00Z',
+      verification: { ...input.verification, checkedAt: '2026-09-19T14:01:00+02:00', evidenceId: checkEvidenceId().toUpperCase() },
+    })
+    expect(hashPublicationPayload(respelled)).toBe(hashPublicationPayload(input))
+    const { ctx, em } = harness({ headers: {} })
+    const replay = await record.execute({ projectId: PROJECT_ID, publication: respelled }, ctx)
+    expect(replay).toEqual({ ...first, duplicate: true })
+    expect(em.transactional).not.toHaveBeenCalled()
+    expect(store.publications).toEqual([stored])
+    expect(store.evidence.filter((row) => row.kind === 'deployment')).toHaveLength(1)
+  })
+
+  it('stores the sent values unchanged when the first record spells a timestamp without milliseconds', async () => {
+    seedApprovedDeploy()
+    const input = publication({ publishedAt: '2026-09-19T12:00:00Z' })
+    const result = await run(input)
+    expect(store.publications[0]).toMatchObject({ publishedAt: new Date(PUBLISHED_AT), payloadHash: hashPublicationPayload(publication()) })
+    expect((store.evidence.find((row) => row.id === result.deploymentEvidenceId)?.payload as Row).deployedAt).toBe('2026-09-19T12:00:00Z')
   })
 
   it('recovers a unique violation on the payload hash as a duplicate', async () => {
@@ -537,6 +594,20 @@ describe('delivery_os.publications.record — refusals', () => {
     const error = await catchHttpError(() => run(publication({ deployDecisionId: approved })))
     expectFrozenBody(error, 422, 'deploy_decision_missing')
     expect(detailCodes(error)).toEqual(['deploy_decision_rejected'])
+    expect(stageDetails(error)[0].path).toBe('deployDecisionId')
+    expect(stageDetails(error)[0].message).toEqual(expect.any(String))
+    expectNothingWritten()
+  })
+
+  it('answers 422 foreign_reference on releaseDecisionId for an unknown, foreign or non-release decision', async () => {
+    const deployId = seedApprovedDeploy()
+    const foreignRelease = seedApprovedDeploy(REVISION, { kind: 'release', projectId: OTHER_PROJECT_ID })
+    const otherOrgRelease = seedApprovedDeploy(REVISION, { kind: 'release', organizationId: FOREIGN_ORG_ID })
+    for (const releaseDecisionId of [UNKNOWN_ID, foreignRelease, otherOrgRelease, deployId]) {
+      const error = await catchHttpError(() => run(publication({ deployDecisionId: deployId, releaseDecisionId })))
+      expectFrozenBody(error, 422, 'foreign_reference')
+      expect(stageDetails(error)).toEqual([{ path: 'releaseDecisionId', code: 'foreign_release_decision' }])
+    }
     expectNothingWritten()
   })
 
@@ -573,10 +644,66 @@ describe('delivery_os.publications.record — refusals', () => {
 
   it('accepts a verification evidence without a source revision on the same baseline', async () => {
     seedApprovedDeploy()
-    store.evidence.push(evidenceRow('reference_material', {}, { sourceRevision: null }))
-    const evidenceId = store.evidence.at(-1)?.id as string
-    const result = await run(publication({ verification: { status: 'verified', method: 'http', checkedAt: CHECKED_AT, httpStatus: 200, evidenceId } }))
+    const evidenceId = seedEvidence('screenshot', {}, { sourceRevision: null })
+    const result = await run(publication(verifiedBy(evidenceId)))
     expect(result.duplicate).toBe(false)
+  })
+
+  it('refuses a publication that names its own earlier deployment evidence as the verification proof', async () => {
+    seedApprovedDeploy()
+    const first = await run(publication(unverified()))
+    const evidenceCount = store.evidence.length
+    mockEmitDeliveryOsEvent.mockClear()
+    const error = await catchHttpError(() => run(publication(verifiedBy(first.deploymentEvidenceId))))
+    expectFrozenBody(error, 422, 'unsupported_evidence_kind')
+    expect(stageDetails(error)).toEqual([
+      { path: 'verification.evidenceId', code: 'verification_evidence_kind', message: expect.stringContaining('deployment') },
+    ])
+    expect(store.publications).toHaveLength(1)
+    expect(store.evidence).toHaveLength(evidenceCount)
+    expect(mockEmitDeliveryOsEvent).not.toHaveBeenCalled()
+  })
+
+  it('answers 422 unsupported_evidence_kind for a reference_material verification evidence', async () => {
+    seedApprovedDeploy()
+    const evidenceId = seedEvidence('reference_material', { title: 'URL check', origin: 'https://preview.example.com/site' })
+    const error = await catchHttpError(() => run(publication(verifiedBy(evidenceId))))
+    expectFrozenBody(error, 422, 'unsupported_evidence_kind')
+    expect(detailCodes(error)).toEqual(['verification_evidence_kind'])
+    expect(stageDetails(error)[0].path).toBe('verification.evidenceId')
+    expectNothingWritten()
+  })
+
+  it('checks the evidence kind after the project scope and before the baseline binding', async () => {
+    seedApprovedDeploy()
+    const foreign = seedEvidence('reference_material', {}, { projectId: OTHER_PROJECT_ID })
+    expect(detailCodes(await catchHttpError(() => run(publication(verifiedBy(foreign)))))).toEqual(['foreign_evidence'])
+    const otherBaseline = seedEvidence('reference_material', {}, { baselineId: OTHER_BASELINE_ID })
+    expect(detailCodes(await catchHttpError(() => run(publication(verifiedBy(otherBaseline)))))).toEqual(['verification_evidence_kind'])
+    expectNothingWritten()
+  })
+
+  it.each([
+    ['a failed scan', 'scan', { checkId: 'publication-url-check', scanner: 'http-url-check', status: 'failed', rawReportHash: RAW_HASH }],
+    ['a review requesting changes', 'review', { verdict: 'changes_requested', summary: 'Broken', findings: [] }],
+    ['a test with a failed check', 'test', { rawReportHash: RAW_HASH, checks: [{ checkId: 'unit-tests', testId: 'T-1', status: 'failed' }] }],
+  ])('answers 422 verification_evidence_not_passed for %s', async (_label, kind, payload) => {
+    seedApprovedDeploy()
+    const evidenceId = seedEvidence(kind, payload)
+    const error = await catchHttpError(() => run(publication(verifiedBy(evidenceId))))
+    expectFrozenBody(error, 422, 'unsupported_evidence_kind')
+    expect(detailCodes(error)).toEqual(['verification_evidence_not_passed'])
+    expect(stageDetails(error)[0].path).toBe('verification.evidenceId')
+    expectNothingWritten()
+  })
+
+  it('records a publication verified by a passed scan', async () => {
+    seedApprovedDeploy()
+    const evidenceId = seedEvidence('scan', { checkId: 'publication-url-check', scanner: 'http-url-check', status: 'passed', rawReportHash: RAW_HASH })
+    const result = await run(publication(verifiedBy(evidenceId)))
+    expect(result.duplicate).toBe(false)
+    expect(store.publications).toHaveLength(1)
+    expect(store.publications[0].verification).toMatchObject({ status: 'verified', evidenceId })
   })
 
   it('answers 422 deployment_unverified from the schema for verified without method, time and evidence', async () => {

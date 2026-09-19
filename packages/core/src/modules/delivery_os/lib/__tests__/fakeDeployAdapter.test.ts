@@ -1,5 +1,11 @@
 import { publicationResultV1Schema, type SourceRevision } from '../contracts'
-import { createFakeDeployAdapter, FAKE_DEPLOY_EPOCH, type FakeDeployInput } from '../fixtures/flow/fakes'
+import {
+  createFakeDeployAdapter,
+  FAKE_DEPLOY_EPOCH,
+  FAKE_DEPLOY_HOST_SUFFIX,
+  FAKE_DEPLOY_REF_PREFIX,
+  type FakeDeployInput,
+} from '../fixtures/flow/fakes'
 
 const REVISION: SourceRevision = { kind: 'snapshot', contentHash: '8'.repeat(64), externalWorkspaceId: 'wp-local-1' }
 const EVIDENCE_ID = '99999999-9999-4999-8999-999999999999'
@@ -29,6 +35,41 @@ describe('createFakeDeployAdapter', () => {
     expect(result.verification).toEqual({ status: 'unverified', method: null, checkedAt: null, httpStatus: null, evidenceId: null })
     expect(result.publishedAt).toBe(new Date(FAKE_DEPLOY_EPOCH).toISOString())
     expect(result.url).toBe('https://preview.example.test/psi-fryzjer-preview')
+    expect(result.target).toEqual({ kind: 'wordpress', environment: 'preview', ref: 'fixture:psi-fryzjer-preview' })
+  })
+
+  it('marks every result as a fixture: reserved host and prefixed target ref', () => {
+    const adapter = createFakeDeployAdapter()
+    const results = [
+      adapter.publish(input()),
+      adapter.publish(input({ verified: true, evidenceId: EVIDENCE_ID })),
+      adapter.publish(input({ url: 'https://staging.example.test/home' })),
+      adapter.publish(input({ url: 'https://example.test/' })),
+    ]
+    for (const result of results) {
+      const hostname = new URL(result.url).hostname
+      expect(hostname === FAKE_DEPLOY_HOST_SUFFIX || hostname.endsWith(`.${FAKE_DEPLOY_HOST_SUFFIX}`)).toBe(true)
+      expect(result.target.ref.startsWith(FAKE_DEPLOY_REF_PREFIX)).toBe(true)
+      expect(publicationResultV1Schema.safeParse(result).success).toBe(true)
+    }
+    expect(new URL(results[0].url).hostname.endsWith(`.${FAKE_DEPLOY_HOST_SUFFIX}`)).toBe(true)
+    expect(results[2].url).toBe('https://staging.example.test/home')
+  })
+
+  it('refuses to publish to a host outside the reserved fixture domain', () => {
+    const adapter = createFakeDeployAdapter()
+    const hostError = '[internal] the fake deploy adapter only publishes to *.example.test hosts'
+    expect(() => adapter.publish(input({ url: 'https://client-site.pl/' }))).toThrow(hostError)
+    expect(() => adapter.publish(input({ url: 'https://evil-example.test/' }))).toThrow(hostError)
+    expect(() => adapter.publish(input({ url: 'not a url' }))).toThrow(hostError)
+    expect(adapter.calls).toHaveLength(0)
+  })
+
+  it('does not double-prefix a target ref that is already fixture-marked', () => {
+    const target = { kind: 'wordpress', environment: 'preview', ref: `${FAKE_DEPLOY_REF_PREFIX}psi-fryzjer-preview` } as const
+    const result = createFakeDeployAdapter().publish(input({ target }))
+    expect(result.target).toEqual(target)
+    expect(publicationResultV1Schema.safeParse(result).success).toBe(true)
   })
 
   it('publishes a verified result only when the URL-check evidence is named', () => {

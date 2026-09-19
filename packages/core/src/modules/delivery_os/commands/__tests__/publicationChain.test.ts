@@ -39,6 +39,7 @@ import {
   type TaskPackageV1,
 } from '../../lib/contracts'
 import { buildResultManifest } from '../../lib/fixtures/builders'
+import { hashCanonical } from '../../lib/hash'
 import { createFakeDeployAdapter, type FakeDeployAdapter } from '../../lib/fixtures/flow/fakes'
 
 type Flow = { projectId: string; baselineId: string; taskId: string }
@@ -140,8 +141,9 @@ async function review(flow: Flow, revision: SourceRevision, payload: Json): Prom
 }
 
 async function urlCheckEvidence(flow: Flow, revision: SourceRevision, url: string): Promise<string> {
-  const payload = { title: 'Publication URL check', description: 'HTTP 200 on the published home page', origin: url }
-  const body = await expectStatus(await recordEvidence(flow, { kind: 'reference_material', sourceRevision: revision, payload }), 201)
+  const rawReportHash = hashCanonical({ url, httpStatus: 200 })
+  const payload = { checkId: 'publication-url-check', scanner: 'http-url-check', status: 'passed', rawReportHash }
+  const body = await expectStatus(await recordEvidence(flow, { kind: 'scan', sourceRevision: revision, payload }), 201)
   return body.evidenceId as string
 }
 

@@ -331,7 +331,7 @@ export type EvidenceRecordCommandResult = {
   propagatedTaskIds?: string[]
 }
 
-export type RecordOutcome = {
+type RecordOutcome = {
   evidenceId: string
   evidence: DeliveryEvidence | null
   taskId: string | null

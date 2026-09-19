@@ -4,7 +4,7 @@ import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { emitCrudSideEffects } from '@open-mercato/shared/lib/commands/helpers'
 import { hasAllFeatures } from '@open-mercato/shared/lib/auth/featureMatch'
-import { isUniqueViolation } from '@open-mercato/shared/lib/crud/errors'
+import { CrudHttpError, isUniqueViolation } from '@open-mercato/shared/lib/crud/errors'
 import { enforceCommandOptimisticLockWithGuards } from '@open-mercato/shared/lib/crud/optimistic-lock-command'
 import type { DataEngine } from '@open-mercato/shared/lib/data/engine'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
@@ -16,13 +16,20 @@ import { parseRecordEvidenceBody, recordPublicationCommandInputSchema, type Reco
 import {
   buildDeliveryError,
   buildDeliveryFlowError,
+  deliveryErrorBodySchema,
   FLOW_APPROVAL_STAGE_ORDER,
   publicationRecordResponseSchema,
+  type DeliveryCheckResult,
   type PublicationResultV1,
 } from '../lib/contracts'
 import { checkFlowGate } from '../lib/flowRules'
 import { hashCanonical } from '../lib/hash'
-import { buildDeploymentEvidencePayload, checkPublicationDeployConsent, hashPublicationPayload } from '../lib/publicationRules'
+import {
+  buildDeploymentEvidencePayload,
+  checkPublicationDeployConsent,
+  checkVerificationEvidenceKind,
+  hashPublicationPayload,
+} from '../lib/publicationRules'
 import { emitDeliveryOsEvent } from '../events'
 import { checkDeployConsent } from './decisions'
 import { evidenceCrudIndexer, recordEvidenceWithinTransaction } from './evidence'
@@ -64,6 +71,9 @@ type PublicationOutcome = {
   evidence: DeliveryEvidence | null
   duplicate: boolean
 }
+
+const ATTACHMENT_IDS_PATH = 'attachmentIds'
+const SNAPSHOT_ATTACHMENT_PATH = 'snapshotRef.attachmentId'
 
 const logger = createLogger('delivery_os')
 
@@ -133,6 +143,7 @@ async function assertVerificationEvidence(tx: EntityManager, project: DeliveryPr
       ]),
     )
   }
+  assertDeliveryCheck(checkVerificationEvidenceKind({ kind: row.kind, payload: row.payload }))
   if (row.baselineId !== publication.baselineId) {
     throw deliveryHttpError(
       buildDeliveryError('baseline_mismatch', 'The verification evidence belongs to another baseline', [
@@ -146,6 +157,54 @@ async function assertVerificationEvidence(tx: EntityManager, project: DeliveryPr
         { path: 'verification.evidenceId', code: 'revision_mismatch' },
       ]),
     )
+  }
+}
+
+function withDetailPath(result: DeliveryCheckResult, path: string): DeliveryCheckResult {
+  if (result.ok) return result
+  return { ...result, body: { ...result.body, details: result.body.details.map((detail) => ({ ...detail, path })) } }
+}
+
+async function assertReleaseDecision(tx: EntityManager, project: DeliveryProject, publication: PublicationResultV1, scope: DeliveryScope): Promise<void> {
+  if (publication.releaseDecisionId === null) return
+  const release = await findProjectDecision(tx, project.id, publication.releaseDecisionId, scope)
+  if (release && release.kind === 'release') return
+  throw deliveryHttpError(
+    buildDeliveryError('foreign_reference', 'The release decision does not belong to this project', [
+      { path: 'releaseDecisionId', code: 'foreign_release_decision' },
+    ]),
+  )
+}
+
+function isAttachmentIdsPath(path: string | undefined): boolean {
+  return path === ATTACHMENT_IDS_PATH || path?.startsWith(`${ATTACHMENT_IDS_PATH}.`) === true
+}
+
+/** The derived evidence names the snapshot as `attachmentIds.0`; the caller sent it as `snapshotRef.attachmentId`. */
+function toSnapshotAttachmentError(error: unknown): unknown {
+  if (!(error instanceof CrudHttpError)) return error
+  const body = deliveryErrorBodySchema.safeParse(error.body)
+  if (!body.success || !body.data.details.some((detail) => isAttachmentIdsPath(detail.path))) return error
+  return deliveryHttpError({
+    status: error.status,
+    body: {
+      ...body.data,
+      details: body.data.details.map((detail) => (isAttachmentIdsPath(detail.path) ? { ...detail, path: SNAPSHOT_ATTACHMENT_PATH } : detail)),
+    },
+  })
+}
+
+async function recordDeploymentEvidence(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  project: DeliveryProject,
+  publication: PublicationResultV1,
+  scope: DeliveryScope,
+) {
+  try {
+    return await recordEvidenceWithinTransaction(tx, ctx, project, toDeploymentEvidenceInput(publication), scope)
+  } catch (error) {
+    throw toSnapshotAttachmentError(error)
   }
 }
 
@@ -210,11 +269,17 @@ async function recordPublicationInTransaction(
       sourceRevision: publication.sourceRevision,
     }),
   )
-  assertDeliveryCheck(checkDeployConsent(await findProjectDeployDecisions(tx, project.id, scope), baseline.contentHash, publication.sourceRevision))
+  assertDeliveryCheck(
+    withDetailPath(
+      checkDeployConsent(await findProjectDeployDecisions(tx, project.id, scope), baseline.contentHash, publication.sourceRevision),
+      'deployDecisionId',
+    ),
+  )
+  await assertReleaseDecision(tx, project, publication, scope)
   await assertVerificationEvidence(tx, project, publication, scope)
   await assertPublicationFlowGate(tx, project, scope)
 
-  const recorded = await recordEvidenceWithinTransaction(tx, ctx, project, toDeploymentEvidenceInput(publication), scope)
+  const recorded = await recordDeploymentEvidence(tx, ctx, project, publication, scope)
   const now = new Date()
   const row = tx.create(DeliveryPublication, {
     id: randomUUID(),

@@ -49,7 +49,18 @@ type RouteStore = {
 }
 
 function emptyRouteStore(): RouteStore {
-  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [], publications: [] }
+  return {
+    projects: [],
+    baselines: [],
+    decisions: [],
+    tasks: [],
+    evidence: [],
+    attachments: [],
+    intakes: [],
+    stageArtifacts: [],
+    stageDecisions: [],
+    publications: [],
+  }
 }
 
 export const routeState: {
@@ -88,7 +99,11 @@ function rowsFor(entity: unknown): Row[] {
 }
 
 /** Only the stage history and publication entities honour `orderBy`; the v1 suites rely on insertion order. */
-const ORDERED_ENTITIES = new Set<unknown>([DeliveryFlowStageArtifact, DeliveryFlowStageDecision, DeliveryPublication])
+const ORDERED_ENTITIES = new Set<unknown>([
+  DeliveryFlowStageArtifact,
+  DeliveryFlowStageDecision,
+  DeliveryPublication,
+])
 
 function sortKey(value: unknown): number | string {
   if (value instanceof Date) return value.getTime()

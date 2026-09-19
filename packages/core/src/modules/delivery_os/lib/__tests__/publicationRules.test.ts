@@ -2,14 +2,15 @@ import { deploymentEvidencePayloadSchema, recordEvidenceSchema } from '../../dat
 import type { PublicationResultV1, SourceRevision } from '../contracts'
 import { isVerifiedDeploymentPayload } from '../deliveryReport'
 import { deriveDeploymentVerificationStatus } from '../evidenceRules'
-import { loadNegativeFlowFixtures, loadPublicationResultFixture } from '../fixtures/flow/index'
+import { loadPublicationResultFixture } from '../fixtures/flow/index'
 import { hashCanonical } from '../hash'
 import {
   buildDeploymentEvidencePayload,
   checkPublicationDeployConsent,
-  checkPublicationVerification,
+  checkVerificationEvidenceKind,
   hashPublicationPayload,
   publicationBuildId,
+  VERIFICATION_EVIDENCE_KINDS,
   type PublicationDeployConsentInput,
   type PublicationDeployDecision,
 } from '../publicationRules'
@@ -101,29 +102,56 @@ describe('checkPublicationDeployConsent', () => {
   })
 })
 
-describe('checkPublicationVerification', () => {
-  it('accepts the verified fixture and an unverified record', () => {
-    const publication = loadPublicationResultFixture()
-    expect(checkPublicationVerification(publication.verification)).toEqual({ ok: true })
-    expect(checkPublicationVerification(unverified(publication).verification)).toEqual({ ok: true })
+describe('checkVerificationEvidenceKind', () => {
+  const passedCheck = { checkId: 'unit-tests', testId: 'T-001', status: 'passed' }
+
+  function evidenceFailure(result: ReturnType<typeof checkVerificationEvidenceKind>) {
+    if (result.ok) throw new Error('[internal] expected a failed check')
+    return { status: result.status, code: result.body.code, details: result.body.details }
+  }
+
+  it.each([
+    ['test', { checks: [passedCheck, passedCheck] }],
+    ['screenshot', {}],
+    ['screenshot', null],
+    ['scan', { status: 'passed' }],
+    ['review', { verdict: 'approved' }],
+  ])('accepts a passing %s evidence', (kind, payload) => {
+    expect(checkVerificationEvidenceKind({ kind, payload })).toEqual({ ok: true })
   })
 
-  it('refuses the negative fixture (verified without evidence) with 422 deployment_unverified', () => {
-    const negative = loadNegativeFlowFixtures().find((fixture) => fixture.name === 'publication-result.verified-without-evidence')
-    const document = negative?.document as { verification: unknown }
-    const result = checkPublicationVerification(document.verification)
-    expect(result.ok).toBe(false)
-    if (!result.ok) {
-      expect(result.status).toBe(422)
-      expect(result.body.code).toBe('deployment_unverified')
-    }
+  it('names exactly the four check kinds as allowed', () => {
+    expect([...VERIFICATION_EVIDENCE_KINDS]).toEqual(['test', 'screenshot', 'scan', 'review'])
   })
 
-  it.each(['method', 'checkedAt', 'evidenceId'])('refuses verified without %s', (field) => {
-    const verification = { ...loadPublicationResultFixture().verification, [field]: null }
-    const result = checkPublicationVerification(verification)
-    expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.body.code).toBe('deployment_unverified')
+  it.each(['deployment', 'reference_material', 'result_manifest', 'something_else'])(
+    'refuses kind %s with 422 unsupported_evidence_kind on verification.evidenceId',
+    (kind) => {
+      const refusal = evidenceFailure(checkVerificationEvidenceKind({ kind, payload: { status: 'passed', verdict: 'approved' } }))
+      expect(refusal).toMatchObject({ status: 422, code: 'unsupported_evidence_kind' })
+      expect(refusal.details).toHaveLength(1)
+      expect(refusal.details[0]).toMatchObject({ path: 'verification.evidenceId', code: 'verification_evidence_kind' })
+      expect(refusal.details[0].message).toContain(kind)
+      expect(refusal.details[0].message).toContain('test, screenshot, scan, review')
+    },
+  )
+
+  it.each([
+    ['a failed scan', 'scan', { status: 'failed' }],
+    ['a scan without a status', 'scan', {}],
+    ['a scan with an unreadable payload', 'scan', null],
+    ['a review requesting changes', 'review', { verdict: 'changes_requested' }],
+    ['a review without a verdict', 'review', []],
+    ['a test with one failed check', 'test', { checks: [passedCheck, { ...passedCheck, status: 'failed' }] }],
+    ['a test with an unreadable check', 'test', { checks: [passedCheck, 'passed'] }],
+    ['a test without checks', 'test', { checks: [] }],
+    ['a test with an unreadable payload', 'test', 'passed'],
+  ])('refuses %s with detail verification_evidence_not_passed', (_label, kind, payload) => {
+    const refusal = evidenceFailure(checkVerificationEvidenceKind({ kind, payload }))
+    expect(refusal).toMatchObject({ status: 422, code: 'unsupported_evidence_kind' })
+    expect(refusal.details).toEqual([
+      { path: 'verification.evidenceId', code: 'verification_evidence_not_passed', message: expect.any(String) },
+    ])
   })
 })
 
@@ -194,5 +222,41 @@ describe('hashPublicationPayload', () => {
     const hash = hashPublicationPayload(publication)
     expect(hashPublicationPayload({ ...publication, sourceRevision: GIT_REVISION })).not.toBe(hash)
     expect(hashPublicationPayload(unverified(publication))).not.toBe(hash)
+  })
+
+  it('hashes uppercase identifiers like their lowercase form', () => {
+    const publication = loadPublicationResultFixture()
+    const snapshotRef = publication.snapshotRef
+    if (snapshotRef === null) throw new Error('[internal] the fixture must carry a snapshotRef')
+    const releaseDecisionId = '77777777-7777-4777-8777-77777777777a'
+    const lower: PublicationResultV1 = { ...publication, releaseDecisionId }
+    const upper: PublicationResultV1 = {
+      ...publication,
+      projectId: publication.projectId.toUpperCase(),
+      baselineId: publication.baselineId.toUpperCase(),
+      deployDecisionId: publication.deployDecisionId.toUpperCase(),
+      releaseDecisionId: releaseDecisionId.toUpperCase(),
+      publishedBy: publication.publishedBy?.toUpperCase() ?? null,
+      snapshotRef: { ...snapshotRef, attachmentId: snapshotRef.attachmentId.toUpperCase() },
+      verification: { ...publication.verification, evidenceId: publication.verification.evidenceId?.toUpperCase() ?? null },
+    }
+    expect(upper.deployDecisionId).not.toBe(lower.deployDecisionId)
+    expect(hashPublicationPayload(upper)).toBe(hashPublicationPayload(lower))
+  })
+
+  it.each([
+    ['without milliseconds', '2026-09-19T12:00:00Z', '2026-09-19T12:01:00Z'],
+    ['with a zero offset', '2026-09-19T12:00:00.000+00:00', '2026-09-19T12:01:00.000+00:00'],
+    ['with another offset', '2026-09-19T14:00:00+02:00', '2026-09-19T14:01:00+02:00'],
+  ])('hashes the same instant written %s like the canonical form', (_label, publishedAt, checkedAt) => {
+    const publication = loadPublicationResultFixture()
+    const variant = { ...publication, publishedAt, verification: { ...publication.verification, checkedAt } }
+    expect(hashPublicationPayload(variant)).toBe(hashPublicationPayload(publication))
+  })
+
+  it('still tells two different instants apart and keeps unverified nulls', () => {
+    const publication = loadPublicationResultFixture()
+    expect(hashPublicationPayload({ ...publication, publishedAt: '2026-09-19T12:00:00.001Z' })).not.toBe(hashPublicationPayload(publication))
+    expect(hashPublicationPayload(unverified(publication))).toBe(hashCanonical(unverified(publication)))
   })
 })
