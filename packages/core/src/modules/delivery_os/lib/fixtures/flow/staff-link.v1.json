@@ -6,6 +6,8 @@
   "syncCursors": {
     "FIGFILE0001": {
       "cursor": "page-2",
+      "lastBatchKey": "import-FIGFILE0001-0001",
+      "lastBatchHash": "31249a54a8ab01c22ff35e12659fe8436a40b3e077937f590f7a34bfae7b3e5a",
       "lastSyncAt": "2026-09-19T10:10:00.000Z",
       "lastError": null
     }

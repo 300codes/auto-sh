@@ -1623,9 +1623,12 @@ export type StaffLinkRequest = z.infer<typeof staffLinkRequestSchema>
 
 export const staffSyncCursorSchema = z.object({
   cursor: z.string().max(500).nullable(),
+  lastBatchKey: z.string().max(200).nullable().default(null),
+  lastBatchHash: sha256Schema.nullable().default(null),
   lastSyncAt: isoDateTimeSchema.nullable(),
   lastError: z.string().max(1000).nullable(),
 })
+export type StaffSyncCursor = z.infer<typeof staffSyncCursorSchema>
 
 export const staffLinkSchema = z.object({
   projectId: uuidSchema,
@@ -1722,6 +1725,7 @@ export const commentImportResultSchema = z.object({
 export type CommentImportResult = z.infer<typeof commentImportResultSchema>
 
 export const commentThreadTriageStatusSchema = z.enum(['new', 'triaged', 'deferred', 'resolved'])
+export type CommentThreadTriageStatus = z.infer<typeof commentThreadTriageStatusSchema>
 
 export const commentThreadTriageRequestSchema = z
   .object({
@@ -1738,6 +1742,61 @@ export const commentThreadTriageRequestSchema = z
     }
   })
 export type CommentThreadTriageRequest = z.infer<typeof commentThreadTriageRequestSchema>
+
+export const commentThreadDeferralSchema = z.object({
+  artifactId: uuidSchema,
+  contentHash: sha256Schema,
+  reason: z.string().min(1).max(4000),
+  decidedBy: uuidSchema,
+  decidedAt: isoDateTimeSchema,
+})
+export type CommentThreadDeferral = z.infer<typeof commentThreadDeferralSchema>
+
+export const commentThreadReplyItemSchema = z.object({
+  replyId: uuidSchema,
+  commentKey: externalKeySchema,
+  revision: z.number().int().positive(),
+  author: commentAuthorSchema,
+  body: z.string().min(1).max(20000),
+  sourceCreatedAt: isoDateTimeSchema,
+  editedAt: isoDateTimeSchema.nullable(),
+  deleted: z.boolean(),
+  staffCommentId: uuidSchema.nullable(),
+  fetchedAt: isoDateTimeSchema,
+})
+export type CommentThreadReplyItem = z.infer<typeof commentThreadReplyItemSchema>
+
+export const commentThreadListItemSchema = z.object({
+  threadId: uuidSchema,
+  threadKey: externalKeySchema,
+  source: z.literal('figma'),
+  fileKey: z.string().min(1).max(200),
+  stageId: flowStageIdSchema,
+  artifactId: uuidSchema.nullable(),
+  nodeId: z.string().min(1).max(200).nullable(),
+  sourceUrl: z.url().max(2000),
+  author: commentAuthorSchema,
+  body: z.string().min(1).max(20000),
+  sourceCreatedAt: isoDateTimeSchema,
+  sourceUpdatedAt: isoDateTimeSchema.nullable(),
+  sourceStatus: z.enum(['open', 'resolved', 'deleted']),
+  figmaVersion: z.string().min(1).max(200).nullable(),
+  versionConfirmed: z.boolean(),
+  fetchedAt: isoDateTimeSchema,
+  staffTaskId: uuidSchema.nullable(),
+  triageStatus: commentThreadTriageStatusSchema,
+  deferral: commentThreadDeferralSchema.nullable(),
+  linkedDeliveryTaskId: uuidSchema.nullable(),
+  replies: z.array(commentThreadReplyItemSchema).max(500),
+  updatedAt: isoDateTimeSchema,
+})
+export type CommentThreadListItem = z.infer<typeof commentThreadListItemSchema>
+
+export const commentThreadListResponseSchema = z.object({
+  items: z.array(commentThreadListItemSchema).max(100),
+  total: z.number().int().min(0),
+})
+export type CommentThreadListResponse = z.infer<typeof commentThreadListResponseSchema>
 
 // --- Publication result ----------------------------------------------------
 

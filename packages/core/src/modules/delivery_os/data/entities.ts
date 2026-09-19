@@ -3,6 +3,9 @@ import { Check, Entity, Index, PrimaryKey, Property, Unique } from '@mikro-orm/d
 import type {
   AttachmentRef,
   BriefV1,
+  CommentAuthor,
+  CommentThreadDeferral,
+  CommentThreadTriageStatus,
   DeliveryEvidenceKind,
   DeliveryLimits,
   ExecutionAttempt,
@@ -16,6 +19,7 @@ import type {
   StageArtifactDependency,
   StageArtifactV1,
   StageDecisionVerdict,
+  StaffSyncCursor,
   ToolChoice,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import type { TaskStatus } from './validators'
@@ -561,6 +565,184 @@ export class DeliveryFlowStageDecision {
 
   @Property({ name: 'request_hash', type: 'text' })
   requestHash!: string
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_staff_links' })
+@Unique({ name: 'delivery_staff_links_scope_project_uq', properties: ['tenantId', 'organizationId', 'projectId'] })
+@Unique({ name: 'delivery_staff_links_scope_staff_project_uq', properties: ['tenantId', 'organizationId', 'staffProjectId'] })
+export class DeliveryStaffLink {
+  [OptionalProps]?: 'syncCursors' | 'linkedAt' | 'createdAt' | 'updatedAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ name: 'staff_project_id', type: 'uuid' })
+  staffProjectId!: string
+
+  @Property({ name: 'linked_by', type: 'uuid' })
+  linkedBy!: string
+
+  @Property({ name: 'linked_at', type: Date, onCreate: () => new Date() })
+  linkedAt: Date = new Date()
+
+  @Property({ name: 'sync_cursors', type: 'jsonb', defaultRaw: "'{}'", nullable: false })
+  syncCursors: Record<string, StaffSyncCursor> = {}
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+
+  @Property({ name: 'updated_at', type: Date, onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_comment_threads' })
+@Unique({
+  name: 'delivery_comment_threads_scope_file_thread_uq',
+  properties: ['tenantId', 'organizationId', 'projectId', 'source', 'fileKey', 'threadKey'],
+})
+@Index({ name: 'delivery_comment_threads_scope_staff_task_idx', properties: ['tenantId', 'organizationId', 'staffTaskId'] })
+@Index({
+  name: 'delivery_comment_threads_scope_project_stage_idx',
+  properties: ['tenantId', 'organizationId', 'projectId', 'stageId'],
+})
+export class DeliveryCommentThread {
+  [OptionalProps]?: 'versionConfirmed' | 'triageStatus' | 'createdAt' | 'updatedAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'project_id', type: 'uuid' })
+  projectId!: string
+
+  @Property({ type: 'text' })
+  source!: 'figma'
+
+  @Property({ name: 'file_key', type: 'text' })
+  fileKey!: string
+
+  @Property({ name: 'thread_key', type: 'text' })
+  threadKey!: string
+
+  @Property({ name: 'stage_id', type: 'text' })
+  stageId!: FlowStageId
+
+  @Property({ name: 'artifact_id', type: 'uuid', nullable: true })
+  artifactId?: string | null
+
+  @Property({ name: 'node_id', type: 'text', nullable: true })
+  nodeId?: string | null
+
+  @Property({ name: 'source_url', type: 'text' })
+  sourceUrl!: string
+
+  @Property({ type: 'jsonb' })
+  author!: CommentAuthor
+
+  @Property({ type: 'text' })
+  body!: string
+
+  @Property({ name: 'source_created_at', type: Date })
+  sourceCreatedAt!: Date
+
+  @Property({ name: 'source_updated_at', type: Date, nullable: true })
+  sourceUpdatedAt?: Date | null
+
+  @Property({ name: 'source_status', type: 'text' })
+  sourceStatus!: 'open' | 'resolved' | 'deleted'
+
+  @Property({ name: 'figma_version', type: 'text', nullable: true })
+  figmaVersion?: string | null
+
+  @Property({ name: 'version_confirmed', type: 'boolean', default: false })
+  versionConfirmed: boolean = false
+
+  @Property({ name: 'fetched_at', type: Date })
+  fetchedAt!: Date
+
+  @Property({ name: 'staff_task_id', type: 'uuid', nullable: true })
+  staffTaskId?: string | null
+
+  @Property({ name: 'triage_status', type: 'text', default: 'new' })
+  triageStatus: CommentThreadTriageStatus = 'new'
+
+  @Property({ type: 'jsonb', nullable: true })
+  deferral?: CommentThreadDeferral | null
+
+  @Property({ name: 'linked_delivery_task_id', type: 'uuid', nullable: true })
+  linkedDeliveryTaskId?: string | null
+
+  @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
+  createdAt: Date = new Date()
+
+  @Property({ name: 'updated_at', type: Date, onUpdate: () => new Date() })
+  updatedAt: Date = new Date()
+}
+
+@Entity({ tableName: 'delivery_comment_replies' })
+@Unique({
+  name: 'delivery_comment_replies_scope_thread_comment_revision_uq',
+  properties: ['tenantId', 'organizationId', 'threadId', 'commentKey', 'revision'],
+})
+@Index({ name: 'delivery_comment_replies_scope_thread_idx', properties: ['tenantId', 'organizationId', 'threadId'] })
+export class DeliveryCommentReply {
+  [OptionalProps]?: 'deleted' | 'createdAt'
+
+  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
+  id!: string
+
+  @Property({ name: 'tenant_id', type: 'uuid' })
+  tenantId!: string
+
+  @Property({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string
+
+  @Property({ name: 'thread_id', type: 'uuid' })
+  threadId!: string
+
+  @Property({ name: 'comment_key', type: 'text' })
+  commentKey!: string
+
+  @Property({ type: 'integer' })
+  revision!: number
+
+  @Property({ type: 'jsonb' })
+  author!: CommentAuthor
+
+  @Property({ type: 'text' })
+  body!: string
+
+  @Property({ name: 'source_created_at', type: Date })
+  sourceCreatedAt!: Date
+
+  @Property({ name: 'edited_at', type: Date, nullable: true })
+  editedAt?: Date | null
+
+  @Property({ type: 'boolean', default: false })
+  deleted: boolean = false
+
+  @Property({ name: 'staff_comment_id', type: 'uuid', nullable: true })
+  staffCommentId?: string | null
+
+  @Property({ name: 'fetched_at', type: Date })
+  fetchedAt!: Date
 
   @Property({ name: 'created_at', type: Date, onCreate: () => new Date() })
   createdAt: Date = new Date()
