@@ -4,6 +4,7 @@ import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { mapCezarRunToResultManifest } from '@open-mercato/delivery-cezar/lib/resultManifest'
+import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import type { ITaskExecutor } from '../lib/fakeExecutor'
 import { acceptResult } from '../lib/resultAcceptance'
 import { DELIVERY_EXECUTE_QUEUE, type ExecuteTaskJobPayload } from '../lib/queue'
@@ -60,7 +61,7 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
   const taskExecutor = container.resolve('deliveryAgentsTaskExecutor') as ITaskExecutor
 
   const ctx = buildTrustedCtx(container, scope, userId)
-  const trustedExecution = { source: 'delivery_agents' as const, actorUserId: userId }
+  const trustedExecution = issueTrustedExecution(userId)
 
   // Claim the attempt
   await commandBus.execute('delivery_os.attempts.claim', {
@@ -99,29 +100,50 @@ export default async function handle(job: QueuedJob<ExecuteTaskJobPayload>, _ctx
   const latestAttempt = await queries.getAttempt(scope, taskId, attemptId)
   const isCancelRequested = latestAttempt && (latestAttempt as Record<string, unknown>).state === 'cancel_requested'
 
-  // Build result manifest
-  const manifest = mapCezarRunToResultManifest({
-    pkg: taskPackage as Parameters<typeof mapCezarRunToResultManifest>[0]['pkg'],
-    runResult,
-    ...(isCancelRequested ? {} : {}),
-  })
+  if (isCancelRequested) {
+    try {
+      await commandBus.execute('delivery_os.attempts.reconcile', {
+        input: {
+          taskId,
+          attemptId,
+          resolution: 'stopped',
+          externalEvidence: {
+            note: '[internal] Task cancelled during execution by worker',
+            observedAt: new Date().toISOString(),
+          },
+          trustedExecution,
+        },
+        ctx,
+      })
+    } catch (error) {
+      logger.error('failed to reconcile cancelled attempt', {
+        taskId,
+        attemptId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  } else {
+    const manifest = mapCezarRunToResultManifest({
+      pkg: taskPackage as Parameters<typeof mapCezarRunToResultManifest>[0]['pkg'],
+      runResult,
+    })
 
-  // Accept the result
-  try {
-    await acceptResult({
-      taskId,
-      attemptId,
-      manifest,
-      userId,
-      scope,
-      container: container as Parameters<typeof acceptResult>[0]['container'],
-    })
-  } catch (error) {
-    logger.error('failed to accept result', {
-      taskId,
-      attemptId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    try {
+      await acceptResult({
+        taskId,
+        attemptId,
+        manifest,
+        userId,
+        scope,
+        container: container as Parameters<typeof acceptResult>[0]['container'],
+      })
+    } catch (error) {
+      logger.error('failed to accept result', {
+        taskId,
+        attemptId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   logger.info('execute-task complete', {

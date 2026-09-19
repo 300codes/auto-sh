@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { AppContainer } from '@open-mercato/shared/lib/di/container'
 import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { createLogger } from '@open-mercato/shared/lib/logger'
+import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import { DELIVERY_AGENTS_WORKFLOW_ID, DELIVERY_AGENTS_WAIT_STEP_ID } from './attemptWorkflow'
 import { getDeliveryAgentsQueue, DELIVERY_EXECUTE_QUEUE, type ExecuteTaskJobPayload } from './queue'
 
@@ -11,8 +12,6 @@ const PARK_POLL_ATTEMPTS = 3
 const PARK_POLL_DELAY_MS = 500
 
 type DeliveryScope = { tenantId: string; organizationId: string }
-
-type TrustedExecution = { source: 'delivery_agents'; actorUserId: string }
 
 type WorkflowExecutorLike = {
   startWorkflow: (
@@ -141,7 +140,7 @@ async function resolveBaseRevision(
 export async function startExecution(input: ExecutionBridgeStartInput): Promise<ExecutionBridgeStartResult> {
   const { taskId, idempotencyKey, userId, scope, container, em, baseRevision } = input
   const commandBus = container.resolve('commandBus') as CommandBus
-  const trustedExecution: TrustedExecution = { source: 'delivery_agents', actorUserId: userId }
+  const trustedExecution = issueTrustedExecution(userId)
   const ctx = buildTrustedCtx(container, scope, userId)
 
   const resolvedRevision = await resolveBaseRevision(em, taskId, scope, baseRevision)

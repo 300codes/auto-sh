@@ -19,3 +19,29 @@ export class FakeTaskExecutor implements ITaskExecutor {
     }
   }
 }
+
+export class ControllableFakeTaskExecutor implements ITaskExecutor {
+  private gateResolve: (() => void) | null = null
+  readonly blocker: Promise<void>
+
+  constructor() {
+    this.blocker = new Promise<void>((resolve) => {
+      this.gateResolve = resolve
+    })
+  }
+
+  open(): void {
+    this.gateResolve?.()
+  }
+
+  async run(_taskPackage: TaskPackage, _baseDir: string): Promise<CezarRunResult> {
+    await this.blocker
+    return {
+      exitCode: 0,
+      stdout: FAKE_STDOUT,
+      stderr: '',
+      runId: FAKE_RUN_ID,
+      durationMs: 100,
+    }
+  }
+}

@@ -3,6 +3,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
+import { issueTrustedExecution } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
 import { DELIVERY_RESUME_QUEUE, type ResumeAttemptJobPayload } from '../lib/queue'
 import { DELIVERY_AGENTS_SIGNAL_NAME } from '../lib/attemptWorkflow'
 
@@ -94,7 +95,7 @@ export default async function handle(job: QueuedJob<ResumeAttemptJobPayload>, _c
   const em = (container.resolve('em') as EntityManager).fork()
   const commandBus = container.resolve('commandBus') as CommandBus
   const ctx = buildTrustedCtx(container, scope)
-  const trustedExecution = { source: 'delivery_agents' as const, actorUserId: 'delivery_agents_worker' }
+  const trustedExecution = issueTrustedExecution('delivery_agents_worker')
 
   // Resolve signalHandler from DI (optional peer)
   let signalHandler: SignalHandlerLike | null = null

@@ -2,6 +2,8 @@ import { createModuleQueue, type Queue } from '@open-mercato/queue'
 
 export const DELIVERY_EXECUTE_QUEUE = 'delivery-execute'
 export const DELIVERY_RESUME_QUEUE = 'delivery-resume'
+export const DELIVERY_PENDING_SCAN_QUEUE = 'delivery-pending-scan'
+export const DELIVERY_UNCERTAIN_RECON_QUEUE = 'delivery-uncertain-recon'
 
 export type ExecuteTaskJobPayload = {
   attemptId: string
@@ -18,6 +20,13 @@ export type ResumeAttemptJobPayload = {
   workflowRef: string
   tenantId: string
   organizationId: string
+}
+
+export type ScopeJobPayload = {
+  scope: {
+    tenantId: string
+    organizationId: string
+  }
 }
 
 const queues = new Map<string, Queue<Record<string, unknown>>>()
