@@ -53,7 +53,7 @@ type IntakeAuditSnapshot = {
   updatedAt: string
 }
 
-function toIntakeDocument(row: DeliveryIntake): IntakeV1 {
+export function toIntakeDocument(row: DeliveryIntake): IntakeV1 {
   return {
     schemaVersion: DELIVERY_FLOW_SCHEMA_VERSIONS.intake,
     projectId: row.projectId,
@@ -74,7 +74,7 @@ function intakeVersion(intakeRow: DeliveryIntake | null, project: DeliveryProjec
   return intakeRow?.updatedAt ?? project.createdAt
 }
 
-function toIntakeResponse(intake: IntakeV1, project: DeliveryProject, updatedAt: Date): IntakeResponse {
+export function toIntakeResponse(intake: IntakeV1, project: DeliveryProject, updatedAt: Date): IntakeResponse {
   return {
     intake,
     targetProfile: { profileId: project.targetProfileId, profileVersion: project.targetProfileVersion },

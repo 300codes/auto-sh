@@ -1,6 +1,8 @@
-import type { DeliveryBaseline, DeliveryDecision, DeliveryProject, DeliveryTask } from '../data/entities'
+import { toIntakeDocument, toIntakeResponse } from '../commands/intake'
+import type { DeliveryBaseline, DeliveryDecision, DeliveryIntake, DeliveryProject, DeliveryTask } from '../data/entities'
 import { parseAttemptRegister } from '../lib/attempts'
-import { baselineContentV1Schema } from '../lib/contracts'
+import { baselineContentV1Schema, type IntakeResponse } from '../lib/contracts'
+import { defaultIntake } from '../lib/intakeRules'
 import type { ProjectStatusSummary } from '../lib/projectStatus'
 import type { BaselineDto, ProjectDetail, ProjectListItem, TaskDto } from './schemas'
 
@@ -112,4 +114,10 @@ export function serializeTask(task: DeliveryTask): TaskDto {
     updatedAt: requireIso(task.updatedAt),
     archivedAt: toIso(task.deletedAt),
   }
+}
+
+/** F1: the stored draft (decrypted by the caller's loader) or the empty default whose version is the project `createdAt`. */
+export function serializeIntakeResponse(project: DeliveryProject, intake: DeliveryIntake | null): IntakeResponse {
+  if (intake) return toIntakeResponse(toIntakeDocument(intake), project, intake.updatedAt)
+  return toIntakeResponse(defaultIntake(project.id), project, project.createdAt)
 }

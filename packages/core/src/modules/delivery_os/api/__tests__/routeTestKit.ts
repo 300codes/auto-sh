@@ -7,6 +7,9 @@ import {
   DeliveryBaseline,
   DeliveryDecision,
   DeliveryEvidence,
+  DeliveryFlowStageArtifact,
+  DeliveryFlowStageDecision,
+  DeliveryIntake,
   DeliveryProject,
   DeliveryTask,
 } from '../../data/entities'
@@ -38,6 +41,13 @@ type RouteStore = {
   tasks: Row[]
   evidence: Row[]
   attachments: Row[]
+  intakes: Row[]
+  stageArtifacts: Row[]
+  stageDecisions: Row[]
+}
+
+function emptyRouteStore(): RouteStore {
+  return { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [], intakes: [], stageArtifacts: [], stageDecisions: [] }
 }
 
 export const routeState: {
@@ -53,7 +63,7 @@ export const routeState: {
   features: [],
   rbacAvailable: true,
   selectionRejected: false,
-  store: { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] },
+  store: emptyRouteStore(),
   queryEngine: { query: jest.fn() },
   writes: 0,
 }
@@ -66,6 +76,9 @@ function rowsFor(entity: unknown): Row[] {
   if (entity === DeliveryTask) return store.tasks
   if (entity === DeliveryEvidence) return store.evidence
   if (entity === Attachment) return store.attachments
+  if (entity === DeliveryIntake) return store.intakes
+  if (entity === DeliveryFlowStageArtifact) return store.stageArtifacts
+  if (entity === DeliveryFlowStageDecision) return store.stageDecisions
   throw new Error('[internal] unexpected entity in route test store')
 }
 
@@ -163,6 +176,14 @@ export const containerMock = {
         const { createDeliveryOsAttemptQueries } = jest.requireActual('../../commands/attemptQueries')
         return createDeliveryOsAttemptQueries(em)
       }
+      if (name === 'deliveryOsFlowQueries') {
+        const { createDeliveryOsFlowQueries } = jest.requireActual('../../commands/flowQueries')
+        return createDeliveryOsFlowQueries(em)
+      }
+      if (name === 'deliveryFlowTemplateProvider') {
+        const { createBuiltInFlowTemplateProvider } = jest.requireActual('../../commands/flowTemplateProvider')
+        return createBuiltInFlowTemplateProvider()
+      }
       if (name === 'deliveryOsReportQueries') {
         const { createDeliveryOsReportQueries } = jest.requireActual('../../commands/reportQueries')
         return createDeliveryOsReportQueries(em)
@@ -197,7 +218,7 @@ export function resetRouteState(): void {
   routeState.features = [...ALL_FEATURES]
   routeState.rbacAvailable = true
   routeState.selectionRejected = false
-  routeState.store = { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] }
+  routeState.store = emptyRouteStore()
   routeState.writes = 0
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()
