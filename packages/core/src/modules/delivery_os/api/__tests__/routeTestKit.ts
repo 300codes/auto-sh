@@ -5,6 +5,7 @@ import { hasAllFeatures } from '@open-mercato/shared/security/features'
 import { Attachment } from '@open-mercato/core/modules/attachments/data/entities'
 import {
   DeliveryBaseline,
+  DeliveryReleaseCandidate,
   DeliveryDecision,
   DeliveryEvidence,
   DeliveryProject,
@@ -37,6 +38,7 @@ type RouteStore = {
   decisions: Row[]
   tasks: Row[]
   evidence: Row[]
+  candidates: Row[]
   attachments: Row[]
 }
 
@@ -53,13 +55,14 @@ export const routeState: {
   features: [],
   rbacAvailable: true,
   selectionRejected: false,
-  store: { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] },
+  store: { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [] },
   queryEngine: { query: jest.fn() },
   writes: 0,
 }
 
 function rowsFor(entity: unknown): Row[] {
   const { store } = routeState
+  if (entity === DeliveryReleaseCandidate) return store.candidates
   if (entity === DeliveryProject) return store.projects
   if (entity === DeliveryBaseline) return store.baselines
   if (entity === DeliveryDecision) return store.decisions
@@ -197,7 +200,7 @@ export function resetRouteState(): void {
   routeState.features = [...ALL_FEATURES]
   routeState.rbacAvailable = true
   routeState.selectionRejected = false
-  routeState.store = { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], attachments: [] }
+  routeState.store = { projects: [], baselines: [], decisions: [], tasks: [], evidence: [], candidates: [], attachments: [] }
   routeState.writes = 0
   for (const method of EM_WRITE_METHODS) em[method].mockClear()
   findMock.findWithDecryption.mockClear()

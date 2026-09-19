@@ -1,3 +1,4 @@
+import type { DeliveryReportResponse } from '../../lib/reportContracts'
 import { sourceRevisionSchema, uuidSchema, type DeliveryReportV1, type ReportDecision, type SourceRevision } from '../../lib/contracts'
 
 export type ReportSelection =
@@ -36,8 +37,9 @@ export function reportHistoryHref(report: DeliveryReportV1): string | null {
   return `/backend/delivery/projects/${encodeURIComponent(report.projectId)}/report?${query}`
 }
 
-export function currentReportDecision(report: DeliveryReportV1, kind: ReportDecision['kind']) {
+export function currentReportDecision(report: DeliveryReportV1 & Partial<Pick<DeliveryReportResponse, 'currentCandidate' | 'candidateDecisions'>>, kind: ReportDecision['kind']) {
   return report.decisions.filter((decision) => decision.kind === kind && decision.appliesToRevision
+    && (!report.currentCandidate || (kind !== 'deploy' && kind !== 'release') || report.candidateDecisions?.[kind === 'deploy' ? 'deployDecisionId' : 'releaseDecisionId'] === decision.id)
     && (kind === 'release'
       ? decision.subjectType === 'deployment_evidence' && decision.subjectId === report.deployment.evidenceId
       : decision.subjectType === 'baseline' && decision.subjectId === report.baselineId && decision.subjectHash === report.baselineHash))

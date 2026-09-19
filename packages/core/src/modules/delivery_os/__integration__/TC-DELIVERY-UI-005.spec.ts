@@ -82,7 +82,7 @@ async function activateLegacyBaseline(
   return baseline
 }
 
-test.describe('TC-DELIVERY-UI-005: real report API and UI, dependency-limited scope', () => {
+test.describe('TC-DELIVERY-UI-005: real report API and UI, legacy baseline states', () => {
   test('project navigation hydrates a named no-baseline state', async ({ page, request }) => {
     const token = await getAuthToken(request, 'admin')
     const project = await createProject(request, token, 'react-vite')
@@ -124,7 +124,7 @@ test.describe('TC-DELIVERY-UI-005: real report API and UI, dependency-limited sc
         await page.goto(route)
         await expect(page.getByTestId('delivery-report-summary')).toContainText(baseline.baselineId)
         await expect(page.getByText(labels['delivery_os.report.summary.noRevision'], { exact: true })).toBeVisible()
-        await expect(page.getByTestId('report-evidence-unavailable')).toBeVisible()
+        await expect(page.getByText(labels['delivery_os.report.evidence.baselineNotice'], { exact: true })).toBeVisible()
         await expect(page.getByRole('button', { name: labels['delivery_os.report.decisions.deploy'], exact: true })).toBeDisabled()
         await expect(page.getByRole('button', { name: labels['delivery_os.report.decisions.release'], exact: true })).toBeDisabled()
 
@@ -158,15 +158,4 @@ test.describe('TC-DELIVERY-UI-005: real report API and UI, dependency-limited sc
     })
   }
 
-  test('D1: source record and screenshot open through the published evidence API', async () => {
-    test.skip(true, 'Blocked: OSS has not published the D1 paginated evidence/detail/attachment DTO. No mocked endpoint substitutes for integration.')
-  })
-
-  test('D2: new project flow approvals are enforced by the real runtime gate', async () => {
-    test.skip(true, 'Blocked: OSS D2 flow report projection and runtime gate are absent. Legacy approvals do not prove the new flow.')
-  })
-
-  test('D3: deploy consent, verified external deployment and separate release acceptance', async () => {
-    test.skip(true, 'Blocked: OSS D3 authoritative acceptance candidate is absent. Latest task result cannot authorize approval; 409/422 mutation coverage awaits the real integration.')
-  })
 })

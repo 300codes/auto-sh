@@ -10,7 +10,7 @@ task: UI-06
 
 Plan wykonawczy UI-06: [plan](plan.md), [brief](plan-brief.md).
 
-Użytkownik zatwierdził pięć decyzji i cztery fazy w rozmowie. Zakres obejmuje także domknięcie klienta UI-05 po dostawie D1–D3 przez OSS. Nie obejmuje implementacji tych API ani pozostałych funkcji F0–F4 przez UI-06.
+Użytkownik zatwierdził pięć decyzji i cztery fazy w rozmowie. Po pierwszym commicie użytkownik rozszerzył zakres o implementację brakujących D1–D3. Ich backend i integracja klienta UI-05 zostały dostarczone. Pozostałe F0–F4 oraz pełna próba Figma/WP nadal wymagają współodbioru; status pozostaje `implementing` do ukończenia tych faz.
 
 Główna próba: nowy projekt fikcyjnego klienta, FROM_BRIEF → pełne WordPress E2E. Osobne FROM_DESIGN kończy się zatwierdzonym baseline. Podczas prezentacji cały UX → KV → DS/UI powstaje od zera live, z osobnymi zgodami. Przy blokadzie dopuszczony częściowy pokaz live i jawny replay; pełny odbiór pozostaje niespełniony.
 

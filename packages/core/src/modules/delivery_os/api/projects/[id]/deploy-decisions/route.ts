@@ -61,7 +61,7 @@ export const openApi: OpenApiRouteDoc = {
         { status: 400, description: 'Validation failed', schema: deliveryErrorBodySchema },
         { status: 403, description: 'Missing feature or signed-in user', schema: deliveryErrorBodySchema },
         { status: 404, description: 'Project not found in this scope', schema: deliveryErrorBodySchema },
-        { status: 409, description: 'Stale project version', schema: optimisticLockConflictSchema },
+        { status: 409, description: 'Stale project version, candidate or decision context', schema: z.union([optimisticLockConflictSchema, deliveryErrorBodySchema]) },
         {
           status: 422,
           description:

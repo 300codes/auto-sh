@@ -8,6 +8,8 @@ import { EmptyState } from '@open-mercato/ui/primitives/empty-state'
 import { StatusBadge, type StatusBadgeVariant } from '@open-mercato/ui/primitives/status-badge'
 import type { DeliveryReportV1, ReportGate } from '../../lib/contracts'
 
+import type { DeliveryReportResponse } from '../../lib/reportContracts'
+
 const statusVariants: Record<string, StatusBadgeVariant> = {
   passed: 'success', failed: 'error', approved: 'success', changes_requested: 'warning',
   missing: 'neutral', not_run: 'neutral', manual_pending: 'warning', present: 'info',
@@ -35,7 +37,7 @@ function GateSummary({ gate, label }: { gate: ReportGate; label: string }) {
   )
 }
 
-export function ReportSummary({ report, readAt }: { report: DeliveryReportV1; readAt: string }) {
+export function ReportSummary({ report, readAt }: { report: DeliveryReportV1 & Partial<Pick<DeliveryReportResponse, 'mode' | 'flow' | 'currentCandidate'>>; readAt: string }) {
   const t = useT()
   const revision = report.revision
   return (
@@ -53,7 +55,19 @@ export function ReportSummary({ report, readAt }: { report: DeliveryReportV1; re
       </dl>
       {report.revisionSource === 'latest_result' ? <Alert status="information">{t('delivery_os.report.summary.latestResult')}</Alert> : null}
       {!revision ? <Alert status="warning">{t('delivery_os.report.summary.noRevision')}</Alert> : null}
-      <Alert status="information">{t('delivery_os.report.summary.v1Scope')}</Alert>
+      <Alert status="information">{t(report.mode ? `delivery_os.report.summary.mode.${report.mode}` : 'delivery_os.report.summary.v1Scope')}</Alert>
+      <div className="space-y-2 text-sm">
+        <p>{t('delivery_os.report.summary.candidate')}: {report.currentCandidate ? `${report.currentCandidate.id} / ${report.currentCandidate.version}` : t('delivery_os.report.decisions.error.candidateRequired')}</p>
+        {report.mode === 'flow' && report.flow ? <>
+          <p>{t('delivery_os.report.summary.flowGate')}: {t(`delivery_os.report.gate.${report.flow.gate.ok ? 'satisfied' : 'blocked'}`)}</p>
+          {report.flow.gate.blocking.map((blocker, index) => <p key={index}>{t(`delivery_os.flow.blocker.${blocker.kind}`)} {blocker.stageId} {blocker.ref}</p>)}
+          {report.flow.stages.map((stage) => <div key={stage.stageId} className="space-y-1 rounded-lg border border-border p-3">
+            <p>{stage.stageId} — {t(`delivery_os.report.flow.currency.${stage.currency}`)}</p>
+            <p>{t('delivery_os.report.flow.clientApproved')}: {t(`delivery_os.report.flow.${stage.clientApproved ? 'yes' : 'no'}`)}</p>
+            {stage.approvedArtifact ? <p className="break-all font-mono">{stage.approvedArtifact.artifactId} / {stage.approvedArtifact.contentHash}</p> : null}
+          </div>)}
+        </> : report.mode === 'flow' ? <Alert status="warning">{t('delivery_os.report.decisions.error.flowBlocked')}</Alert> : null}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <GateSummary gate={report.gates.publishable} label={t('delivery_os.report.gate.publishable')} />
         <GateSummary gate={report.gates.releasable} label={t('delivery_os.report.gate.releasable')} />

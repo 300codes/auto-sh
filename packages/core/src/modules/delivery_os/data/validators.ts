@@ -1,3 +1,4 @@
+import { decisionPreflightShape } from '../lib/reportContracts'
 import { z } from 'zod'
 import { parseBooleanWithDefault } from '@open-mercato/shared/lib/boolean'
 import {
@@ -497,6 +498,7 @@ export type ReconcileAttemptCommandInput = z.infer<typeof reconcileAttemptComman
 
 export const deployDecisionSchema = z
   .object({
+    ...decisionPreflightShape,
     baselineId: uuidSchema,
     sourceRevision: sourceRevisionSchema,
     verdict: decisionVerdictSchema,
@@ -507,6 +509,7 @@ export type DeployDecisionInput = z.infer<typeof deployDecisionSchema>
 
 export const releaseDecisionSchema = z
   .object({
+    ...decisionPreflightShape,
     deploymentEvidenceId: uuidSchema,
     verdict: decisionVerdictSchema,
     reason: reasonSchema.nullable().optional(),

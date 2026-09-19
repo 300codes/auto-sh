@@ -10,7 +10,7 @@ Jedynym rejestrem odbioru jest [Progress planu głównego](../../plan.md#progres
 
 | Przebieg | Materiał wejściowy | Wynik wymagany | Stan na 2026-09-19 |
 |---|---|---|---|
-| Próba FROM_BRIEF | Nowy projekt Pracowni Forma, brief PL/EN | Pełny UX → KV → DS/UI → WP → QA → deploy → verify → release | `not_run`; zależności D1–D3 i F0–F4 nieprzyjęte |
+| Próba FROM_BRIEF | Nowy projekt Pracowni Forma, brief PL/EN | Pełny UX → KV → DS/UI → WP → QA → deploy → verify → release | `not_run`; D1–D3 zaimplementowane; pełne F0–F4 i dostęp live wymagają współodbioru |
 | Próba FROM_DESIGN | Zatwierdzone artefakty powyższej próby, ręczne AC; oddzielny projekt | Aktualny zatwierdzony baseline, bez drugiego WP E2E | `not_run`; brak artefaktów próby |
 | Prezentacja FROM_BRIEF | Kolejny nowy projekt i cały nowy design | Pełny proces live z własnymi zgodami i publikacją | `not_run`; brak gotowości próby i odbierającego |
 | Replay | Wyłącznie istniejący, sprawdzony wcześniejszy przebieg | Widoczny napis „replay”, pierwotny project/run ref i czas | Nie wybrano materiału; nie zakładać, że wcześniejsze handoffy dowodzą WP |
@@ -77,10 +77,11 @@ fragment, ale nie zamyka live FLOW/WP ani kryterium pełnego designu od zera.
 | Kontrola | Wynik | Powód / dalszy właściciel |
 |---|---|---|
 | Testy TC-DELIVERY-UI-003/004/005 | `not_run` | Użytkownik dopuścił tylko nowe testy lub TS nowych plików; istniejące zestawy pozostają dla QA |
+| Nowe testy bezpieczeństwa decyzji i ACL raportu | 18 PASS, runner local | Sprawdzają nowy kod; nie zastępują próby live ani integracji HTTP |
 | Pełny gate, lint, build/bundle, hydration | `not_run` | Ograniczenie bieżącej sesji; brak deklaracji PASS |
 | Live Figma write/read/render i komentarze | `not_run` | Brak aktualnego stanowiska, projektu i dowodu sesji |
 | WP i zgodność wersji/licencji | `not_run` | WP/QA muszą dostarczyć cel, macierz wersji i dowody |
-| Publikacja, verify, release | `blocked` | Nieprzyjęte D2/D3, brak aktualnego kandydata i uzgodnionego celu |
+| Publikacja, verify, release | `blocked` | D2/D3 zaimplementowane; brak rzeczywistego kandydata próby i uzgodnionego celu |
 | Desktop/mobile, klawiatura, źródła | `not_run` | Do wykonania z QA na działającej integracji |
 | FLOW-01…09 / WP-01…05 | Nieodebrane | Brak pełnej próby i potwierdzenia człowieka |
 

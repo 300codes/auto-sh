@@ -1,10 +1,12 @@
+import { candidateConsentHash, loadReportContext } from './reportContext'
+import { hashCanonical } from '../lib/hash'
+import type { DeliveryReportResponse } from '../lib/reportContracts'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { DeliveryDecision, DeliveryEvidence, DeliveryProject, DeliveryTask } from '../data/entities'
 import {
   buildDeliveryError,
   sourceRevisionSchema,
-  type DeliveryReportV1,
   type SourceRevision,
 } from '../lib/contracts'
 import { buildDeliveryReport } from '../lib/deliveryReport'
@@ -21,7 +23,7 @@ export type ReportOptions = {
 }
 
 export type DeliveryOsReportQueries = {
-  buildReport(scope: DeliveryScope, projectId: string, options?: ReportOptions): Promise<DeliveryReportV1>
+  buildReport(scope: DeliveryScope, projectId: string, options?: ReportOptions): Promise<DeliveryReportResponse>
 }
 
 function assertQueryScope(scope: DeliveryScope | null | undefined): DeliveryScope {
@@ -72,15 +74,17 @@ function resolveRevision(raw: ReportOptions['revision']): SourceRevision | null 
   throw invalidRevision('revision_unparsable', 'Revision must be git:<commitSha> or snapshot:<sha256>:<externalWorkspaceId>')
 }
 
-export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOsReportQueries {
+export function createDeliveryOsReportQueries(rootEm: EntityManager, useTransaction = false): DeliveryOsReportQueries {
   return {
     async buildReport(rawScope, projectId, options = {}) {
       const scope = assertQueryScope(rawScope)
-      const em = rootEm.fork()
+      const em = useTransaction ? rootEm : rootEm.fork()
       const scoped = { tenantId: scope.tenantId, organizationId: scope.organizationId }
       const project = await findOneWithDecryption(em, DeliveryProject, { id: projectId, ...scoped }, undefined, scope)
       if (!project) throw notFound('projectId', 'not_found')
-      const revision = resolveRevision(options.revision)
+      const context = await loadReportContext(em, scope, project)
+      const selectedBaselineId = options.baselineId ?? project.activeBaselineId ?? null
+      const revision = resolveRevision(options.revision) ?? (selectedBaselineId === context.currentCandidate?.baselineId ? context.currentCandidate.sourceRevision : null)
 
       const profile = getTargetProfile(project.targetProfileId, project.targetProfileVersion)
       if (!profile) {
@@ -110,7 +114,7 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
       )
       const decisions = await findWithDecryption(em, DeliveryDecision, where, { orderBy: { decidedAt: 'asc', id: 'asc' } }, scope)
 
-      return buildDeliveryReport({
+      const report = buildDeliveryReport({
         projectId: project.id,
         baseline: { id: baseline.id, projectId: baseline.projectId, contentHash: baseline.contentHash, content },
         tasks: tasks.map((task) => ({
@@ -148,6 +152,16 @@ export function createDeliveryOsReportQueries(rootEm: EntityManager): DeliveryOs
         revision,
         limit: options.limit ?? MAX_TRACEABILITY_ROWS,
       })
+      return {
+        ...report,
+        ...context,
+        candidateDecisions: {
+          deployDecisionId: decisions.filter((decision) => decision.kind === 'deploy' && decision.releaseCandidateId === context.currentCandidate?.id && decision.releaseCandidateVersion === context.currentCandidate?.version && decision.candidateContextHash === candidateConsentHash({ ...context, baselineHash: baseline.contentHash })).at(-1)?.id ?? null,
+          releaseDecisionId: decisions.filter((decision) => decision.kind === 'release' && decision.releaseCandidateId === context.currentCandidate?.id && decision.releaseCandidateVersion === context.currentCandidate?.version && decision.candidateContextHash === candidateConsentHash({ ...context, baselineHash: baseline.contentHash })).at(-1)?.id ?? null,
+        },
+        projectUpdatedAt: project.updatedAt.toISOString(),
+        decisionContextHash: hashCanonical({ projectUpdatedAt: project.updatedAt, baselineHash: baseline.contentHash, revision: report.revision, context, evidence: evidence.map((row) => ({ id: row.id, payloadHash: row.payloadHash, rawReportHash: row.rawReportHash ?? null, revision: row.sourceRevision ?? null })), decisions: decisions.map((row) => ({ id: row.id, verdict: row.verdict, decidedAt: row.decidedAt })), tasks: tasks.map((row) => ({ id: row.id, updatedAt: row.updatedAt, status: row.status })) }),
+      }
     },
   }
 }

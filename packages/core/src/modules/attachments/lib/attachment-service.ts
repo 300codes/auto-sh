@@ -126,6 +126,8 @@ export type CreatedScopedAttachment = {
   fileSize: number
 }
 
+export type ScopedAttachmentMetadata = AttachmentOwner & { id: string; fileName: string; mimeType: string; fileSize: number }
+
 export type ReadScopedAttachmentInput = {
   attachmentId: string
   auth: NonNullable<AuthContext>
@@ -168,6 +170,7 @@ export interface AttachmentService {
   }): void
   readUploadForm?(request: Request): Promise<FormData>
   createScoped(input: CreateScopedAttachmentInput): Promise<CreatedScopedAttachment>
+  describeScoped?(input: Pick<ReadScopedAttachmentInput, 'attachmentId' | 'auth'>): Promise<ScopedAttachmentMetadata>
   readScoped(input: ReadScopedAttachmentInput): Promise<ReadScopedAttachmentResult>
   releaseScoped?(
     input: ReleaseScopedAttachmentInput,
@@ -324,13 +327,7 @@ export class DefaultAttachmentService implements AttachmentService {
     }
   }
 
-  async readScoped(input: ReadScopedAttachmentInput): Promise<ReadScopedAttachmentResult> {
-    // Scope the lookup at the database boundary so a foreign-tenant row is
-    // never materialized, then keep checkAttachmentAccess below as defense in
-    // depth. This service only ever stores fully scoped rows, so global rows
-    // and super-admin status deliberately do not widen the requested scope —
-    // a super admin reads another tenant's attachment by switching scope, not
-    // by bypassing the filter.
+  private async loadScoped(input: Pick<ReadScopedAttachmentInput, 'attachmentId' | 'auth'>) {
     const attachment = await findOneWithDecryption(
       this.em,
       Attachment,
@@ -359,6 +356,17 @@ export class DefaultAttachmentService implements AttachmentService {
     if (!partitionMatchesScope(partition, input.auth.tenantId, input.auth.orgId)) {
       throw new CrudHttpError(403, { error: 'Attachment partition is not accessible for this scope' })
     }
+    return { attachment, partition }
+  }
+
+  async describeScoped(input: Pick<ReadScopedAttachmentInput, 'attachmentId' | 'auth'>): Promise<ScopedAttachmentMetadata> {
+    const { attachment } = await this.loadScoped(input)
+    return { id: attachment.id, entityId: attachment.entityId, recordId: attachment.recordId,
+      fileName: attachment.fileName, mimeType: attachment.mimeType || 'application/octet-stream', fileSize: attachment.fileSize }
+  }
+
+  async readScoped(input: ReadScopedAttachmentInput): Promise<ReadScopedAttachmentResult> {
+    const { attachment, partition } = await this.loadScoped(input)
     if (input.requirePrivatePartition && partition.isPublic) {
       throw new CrudHttpError(403, { error: 'Attachment partition is not accessible for this resource' })
     }

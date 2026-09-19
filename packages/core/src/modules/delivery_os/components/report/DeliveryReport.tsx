@@ -53,10 +53,11 @@ export function DeliveryReport({ projectId }: { projectId: string }) {
             <ReportSummary report={snapshot.report} readAt={snapshot.readAt} />
             <DeploymentSummary report={snapshot.report} />
             <EvidenceTable key={evidenceKey} report={snapshot.report} onEvidenceSelect={(evidenceId) => setSelected({ key: evidenceKey, evidenceId })} />
-            <EvidenceSources />
+            <EvidenceSources key={evidenceKey} projectId={projectId} baselineId={snapshot.report.baselineId} revision={snapshot.report.revision}
+              onEvidenceSelect={(evidenceId) => setSelected({ key: evidenceKey, evidenceId })} />
             <DecisionHistory report={snapshot.report} />
-            <ReleaseDecisionActions historical={historical} archived={snapshot.project.status === 'archived'} />
-            <EvidenceDetailDialog key={evidenceKey} evidenceId={selected?.key === evidenceKey ? selected.evidenceId : null} onOpenChange={(open) => { if (!open) setSelected(null) }} />
+            <ReleaseDecisionActions key={state.key} historical={historical} archived={snapshot.project.status === 'archived'} snapshot={snapshot} stale={state.stale || state.refreshing} refresh={refresh} />
+            <EvidenceDetailDialog key={evidenceKey} projectId={projectId} evidenceId={selected?.key === evidenceKey ? selected.evidenceId : null} onOpenChange={(open) => { if (!open) setSelected(null) }} />
           </> : null}
         </div>
       </PageBody>

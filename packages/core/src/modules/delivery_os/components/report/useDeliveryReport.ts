@@ -4,10 +4,11 @@ import * as React from 'react'
 import { useOrganizationScopeVersion } from '@open-mercato/shared/lib/frontend/useOrganizationScope'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
 import { projectDetailSchema, type ProjectDetail } from '../../api/schemas'
-import { deliveryReportV1Schema, isSameRevision, type DeliveryReportV1 } from '../../lib/contracts'
+import { isSameRevision } from '../../lib/contracts'
+import { deliveryReportResponseSchema, type DeliveryReportResponse } from '../../lib/reportContracts'
 import { readReportSelection, reportQuery, reportRetryDelay, shouldPollReport } from './reportView'
 
-export type ReportSnapshot = { project: ProjectDetail; report: DeliveryReportV1; readAt: string }
+export type ReportSnapshot = { project: ProjectDetail; report: DeliveryReportResponse; readAt: string }
 export type ReportState = {
   key: string
   status: 'loading' | 'ready' | 'error' | 'forbidden' | 'notFound' | 'noBaseline' | 'invalid'
@@ -71,7 +72,7 @@ export function useDeliveryReport(projectId: string, query: string) {
           const response = await apiCall<unknown>(`/api/delivery_os/projects/${encodeURIComponent(projectId)}/report?${reportQuery(selection, baselineId)}`)
           if (!current()) return null
           if ([401, 403, 404].includes(response.status)) { stop(response.status === 404 ? 'notFound' : 'forbidden'); return null }
-          const report = deliveryReportV1Schema.safeParse(response.result)
+          const report = deliveryReportResponseSchema.safeParse(response.result)
           if (!response.ok || !report.success || report.data.projectId !== projectId || report.data.baselineId !== baselineId
             || (selection.kind === 'history' && (!report.data.revision || !isSameRevision(report.data.revision, selection.revision)))) {
             throw new Error('[internal] Invalid delivery report')

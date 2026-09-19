@@ -11,6 +11,7 @@ export const metadata: ModuleInfo = {
 
 export {
   type AttachmentOwner,
+  type ScopedAttachmentMetadata,
   type AttachmentProviderCleanup,
   type AttachmentService,
   type CreatedScopedAttachment,

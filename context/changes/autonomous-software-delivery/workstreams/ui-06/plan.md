@@ -1,6 +1,6 @@
 # UI-06 — domknięcie raportu, próba obu wejść i demonstracja — Implementation Plan
 
-> Data: 2026-09-19. Status: planned. Dokument nie potwierdza implementacji ani odbioru.
+> Data: 2026-09-19. Status: implementing. Kod D1–D3 i integracja raportu dostarczone; próba i live pozostają not_run. Pierwotne granice planu poniżej zastępuje rozszerzenie użytkownika zapisane w Progress.
 > [Brief](plan-brief.md) · [zadanie UI-06](../03-design-ui.md#ui-06--próba-obu-wejść-i-demonstracja) · [README strumieni](../README.md).
 > Pierwszeństwo produktowe: [dodatek z 2026-09-19](../../../../../.ai/specs/2026-09-19-delivery-project-flow-addendum.md) i [aktualny podział zespołu](../../flow-handoff/README.md).
 
@@ -47,7 +47,7 @@ Wcześniejsza pełna próba dostarcza dowodów poprawnego procesu. Następnie po
 
 ## What We're NOT Doing
 
-- Nie implementujemy backendowych D1–D3, nowego lifecycle, providerów wykonania, brakującego wizarda, sync Figmy ani buildera w ramach tego zadania. Ich implementacja pozostaje w pakietach F0–F4; UI-06 konsumuje gotowe funkcje i zgłasza blockery.
+- Po rozszerzeniu użytkownika implementujemy również backend D1–D3. Nowy lifecycle, providery wykonania, brakujący wizard, sync Figmy i builder pozostają w pakietach F0–F4.
 - Nie reinterpretujemy pojedynczej zgody v1 `design` jako UX/KV/DS/UI i nie tworzymy frontendowych DTO zastępujących kontrakty OSS.
 - Nie zastępujemy WP publikacją React, lokalnym Studio, snapshotem ani historycznym URL. React/OM i legacy v1 pozostają chronione regresją.
 - Nie dodajemy selektora dowolnej rewizji, eksportu PDF, nowego Kanbana, edytora grafu ani zmian DS platformy.
@@ -307,7 +307,7 @@ Zachować pojedynczą pętlę raportu na widok, backoff i wstrzymanie w ukrytej 
 
 ## Migration & Backward Compatibility
 
-UI-06 nie zmienia schema DB, publicznych DTO v1, event IDs, ACL ani routów. Konsumuje addytywne kontrakty OSS po BC review dostawcy. Legacy FROM_DESIGN, ręczna domena OSS-only i raporty historyczne pozostają dostępne. Wycofanie poprawek UI nie usuwa evidence, zgód ani projektów. Generatorów nie edytujemy ręcznie. Nie włączamy etapowych mutacji bez ochrony backendu również przed legacy API.
+Rozszerzenie D1–D3 dodaje tabelę kandydatów, opcjonalne powiązania decyzji i endpointy odczytu/nominacji. Zachowuje istniejące pola DTO v1, event IDs, ACL i routy; szczegóły migracji i kontraktów zawiera spec D1–D3. Legacy FROM_DESIGN, ręczna domena OSS-only i raporty historyczne pozostają dostępne. Wycofanie poprawek UI nie usuwa evidence, zgód ani projektów. Generatorów nie edytujemy ręcznie. Nie włączamy etapowych mutacji bez ochrony backendu również przed legacy API.
 
 ## Nakład i warunki rozpoczęcia
 
@@ -339,18 +339,21 @@ Wybory produktowe są rozstrzygnięte. Dane operacyjne (konto/pliki/URL/konkretn
 
 ## Progress — odwołanie do rejestru kanonicznego
 
-2026-09-19: rozpoczęto wykonanie. Przygotowanie, aktualne blokady D1–D3 oraz niewykonane
-kontrole opisuje [handoff](handoff.md); materiały próby: [scenariusz](demo-scenario.md),
-[readiness](readiness.md), [protokół próby](rehearsal.md). Faza 2 czeka na dostawy OSS,
-próba i live na zależności i odbiór. Użytkownik ograniczył w tej sesji walidację do
-nowych testów lub TS nowych plików; pełny gate pozostaje niewykonany. Nie zaliczono
-żadnego kryterium ani manualnej weryfikacji.
+Rozszerzenie po pierwszym commicie 2026-09-19: użytkownik polecił zrealizować brakujące
+D1–D3. Bieżąca implementacja obejmuje więc także backend tych zależności i integrację UI;
+wcześniejsza granica własności OSS nie blokuje tej dostawy. Kontrakt i weryfikacja:
+[delta D1–D3](../../../../../.ai/specs/2026-09-19-delivery-report-readiness.md).
+Nie rozszerza to zgody na migrację lokalnej bazy, publikację ani pozostałe F0–F4.
+
+2026-09-19: zaimplementowano D1–D3 oraz ich integrację z raportem: odczyt źródeł i załączników, jawne legacy/flow, bramki etapowe, przypięty kandydat i bezpieczne decyzje deploy/release. Nowe testy obejmują zmiany kontekstu bez zmiany wersji projektu, guarded retry, niepewny POST i oddzielne/wildcard ACL. Wykonane polecenia oraz ograniczenia zawiera [handoff](handoff.md).
+
+Faza 2 ma dostarczony kod; runtime i manualny odbiór nie zostały potwierdzone. Materiały [scenariusza](demo-scenario.md), [readiness](readiness.md) i [próby](rehearsal.md) są aktualne. Fazy 3–4 pozostają `not_run` dla Figma/WP live i współodbioru F0–F4. Pełny gate pominięto zgodnie z poleceniem użytkownika; uruchamiane są tylko nowe testy lub TS nowych plików. Żadnego manualnego kryterium nie oznaczono jako wykonanego.
 
 Zgodnie z README nie tworzymy drugiej checklisty. Żadne kryterium nie zostaje zaliczone przez zapis tego planu. Kryteria faz powyżej są instrukcją weryfikacji; stan odbioru prowadzi wyłącznie [Progress planu głównego](../../plan.md#progress), z uwzględnieniem pierwszeństwa dodatku.
 
 | Kryterium | Wkład UI-06 | Pozostały współodbiór |
 |---|---|---|
-| 5.1, 5.4 / FLOW-07 | Domknięcie źródeł raportu, rewizji, decyzji i ich UI testów | D1–D3 OSS, WP publikacja i QA, człowiek. |
+| 5.1, 5.4 / FLOW-07 | Domknięcie źródeł raportu, rewizji, decyzji i ich UI testów | Runtime D1–D3, WP publikacja i QA, człowiek. |
 | 6.2 | Regresje wejść, stale approvals, manual_handoff i widoczne stany niepewności | OSS/EXEC dowodzą duplicate/restart/izolacji; QA integruje wyniki. |
 | 6.4 | Oba wejścia, cały nowy design live, poprawka i raport | Aktualny główny odbiór to WP E2E według dodatku; stary zapis React nie zastępuje go. |
 | 6.5 | Role, fallback, ograniczenia i końcowy handoff | Verdict zapisuje obecny odbierający. |
