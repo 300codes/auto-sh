@@ -8,19 +8,19 @@ Właściciele poniżej proponowani według dotychczasowych strumieni — potwier
 ## Co Michał może zrobić od razu, nie czekając na Mateusza
 
 - [ ] Zatwierdzić nazwę Aster Works,4widoki i tekst briefu; zamrozić zakres zlecenia.
-- [ ] Dopisać krótkie treści usługi i przykładu, przygotować2własne grafiki i alt text.
+- [ ] Zaplanować wygenerowanie treści podczas scoping/UX/UI i ich review; nie czekać na gotowe copy. Przygotować lub zaplanować2własne grafiki i alt text.
 - [ ] Wybrać fonty dostępne lokalnie; zebrać materiały w jednym katalogu bez sekretów.
 - [ ] Przygotować3slajdy według scenariusza oraz pusty slajd wyników do wypełnienia faktami.
 - [ ] Napisać i przeczytać na głos otwarcie oraz zakończenie. Wybrać jednego prowadzącego.
-- [ ] Przygotować instrukcję kontrolowanej poprawki CTA i zmianę ACF do próby retencji.
+- [ ] Przygotować kontrolowaną uwagę: CTA „Porozmawiajmy o projekcie” → „Omówmy Twój proces”, ten sam cel linku. Wcześniej zmienić ACF „Etap” na „Gotowe do rozmowy”; po aktualizacji motywu potwierdzić zachowanie tej wartości. Uzyskać wymagane ponowne zgody.
 - [ ] Sprawdzić nagrywanie ekranu, eksport PDF i odtwarzanie lokalnego filmu.
 
 ## Równoległe bloki pracy
 
 | Okno | Michał: brief/WP/narracja | Mateusz: środowisko/OSS | Adam: UI/Figma | Marcin: EXEC |
 |---|---|---|---|---|
-| T0–T+45min | Brief, teksty, grafiki,3slajdy robocze | Aktualny main/SHA, baza i gotowość środowiska | Konta, plik demo, materiały UX/KV/UI | Status kontraktów, worker/provider i probe |
-| T+45–T+120min | Korekta treści, mapa edycji ACF/SEO | Gate/testy i konkretne blockery | Osobne wersje/zgody, feedback i odczyt | Rzeczywista próba, korelacja i aktualne checks |
+| T0–T+45min | Brief użytkownika, plan grafik,3slajdy robocze | Aktualny main/SHA, baza i gotowość środowiska | Konta, plik demo, materiały UX/KV/UI | Status kontraktów, worker/provider i probe |
+| T+45–T+120min | Generowanie/review treści w procesie, mapa edycji ACF/SEO | Gate/testy i konkretne blockery | Osobne wersje/zgody, feedback i odczyt | Rzeczywista próba, korelacja i aktualne checks |
 | Po gotowości wszystkich zależności | Wspólny pełny przebieg Aster Works; jedna osoba zapisuje dowody i czasy | Weryfikacja stanu/wersji/zgód | Weryfikacja UI i źródeł Figmy | Weryfikacja wykonania i poprawki |
 | Po odebranym przebiegu | Nagranie, finalne slajdy i próba4:40 | Zachowanie stanu demo | Screeny, desktop/mobile | Dowody recovery do pytań |
 | D−60min | Wyłącznie kontrola gotowości i zakładek | Freeze rewizji, brak niepotrzebnych zmian | Kontrola sesji i linków | Kontrola usług, brak nowych eksperymentów |

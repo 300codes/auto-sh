@@ -1,107 +1,310 @@
-# Brief startowy — Aster Works
+# Brief projektu strony internetowej — Aster Works
 
-Fikcyjna firma i demonstracyjne zlecenie. Wklej poniższą sekcję do kreatora briefu.
-Nie jest to zaakceptowany Scope: agent ma doprecyzować kryteria i poprosić o decyzję.
+Brief przekazany przez użytkownika. Treści strony generujemy w trakcie realizacji
+na podstawie tego briefu; wcześniejsze przygotowanie kompletu copy nie jest warunkiem
+startu. Brief jest wejściem do procesu — nie zastępuje zapisanych w aplikacji akceptacji
+Scope, UX, KV, UI i kolejnych etapów.
 
-## Brief do wklejenia
+## 1. O firmie
 
-Jesteśmy Aster Works, fikcyjną firmą usługową pomagającą przedsiębiorstwom wdrażać
-rozwiązania AI. Potrzebujemy polskiej strony, która wyjaśni, jakie problemy rozwiązujemy,
-pokaże sposób współpracy i zachęci do rozmowy o konkretnym projekcie.
+Aster Works to firma usługowa pomagająca przedsiębiorstwom projektować i wdrażać rozwiązania wykorzystujące AI.
 
-Naszymi odbiorcami są dyrektor operacyjny, lider produktu i CTO. Pierwsza osoba szuka
-usprawnienia procesu, druga nowej funkcji produktu, trzecia partnera technicznego.
-Strona powinna prowadzić od problemu biznesowego do odpowiedniej usługi, przykładu
-zastosowania i kontaktu. Nie zaczynajmy od katalogu modeli i technologii.
+Wspieramy klientów przede wszystkim w trzech obszarach:
 
-Potrzebujemy czterech widoków:
+- tworzeniu asystentów wiedzy,
+- automatyzacji powtarzalnej pracy,
+- ocenie jakości rozwiązań AI przed ich wdrożeniem.
 
-1. Strona główna: jasna obietnica i dwa CTA, trzy problemy klientów, odpowiadające
-   im usługi, jeden wyróżniony przykład zastosowania, proces współpracy i kontakt.
-2. Usługa „Asystenci wiedzy”: dla kogo, jaki problem, co dostarczamy, jak pracujemy,
-   jakie dane i udział klienta są potrzebne, powiązany przykład i CTA.
-3. Przykład zastosowania „Wiedza dla zespołu obsługi”: kontekst, wyzwanie,
-   proponowane rozwiązanie, zakres oraz sposób przyszłego pomiaru skuteczności.
-   To jawnie oznaczony scenariusz demonstracyjny, nie rzeczywisty case study.
-4. Kontakt: jak przygotować rozmowę, informacyjny adres kontaktowy oraz zakres
-   pierwszego spotkania. Bez formularza wysyłającego dane i bez kalendarza rezerwacji.
+Potrzebujemy nowej strony internetowej, która w prosty sposób pokaże, **jakie problemy biznesowe rozwiązujemy, jak wygląda współpraca z nami oraz w jakich sytuacjach warto się z nami skontaktować**.
 
-Pozostałe dwie usługi — „Automatyzacja pracy” i „Ocena jakości AI” — opisujemy
-w sekcjach strony głównej. Każdy ich link prowadzi do istniejącej sekcji lub Kontaktu,
-nie do pustej podstrony. Menu: Rozwiązania, Przykład zastosowania, Jak pracujemy,
-Kontakt. Linki sekcyjne muszą działać również z podstron.
+Nie chcemy budować komunikacji wokół modeli AI, frameworków czy konkretnych technologii. Punktem wyjścia powinien być problem klienta i wartość, którą możemy dostarczyć.
 
-Główne CTA: „Porozmawiajmy o projekcie”. Drugie: „Zobacz przykład zastosowania”.
-Najpierw chcemy pokazać wartość i sposób pracy, potem szczegóły techniczne.
-Treści mają być konkretne i zrozumiałe, bez obietnic gwarantowanych oszczędności.
-Nie mamy prawdziwych referencji: nie dodawaj logotypów klientów, partnerstw,
-certyfikatów, opinii ani liczb udających nasze osiągnięcia.
+## 2. Cel strony
 
-Projekt ma wyglądać jak dopracowany serwis firmy technologicznej B2B: wyraźna
-hierarchia, duża typografia, konsekwentna siatka, dużo przestrzeni i mocny autorski
-motyw graficzny. Proponujemy jasne tło, atramentowy tekst i akcent miedziany.
-Hero może mieć ilustrację przepływu dokumentów przez uporządkowany proces.
-Nie używaj stockowych robotów, ściany logotypów ani ciężkiego wideo. Responsywność
-ma obejmować hierarchię treści i nawigację, a nie tylko pomniejszenie desktopu.
+Głównym celem strony jest pozyskiwanie zapytań od potencjalnych klientów zainteresowanych wdrożeniem rozwiązania AI.
 
-Chcemy osobno zaakceptować zakres, UX, kierunek wizualny i pakiet UI/design system.
-Wybieramy WordPress, a projekt tworzymy w Figmie. Po odbiorze redaktor ma zmieniać
-teksty, ilustracje, CTA, sekcje, menu, nagłówek i stopkę bez kodu. Metadane scenariusza
-(np. „Etap: projekt demonstracyjny”) mają być edytowalne przez ACF, a tytuł i opis SEO
-przez narzędzie SEO. Aktualizacja motywu musi zachować te zmiany.
+Strona powinna prowadzić użytkownika ścieżką:
 
-Jeden język: polski. Bez bloga, logowania klientów, płatności, tłumaczeń i integracji
-CRM. Wersja demo pozostaje nieindeksowana. Publikujemy tylko zatwierdzoną lokalnie
-zbudowaną wersję na zaakceptowanym Preview; publikacja wymaga osobnej decyzji.
+**problem → rozwiązanie → przykład zastosowania → sposób współpracy → kontakt**
 
-## Materiały wejściowe — przygotować dziś
+Główne CTA: **„Porozmawiajmy o projekcie”**
 
-| Element | Gotowa propozycja / zadanie |
-|---|---|
-| H1 | AI, które znajduje miejsce w codziennej pracy. |
-| Lead | Projektujemy asystentów wiedzy, automatyzujemy zadania i sprawdzamy jakość rozwiązań przed wdrożeniem. |
-| Problem1 | Zespół szuka odpowiedzi w rozproszonych dokumentach → Asystenci wiedzy |
-| Problem2 | Praca wymaga powtarzania tych samych kroków w kilku narzędziach → Automatyzacja pracy |
-| Problem3 | Prototyp działa, ale brakuje kryteriów odbioru → Ocena jakości AI |
-| Proces | Rozpoznanie zadania → projekt rozwiązania → wdrożenie → odbiór i przekazanie |
-| Przykład | Wiedza dla zespołu obsługi; materiały syntetyczne; żadnych danych klienta |
-| Metadane ACF | Etap, typ użytkownika, zakres rozwiązania |
-| Kontakt | kontakt@aster-works.example — adres demonstracyjny, bez wysyłki |
-| Grafiki | Autorska ilustracja hero + diagram zastosowania; SVG lub zoptymalizowane pliki |
-| Fonty | Dostępne lokalnie z prawem użycia; zachować pliki i licencję |
+Drugie CTA: **„Zobacz przykład zastosowania”**
 
-To samodzielna identyfikacja. Do materiałów, promptów wykonawczych i slajdów nie
-wprowadzać nazw, screenów, tekstów ani zasobów innych firm jako części marki demo.
+## 3. Grupy odbiorców
 
-## Ścieżki UX do uzgodnienia
+Strona kierowana jest przede wszystkim do trzech grup odbiorców.
 
-- COO: problem na stronie głównej → rozwiązanie → przebieg współpracy → Kontakt.
-- CTO: usługa → zakres i wymagania danych → przykład → Kontakt.
-- Powracający odbiorca: menu → konkretny przykład → CTA, bez ponownego czytania home.
+### Dyrektor operacyjny / COO
 
-Każdy ekran odpowiada na jedno następne pytanie użytkownika. Nie rozbudowywać demo
-o wielopoziomowe mega menu, kilkanaście branż lub dział publikacji bez treści.
+Szukający sposobu na usprawnienie istniejącego procesu, ograniczenie powtarzalnej pracy lub poprawę dostępu zespołu do informacji.
 
-## Propozycja kryteriów do rzeczywistego Scope
+### Product Lead / Head of Product
 
-To biznesowe AC, nie gotowe identyfikatory testów w OSS. Powiązanie AC→test i baseline
-powstaje w aplikacji; nie zaliczamy kryteriów przez sam zapis tej tabeli.
+Szukający możliwości wykorzystania AI jako nowej funkcji produktu lub elementu istniejącej usługi.
 
-| ID | Odbiór |
-|---|---|
-| DEMO-AC01 | Cztery widoki, działające menu i oba CTA, brak pustych linków; desktop i mobile |
-| DEMO-AC02 | Zgodność z zaakceptowanym UI; czytelna hierarchia, focus klawiatury, brak poziomego scrolla |
-| DEMO-AC03 | Zapis i readback tekstów/obrazu/CTA/sekcji/menu/header/footer przez redaktora |
-| DEMO-AC04 | Edycja pola ACF „Etap” i opisu SEO bez kodu |
-| DEMO-AC05 | Zmiana motywu i lokalny rebuild zachowują treści, ACF oraz Global Styles |
-| DEMO-AC06 | changes_requested → nowa próba/rewizja → świeże checks → review → verified |
-| DEMO-AC07 | Osobna zgoda na target/revision, gotowy lokalny deployment i odczytowy odbiór Preview/noindex |
+### CTO / osoba odpowiedzialna za technologię
 
-## Kontrolowana poprawka w pokazie
+Szukająca partnera, który będzie w stanie zaprojektować, wdrożyć i zweryfikować rozwiązanie AI oraz jasno określić wymagania dotyczące danych i infrastruktury.
 
-Feedback: „Zmień główne CTA na «Omówmy Twój proces». Cel linku pozostaje bez zmian.”
-Użyć rzeczywistego komentarza i aktualizacji, nie celowo uszkodzonego kodu. Jeśli zmiana
-unieważnia zgodę UI, uzyskać ją ponownie zgodnie z procesem.
+## 4. Zakres strony
 
-Wcześniej redaktor zmienia ACF „Etap” na „Gotowe do rozmowy”. Po poprawce motywu
-potwierdzić, że ta wartość pozostała. To mały, czytelny dowód zachowania treści.
+W ramach projektu chcemy przygotować cztery główne widoki.
+
+### 4.1. Strona główna
+
+Strona główna powinna zawierać:
+
+- jasną obietnicę wartości,
+- główne i dodatkowe CTA,
+- trzy typowe problemy klientów,
+- odpowiadające im rozwiązania,
+- wyróżniony przykład zastosowania,
+- opis procesu współpracy,
+- sekcję kontaktową.
+
+Proponowany H1: **AI, które znajduje miejsce w codziennej pracy.**
+
+Proponowany lead: **Projektujemy asystentów wiedzy, automatyzujemy zadania i sprawdzamy jakość rozwiązań przed wdrożeniem.**
+
+Trzy główne problemy i odpowiadające im usługi:
+
+1. **Asystenci wiedzy** — Zespół szuka odpowiedzi w rozproszonych dokumentach.
+2. **Automatyzacja pracy** — Praca wymaga powtarzania tych samych kroków w kilku narzędziach.
+3. **Ocena jakości AI** — Prototyp działa, ale brakuje jasno określonych kryteriów jego oceny i odbioru.
+
+Usługi „Automatyzacja pracy” oraz „Ocena jakości AI” na tym etapie nie wymagają osobnych podstron. Linki powinny prowadzić do odpowiedniej sekcji strony głównej lub do Kontaktu.
+
+### 4.2. Usługa „Asystenci wiedzy”
+
+Dedykowana podstrona opisująca usługę. Powinna odpowiadać na pytania:
+
+- dla kogo przeznaczone jest rozwiązanie,
+- jaki problem rozwiązuje,
+- co dokładnie dostarczamy,
+- jak wygląda współpraca,
+- jakich danych potrzebujemy,
+- jakie zaangażowanie jest wymagane po stronie klienta,
+- jak może wyglądać przykładowe zastosowanie,
+- jaki jest kolejny krok.
+
+Podstrona powinna prowadzić do przykładu zastosowania oraz do kontaktu.
+
+### 4.3. Przykład zastosowania „Wiedza dla zespołu obsługi”
+
+Chcemy pokazać przykładowy scenariusz wykorzystania naszych usług. Scenariusz powinien zawierać:
+
+- kontekst biznesowy,
+- opis problemu,
+- proponowane rozwiązanie,
+- zakres rozwiązania,
+- wymagane dane,
+- sposób wdrożenia,
+- sposób przyszłego pomiaru skuteczności.
+
+Nie posiadamy jeszcze rzeczywistych case studies, dlatego przykład musi być **jednoznacznie oznaczony jako scenariusz demonstracyjny**.
+
+Nie chcemy sugerować, że opisany projekt został rzeczywiście wykonany dla klienta.
+Do przygotowania przykładu należy wykorzystać materiały syntetyczne, bez rzeczywistych danych klientów.
+
+### 4.4. Kontakt
+
+Podstrona kontaktowa powinna wyjaśniać:
+
+- z czym można się do nas zgłosić,
+- jak przygotować się do pierwszej rozmowy,
+- czego będziemy chcieli dowiedzieć się podczas spotkania,
+- jaki może być kolejny krok.
+
+Na tym etapie nie potrzebujemy formularza wysyłającego dane ani integracji z systemem rezerwacji spotkań.
+
+Kontakt demonstracyjny: **[kontakt@aster-works.example](mailto:kontakt@aster-works.example)**
+
+## 5. Nawigacja
+
+Główne menu:
+
+- Rozwiązania
+- Przykład zastosowania
+- Jak pracujemy
+- Kontakt
+
+Część pozycji może prowadzić do sekcji strony głównej.
+Linki do sekcji muszą działać również wtedy, gdy użytkownik znajduje się na jednej z podstron.
+Nie planujemy rozbudowanego mega menu ani dodatkowych poziomów nawigacji.
+
+## 6. Proces współpracy
+
+Na stronie chcemy pokazać prosty czteroetapowy proces:
+
+**Rozpoznanie zadania → Projekt rozwiązania → Wdrożenie → Odbiór i przekazanie**
+
+Proces powinien być opisany z perspektywy klienta, a nie naszego wewnętrznego procesu developerskiego.
+
+## 7. Główne ścieżki użytkowników
+
+Projekt UX powinien uwzględniać co najmniej trzy scenariusze.
+
+### COO
+
+Problem na stronie głównej → rozwiązanie → sposób współpracy → kontakt.
+
+### CTO
+
+Usługa → zakres i wymagania dotyczące danych → przykład zastosowania → kontakt.
+
+### Powracający użytkownik
+
+Menu → konkretny przykład zastosowania → CTA.
+
+Nie chcemy zmuszać powracającego użytkownika do ponownego przechodzenia przez całą stronę główną.
+
+## 8. Kierunek wizualny
+
+Strona powinna wyglądać jak dopracowany serwis technologicznej firmy B2B.
+
+Zależy nam na:
+
+- wyraźnej hierarchii informacji,
+- dużej i charakterystycznej typografii,
+- konsekwentnej siatce,
+- dużej ilości przestrzeni,
+- mocnym, autorskim motywie graficznym,
+- czytelnym przedstawieniu procesów i zależności.
+
+Preferowany kierunek kolorystyczny:
+
+- jasne tło,
+- atramentowy / bardzo ciemny tekst,
+- miedziany kolor akcentowy.
+
+W sekcji hero może pojawić się autorska ilustracja przedstawiająca przepływ dokumentów lub informacji przez uporządkowany proces.
+
+Nie chcemy wykorzystywać:
+
+- stockowych ilustracji robotów i AI,
+- przypadkowych zdjęć stockowych,
+- ściany logotypów,
+- ciężkich materiałów wideo w tle.
+
+Responsywna wersja projektu powinna uwzględniać zmianę hierarchii treści i sposobu nawigacji, a nie być wyłącznie pomniejszoną wersją desktopu.
+
+## 9. Materiały graficzne
+
+Do przygotowania:
+
+- autorska ilustracja do sekcji hero,
+- diagram przykładu zastosowania,
+- pozostałe proste elementy graficzne wynikające z projektu UI.
+
+Preferowane formaty to SVG lub odpowiednio zoptymalizowane formaty rastrowe.
+Fonty muszą posiadać licencję pozwalającą na ich wykorzystanie w projekcie i hostowanie lokalne.
+
+## 10. CMS i technologia
+
+Strona ma zostać wdrożona na **WordPressie**.
+Projekt UX/UI przygotowujemy w **Figmie**.
+
+Po wdrożeniu redaktor powinien mieć możliwość samodzielnej zmiany bez ingerencji w kod:
+
+- tekstów,
+- ilustracji,
+- CTA,
+- zawartości sekcji,
+- menu,
+- nagłówka,
+- stopki.
+
+Dodatkowe metadane przykładu zastosowania powinny być edytowalne za pomocą ACF.
+Przykładowe pola:
+
+- Etap,
+- Typ użytkownika,
+- Zakres rozwiązania.
+
+Tytuł oraz opis SEO powinny być edytowalne z poziomu WordPressa za pomocą narzędzia SEO.
+Treści i dane wprowadzone przez redaktora nie mogą zostać utracone podczas aktualizacji motywu lub wdrażania kolejnej wersji strony.
+
+## 11. SEO i środowisko demonstracyjne
+
+Strona będzie dostępna wyłącznie w języku polskim.
+Wersja demonstracyjna / preview powinna pozostać wyłączona z indeksowania przez wyszukiwarki.
+Publikacja wersji produkcyjnej będzie osobnym etapem i będzie wymagała akceptacji.
+
+## 12. Zakres, którego nie potrzebujemy
+
+Na tym etapie projekt nie obejmuje:
+
+- bloga,
+- panelu klienta,
+- logowania użytkowników,
+- płatności,
+- wersji językowych,
+- integracji z CRM,
+- kalendarza rezerwacji spotkań,
+- działającego formularza kontaktowego,
+- rozbudowanego katalogu usług lub branż.
+
+## 13. Treści i wiarygodność
+
+Treści powinny być konkretne, biznesowe i zrozumiałe również dla osób nietechnicznych.
+Najpierw pokazujemy **wartość i sposób rozwiązania problemu**, a dopiero później technologię.
+Nie chcemy komunikować gwarantowanych oszczędności, wzrostów ani innych rezultatów, których nie jesteśmy w stanie potwierdzić.
+
+Ponieważ Aster Works nie posiada jeszcze rzeczywistych referencji, na stronie nie należy umieszczać fikcyjnych:
+
+- klientów,
+- logotypów,
+- partnerstw,
+- certyfikatów,
+- opinii,
+- wyników projektów,
+- statystyk sugerujących dotychczasowe osiągnięcia.
+
+Przykładowe zastosowania muszą być wyraźnie opisane jako demonstracyjne.
+
+## 14. Oczekiwany proces realizacji
+
+Chcemy podzielić projekt na kilka etapów i osobno zaakceptować:
+
+1. zakres projektu,
+2. UX i strukturę informacji,
+3. kierunek wizualny,
+4. UI oraz design system,
+5. implementację,
+6. wersję Preview,
+7. publikację.
+
+Szczególnie zależy nam na zaakceptowaniu UX i kierunku wizualnego **przed rozpoczęciem pełnej implementacji**.
+
+## 15. Kryteria odbioru
+
+Gotowa strona powinna:
+
+- posiadać wszystkie cztery uzgodnione widoki,
+- działać poprawnie na desktopie i urządzeniach mobilnych,
+- posiadać działającą nawigację i CTA,
+- nie zawierać pustych ani prowadzących donikąd linków,
+- być zgodna z zaakceptowanym projektem UI,
+- posiadać czytelną hierarchię treści,
+- umożliwiać obsługę klawiaturą z widocznym focusem,
+- nie powodować poziomego scrollowania,
+- umożliwiać redaktorowi zmianę uzgodnionych treści bez ingerencji w kod,
+- umożliwiać edycję dodatkowych pól ACF,
+- umożliwiać edycję podstawowych metadanych SEO,
+- zachowywać treści i dane CMS podczas aktualizacji kodu lub motywu,
+- posiadać nieindeksowaną wersję Preview przed publikacją.
+
+Publikacja produkcyjna następuje dopiero po osobnej akceptacji.
+
+## Ustalenie wykonawcze — generowanie treści
+
+Treści generować w trakcie scoping/projektowania kolejnych widoków i poddać review
+wraz z właściwym artefaktem. Nie tworzyć fikcyjnych referencji ani wyników.
+Dla scenariusza zastosowania opisać plan pomiaru, a nie rzekomo osiągnięte rezultaty.
+Zmiana zatwierdzonych treści podlega wersjonowaniu i wymaganym ponownym decyzjom.
+
+Przed uploadem do Studio Preview pozostaje wymagana zgoda na target i konkretną
+rewizję gotowego lokalnego pakietu. Potem następuje odbiór opublikowanego Preview.
+To osobne czynności od późniejszej zgody na publikację produkcyjną, która nie jest
+częścią obecnego demo. Link mailto jest demonstracyjny; nie wymaga wysłania wiadomości.
