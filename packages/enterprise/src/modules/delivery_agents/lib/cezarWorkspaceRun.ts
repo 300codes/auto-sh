@@ -21,6 +21,7 @@ export type CezarWorkspaceResult = {
 }
 
 const TERMINAL_STATUSES = new Set(['done', 'review', 'failed', 'cancelled', 'waiting'])
+const TOOL_BYPRODUCTS = ['test-results/', 'playwright-report/', 'blob-report/', 'node_modules/', 'vendor/', '.DS_Store']
 const GIT_IDENTITY = ['-c', 'user.email=delivery-agents@open-mercato.local', '-c', 'user.name=delivery-agents']
 
 function run(command: string, args: readonly string[], cwd: string): Promise<string> {
@@ -44,6 +45,7 @@ export async function createThemeRepository(directory: string, files: readonly W
     await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 })
     await fs.writeFile(target, file.bytes, { mode: 0o600, flag: 'wx' })
   }
+  await fs.writeFile(path.join(directory, '.gitignore'), `${TOOL_BYPRODUCTS.join('\n')}\n`, { mode: 0o600, flag: 'a' })
   await git(directory, 'init', '-q', '-b', 'main')
   await git(directory, 'add', '-A')
   await git(directory, 'commit', '-q', '-m', 'delivery base snapshot')
@@ -93,7 +95,7 @@ export async function collectWorkspaceChanges(worktree: string, baseCommit: stri
   const deletedPaths: string[] = []
   for (const line of status.split('\n').filter(Boolean)) {
     const [kind, filePath] = line.split('\t')
-    if (!filePath || filePath.startsWith('.ai/')) continue
+    if (!filePath || filePath.startsWith('.ai/') || filePath === '.gitignore') continue
     if (kind === 'D') deletedPaths.push(filePath)
     else changes.push({ path: filePath, content: await fs.readFile(path.join(worktree, filePath), 'utf8') })
   }

@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { z } from 'zod'
 import type { ResultManifestV1, TaskPackageV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { mapWordpressResult, type WordpressResultMappingInput } from '@open-mercato/core/modules/delivery_os/lib/wordpressResultMapper'
+import { isPathAllowed } from '@open-mercato/core/modules/delivery_os/lib/allowedPaths'
 import type { DeliveryAgentsExecutionHost, ExecutionHostInput } from './executionHost'
 import { createThemeRepository, runCezarInWorkspace, type CezarWorkspaceConfig, type CezarWorkspaceResult } from './cezarWorkspaceRun'
 
@@ -14,6 +15,7 @@ const WORDPRESS_PROFILE_VERSION = 1
 const SMOKE_CHECK_ID = 'smoke-tests'
 const LINT_CHECK_ID = 'lint'
 const COMMAND_TIMEOUT_MS = 180_000
+const EDITABLE_THEME_PATH = /^(?:(?:templates|parts)\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.html|assets\/(?:css\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.css|js\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.js))$/
 const UPDATE_TIMEOUT_MS = 120_000
 
 const absolute = z.string().refine(path.isAbsolute)
@@ -267,6 +269,8 @@ export function createWordpressExecutionHost(config: WordpressHostConfig, deps: 
       const cezar = await deps.runCezar(repository, baseCommit, buildCezarPrompt(taskPackage), config.cezar)
       if (cezar.deletedPaths.length > 0) refuse('deletion_unsupported')
       if (cezar.changes.length === 0) refuse('no_changes')
+      const notEditable = cezar.changes.map((change) => change.path).filter((changePath) => !EDITABLE_THEME_PATH.test(changePath) || !isPathAllowed(changePath, taskPackage.allowedPaths))
+      if (notEditable.length > 0) refuse(`path_not_editable:${notEditable.slice(0, 5).join(',')}`)
 
       await operator.updateOwnedTheme({
         scope, handle, updateId: randomUUID(),

@@ -179,6 +179,18 @@ describe('WordPress execution host', () => {
     expect(updates).toEqual([])
   })
 
+  it.each([
+    ['test-results/.last-run.json'],
+    ['functions.php'],
+    ['patterns/hero.php'],
+  ])('refuses a change to %s outside the editable theme contract before touching the site', async (changedPath) => {
+    const host = createWordpressExecutionHost(config, dependencies({
+      runCezar: async () => ({ runId: 'r', status: 'review', changes: [{ path: 'templates/front-page.html', content: '<p>x</p>' }, { path: changedPath, content: 'x' }], deletedPaths: [] }),
+    }))
+    await expect(host.execute({ taskPackage, scope: hostScope, actorUserId: randomUUID(), baseDir: root })).rejects.toThrow(`path_not_editable:${changedPath}`)
+    expect(updates).toEqual([])
+  })
+
   it('refuses a git package', async () => {
     const host = createWordpressExecutionHost(config, dependencies())
     const gitPackage = { ...taskPackage, baseRevision: { kind: 'git' as const, commitSha: 'a'.repeat(40) } }
