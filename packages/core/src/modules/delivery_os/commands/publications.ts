@@ -3,7 +3,6 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import { registerCommand } from '@open-mercato/shared/lib/commands'
 import type { CommandHandler, CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { emitCrudSideEffects } from '@open-mercato/shared/lib/commands/helpers'
-import { hasAllFeatures } from '@open-mercato/shared/lib/auth/featureMatch'
 import { CrudHttpError, isUniqueViolation } from '@open-mercato/shared/lib/crud/errors'
 import { enforceCommandOptimisticLockWithGuards } from '@open-mercato/shared/lib/crud/optimistic-lock-command'
 import type { DataEngine } from '@open-mercato/shared/lib/data/engine'
@@ -11,6 +10,7 @@ import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { getTelemetryRuntime } from '@open-mercato/shared/lib/telemetry/runtime'
+import { authorizeFeatures } from '@open-mercato/shared/security/featurePolicy'
 import { DeliveryDecision, DeliveryEvidence, DeliveryPublication, type DeliveryBaseline, type DeliveryProject } from '../data/entities'
 import { parseRecordEvidenceBody, recordPublicationCommandInputSchema, type RecordPublicationCommandInput } from '../data/validators'
 import {
@@ -18,12 +18,13 @@ import {
   buildDeliveryFlowError,
   deliveryErrorBodySchema,
   FLOW_APPROVAL_STAGE_ORDER,
+  isSameRevision,
   publicationRecordResponseSchema,
+  sourceRevisionSchema,
   type DeliveryCheckResult,
   type PublicationResultV1,
 } from '../lib/contracts'
 import { checkFlowGate } from '../lib/flowRules'
-import { hashCanonical } from '../lib/hash'
 import {
   buildDeploymentEvidencePayload,
   checkPublicationDeployConsent,
@@ -88,7 +89,7 @@ async function assertPublicationFeature(ctx: CommandRuntimeContext, scope: Deliv
     logger.warn('publication feature lookup failed closed', { err: error })
     getTelemetryRuntime()?.reportError(error, { module: 'delivery_os', code: 'delivery_os.feature_check_failed' })
   }
-  if (hasAllFeatures([PUBLICATION_RECORD_FEATURE], granted)) return
+  if (authorizeFeatures([PUBLICATION_RECORD_FEATURE], { grantedFeatures: granted })) return
   throw deliveryHttpError(
     buildDeliveryError('forbidden', 'Recording a publication requires the results import feature', [
       { path: 'actorUserId', code: 'feature_required', message: PUBLICATION_RECORD_FEATURE },
@@ -157,12 +158,12 @@ async function assertVerificationEvidence(
       ]),
     )
   }
-  if (row.sourceRevision && hashCanonical(row.sourceRevision) !== hashCanonical(publication.sourceRevision)) {
-    throw deliveryHttpError(
-      buildDeliveryError('revision_mismatch', 'The verification evidence was recorded on another revision', [
-        { path: 'verification.evidenceId', code: 'revision_mismatch' },
-      ]),
-    )
+  const stored = row.sourceRevision ? sourceRevisionSchema.safeParse(row.sourceRevision) : null
+  if (stored !== null && (!stored.success || !isSameRevision(stored.data, publication.sourceRevision))) {
+    const message = stored.success
+      ? 'The verification evidence was recorded on another revision'
+      : 'The verification evidence has no readable source revision'
+    throw deliveryHttpError(buildDeliveryError('revision_mismatch', message, [{ path: 'verification.evidenceId', code: 'revision_mismatch' }]))
   }
 }
 

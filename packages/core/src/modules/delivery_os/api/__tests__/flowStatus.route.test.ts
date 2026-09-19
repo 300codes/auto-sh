@@ -12,15 +12,35 @@ jest.mock('../../events', () => ({ emitDeliveryOsEvent: jest.fn(async () => unde
 import '@open-mercato/core/modules/delivery_os/commands'
 import { GET, metadata, openApi } from '../projects/[id]/flow/route'
 import { POST as PIN } from '../projects/[id]/flow/pin/route'
+import { POST as DEPLOY } from '../projects/[id]/deploy-decisions/route'
 import { PUT as PUT_INTAKE } from '../projects/[id]/intake/route'
-import { FOREIGN_ORG_ID, ORG_ID, PROJECT_ID, TENANT_ID, catchHttpError, expectFrozenBody } from '../../commands/__tests__/baselineTestKit'
+import { PUT as UPDATE_TASK } from '../tasks/route'
+import {
+  BASELINE_ID,
+  FOREIGN_ORG_ID,
+  ORG_ID,
+  PROJECT_ID,
+  TENANT_ID,
+  UPDATED_AT,
+  catchHttpError,
+  expectFrozenBody,
+  makeApproval,
+  type Row,
+} from '../../commands/__tests__/baselineTestKit'
 import { createDeliveryOsFlowQueries } from '../../commands/flowQueries'
 import { createDeliveryOsReportQueries } from '../../commands/reportQueries'
-import { FLOW_APPROVAL_STAGE_ORDER, flowStatusV1Schema, type FlowStageId, type FlowStatusV1 } from '../../lib/contracts'
+import {
+  FLOW_APPROVAL_STAGE_ORDER,
+  FLOW_GATE_DETAIL_CODES,
+  flowStatusV1Schema,
+  type FlowStageId,
+  type FlowStatusV1,
+  type SourceRevision,
+} from '../../lib/contracts'
 import { hashFlowTemplate } from '../../lib/flowRules'
 import { DEFAULT_FLOW_TEMPLATE } from '../../lib/flowTemplates'
 import { loadIntakeFixture } from '../../lib/fixtures/flow/index'
-import { seedReadyTask } from './attemptRouteKit'
+import { reserve, seedReadyTask } from './attemptRouteKit'
 import { createProject, expectStatus, prepareReadyTask, projectVersion, reserveOn, type Json } from './flowHelpers'
 import {
   EM_WRITE_METHODS,
@@ -29,6 +49,7 @@ import {
   apiRequest,
   em,
   isAllowedBy,
+  makeTaskRow,
   readBody,
   resetRouteState,
   routeParams,
@@ -274,5 +295,90 @@ describe('GET /projects/:id/flow (F6)', () => {
     const viaDi = await createDeliveryOsFlowQueries(em as never).flowStatus(projectId, { tenantId: TENANT_ID, organizationId: ORG_ID })
     expect(viaDi).toEqual(viaRoute)
     await expect(createDeliveryOsFlowQueries(em as never).flowStatus(projectId, { tenantId: '', organizationId: ORG_ID })).rejects.toThrow('[internal]')
+  })
+})
+
+const DRAFT_TASK_ID = '7c7c7c7c-7777-4777-8777-777777777778'
+const REVISION: SourceRevision = { kind: 'git', commitSha: '687670c20c93d6a60c2ab494419ec38636cf0a8c' }
+const RAW_HASH = 'd'.repeat(64)
+const STAGE_DETAIL_PATH = /^stages\.(scope|ux|key_visual|design_system_ui)$/
+
+function evidenceRow(kind: string, payload: unknown, sequence: number): Row {
+  return {
+    id: `eeeeeeee-eeee-4eee-8eee-${String(sequence).padStart(12, '0')}`,
+    tenantId: TENANT_ID,
+    organizationId: ORG_ID,
+    projectId: PROJECT_ID,
+    baselineId: BASELINE_ID,
+    taskId: null,
+    kind,
+    sourceRevision: REVISION,
+    payload,
+    rawReportHash: RAW_HASH,
+    createdAt: new Date(Date.UTC(2026, 8, 19, 10, 0, sequence)),
+  }
+}
+
+function seedGreenEvidence(): void {
+  const content = routeState.store.baselines[0].content as { acTestMap: Record<string, string[]> }
+  const check = (acId: string) => ({
+    checkId: 'unit-tests',
+    testId: content.acTestMap[acId][0],
+    status: 'passed',
+    sourceRevision: REVISION,
+    acIds: [],
+    rawReportHash: RAW_HASH,
+  })
+  routeState.store.evidence.push(
+    evidenceRow('test', { rawReportHash: RAW_HASH, checks: [check('AC-001'), check('AC-002')] }, 1),
+    evidenceRow('scan', { checkId: 'dependency-audit', scanner: 'npm audit', status: 'passed', rawReportHash: RAW_HASH }, 2),
+  )
+}
+
+function seedPinnedProjectWithClosedGate(): void {
+  seedReadyTask()
+  pinStoredProject()
+  const baseline = routeState.store.baselines[0]
+  routeState.store.decisions.push(
+    makeApproval(baseline as never, 'requirements') as unknown as Row,
+    makeApproval(baseline as never, 'design') as unknown as Row,
+  )
+  routeState.store.tasks.push(makeTaskRow({ id: DRAFT_TASK_ID, baselineId: BASELINE_ID }))
+  seedGreenEvidence()
+}
+
+async function expectFlowGateRefusal(response: Response): Promise<void> {
+  const body = await expectStatus(response, 422)
+  expect(body.code).toBe('baseline_not_approved')
+  const details = body.details as Array<{ path: string; code: string }>
+  expect(details.length).toBeGreaterThan(0)
+  for (const detail of details) {
+    expect(detail.path).toMatch(STAGE_DETAIL_PATH)
+    expect(FLOW_GATE_DETAIL_CODES).toContain(detail.code)
+  }
+}
+
+describe('frozen v1 routes on a pinned project without approved stages (C21, UA-48)', () => {
+  it('refuses task ready, attempt reserve and the deploy decision with 422 baseline_not_approved and stage details', async () => {
+    seedPinnedProjectWithClosedGate()
+    const projectLock = (routeState.store.projects[0].updatedAt as Date).toISOString()
+
+    await expectFlowGateRefusal(
+      await UPDATE_TASK(apiRequest('PUT', '/tasks', { body: { id: DRAFT_TASK_ID, status: 'ready' }, lock: UPDATED_AT })),
+    )
+    await expectFlowGateRefusal(await reserve({ key: 'flow-gate-v1-edge' }))
+    await expectFlowGateRefusal(
+      await DEPLOY(
+        apiRequest('POST', `/projects/${PROJECT_ID}/deploy-decisions`, {
+          body: { baselineId: BASELINE_ID, sourceRevision: REVISION, verdict: 'approved' },
+          lock: projectLock,
+        }),
+        routeParams(PROJECT_ID),
+      ),
+    )
+
+    expect(routeState.store.tasks.map((task) => task.status)).toEqual(['ready', 'draft'])
+    expect(routeState.store.tasks[0].executionAttempts).toEqual([])
+    expect(routeState.store.decisions.filter((decision) => decision.kind === 'deploy')).toEqual([])
   })
 })

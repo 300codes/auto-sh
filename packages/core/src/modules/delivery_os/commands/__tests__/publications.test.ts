@@ -642,6 +642,16 @@ describe('delivery_os.publications.record — refusals', () => {
     expectNothingWritten()
   })
 
+  it('answers 422 revision_mismatch for a verification evidence whose stored revision cannot be read', async () => {
+    seedApprovedDeploy()
+    store.evidence.push(evidenceRow('screenshot', {}, { sourceRevision: { kind: 'bogus' } }))
+    const evidenceId = store.evidence.at(-1)?.id as string
+    const error = await catchHttpError(() => run(publication(verifiedBy(evidenceId))))
+    expectFrozenBody(error, 422, 'revision_mismatch')
+    expect(detailCodes(error)).toEqual(['revision_mismatch'])
+    expectNothingWritten()
+  })
+
   it('accepts a verification evidence without a source revision on the same baseline', async () => {
     seedApprovedDeploy()
     const evidenceId = seedEvidence('screenshot', {}, { sourceRevision: null })
@@ -758,6 +768,15 @@ describe('delivery_os.publications.record — flow gate (UA-48 publication path)
 
   it('fails closed when the pinned snapshot is unreadable', async () => {
     store.projects[0] = pinnedProject({ flowTemplateSnapshot: null })
+    seedStages('none')
+    seedApprovedDeploy()
+    const error = await catchHttpError(() => run(publication()))
+    expectFlowGateRefusal(error, { scope: 'stage_not_approved', ux: 'stage_not_approved', key_visual: 'stage_not_approved', design_system_ui: 'stage_not_approved' })
+    expectNothingWritten()
+  })
+
+  it('fails closed when the pinned template ref lost its hash', async () => {
+    store.projects[0] = pinnedProject({ flowTemplateHash: '' })
     seedStages('none')
     seedApprovedDeploy()
     const error = await catchHttpError(() => run(publication()))

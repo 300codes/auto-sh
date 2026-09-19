@@ -15,6 +15,7 @@ import {
   deliveryFlowErrorBodySchema,
   deliveryReportFlowSectionSchema,
   publicationListResponseSchema,
+  stageArtifactV1Schema,
   type BaselineContentV1,
   type ClientApproval,
   type DeliveryReportFlowSection,
@@ -51,7 +52,8 @@ import {
 
 const FIXTURES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'fixtures')
 const baselineContent = JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'baseline-content.v1.json'), 'utf-8')) as BaselineContentV1
-const scopeArtifactFixture = JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'flow', 'stage-artifact.scope.v1.json'), 'utf-8')) as StageArtifactV1
+const scopeArtifactFixture = stageArtifactV1Schema.parse(JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'flow', 'stage-artifact.scope.v1.json'), 'utf-8')))
+const uxArtifactFixture = stageArtifactV1Schema.parse(JSON.parse(readFileSync(path.join(FIXTURES_DIR, 'flow', 'stage-artifact.ux.v1.json'), 'utf-8')))
 const API = '/api/delivery_os'
 const LOCK_HEADER = 'x-om-ext-optimistic-lock-expected-updated-at'
 const PNG_1X1 = Buffer.from(
@@ -245,17 +247,18 @@ function clientApproval(): ClientApproval {
 }
 
 function stageArtifact(projectId: string, stageId: FlowStageId, dependsOn: Array<ArtifactRef & { stageId: FlowStageId }>, summary: string): StageArtifactV1 {
-  if (stageId === 'scope') return { ...scopeArtifactFixture, projectId, source: 'manual' } as StageArtifactV1
-  return {
-    schemaVersion: 'delivery.stage-artifact/v1',
+  if (stageId === 'scope') return stageArtifactV1Schema.parse({ ...scopeArtifactFixture, projectId, source: 'manual' })
+  if (uxArtifactFixture.stageId !== 'ux') throw new Error('[internal] stage-artifact.ux.v1.json is not a ux artifact')
+  return stageArtifactV1Schema.parse({
+    schemaVersion: uxArtifactFixture.schemaVersion,
     projectId,
     stageId,
     source: 'manual',
     dependsOn,
     attachments: [],
     producedBy: null,
-    content: { summary, figmaRefs: [], screens: [], notes: null, resolvedThreadKeys: [] },
-  } as StageArtifactV1
+    content: { ...uxArtifactFixture.content, summary, screens: [], resolvedThreadKeys: [] },
+  })
 }
 
 async function recordArtifact(call: Call, projectId: string, artifact: StageArtifactV1): Promise<ArtifactRef> {
@@ -394,7 +397,7 @@ async function runTeardownSteps(steps: Array<() => Promise<void>>): Promise<void
 }
 
 async function cleanup(request: APIRequestContext, token: string | null, projectIds: string[], attachmentIds: string[]): Promise<void> {
-  await deleteProjectsInDb(projectIds).catch(() => undefined)
+  await deleteProjectsInDb(projectIds)
   for (const attachmentId of attachmentIds) await deleteAttachmentIfExists(request, token, attachmentId)
 }
 

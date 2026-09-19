@@ -50,11 +50,23 @@ function isApprovalStage(stageId: string): stageId is FlowStageId {
   return (FLOW_APPROVAL_STAGE_ORDER as readonly string[]).includes(stageId)
 }
 
-/** One blocker per attempt that is still running or whose outcome is unknown: nothing may be dispatched over it. */
+/** Mirrors the `.max(200)` bound on `flowStatusV1Schema.blockers` and `flowGateSchema.blocking`. */
+export const FLOW_BLOCKER_LIMIT = 200
+
+function capBlockers(blockers: readonly FlowBlocker[], keep: 'first' | 'last'): FlowBlocker[] {
+  if (blockers.length <= FLOW_BLOCKER_LIMIT) return [...blockers]
+  return keep === 'first' ? blockers.slice(0, FLOW_BLOCKER_LIMIT) : blockers.slice(-FLOW_BLOCKER_LIMIT)
+}
+
+/**
+ * One blocker per attempt that is still running or whose outcome is unknown: nothing may be dispatched over it.
+ * The register is chronological, so the newest attempts survive the schema cap.
+ */
 export function attemptBlockers(register: AttemptRegister): FlowBlocker[] {
-  return register
+  const blockers = register
     .filter((attempt) => isAttemptActive(attempt) || attempt.state === 'reconciliation_required')
     .map((attempt) => ({ kind: 'attempt_active' as const, stageId: null, ref: attempt.attemptId }))
+  return capBlockers(blockers, 'last')
 }
 
 export function pendingApprovalsFor(template: FlowTemplateV1, states: StageCurrencyMap): FlowPendingApproval[] {
@@ -131,11 +143,14 @@ function latestTimestamp(project: FlowStatusProject, artifacts: readonly FlowSta
   return latest
 }
 
-/** Open comments gate an approval (F8), never dispatch or publication, so they stay out of the gate lists. */
+/**
+ * Open comments gate an approval (F8), never dispatch or publication, so they stay out of the gate lists. `ok` is
+ * decided on the full list, never on the capped one, so truncation can never open a closed gate.
+ */
 function gateFrom(states: StageCurrencyMap, extraBlockers: readonly FlowBlocker[] = []): FlowGate {
   const check = checkFlowGate(states)
   const blocking = [...flowGateBlockers(states).filter((blocker) => blocker.kind !== 'open_comments'), ...extraBlockers]
-  return { ok: check.ok && extraBlockers.length === 0, blocking }
+  return { ok: check.ok && extraBlockers.length === 0, blocking: capBlockers(blocking, 'first') }
 }
 
 /** The F6 route derives its per-stage open-thread counts from the same predicate F8 blocks on. */
@@ -173,7 +188,7 @@ export function buildFlowStatus(input: FlowStatusInput): FlowStatusV1 {
       currentStageId: null,
       stages: [],
       pendingApprovals: [],
-      blockers: [...flowGateBlockers(null), ...attempts],
+      blockers: capBlockers([...flowGateBlockers(null), ...attempts], 'first'),
       gates: { dispatchable: OPEN_GATE, publishable: OPEN_GATE },
       nextAction: input.intakeStep !== null ? { kind: 'pin_template', stageId: null } : { kind: 'none', stageId: null },
     }
@@ -187,7 +202,7 @@ export function buildFlowStatus(input: FlowStatusInput): FlowStatusV1 {
     currentStageId,
     stages: stageStatuses(project.template, states, pendingApprovals, input.openThreadsByStage),
     pendingApprovals,
-    blockers: [...intakeBlockers, ...flowGateBlockers(states), ...attempts],
+    blockers: capBlockers([...intakeBlockers, ...flowGateBlockers(states), ...attempts], 'first'),
     gates: { dispatchable: gateFrom(states, attempts), publishable: gateFrom(states) },
     nextAction,
   }

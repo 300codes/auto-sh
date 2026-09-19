@@ -129,7 +129,7 @@ describe('GET /projects/:id/report — F15 flow section', () => {
     const { status, body } = await readJson(await getReport())
     expect(status).toBe(200)
     const parsed = deliveryReportWithFlowSchema.parse(body)
-    expect(deliveryReportV1Schema.safeParse(body).success).toBe(true)
+    expect(Object.keys(body)).toEqual([...Object.keys(deliveryReportV1Schema.shape), 'flow'])
     expect(parsed.flow).toEqual({
       template: { templateId: DEFAULT_FLOW_TEMPLATE.templateId, version: DEFAULT_FLOW_TEMPLATE.version, hash: TEMPLATE_HASH },
       stages: FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, currency: 'missing', approvedArtifact: null, decisionId: null, clientApproved: false })),

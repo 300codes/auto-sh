@@ -22,7 +22,7 @@ import type { DeliveryScope } from './shared'
 
 const logger = createLogger('delivery_os')
 
-export type PinnedFlowProject = Pick<DeliveryProject, 'id' | 'flowTemplateId' | 'flowTemplateSnapshot'>
+export type PinnedFlowProject = Pick<DeliveryProject, 'id' | 'flowTemplateId' | 'flowTemplateVersion' | 'flowTemplateHash' | 'flowTemplateSnapshot'>
 
 export type FlowGateStates = { template: FlowTemplateV1; states: StageCurrencyMap }
 
@@ -82,12 +82,14 @@ export function readPinnedTemplateRef(project: Pick<DeliveryProject, 'flowTempla
 
 /**
  * Stage currency of a pinned project derived from the snapshot and the append-only rows; `null` for legacy projects
- * and `'unreadable'` when the pinned snapshot no longer parses (the gate then fails closed).
+ * and `'unreadable'` when the pin can no longer be read — either the snapshot does not parse or the pinned template
+ * ref (id/version/hash) is incomplete. Both cases fail the gate closed, matching what the F6 and report reads report.
  */
 export async function loadFlowGateStates(em: EntityManager, project: PinnedFlowProject, scope: DeliveryScope): Promise<FlowGateStates | 'unreadable' | null> {
   if (!isFlowPinned(project)) return null
   const template = readPinnedTemplate(project)
   if (!template) return 'unreadable'
+  if (!readPinnedTemplateRef(project)) return 'unreadable'
   const artifactRows = await loadStageArtifactRows(em, project.id, scope)
   const decisionRows = await loadStageDecisionRows(em, project.id, scope)
   const states = computeStageCurrency(template, artifactRows.map(toStageArtifactRecord), decisionRows.map(toStageDecisionRecord))

@@ -1,7 +1,7 @@
 import { flowStatusV1Schema, deliveryReportFlowSectionSchema, type ExecutionAttempt, type FlowStageId } from '../contracts'
 import type { StageArtifactRecord, StageDecisionRecord } from '../flowRules'
 import { hashFlowTemplate } from '../flowRules'
-import { attemptBlockers, buildDeliveryReportFlowSection, buildFlowStatus, countBlockingThreadsByStage, type FlowStatusInput } from '../flowStatus'
+import { attemptBlockers, buildDeliveryReportFlowSection, buildFlowStatus, countBlockingThreadsByStage, FLOW_BLOCKER_LIMIT, type FlowStatusInput } from '../flowStatus'
 import { computeStageCurrency } from '../flowRules'
 import { loadFlowStatusFixture, loadFlowTemplateFixture } from '../fixtures/flow/index'
 
@@ -217,6 +217,17 @@ describe('buildFlowStatus — progression and blockers', () => {
     expect(status.pendingApprovals.map((approval) => approval.stageId)).toEqual(['key_visual'])
   })
 
+  it('caps blockers and gate blocking at the published schema bound', () => {
+    const attempts = Array.from({ length: FLOW_BLOCKER_LIMIT + 5 }, (_entry, index) =>
+      attempt(`eeee${String(index).padStart(4, '0')}-eeee-4eee-8eee-eeeeeeeeeeee`, 'reserved'),
+    )
+    const status = buildFlowStatus(fixtureInput({ attempts }))
+    expect(() => flowStatusV1Schema.parse(status)).not.toThrow()
+    expect(status.blockers).toHaveLength(FLOW_BLOCKER_LIMIT)
+    expect(status.gates.dispatchable.blocking).toHaveLength(FLOW_BLOCKER_LIMIT)
+    expect(status.gates.dispatchable.ok).toBe(false)
+  })
+
   it('never mutates its input rows', () => {
     const input = fixtureInput()
     const snapshot = JSON.stringify(input)
@@ -248,6 +259,22 @@ describe('buildDeliveryReportFlowSection', () => {
     ])
     expect(section.gate).toEqual(fixture.gates.publishable)
     expect(JSON.stringify(section)).not.toMatch(/approverName/)
+  })
+
+  it('keeps the approving decision of a stage whose newer version was rejected', () => {
+    const kvV2 = record('aaaaaaa6-aaaa-4aaa-8aaa-aaaaaaaaaaa6', 'key_visual', 2, hash('6'), [bind(uxV1)])
+    const kvRejected = decide('ddddddd8-dddd-4ddd-8ddd-ddddddddddd8', kvV2, 'rejected', false, '2026-09-19T10:40:00.000Z')
+    const section = buildDeliveryReportFlowSection(
+      fixtureInput({ artifacts: [scopeV1, uxV1, kvV1, dsV1, kvV2], decisions: [scopeApproved, uxApproved, kvApproved, dsApproved, kvRejected] }),
+    )
+    expect(section).not.toBeNull()
+    expect(section?.stages.find((stage) => stage.stageId === 'key_visual')).toEqual({
+      stageId: 'key_visual',
+      currency: 'rejected',
+      approvedArtifact: { artifactId: kvV1.id, version: kvV1.version, contentHash: kvV1.contentHash },
+      decisionId: kvApproved.id,
+      clientApproved: true,
+    })
   })
 
   it('reports an open gate once every stage is approved', () => {

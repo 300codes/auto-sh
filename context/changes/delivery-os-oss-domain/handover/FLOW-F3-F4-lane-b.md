@@ -112,3 +112,10 @@ The fixture marker (`*.example.test` host, `fixture:` ref — `FAKE_DEPLOY_HOST_
 
 - Error codes: `baseline_mismatch`, `unsupported_evidence_kind`, `foreign_reference`, `deployment_unverified`.
 - Detail codes: `verification_evidence_kind`, `verification_evidence_not_passed`, `foreign_release_decision`, `foreign_evidence`, `deploy_decision_rejected`, `deploy_revision_mismatch`.
+
+## T069 audit-fix addendum (appended; supersedes the matching statements above)
+
+- Scope: F14 and the stage approver check authorize through `authorizeFeatures` (`@open-mercato/shared/security/featurePolicy`), so `feature-policy-authorization-coverage` is green; the flow gate fails closed on an incomplete pinned template ref (version/hash lost, snapshot intact), matching F6/F15; F6 blockers and gate lists are capped at the schema bound (`FLOW_BLOCKER_LIMIT = 200`); F14 parses the stored verification revision with `sourceRevisionSchema` (unreadable → deliberate `422 revision_mismatch`); F14 list orders by `createdAt, publishedAt, id` desc; `publication-result.v1.json` now carries the `*.example.test` / `fixture:` markers. No migration, ACL, event or DI change.
+- Merge note (replaces T068 note 3): `routeTestKit.ts` `emptyRouteStore` / `ORDERED_ENTITIES` and `scopeChange.test.ts` `IMMUTABLE_SUBJECTS` are back to their original single-line form with lane B's entry appended last — take lane A's line and append `publications` / `DeliveryPublication` / `'publications'` at the end.
+- Merge note (F1 code on both lanes): `packages/core/src/modules/delivery_os/lib/stageDecisions.ts` — `hasAllFeatures(grantedFeatures, templateStage.approverFeatures)` from `@open-mercato/shared/security/features` becomes `authorizeFeatures(templateStage.approverFeatures, { grantedFeatures })` from `@open-mercato/shared/security/featurePolicy` (import + one call line). Lane A must take it, otherwise the repo gate stays red on `dev-mateusz`.
+- Tests: core `src/__tests__` 24 suites / 224 tests green; `src/modules/delivery_os` 96 suites / 1821 tests green; core `tsc --noEmit` clean; eslint 0 errors; FLOW-07 Playwright spec lists 5 tests (not run on this branch — standing blocker).

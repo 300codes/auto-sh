@@ -59,7 +59,7 @@ export async function GET(request: Request, context: DeliveryRouteContext): Prom
       em,
       DeliveryPublication,
       where,
-      { orderBy: { createdAt: 'desc', id: 'desc' }, limit: pageSize, offset: (page - 1) * pageSize },
+      { orderBy: { createdAt: 'desc', publishedAt: 'desc', id: 'desc' }, limit: pageSize, offset: (page - 1) * pageSize },
       scope,
     )
     const total = await em.count(DeliveryPublication, where)
@@ -127,7 +127,7 @@ export const openApi: OpenApiRouteDoc = {
         {
           status: 422,
           description:
-            'unsupported_schema_version, deploy_decision_missing (no approved deploy decision for baselineId + sourceRevision, or a newer reject), revision_mismatch (deployDecisionId bound to another revision), stage_not_approved (flow gate, pinned projects), deployment_unverified (verified without method, checkedAt or evidenceId), foreign_reference (baseline, project or verification evidence of another project), unsupported_evidence_kind (verification evidence is not a passed test/scan or approved review), baseline_mismatch (verification evidence recorded on another baseline), revision_mismatch (verification evidence recorded on another sourceRevision)',
+            'unsupported_schema_version, deploy_decision_missing (no approved deploy decision for baselineId + sourceRevision, or a newer reject), revision_mismatch (deployDecisionId bound to another revision), stage_not_approved (flow gate, pinned projects), deployment_unverified (verified without method, checkedAt or evidenceId), foreign_reference (baseline, project or verification evidence of another project, or a releaseDecisionId that is not an existing release decision of this project — detail code foreign_release_decision), unsupported_evidence_kind (verification evidence is not a passed test/scan or approved review), baseline_mismatch (verification evidence recorded on another baseline), revision_mismatch (verification evidence recorded on another sourceRevision or holding an unreadable one), foreign_reference on snapshotRef.attachmentId (the snapshot names a file that is not available in this organization — detail code attachment_scope_mismatch, re-pathed from attachmentIds.0)',
           schema: deliveryFlowErrorBodySchema,
         },
         { status: 428, description: 'Project version header missing (new publication only)', schema: deliveryFlowErrorBodySchema },

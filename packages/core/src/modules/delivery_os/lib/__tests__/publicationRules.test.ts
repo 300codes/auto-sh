@@ -160,7 +160,7 @@ describe('buildDeploymentEvidencePayload', () => {
     const publication = loadPublicationResultFixture()
     const payload = deploymentEvidencePayloadSchema.parse(buildDeploymentEvidencePayload(publication))
     expect(payload).toEqual({
-      url: 'https://preview.example.com/psi-fryzjer',
+      url: 'https://preview.example.test/psi-fryzjer',
       environment: 'preview',
       buildId: FIXTURE_CONTENT_HASH,
       deployedAt: '2026-09-19T12:00:00.000Z',

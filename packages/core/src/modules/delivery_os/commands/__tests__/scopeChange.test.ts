@@ -70,14 +70,7 @@ type Store = KitStore & { evidence: DeliveryEvidence[] }
 const MODULE_ROOT = join(__dirname, '..', '..')
 const V2_BASELINE_ID = '5a5a5a5a-5555-4555-8555-5555555555b2'
 const V2_TASK_ID = '66666666-6666-4666-8666-6666666666b2'
-const IMMUTABLE_SUBJECTS = [
-  'baselines',
-  'decisions',
-  'results',
-  'evidence',
-  'artifacts',
-  'publications',
-]
+const IMMUTABLE_SUBJECTS = ['baselines', 'decisions', 'results', 'evidence', 'artifacts', 'publications']
 const WRITE_METHODS = ['PUT', 'PATCH', 'DELETE']
 const MUTATING_ACTIONS = /(^|[._])(update|delete|remove|edit|archive|replace|patch|override|expire|auto_approve)/
 
