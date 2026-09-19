@@ -7,6 +7,7 @@ import { LoadingMessage, ErrorMessage, TabEmptyState } from '@open-mercato/ui/ba
 import { StatusBadge, type StatusMap } from '@open-mercato/ui/primitives/status-badge'
 import { Button } from '@open-mercato/ui/primitives/button'
 import type { ProjectDetail, TaskDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
+import { findActiveAttempt } from '@open-mercato/core/modules/delivery_os/components/task/attemptRegister'
 import type { SectionSource } from './useProjectSections'
 
 export type TasksSectionProps = {
@@ -121,8 +122,11 @@ export function TasksSection({
         <ul className="space-y-2">
           {state.data.map((task) => {
             const selected = task.id === selectedTaskId
+            // Same function the task detail uses, so the list and the detail can
+            // never disagree about which attempt is running.
+            const activeAttempt = findActiveAttempt(task)
             return (
-              <li key={task.id}>
+              <li key={task.id} className="space-y-1">
                 <button
                   type="button"
                   aria-pressed={selected}
@@ -143,6 +147,15 @@ export function TasksSection({
                         {t('delivery_os.project.sections.tasks.attention.reconciliation')}
                       </StatusBadge>
                     ) : null}
+                    {activeAttempt ? (
+                      <span data-testid={`task-active-attempt-${task.id}`}>
+                        <StatusBadge variant="info" dot>
+                          {t('delivery_os.project.sections.tasks.attempts.active', {
+                            state: t(`delivery_os.task.attempts.state.${activeAttempt.state}`),
+                          })}
+                        </StatusBadge>
+                      </span>
+                    ) : null}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                     <span className="font-mono">{task.acIds.join(', ') || '—'}</span>
@@ -150,6 +163,18 @@ export function TasksSection({
                     <AttemptRegister task={task} />
                   </div>
                 </button>
+                {/*
+                  A sibling of the selection button, never a child: a link inside
+                  a button is invalid markup and would break the existing
+                  select/deselect contract this row already carries.
+                */}
+                <a
+                  data-testid={`delivery-task-open-${task.id}`}
+                  href={`/backend/delivery/projects/${encodeURIComponent(task.projectId)}/tasks/${encodeURIComponent(task.id)}`}
+                  className="inline-block text-xs underline underline-offset-2"
+                >
+                  {t('delivery_os.project.sections.tasks.open')}
+                </a>
               </li>
             )
           })}
