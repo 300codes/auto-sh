@@ -339,6 +339,13 @@ Wybory produktowe są rozstrzygnięte. Dane operacyjne (konto/pliki/URL/konkretn
 
 ## Progress — odwołanie do rejestru kanonicznego
 
+2026-09-19: rozpoczęto wykonanie. Przygotowanie, aktualne blokady D1–D3 oraz niewykonane
+kontrole opisuje [handoff](handoff.md); materiały próby: [scenariusz](demo-scenario.md),
+[readiness](readiness.md), [protokół próby](rehearsal.md). Faza 2 czeka na dostawy OSS,
+próba i live na zależności i odbiór. Użytkownik ograniczył w tej sesji walidację do
+nowych testów lub TS nowych plików; pełny gate pozostaje niewykonany. Nie zaliczono
+żadnego kryterium ani manualnej weryfikacji.
+
 Zgodnie z README nie tworzymy drugiej checklisty. Żadne kryterium nie zostaje zaliczone przez zapis tego planu. Kryteria faz powyżej są instrukcją weryfikacji; stan odbioru prowadzi wyłącznie [Progress planu głównego](../../plan.md#progress), z uwzględnieniem pierwszeństwa dodatku.
 
 | Kryterium | Wkład UI-06 | Pozostały współodbiór |

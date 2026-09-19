@@ -1,7 +1,7 @@
 ---
 id: autonomous-software-delivery-ui-06
 title: UI-06 — domknięcie raportu, próba obu wejść i pełny design live
-status: planned
+status: implementing
 created: 2026-09-19
 updated: 2026-09-19
 parent: autonomous-software-delivery
