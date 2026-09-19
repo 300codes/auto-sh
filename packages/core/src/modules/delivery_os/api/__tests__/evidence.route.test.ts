@@ -13,6 +13,7 @@ import '@open-mercato/core/modules/delivery_os/commands'
 import { POST, metadata, openApi } from '../projects/[id]/evidence/route'
 import { BASELINE_ID, FOREIGN_ORG_ID, ORG_ID, PROJECT_ID, TENANT_ID } from '../../commands/__tests__/baselineTestKit'
 import { emitDeliveryOsEvent } from '../../events'
+import { loadResultManifestFixture } from '../../lib/fixtures'
 import { evidenceRecordResponseSchema } from '../schemas'
 import { seedReadyTask } from './attemptRouteKit'
 import {
@@ -51,6 +52,38 @@ const deploymentBody = {
     deployedAt: '2026-09-19T10:10:00.000Z',
     uploadStatus: 'succeeded',
   },
+}
+
+const manifest = loadResultManifestFixture('git')
+
+const reviewBody = {
+  kind: 'review',
+  baselineId: BASELINE_ID,
+  taskId: TASK_ID,
+  sourceRevision: manifest.resultRevision,
+  payload: { verdict: 'approved', summary: 'All acceptance criteria are covered', reviewer: { kind: 'human' } },
+}
+
+function seedAcceptedResult(): void {
+  routeState.store.tasks[0].status = 'awaiting_review'
+  routeState.store.evidence.push({
+    id: '9e9e9e9e-9999-4999-8999-999999999999',
+    tenantId: TENANT_ID,
+    organizationId: ORG_ID,
+    projectId: PROJECT_ID,
+    baselineId: BASELINE_ID,
+    taskId: TASK_ID,
+    attemptId: null,
+    kind: 'result_manifest',
+    source: 'adapter',
+    sourceRevision: manifest.resultRevision,
+    payload: manifest,
+    payloadHash: SHA,
+    rawReportHash: null,
+    attachmentIds: [],
+    recordedBy: null,
+    createdAt: new Date('2026-09-18T08:30:00.000Z'),
+  })
 }
 
 function recordEvidence(body: unknown, options: { projectId?: string; headers?: Record<string, string> } = {}): Promise<Response> {
@@ -95,6 +128,33 @@ describe('POST /api/delivery_os/projects/:id/evidence', () => {
     expect(routeState.store.evidence).toHaveLength(1)
     expect(routeState.store.evidence[0]).toMatchObject({ kind: 'scan', source: 'manual', projectId: PROJECT_ID, baselineId: BASELINE_ID, rawReportHash: SHA })
     expect(jest.mocked(emitDeliveryOsEvent).mock.calls.map(([id]) => id)).toEqual(['delivery_os.evidence.recorded', 'delivery_os.evidence.recorded'])
+  })
+
+  it('verifies the task through an approved review and answers the task status', async () => {
+    seedAcceptedResult()
+    const created = await recordEvidence(reviewBody)
+    expect(created.status).toBe(201)
+    const body = await readBody(created)
+    expect(Object.keys(body).sort()).toEqual(['duplicate', 'evidenceId', 'taskStatus', 'taskUpdatedAt'])
+    expect(evidenceRecordResponseSchema.safeParse(body).success).toBe(true)
+    expect(body).toMatchObject({ duplicate: false, taskStatus: 'verified' })
+    expect(routeState.store.tasks[0]).toMatchObject({ status: 'verified', statusReason: null })
+    expect(jest.mocked(emitDeliveryOsEvent).mock.calls.map(([id]) => id)).toEqual(['delivery_os.evidence.recorded', 'delivery_os.task.updated'])
+
+    const replay = await recordEvidence(reviewBody)
+    expect(replay.status).toBe(200)
+    expect(await readBody(replay)).toMatchObject({ evidenceId: body.evidenceId, duplicate: true, taskStatus: 'verified' })
+    expect(routeState.store.evidence.filter((row) => row.kind === 'review')).toHaveLength(1)
+  })
+
+  it('answers 422 missing_required_tests when a required test did not pass on the result revision', async () => {
+    seedAcceptedResult()
+    const result = routeState.store.evidence[0]
+    result.payload = { ...manifest, checks: manifest.checks.map((check) => (check.acIds.includes('AC-001') ? { ...check, status: 'not_run' } : check)) }
+    const refused = await expectFrozenError(await recordEvidence(reviewBody), 422, 'missing_required_tests')
+    expect(detailCodesOf(refused)).toEqual(['ac_unproven'])
+    expect(routeState.store.tasks[0].status).toBe('awaiting_review')
+    expect(routeState.store.evidence).toHaveLength(1)
   })
 
   it('never changes the task and stores a deployment without verification as unverified', async () => {
@@ -142,12 +202,8 @@ describe('POST /api/delivery_os/projects/:id/evidence', () => {
     const unknownKind = await expectFrozenError(await recordEvidence({ ...scanBody, kind: 'result_manifest' }), 422, 'unsupported_evidence_kind')
     expect(detailCodesOf(unknownKind)).toEqual(['unsupported_evidence_kind'])
 
-    const review = await expectFrozenError(
-      await recordEvidence({ kind: 'review', baselineId: BASELINE_ID, taskId: TASK_ID, sourceRevision: GIT_REVISION, payload: { verdict: 'approved', summary: 'ok', reviewer: { kind: 'human' } } }),
-      422,
-      'unsupported_evidence_kind',
-    )
-    expect(detailCodesOf(review)).toEqual(['review_not_yet_supported'])
+    const notAwaitingReview = await expectFrozenError(await recordEvidence(reviewBody), 409, 'invalid_transition')
+    expect(detailCodesOf(notAwaitingReview)).toEqual(['task_not_awaiting_review'])
 
     const { buildId: _buildId, ...withoutBuildId } = deploymentBody.payload
     await expectFrozenError(await recordEvidence({ ...deploymentBody, payload: withoutBuildId }), 422, 'deployment_incomplete')

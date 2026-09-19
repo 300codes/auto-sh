@@ -6,10 +6,11 @@ import { emitCrudSideEffects } from '@open-mercato/shared/lib/commands/helpers'
 import { isUniqueViolation } from '@open-mercato/shared/lib/crud/errors'
 import type { CrudIndexerConfig } from '@open-mercato/shared/lib/crud/types'
 import type { DataEngine } from '@open-mercato/shared/lib/data/engine'
-import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
+import { findOneWithDecryption, findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { E } from '#generated/entities.ids.generated'
 import { DeliveryEvidence, DeliveryTask, type DeliveryBaseline, type DeliveryProject } from '../data/entities'
+import { proveAcceptanceCriteria, listUnprovenAcIds, type AcProofEvidence } from '../lib/acProof'
 import {
   acceptResultCommandSchema,
   parseRecordEvidenceBody,
@@ -18,7 +19,17 @@ import {
   type RecordableEvidenceKind,
 } from '../data/validators'
 import { closeAttempt, findAttempt, parseAttemptRegister, recordAttemptResult } from '../lib/attempts'
-import { buildDeliveryError, uuidSchema, type ExecutionAttempt, type TaskStatus } from '../lib/contracts'
+import {
+  buildDeliveryError,
+  isSameRevision,
+  type BaselineContentV1,
+  sourceRevisionSchema,
+  uuidSchema,
+  type ExecutionAttempt,
+  type SourceRevision,
+  type TaskStatus,
+  type TaskStatusReason,
+} from '../lib/contracts'
 import {
   checkScanEvidence,
   checkTestEvidence,
@@ -28,7 +39,13 @@ import {
 import { hashCanonical } from '../lib/hash'
 import { evaluateResultAcceptance } from '../lib/resultAcceptance'
 import { assertRevisionKind, isEvidenceKindPermitted, type TargetProfile } from '../lib/targetProfiles'
-import { canTransition } from '../lib/taskLifecycle'
+import {
+  canTransition,
+  changesRequestedOutcome,
+  planBlockPropagation,
+  planUnblockPropagation,
+  type VerificationEvidence,
+} from '../lib/taskLifecycle'
 import { isIssuedTrustedExecution, readTrustedExecutionOption } from '../lib/trustedExecution'
 import { emitDeliveryOsEvent } from '../events'
 import { verifyEvidenceAttachments, verifyResultArtifacts } from './attachments'
@@ -41,8 +58,10 @@ import {
   deliveryHttpError,
   DELIVERY_PROJECT_RESOURCE_KIND,
   lockScopedProject,
+  lockScopedProjectTasks,
   lockScopedTask,
   parseDeliveryInput,
+  requireActorUserId,
   requireScopedProject,
   requireScopedTask,
   resolveDeliveryEm,
@@ -50,12 +69,15 @@ import {
   type DeliveryScope,
 } from './shared'
 import {
+  applyPropagation,
+  countCorrectionRounds,
   emitTaskSideEffects,
   emitTaskUpdated,
   findProjectBaseline,
   foreignBaselineError,
   readBaselineContent,
   requireTaskProfile,
+  toLifecycleTask,
   unreadableBaselineError,
 } from './tasks'
 
@@ -303,6 +325,10 @@ export type EvidenceRecordCommandResult = {
   evidenceId: string
   duplicate: boolean
   kind: RecordableEvidenceKind
+  taskStatus?: TaskStatus
+  taskStatusReason?: string | null
+  taskUpdatedAt?: string
+  propagatedTaskIds?: string[]
 }
 
 type RecordOutcome = {
@@ -310,7 +336,21 @@ type RecordOutcome = {
   evidence: DeliveryEvidence | null
   taskId: string | null
   attemptId: string | null
+  task: DeliveryTask | null
+  moved: boolean
+  propagated: DeliveryTask[]
 }
+
+type ReviewInput = Extract<RecordEvidenceInput, { kind: 'review' }> & { taskId: string }
+
+function toReviewInput(input: Extract<RecordEvidenceInput, { kind: 'review' }>): ReviewInput {
+  if (input.taskId) return { ...input, taskId: input.taskId }
+  throw deliveryHttpError(
+    buildDeliveryError('validation_failed', 'A review must name the task it reviews', [{ path: 'taskId', code: 'validation_failed' }]),
+  )
+}
+
+type TaskTarget = { status: TaskStatus; statusReason: TaskStatusReason | null }
 
 function parseRecordEvidenceInput(rawInput: unknown): { projectId: string; evidence: RecordEvidenceInput } {
   const projectId = typeof rawInput === 'object' && rawInput !== null && 'projectId' in rawInput ? rawInput.projectId : undefined
@@ -320,13 +360,6 @@ function parseRecordEvidenceInput(rawInput: unknown): { projectId: string; evide
   }
   const parsed = parseRecordEvidenceBody(rawInput)
   if (!parsed.ok) throw deliveryHttpError(parsed)
-  if (parsed.data.kind === 'review') {
-    throw deliveryHttpError(
-      buildDeliveryError('unsupported_evidence_kind', 'Review evidence is not recorded through this command yet', [
-        { path: 'kind', code: 'review_not_yet_supported' },
-      ]),
-    )
-  }
   return { projectId: parsedProjectId.data, evidence: parsed.data }
 }
 
@@ -379,11 +412,16 @@ async function requireEvidenceTask(
     undefined,
     scope,
   )
-  if (!task) {
-    throw deliveryHttpError(
-      buildDeliveryError('foreign_reference', 'Task does not belong to this project', [{ path: 'taskId', code: 'foreign_task' }]),
-    )
-  }
+  if (!task) throw deliveryHttpError(foreignTaskError())
+  assertTaskPins(task, input)
+  return task
+}
+
+function foreignTaskError() {
+  return buildDeliveryError('foreign_reference', 'Task does not belong to this project', [{ path: 'taskId', code: 'foreign_task' }])
+}
+
+function assertTaskPins(task: DeliveryTask, input: RecordEvidenceInput): void {
   const details = task.baselineId === input.baselineId ? [] : [{ path: 'baselineId', code: 'task_baseline_mismatch' }]
   if (input.attemptId) {
     const register = parseAttemptRegister(task.executionAttempts)
@@ -397,7 +435,19 @@ async function requireEvidenceTask(
   if (details.length > 0) {
     throw deliveryHttpError(buildDeliveryError('baseline_mismatch', 'The task or attempt is pinned to another baseline', details))
   }
-  return task
+}
+
+function requireVerifiedBaselineContent(baseline: DeliveryBaseline): BaselineContentV1 {
+  const content = readBaselineContent(baseline)
+  if (!content) throw deliveryHttpError(unreadableBaselineError())
+  if (hashCanonical(baseline.content) !== baseline.contentHash) {
+    throw deliveryHttpError(
+      buildDeliveryError('hash_mismatch', 'Stored baseline content does not match its hash', [
+        { path: 'baselineId', code: 'stored_content_altered' },
+      ]),
+    )
+  }
+  return content
 }
 
 function assertKindRules(input: RecordEvidenceInput, profile: TargetProfile, baseline: DeliveryBaseline, task: DeliveryTask | null): void {
@@ -429,15 +479,7 @@ function assertKindRules(input: RecordEvidenceInput, profile: TargetProfile, bas
       ]),
     )
   }
-  const content = readBaselineContent(baseline)
-  if (!content) throw deliveryHttpError(unreadableBaselineError())
-  if (hashCanonical(baseline.content) !== baseline.contentHash) {
-    throw deliveryHttpError(
-      buildDeliveryError('hash_mismatch', 'Stored baseline content does not match its hash', [
-        { path: 'baselineId', code: 'stored_content_altered' },
-      ]),
-    )
-  }
+  const content = requireVerifiedBaselineContent(baseline)
   assertDeliveryCheck(
     checkTestEvidence({
       checks: input.payload.checks,
@@ -471,10 +513,11 @@ async function recordEvidenceInTransaction(
       buildDeliveryError('validation_failed', 'Evidence is not canonical JSON', [{ path: 'payload', code: 'validation_failed' }]),
     )
   }
+  if (input.kind === 'review') return recordReviewInTransaction(tx, ctx, project, toReviewInput(input), payloadHash, scope)
   const taskId = input.taskId ?? null
   const attemptId = input.attemptId ?? null
   const existing = await findRecordedEvidence(tx, project, input, payloadHash, scope)
-  if (existing) return { evidenceId: existing.id, evidence: null, taskId, attemptId }
+  if (existing) return { evidenceId: existing.id, evidence: null, taskId, attemptId, task: null, moved: false, propagated: [] }
 
   const baseline = await requireEvidenceBaseline(tx, project, input.baselineId, scope)
   const task = await requireEvidenceTask(tx, project, input, scope)
@@ -513,7 +556,260 @@ async function recordEvidenceInTransaction(
     recordedBy: recordedBy.success ? recordedBy.data : null,
   })
   tx.persist(evidence)
-  return { evidenceId: evidence.id, evidence, taskId, attemptId }
+  return { evidenceId: evidence.id, evidence, taskId, attemptId, task: null, moved: false, propagated: [] }
+}
+
+function compareByCreation(left: DeliveryEvidence, right: DeliveryEvidence): number {
+  const byTime = left.createdAt.getTime() - right.createdAt.getTime()
+  return byTime !== 0 ? byTime : left.id.localeCompare(right.id)
+}
+
+async function loadTaskEvidence(tx: EntityManager, project: DeliveryProject, taskId: string, scope: DeliveryScope): Promise<DeliveryEvidence[]> {
+  const rows = await findWithDecryption(
+    tx,
+    DeliveryEvidence,
+    { projectId: project.id, taskId, tenantId: scope.tenantId, organizationId: scope.organizationId },
+    undefined,
+    scope,
+  )
+  return [...rows].sort(compareByCreation)
+}
+
+async function loadProjectLevelTests(
+  tx: EntityManager,
+  project: DeliveryProject,
+  baselineId: string,
+  scope: DeliveryScope,
+): Promise<DeliveryEvidence[]> {
+  return findWithDecryption(
+    tx,
+    DeliveryEvidence,
+    { projectId: project.id, baselineId, taskId: null, kind: 'test', tenantId: scope.tenantId, organizationId: scope.organizationId },
+    undefined,
+    scope,
+  )
+}
+
+const REVIEW_HISTORY_KINDS: readonly string[] = ['review', 'result_manifest']
+
+function findReviewReplay(taskRows: readonly DeliveryEvidence[], input: ReviewInput, payloadHash: string): DeliveryEvidence | null {
+  const history = taskRows.filter((row) => REVIEW_HISTORY_KINDS.includes(row.kind))
+  const newest = history.at(-1)
+  if (!newest || newest.kind !== 'review' || newest.payloadHash !== payloadHash) return null
+  if ((newest.attemptId ?? null) !== (input.attemptId ?? null)) return null
+  return newest
+}
+
+function reviewNotAllowed(task: DeliveryTask): never {
+  throw deliveryHttpError(
+    buildDeliveryError('invalid_transition', `Task cannot be reviewed while ${task.status}`, [
+      { path: 'status', code: 'task_not_awaiting_review', message: 'Only a task awaiting review can be reviewed' },
+    ]),
+  )
+}
+
+function assertReviewer(input: ReviewInput, ctx: CommandRuntimeContext): void {
+  if (input.payload.reviewer.kind === 'human') requireActorUserId(ctx)
+  if (input.payload.manualCheckId === undefined) return
+  if (input.payload.reviewer.kind !== 'human') {
+    throw deliveryHttpError(
+      buildDeliveryError('validation_failed', 'A manual check is decided by a human', [
+        { path: 'payload.reviewer.kind', code: 'human_reviewer_required' },
+      ]),
+    )
+  }
+}
+
+function assertKnownManualCheck(task: DeliveryTask, content: BaselineContentV1, manualCheckId: string): void {
+  const known = task.acIds.some((acId) => Object.hasOwn(content.manualChecks, acId) && content.manualChecks[acId] === manualCheckId)
+  if (known) return
+  throw deliveryHttpError(
+    buildDeliveryError('unknown_test_id', 'Unknown manual check', [
+      { path: 'payload.manualCheckId', code: 'unknown_manual_check', message: `${manualCheckId} is not a manual check of this task` },
+    ]),
+  )
+}
+
+function findAcceptedResult(
+  taskRows: readonly DeliveryEvidence[],
+  task: DeliveryTask,
+  attemptId: string | null,
+): { row: DeliveryEvidence; revision: SourceRevision } {
+  const results = taskRows.filter((row) => row.kind === 'result_manifest' && (attemptId === null || row.attemptId === attemptId))
+  const onBaseline = results.filter((row) => row.baselineId === task.baselineId)
+  if (onBaseline.length === 0) {
+    if (results.length > 0) {
+      throw deliveryHttpError(
+        buildDeliveryError('baseline_mismatch', 'The accepted result belongs to another baseline', [
+          { path: 'evidence', code: 'baseline_mismatch', message: `No accepted result for baseline ${task.baselineId}` },
+        ]),
+      )
+    }
+    throw deliveryHttpError(
+      buildDeliveryError('missing_required_tests', 'The task has no accepted result to review', [
+        { path: 'evidence', code: 'missing_evidence', message: 'No result manifest accepted for the task' },
+      ]),
+    )
+  }
+  const row = onBaseline[onBaseline.length - 1]
+  const revision = sourceRevisionSchema.safeParse(row.sourceRevision)
+  if (!revision.success) {
+    throw deliveryHttpError(
+      buildDeliveryError('hash_mismatch', 'Stored result revision is not readable', [{ path: 'evidence', code: 'unreadable_result_revision' }]),
+    )
+  }
+  return { row, revision: revision.data }
+}
+
+function assertReviewedRevision(input: ReviewInput, resultRevision: SourceRevision): void {
+  if (input.sourceRevision && isSameRevision(input.sourceRevision, resultRevision)) return
+  throw deliveryHttpError(
+    buildDeliveryError('missing_required_tests', 'The review names another revision than the accepted result', [
+      { path: 'sourceRevision', code: 'revision_mismatch', message: 'Review the revision of the accepted result' },
+    ]),
+  )
+}
+
+function assertReviewedEvidence(input: ReviewInput, taskRows: readonly DeliveryEvidence[]): void {
+  const reviewedId = input.payload.reviewedEvidenceId
+  if (reviewedId === undefined || taskRows.some((row) => row.id === reviewedId)) return
+  throw deliveryHttpError(
+    buildDeliveryError('foreign_reference', 'Reviewed evidence does not belong to this task', [
+      { path: 'payload.reviewedEvidenceId', code: 'foreign_evidence' },
+    ]),
+  )
+}
+
+function toProofEvidence(row: DeliveryEvidence): AcProofEvidence {
+  const revision = sourceRevisionSchema.safeParse(row.sourceRevision)
+  return { id: row.id, kind: row.kind, baselineId: row.baselineId, sourceRevision: revision.success ? revision.data : null, payload: row.payload }
+}
+
+function toVerificationEvidence(row: AcProofEvidence): VerificationEvidence {
+  return { id: row.id, kind: row.kind, baselineId: row.baselineId, sourceRevision: row.sourceRevision }
+}
+
+type ReviewDecisionInput = {
+  task: DeliveryTask
+  project: DeliveryProject
+  content: BaselineContentV1
+  input: ReviewInput
+  resultRevision: SourceRevision
+  taskRows: readonly DeliveryEvidence[]
+  projectTests: readonly DeliveryEvidence[]
+}
+
+function decideReviewTarget(decision: ReviewDecisionInput): TaskTarget | null {
+  const { task, input } = decision
+  if (input.payload.manualCheckId !== undefined) return null
+  const base = { source: 'command' as const, statusReason: task.statusReason ?? null }
+  if (input.payload.verdict === 'changes_requested') {
+    const correction = { requested: countCorrectionRounds(decision.taskRows), max: decision.project.limits.maxCorrectionRounds }
+    const outcome = changesRequestedOutcome(correction)
+    assertDeliveryCheck(canTransition(task.status, outcome.status, { ...base, correction }))
+    return outcome
+  }
+  const evidence = [...decision.taskRows, ...decision.projectTests].sort(compareByCreation).map(toProofEvidence)
+  const proofs = proveAcceptanceCriteria({
+    acIds: task.acIds,
+    acTestMap: decision.content.acTestMap,
+    manualChecks: decision.content.manualChecks,
+    baselineId: task.baselineId,
+    revision: decision.resultRevision,
+    evidence,
+  })
+  assertDeliveryCheck(
+    canTransition(task.status, 'verified', {
+      ...base,
+      verification: {
+        taskBaselineId: task.baselineId,
+        resultRevision: decision.resultRevision,
+        evidence: evidence.map(toVerificationEvidence),
+        unprovenAcIds: listUnprovenAcIds(proofs),
+      },
+    }),
+  )
+  return { status: 'verified', statusReason: null }
+}
+
+function propagateReviewOutcome(task: DeliveryTask, tasks: readonly DeliveryTask[]): DeliveryTask[] {
+  const lifecycle = tasks.map(toLifecycleTask)
+  if (task.status === 'blocked') return applyPropagation(planBlockPropagation(task.id, lifecycle), tasks)
+  if (task.status === 'verified') return applyPropagation(planUnblockPropagation(task.id, lifecycle), tasks)
+  return []
+}
+
+async function recordReviewInTransaction(
+  tx: EntityManager,
+  ctx: CommandRuntimeContext,
+  project: DeliveryProject,
+  input: ReviewInput,
+  payloadHash: string,
+  scope: DeliveryScope,
+): Promise<RecordOutcome> {
+  const attemptId = input.attemptId ?? null
+  assertReviewer(input, ctx)
+  const taskRows = await loadTaskEvidence(tx, project, input.taskId, scope)
+  const replay = findReviewReplay(taskRows, input, payloadHash)
+  if (replay) {
+    const current = await requireScopedTask(tx, input.taskId, scope)
+    return { evidenceId: replay.id, evidence: null, taskId: input.taskId, attemptId, task: current, moved: false, propagated: [] }
+  }
+
+  const baseline = await requireEvidenceBaseline(tx, project, input.baselineId, scope)
+  const tasks = await lockScopedProjectTasks(tx, project.id, scope)
+  const task = tasks.find((candidate) => candidate.id === input.taskId)
+  if (!task) throw deliveryHttpError(foreignTaskError())
+  assertTaskPins(task, input)
+  const profile = requireTaskProfile(task.targetProfileId, task.targetProfileVersion)
+  assertKindRules(input, profile, baseline, task)
+  if (task.status !== 'awaiting_review') reviewNotAllowed(task)
+  const content = requireVerifiedBaselineContent(baseline)
+  if (input.payload.manualCheckId !== undefined) assertKnownManualCheck(task, content, input.payload.manualCheckId)
+  const accepted = findAcceptedResult(taskRows, task, attemptId)
+  assertReviewedRevision(input, accepted.revision)
+  assertReviewedEvidence(input, taskRows)
+  const projectTests = await loadProjectLevelTests(tx, project, task.baselineId, scope)
+  const target = decideReviewTarget({ task, project, content, input, resultRevision: accepted.revision, taskRows, projectTests })
+
+  const attachments = await verifyEvidenceAttachments(tx, ctx, { attachmentIds: input.attachmentIds ?? [] }, scope)
+  if (!attachments.ok) throw deliveryHttpError(attachments)
+
+  const recordedBy = uuidSchema.safeParse(ctx.auth?.sub)
+  const evidence = tx.create(DeliveryEvidence, {
+    id: randomUUID(),
+    tenantId: scope.tenantId,
+    organizationId: scope.organizationId,
+    projectId: project.id,
+    baselineId: baseline.id,
+    taskId: task.id,
+    attemptId,
+    kind: 'review',
+    source: 'manual',
+    sourceRevision: input.sourceRevision ?? null,
+    payload: { ...input.payload },
+    payloadHash,
+    rawReportHash: null,
+    attachmentIds: attachments.attachmentIds,
+    recordedBy: recordedBy.success ? recordedBy.data : null,
+  })
+  tx.persist(evidence)
+  if (!target) return { evidenceId: evidence.id, evidence, taskId: task.id, attemptId, task, moved: false, propagated: [] }
+  task.status = target.status
+  task.statusReason = target.statusReason
+  return { evidenceId: evidence.id, evidence, taskId: task.id, attemptId, task, moved: true, propagated: propagateReviewOutcome(task, tasks) }
+}
+
+function toRecordResult(outcome: RecordOutcome, kind: RecordableEvidenceKind): EvidenceRecordCommandResult {
+  const base = { evidenceId: outcome.evidenceId, duplicate: outcome.evidence === null, kind }
+  if (!outcome.task) return base
+  return {
+    ...base,
+    taskStatus: outcome.task.status,
+    taskStatusReason: outcome.task.statusReason ?? null,
+    taskUpdatedAt: (outcome.task.updatedAt ?? new Date()).toISOString(),
+    propagatedTaskIds: outcome.propagated.map((changed) => changed.id),
+  }
 }
 
 const recordEvidenceCommand: CommandHandler<unknown, EvidenceRecordCommandResult> = {
@@ -547,7 +843,13 @@ const recordEvidenceCommand: CommandHandler<unknown, EvidenceRecordCommandResult
         indexer: evidenceCrudIndexer,
       })
     }
-    return { evidenceId: outcome.evidenceId, duplicate: outcome.evidence === null, kind: input.kind }
+    if (outcome.moved && outcome.task) {
+      for (const changed of [outcome.task, ...outcome.propagated]) {
+        await emitTaskSideEffects(ctx, 'updated', changed)
+        await emitTaskUpdated(changed)
+      }
+    }
+    return toRecordResult(outcome, input.kind)
   },
   buildLog: async ({ input, result, ctx }) => {
     if (result.duplicate) return null

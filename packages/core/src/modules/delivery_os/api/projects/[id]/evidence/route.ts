@@ -45,8 +45,9 @@ export async function POST(request: Request, context: DeliveryRouteContext): Pro
       operation: 'custom',
     })
     if (outcome.blocked) return outcome.blocked
-    const { evidenceId, duplicate } = outcome.result
-    return NextResponse.json({ evidenceId, duplicate }, { status: duplicate ? 200 : 201 })
+    const { evidenceId, duplicate, taskStatus, taskUpdatedAt } = outcome.result
+    const body = taskStatus && taskUpdatedAt ? { evidenceId, duplicate, taskStatus, taskUpdatedAt } : { evidenceId, duplicate }
+    return NextResponse.json(body, { status: duplicate ? 200 : 201 })
   } catch (error) {
     return deliveryErrorResponse(error, 'delivery_os.evidence.record')
   }
@@ -58,9 +59,9 @@ export const openApi: OpenApiRouteDoc = {
   pathParams: z.object({ id: uuidSchema }),
   methods: {
     POST: {
-      summary: 'Record test, screenshot, scan, deployment or reference evidence',
+      summary: 'Record test, review, screenshot, scan, deployment or reference evidence',
       description:
-        'Append-only and discriminated by `kind`. The system checks the proof against the named baseline and the target profile: test checks must use the frozen AC-to-test map, a screenshot must match the stored file, a scan may not name a non-scan profile check, a deployment needs url, environment, buildId and the deployed revision and is stored `unverified` until a verification of the same build is included (`payload.verificationStatus` is derived by the system), and `reference_material` is permitted only by profiles that list it and never counts as acceptance evidence. Idempotent by the canonical hash of the body per project, kind, task and attempt: an identical replay answers 200 with `duplicate: true` and writes nothing. The endpoint never publishes and never changes a task status. `review` evidence is not recorded here yet.',
+        'Append-only and discriminated by `kind`. The system checks the proof against the named baseline and the target profile: test checks must use the frozen AC-to-test map, a screenshot must match the stored file, a scan may not name a non-scan profile check, a deployment needs url, environment, buildId and the deployed revision and is stored `unverified` until a verification of the same build is included (`payload.verificationStatus` is derived by the system), and `reference_material` is permitted only by profiles that list it and never counts as acceptance evidence. Idempotent by the canonical hash of the body per project, kind, task and attempt: an identical replay answers 200 with `duplicate: true` and writes nothing (a review is a replay only while it is still the newest review or result of its task). A `review` needs `taskId` and the revision of the accepted result and is the only kind that moves a task, answered with `taskStatus` and `taskUpdatedAt`: `changes_requested` moves `awaiting_review` to `changes_requested`, or to `blocked` with reason `correction_limit_reached` once `limits.maxCorrectionRounds` rounds were requested; `approved` moves `awaiting_review` to `verified` only when every acceptance criterion of the task is proven on the result revision (all required tests passed in the accepted manifest or test evidence, manual checks approved by a human review with `manualCheckId`), else 422 `missing_required_tests`. A review with `manualCheckId` records the human verdict for a manual check and moves nothing. An agent may review, but a manual check needs a signed-in human. The endpoint never publishes.',
       requestBody: { contentType: 'application/json', schema: recordEvidenceSchema },
       responses: [
         { status: 201, description: 'Evidence recorded', schema: evidenceRecordResponseSchema },
@@ -68,13 +69,18 @@ export const openApi: OpenApiRouteDoc = {
       ],
       errors: [
         { status: 400, description: 'Validation failed', schema: deliveryErrorBodySchema },
+        { status: 403, description: 'A human review without a signed-in user', schema: deliveryErrorBodySchema },
         { status: 404, description: 'Project or attempt not found in this scope', schema: deliveryErrorBodySchema },
-        { status: 409, description: 'The attempt list of the task is unreadable', schema: deliveryErrorBodySchema },
+        {
+          status: 409,
+          description: 'The attempt list of the task is unreadable, or the task is not awaiting review',
+          schema: deliveryErrorBodySchema,
+        },
         { status: 413, description: 'Body above the size limit', schema: deliveryErrorBodySchema },
         {
           status: 422,
           description:
-            'Unsupported kind, foreign baseline, task or file, baseline mismatch, unknown AC or test, false hash, incomplete deployment or wrong revision kind',
+            'Unsupported kind, foreign baseline, task, file or evidence, baseline mismatch, unknown AC, test or manual check, false hash, unproven acceptance criteria, incomplete deployment or wrong revision kind',
           schema: deliveryErrorBodySchema,
         },
       ],
