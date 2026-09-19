@@ -11,14 +11,42 @@ import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/sch
 
 export type DesignSectionProps = {
   state: SectionSource<BaselineDto[]>
+  selectedBaselineId?: string | null
   onRetry: () => void
+  /** Decision controls for the version on screen — rendered next to the content they judge. */
+  decisionFor?: (baseline: BaselineDto) => React.ReactNode
+  action?: React.ReactNode
+  /** Rendered under each screen — the comment thread bound to that render. */
+  commentsFor?: (screenAttachmentId: string) => React.ReactNode
 }
 
 /**
- * Metadata only — screen previews resolved from `attachmentId` belong to UI-03
- * together with the rest of the Figma work.
+ * A render whose bytes cannot be fetched is a named state, not a blank box: the
+ * operator approving a design has to know they are looking at metadata only.
  */
-export function DesignSection({ state, onRetry }: DesignSectionProps) {
+function ScreenPreview({ attachmentId, name }: { attachmentId: string; name: string }) {
+  const t = useT()
+  const [failed, setFailed] = React.useState(false)
+  if (failed) {
+    return (
+      <p data-testid={`screen-preview-unavailable-${attachmentId}`} className="text-xs text-status-error-text">
+        {t('delivery_os.project.sections.design.renderUnavailable')}
+      </p>
+    )
+  }
+  return (
+    <img
+      data-testid={`screen-preview-${attachmentId}`}
+      src={`/api/attachments/image/${encodeURIComponent(attachmentId)}?width=480&height=320`}
+      alt={name}
+      loading="lazy"
+      className="max-h-48 rounded border border-border"
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
+export function DesignSection({ state, selectedBaselineId = null, onRetry, action, commentsFor, decisionFor }: DesignSectionProps) {
   const t = useT()
   return (
     <BaselineSectionFrame
@@ -26,7 +54,9 @@ export function DesignSection({ state, onRetry }: DesignSectionProps) {
       titleKey="delivery_os.project.sections.design.title"
       countOf={(active) => active.content.screens.length}
       state={state}
+      selectedBaselineId={selectedBaselineId}
       onRetry={onRetry}
+      action={action}
     >
       {(active) => {
         const tokens = Object.entries(active.content.tokens)
@@ -47,6 +77,9 @@ export function DesignSection({ state, onRetry }: DesignSectionProps) {
                         </Badge>
                       ) : null}
                     </div>
+                    <div className="mt-2">
+                      <ScreenPreview attachmentId={screen.attachmentId} name={screen.name} />
+                    </div>
                     <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground sm:grid-cols-4">
                       <div>
                         <dt className="font-medium">{t('delivery_os.project.sections.design.nodeId')}</dt>
@@ -65,6 +98,7 @@ export function DesignSection({ state, onRetry }: DesignSectionProps) {
                         <dd>{new Date(screen.capturedAt).toLocaleString()}</dd>
                       </div>
                     </dl>
+                    {commentsFor ? commentsFor(screen.attachmentId) : null}
                   </li>
                 ))}
               </ul>
@@ -84,6 +118,7 @@ export function DesignSection({ state, onRetry }: DesignSectionProps) {
                 </ul>
               )}
             </div>
+            {decisionFor ? decisionFor(active.baseline) : null}
             <DecisionHistory decisions={decisions} emptyKey="delivery_os.project.sections.decisions.none" />
           </div>
         )

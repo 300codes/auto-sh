@@ -11,10 +11,14 @@ import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/sch
 
 export type RequirementsSectionProps = {
   state: SectionSource<BaselineDto[]>
+  selectedBaselineId?: string | null
   onRetry: () => void
+  /** Decision controls for the version on screen — rendered next to the content they judge. */
+  decisionFor?: (baseline: BaselineDto) => React.ReactNode
+  action?: React.ReactNode
 }
 
-export function RequirementsSection({ state, onRetry }: RequirementsSectionProps) {
+export function RequirementsSection({ state, selectedBaselineId = null, onRetry, action, decisionFor }: RequirementsSectionProps) {
   const t = useT()
   return (
     <BaselineSectionFrame
@@ -22,7 +26,9 @@ export function RequirementsSection({ state, onRetry }: RequirementsSectionProps
       titleKey="delivery_os.project.sections.requirements.title"
       countOf={(active) => active.content.requirements.length}
       state={state}
+      selectedBaselineId={selectedBaselineId}
       onRetry={onRetry}
+      action={action}
     >
       {(active) => {
         const criteriaByRequirement = new Map<string, typeof active.content.acceptanceCriteria>()
@@ -60,6 +66,7 @@ export function RequirementsSection({ state, onRetry }: RequirementsSectionProps
                 </li>
               ))}
             </ul>
+            {decisionFor ? decisionFor(active.baseline) : null}
             <DecisionHistory decisions={decisions} emptyKey="delivery_os.project.sections.decisions.none" />
           </div>
         )

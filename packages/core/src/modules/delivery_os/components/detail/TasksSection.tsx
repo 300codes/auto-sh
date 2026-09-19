@@ -16,6 +16,7 @@ export type TasksSectionProps = {
   selectedTaskId: string | null
   onSelectTask: (taskId: string | null) => void
   onRetry: () => void
+  action?: React.ReactNode
 }
 
 /** Module-owned status map, as the design system requires for entity status. */
@@ -66,6 +67,7 @@ export function TasksSection({
   selectedTaskId,
   onSelectTask,
   onRetry,
+  action,
 }: TasksSectionProps) {
   const t = useT()
   const blocked = new Set(attention.blockedTaskIds)
@@ -76,6 +78,7 @@ export function TasksSection({
       <SectionHeader
         title={t('delivery_os.project.sections.tasks.title')}
         count={state.status === 'ready' ? state.data.length : undefined}
+        action={action}
       />
       {state.status === 'loading' ? <LoadingMessage label={t('delivery_os.project.sections.loading')} /> : null}
       {state.status === 'error' ? (
@@ -86,18 +89,32 @@ export function TasksSection({
       ) : null}
       {state.status === 'ready' && state.data.length === 0 ? (
         <div data-testid="delivery-tasks-empty">
-          <TabEmptyState
-            title={t(
-              hasActiveBaseline
-                ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasks'
-                : 'delivery_os.project.sections.tasks.empty.noBaseline',
-            )}
-            description={t(
-              hasActiveBaseline
-                ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasksDescription'
-                : 'delivery_os.project.sections.tasks.empty.noBaselineDescription',
-            )}
-          />
+          {/*
+            `hasActiveBaseline === null` means the baseline state is UNKNOWN —
+            the baselines request has not resolved, or it failed. Folding it into
+            the negative branch would state a cause ("no approved baseline") this
+            section never observed. It stays silent about the cause instead; the
+            sections that issued the failing request are the ones that report it.
+          */}
+          {hasActiveBaseline === null ? (
+            <TabEmptyState
+              title={t('delivery_os.project.sections.tasks.empty.noTasks')}
+              description={t('delivery_os.project.sections.tasks.empty.baselineUnknown')}
+            />
+          ) : (
+            <TabEmptyState
+              title={t(
+                hasActiveBaseline
+                  ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasks'
+                  : 'delivery_os.project.sections.tasks.empty.noBaseline',
+              )}
+              description={t(
+                hasActiveBaseline
+                  ? 'delivery_os.project.sections.tasks.empty.baselineWithoutTasksDescription'
+                  : 'delivery_os.project.sections.tasks.empty.noBaselineDescription',
+              )}
+            />
+          )}
         </div>
       ) : null}
       {state.status === 'ready' && state.data.length > 0 ? (

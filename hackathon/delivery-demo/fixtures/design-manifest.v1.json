@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "delivery.design-manifest/v1",
+  "screens": [
+    {
+      "fileKey": "5wOkFtN959W4MFmgRuaU8S",
+      "nodeId": "3:2",
+      "name": "UI-01 / Lista usług",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "attachmentId": "00000000-0000-4000-8000-000000000001",
+      "sha256": "0b2ef079584dc60d34575335cdd232ff2ec773624bf8944d06e6ce1473170e9c",
+      "capturedAt": "2026-09-19T07:41:48.000Z",
+      "figmaVersion": "ui-01-update",
+      "sizeBytes": 58886,
+      "mimeType": "image/png"
+    }
+  ],
+  "tokens": {
+    "color.primary": "#1f6feb",
+    "space.md": 16
+  },
+  "producedBy": {
+    "tool": "figma-mcp",
+    "sessionRef": null
+  }
+}

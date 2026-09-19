@@ -6,7 +6,7 @@ import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
 import { LoadingMessage, ErrorMessage, TabEmptyState } from '@open-mercato/ui/backend/detail'
 import { Button } from '@open-mercato/ui/primitives/button'
 import type { SectionSource } from './useProjectSections'
-import { resolveActiveBaseline, shortHash, type ActiveBaseline } from './baselineContent'
+import { resolveBaseline, shortHash, type ActiveBaseline } from './baselineContent'
 import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
 
 export type BaselineSectionFrameProps = {
@@ -14,7 +14,11 @@ export type BaselineSectionFrameProps = {
   titleKey: string
   countOf?: (active: Extract<ActiveBaseline, { kind: 'ready' }>) => number
   state: SectionSource<BaselineDto[]>
+  /** The version on screen; `null` means the active one. */
+  selectedBaselineId?: string | null
   onRetry: () => void
+  /** Section-level actions (import, freeze). Rendered whatever the baseline outcome is — freezing a draft is exactly what a project with no baseline needs. */
+  action?: React.ReactNode
   children: (active: Extract<ActiveBaseline, { kind: 'ready' }>) => React.ReactNode
 }
 
@@ -23,9 +27,9 @@ export type BaselineSectionFrameProps = {
  * outcomes disjoint — still loading, request failed, no approved baseline yet,
  * baseline content unreadable — so none of them can collapse into "empty".
  */
-export function BaselineSectionFrame({ testId, titleKey, countOf, state, onRetry, children }: BaselineSectionFrameProps) {
+export function BaselineSectionFrame({ testId, titleKey, countOf, state, selectedBaselineId = null, onRetry, action, children }: BaselineSectionFrameProps) {
   const t = useT()
-  const active = state.status === 'ready' ? resolveActiveBaseline(state.data) : null
+  const active = state.status === 'ready' ? resolveBaseline(state.data, selectedBaselineId) : null
 
   const subtitle = active?.kind === 'ready' || active?.kind === 'unreadable'
     ? t('delivery_os.project.sections.baselineVersion', {
@@ -36,7 +40,7 @@ export function BaselineSectionFrame({ testId, titleKey, countOf, state, onRetry
 
   return (
     <section data-testid={testId} className="space-y-3">
-      <SectionHeader title={t(titleKey)} count={active?.kind === 'ready' ? countOf?.(active) : undefined} />
+      <SectionHeader title={t(titleKey)} count={active?.kind === 'ready' ? countOf?.(active) : undefined} action={action} />
       {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
       {state.status === 'loading' ? <LoadingMessage label={t('delivery_os.project.sections.loading')} /> : null}
       {state.status === 'error' ? (

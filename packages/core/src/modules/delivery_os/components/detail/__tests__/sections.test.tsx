@@ -121,13 +121,16 @@ describe('baseline-backed sections', () => {
     expect(screen.getByText('delivery_os.project.sections.baselineVersion')).toBeTruthy()
   })
 
-  it('shows screen metadata with its Figma version and short hash, and no preview', () => {
+  it('shows screen metadata with its Figma version and short hash alongside the render', () => {
+    // UI-02 asserted the absence of a preview; UI-03 adds it. The metadata is
+    // what the baseline stores, so it stays the load-bearing assertion — the
+    // thumbnail must not replace it.
     const { container } = render(<DesignSection state={ready([baseline()])} onRetry={() => undefined} />)
     expect(screen.getByText('Project list')).toBeTruthy()
     expect(screen.getByText('12:34')).toBeTruthy()
     expect(screen.getByText('1440×900')).toBeTruthy()
     expect(screen.getByText(hash.slice(0, 12))).toBeTruthy()
-    expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('img')?.getAttribute('src')).toContain(`/api/attachments/image/${attachmentId}`)
   })
 
   it('renders the decision log read-only, with no approve or reject control', () => {
