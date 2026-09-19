@@ -125,6 +125,25 @@ zastosowania.
 `pending` — dowód automatyczny jest kompletny, brakuje wyłącznie oglądania ekranu przez zespół.
 Wypełnia osoba prowadząca UI-01 po odbiorze; nie zaznaczać na podstawie samego istnienia artefaktów.
 
+**Przebieg odbioru** — zamyka 1.5, 2.5, 2.6 i 3.5 planu UI-01 w jednym podejściu:
+
+1. Otworzyć https://www.figma.com/design/5wOkFtN959W4MFmgRuaU8S na stanowisku demo.
+2. Kliknąć w kartę „Audyt dostępności WCAG” i wejść w jej warstwy — frame, teksty i prostokąty
+   są osobnymi, edytowalnymi węzłami. Gdyby agent wkleił obraz, byłby tu jeden węzeł rastrowy.
+   To zalicza 2.5 („edytowalny frame agenta”).
+3. Na tej samej karcie widoczna jest plakietka „Polecane”, a nad siatką pasek
+   „Znaleziono 6 z 24 usług / Wyczyść filtry” — to jest naniesiona poprawka, w tym samym
+   frame’ie `3:2`, nie w kopii obok.
+4. W menu konta sprawdzić, że zalogowany jest `michal.strzesniewski@300.codes`, a w ustawieniach
+   zespołu — że ma seat **Full**. To zalicza 1.5 i 3.5. `whoami` zwraca to samo maszynowo,
+   ale plan wymaga potwierdzenia w interfejsie.
+5. Potwierdzić ustnie, że nikt nie rysował ani nie poprawiał ekranu ręcznie — cała sekwencja
+   przebiegła narzędziami MCP. To zalicza 2.6.
+6. Osobno, po wyniku EXEC-01: zespół przyjmuje do wiadomości tryb Cezara (3.6).
+
+Frame `6:2` („UI-01 / Headless probe”) w tym samym pliku jest dowodem próby nieinteraktywnej
+dla EXEC, nie częścią ekranu odbieranego wyżej.
+
 | Pole | Wartość |
 |---|---|
 | Uczestnicy | — |

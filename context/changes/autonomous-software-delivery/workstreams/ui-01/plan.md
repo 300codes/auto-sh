@@ -235,6 +235,29 @@ Ręczne narysowanie designu przez człowieka nie jest żadnym z tych wariantów.
 
 ---
 
+## Aneks — Faza 2: narzędzia dostarczone poza planem
+
+Rozstrzygnięcie findingu F4 z [przeglądu wdrożenia](reviews/impl-review.md) (wariant Fix A).
+
+Plan wymieniał dla Fazy 2 trzy artefakty — `manifest.json`, `SHA256SUMS`, `*.png` — i dla samej
+sekwencji „brak zmian w repo". Repo zawiera ponadto trzy pliki, których plan nie przewidywał:
+
+| Plik | Rola |
+|---|---|
+| `evidence/figma/capture.sh` | pobranie renderu, sha256 i wpis do manifestu w jednym kroku, zanim adres wygaśnie |
+| `evidence/figma/verify.sh` | 11 kontroli odpowiadających kryteriom automatycznym Faz 2–3 |
+| `evidence/figma/prompts.md` | treść poleceń człowieka, wprost wymagana kontraktem Fazy 2 do powtórzenia przez UI-03 |
+
+Powstały w oknie, w którym bloker OAuth uniemożliwiał samą sekwencję. Po jego usunięciu
+planowane artefakty **zostały dostarczone i przechodzą kontrole**, więc zarzut „narzędzia zamiast
+artefaktów" wygasł; zostaje sam fakt, że trzy pliki nie miały umocowania w planie.
+
+**Decyzja:** narzędzia zostają i przechodzą do zakresu UI-03 jako gotowy format dowodu —
+odnotowane w [strumieniu UI](../03-design-ui.md). Plan główny wymaga trwałych bytes/hash
+(`plan.md:292`), ale nie narzuca tej implementacji; właściciel UI-03 może format zmienić,
+pod warunkiem zachowania bytes/hash i powiązania komentarza.
+
+
 ## Warunki startu
 
 Ustalone przed H0, poza tym planem:
