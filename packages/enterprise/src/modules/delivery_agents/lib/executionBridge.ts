@@ -7,7 +7,7 @@ import type { CommandBus, CommandRuntimeContext } from '@open-mercato/shared/lib
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import type { AttemptReserveResult } from '@open-mercato/core/modules/delivery_os/commands/attempts'
 import { issueTrustedExecution, type TrustedExecutionVersion } from '@open-mercato/core/modules/delivery_os/lib/trustedExecution'
-import { DELIVERY_AGENTS_WORKFLOW_ID, DELIVERY_AGENTS_WAIT_STEP_ID } from './attemptWorkflow'
+import { DELIVERY_AGENTS_WORKFLOW_ID, DELIVERY_AGENTS_WAIT_STEP_ID, upsertAttemptWorkflowDefinition } from './attemptWorkflow'
 import { getDeliveryAgentsQueue, DELIVERY_EXECUTE_QUEUE, type ExecuteTaskJobPayload } from './queue'
 import { findDeliveryWorkflowInstance, isParkedAtEvidenceWait, type DeliveryWorkflowInstance } from './workflowInstance'
 
@@ -139,6 +139,7 @@ export async function startExecution(input: ExecutionBridgeStartInput): Promise<
   const startedInstance = await findDeliveryWorkflowInstance(em, { correlationKey }, scope).catch(() => {
     throw new Error('[internal] Unable to confirm delivery workflow state')
   })
+  if (!startedInstance) await upsertAttemptWorkflowDefinition(container, em, scope)
   const workflowInstanceId = startedInstance?.id ?? (await workflowExecutor.startWorkflow(em, {
     workflowId: DELIVERY_AGENTS_WORKFLOW_ID,
     correlationKey,

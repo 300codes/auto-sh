@@ -31,8 +31,10 @@ function fixture() {
     executeWorkflow: jest.fn().mockResolvedValue({ status: 'RUNNING' }),
   }
   const getAttempt = jest.fn().mockResolvedValue({ resultEvidenceId: 'existing-evidence', workflowRef: 'existing-workflow' })
+  const authoring = { upsertOwnedDefinition: jest.fn().mockResolvedValue({ ok: true, definition: { workflowId: 'delivery-cezar-attempt' } }) }
   const container = {
     resolve: (name: string) => {
+      if (name === 'workflowDefinitionAuthoring') return authoring
       if (name === 'commandBus') return { execute }
       if (name === 'workflowExecutor') return workflowExecutor
       if (name === 'deliveryOsAttemptQueries') return { getAttempt, assertExecutionReady: jest.fn(async () => undefined) }
@@ -41,7 +43,7 @@ function fixture() {
   } as unknown as AppContainer
   const em = { fork: () => ({ findOne }) } as unknown as EntityManager
   return {
-    execute, findOne, workflowExecutor, getAttempt, container,
+    execute, findOne, workflowExecutor, getAttempt, container, authoring,
     startInput: {
       taskId: 'task', idempotencyKey: 'key', userId: actorUserId, scope, container, em,
       baseRevision: { kind: 'snapshot' as const, contentHash: 'a'.repeat(64), externalWorkspaceId: 'site' },
@@ -174,4 +176,20 @@ test.each([
   expect(setup.workflowExecutor.startWorkflow).not.toHaveBeenCalled()
   expect(setup.workflowExecutor.executeWorkflow).not.toHaveBeenCalled()
   expect(mockEnqueue).not.toHaveBeenCalled()
+})
+
+test('upserts the owned workflow definition before starting a new instance for an organization seeded earlier', async () => {
+  const setup = fixture()
+  await startExecution(setup.startInput)
+  expect(setup.authoring.upsertOwnedDefinition).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workflowId: 'delivery-cezar-attempt', ...scope }))
+  expect(setup.authoring.upsertOwnedDefinition.mock.invocationCallOrder[0]).toBeLessThan(setup.workflowExecutor.startWorkflow.mock.invocationCallOrder[0])
+})
+
+test('does not re-upsert the definition when resuming an already started instance', async () => {
+  const setup = fixture()
+  setup.execute.mockResolvedValue({ result: { attemptId: 'attempt', created: false } })
+  setup.getAttempt.mockResolvedValue({ state: 'reserved', workflowRef: 'attempt', dispatchedAt: null })
+  setup.findOne.mockResolvedValue({ id: 'workflow', status: 'PAUSED', currentStepId: 'wait_for_evidence' })
+  await startExecution(setup.startInput)
+  expect(setup.authoring.upsertOwnedDefinition).not.toHaveBeenCalled()
 })
