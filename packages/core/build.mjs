@@ -29,7 +29,12 @@ const rewriteOptions = { resolveGeneratedImport }
 
 async function copyDesignSystemAssets() {
   const sourceRoot = join(packageDir, 'src')
-  const files = await glob(['modules/design_system/gallery/assets/**/*.{png,svg}', 'modules/design_system/i18n/*.json'], { cwd: sourceRoot })
+  const files = await glob([
+    'modules/design_system/gallery/assets/**/*.{png,svg}',
+    'modules/design_system/i18n/*.json',
+    // Renders of the example delivery walkthrough; the seeder reads them as bytes and hashes what it stored.
+    'modules/delivery_os/lib/example-assets/*.png',
+  ], { cwd: sourceRoot })
   for (const file of files) {
     const destination = join(distDir, file)
     mkdirSync(dirname(destination), { recursive: true })

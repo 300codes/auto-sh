@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { Organization, Tenant } from '@open-mercato/core/modules/directory/data/entities'
+import { User } from '@open-mercato/core/modules/auth/data/entities'
 import { EXAMPLE_PROJECT_NAME, seedExampleDeliveryProject } from './lib/exampleProject'
 
 type ParsedArgs = Record<string, string | boolean>
@@ -44,15 +45,32 @@ const seedExample: ModuleCli = {
       return
     }
 
-    const project = await seedExampleDeliveryProject(em, { tenantId: resolvedTenant, organizationId: resolvedOrganization })
+    // The walkthrough is the point of the example, so it is the default; --brief-only leaves the flow to be walked.
+    const briefOnly = args['brief-only'] === true || args['brief-only'] === 'true'
+    const actor = briefOnly ? null : await em.findOne(User, { tenantId: resolvedTenant }, { orderBy: { createdAt: 'ASC' } })
+    if (!briefOnly && !actor) {
+      console.error('[delivery_os] No user in this tenant to attribute the approvals to. Run with --brief-only, or seed a user first.')
+      return
+    }
+
+    const project = await seedExampleDeliveryProject(
+      em,
+      { tenantId: resolvedTenant, organizationId: resolvedOrganization },
+      actor ? { walkthrough: { actorUserId: actor.id } } : {},
+    )
     if (!project) {
       console.log(`[delivery_os] "${EXAMPLE_PROJECT_NAME}" already exists in this organization; nothing was written.`)
       return
     }
     await em.flush()
     console.log(`[delivery_os] seeded "${EXAMPLE_PROJECT_NAME}" (${project.id}).`)
-    console.log('[delivery_os] Open it in Delivery projects and run the brief wizard; the stage drafts and the plan')
-    console.log('[delivery_os] come from the agent you connected in Settings → Tool connections.')
+    if (briefOnly) {
+      console.log('[delivery_os] It stops at the brief: run the wizard, then the stage drafts and the plan, against')
+      console.log('[delivery_os] the agent you connected in Settings → Tool connections.')
+      return
+    }
+    console.log('[delivery_os] Four approved stages with the Figma renders, an active baseline and the planned tasks.')
+    console.log('[delivery_os] Approvals are attributed to the seeder, not to a client — see the evidence on each stage.')
   },
 }
 

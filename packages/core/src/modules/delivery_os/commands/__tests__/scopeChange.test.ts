@@ -615,11 +615,24 @@ describe('(5) decisions bind to one hash and version and never approve by themse
         ),
       )
       .map((path) => relative(MODULE_ROOT, path).split(sep).join('/'))
-    expect(writers).toEqual(['commands/decisions.ts'])
+    // The example walkthrough writes a finished delivery for an operator to read, so it is the one other writer. It is
+    // never reachable from a request: it runs from `seedExamples` and the seed CLI, every row names the seeder as its
+    // producer, and the assertions below hold it to that.
+    const EXAMPLE_SEEDER = 'lib/exampleWalkthrough.ts'
+    expect(writers).toEqual(['commands/decisions.ts', EXAMPLE_SEEDER])
     const pointerWriters = listFiles(MODULE_ROOT, (path) => path.endsWith('.ts'))
       .filter((path) => /\bactiveBaselineId\s*=[^=]/.test(readFileSync(path, 'utf8')))
       .map((path) => relative(MODULE_ROOT, path).split(sep).join('/'))
-    expect(pointerWriters).toEqual(['commands/decisions.ts'])
+    expect(pointerWriters).toEqual(['commands/decisions.ts', EXAMPLE_SEEDER])
+
+    const seeder = readFileSync(join(MODULE_ROOT, EXAMPLE_SEEDER), 'utf8')
+    expect(seeder).toMatch(/actorUserId,/)
+    expect(seeder).not.toMatch(/actorUserId:\s*['"]/)
+    expect(seeder).toContain('EXAMPLE_PRODUCED_BY')
+    expect(seeder).toContain('EXAMPLE_APPROVAL_NOTE')
+    for (const requestOnly of ['NextRequest', 'makeCrudRoute', 'export async function POST']) {
+      expect(seeder).not.toContain(requestOnly)
+    }
 
     const requirementsOnly: BaselineDecisionRecord[] = [
       {

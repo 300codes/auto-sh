@@ -123,11 +123,16 @@ describe('delivery_os module registration', () => {
   describe('default role features', () => {
     const roleFeatures = setup.defaultRoleFeatures ?? {}
 
-    it('grants admin the module wildcard and employee the spec subset', () => {
+    it('grants admin the module wildcard and employee the whole path a delivery is walked along', () => {
       expect(roleFeatures.admin).toEqual(['delivery_os.*'])
       expect(roleFeatures.employee).toEqual([
         'delivery_os.projects.view',
         'delivery_os.projects.manage',
+        'delivery_os.flow.manage',
+        'delivery_os.stages.approve',
+        'delivery_os.baselines.approve',
+        'delivery_os.attempts.manage',
+        'delivery_os.attempts.reconcile',
         'delivery_os.results.import',
         'delivery_os.comments.import',
       ])
@@ -142,16 +147,16 @@ describe('delivery_os module registration', () => {
       }
     })
 
-    it('keeps human decisions and attempt control away from employees', () => {
+    /**
+     * Recording an approval is not the same authority as shipping one. An operator who can open a project but cannot
+     * approve a stage or reserve an attempt hits a 403 halfway through the flow with no hint which grant is missing, so
+     * the reviewable steps are granted; what cannot be taken back — deploying, releasing, the wildcard — stays admin.
+     */
+    it('keeps the irreversible steps and the wildcard away from employees', () => {
       const employee = new Set(roleFeatures.employee ?? [])
       for (const privileged of [
-        'delivery_os.baselines.approve',
-        'delivery_os.attempts.manage',
-        'delivery_os.attempts.reconcile',
         'delivery_os.deploy.approve',
         'delivery_os.release.approve',
-        'delivery_os.flow.manage',
-        'delivery_os.stages.approve',
         'delivery_os.*',
       ]) {
         expect(employee.has(privileged)).toBe(false)

@@ -1,5 +1,13 @@
+import type { EntityManager } from '@mikro-orm/postgresql'
 import type { ModuleSetupConfig } from '@open-mercato/shared/modules/setup'
+import { User } from '@open-mercato/core/modules/auth/data/entities'
 import { seedExampleDeliveryProject } from './lib/exampleProject'
+
+/** The walkthrough records who approved each stage, so it needs a real user of this tenant to attribute them to. */
+async function firstTenantUserId(em: EntityManager, tenantId: string): Promise<string | null> {
+  const user = await em.findOne(User, { tenantId }, { orderBy: { createdAt: 'ASC' } })
+  return user?.id ?? null
+}
 
 export const setup: ModuleSetupConfig = {
   /**
@@ -23,7 +31,8 @@ export const setup: ModuleSetupConfig = {
   },
 
   async seedExamples({ em, tenantId, organizationId }) {
-    await seedExampleDeliveryProject(em, { tenantId, organizationId })
+    const actorUserId = await firstTenantUserId(em, tenantId)
+    await seedExampleDeliveryProject(em, { tenantId, organizationId }, actorUserId ? { walkthrough: { actorUserId } } : {})
   },
 }
 

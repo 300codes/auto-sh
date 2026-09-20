@@ -69,10 +69,41 @@ describe('the example project', () => {
     expect(persisted).toEqual([])
   })
 
-  it('carries a brief an agent can actually structure', () => {
-    for (const fragment of ['#082C55', 'Knowledge assistants', 'Out of scope', 'keyboard operation with a visible focus ring']) {
+  it('carries the brief the walkthrough was really built from', () => {
+    for (const fragment of ['#082C55', 'Asystenci wiedzy', 'Poza zakresem', 'obsługa klawiaturą']) {
       expect(EXAMPLE_BRIEF).toContain(fragment)
     }
     expect(EXAMPLE_BRIEF.length).toBeGreaterThan(2000)
+  })
+})
+
+describe('the walkthrough content', () => {
+  it('ships the renders the agent produced, each bound to the Figma node it came from', async () => {
+    const { EXAMPLE_ASSETS, EXAMPLE_FIGMA_FILE_KEY, readExampleAsset } = await import('../lib/exampleAssets')
+    expect(EXAMPLE_ASSETS.length).toBeGreaterThanOrEqual(4)
+    for (const asset of EXAMPLE_ASSETS) {
+      expect(asset.nodeId).toMatch(/^[0-9]+:[0-9]+$/)
+      const { bytes, sha256 } = await readExampleAsset(asset)
+      expect(bytes.subarray(1, 4).toString('ascii')).toBe('PNG')
+      expect(sha256).toMatch(/^[a-f0-9]{64}$/)
+    }
+    expect(EXAMPLE_FIGMA_FILE_KEY).toMatch(/^[A-Za-z0-9]{10,}$/)
+  })
+
+  it('maps every planned task onto criteria the scope declares', async () => {
+    const { EXAMPLE_SCOPE_CONTENT, EXAMPLE_TASKS } = await import('../lib/exampleContent')
+    const known = new Set(EXAMPLE_SCOPE_CONTENT.acceptanceCriteria.map((criterion) => criterion.id))
+    expect(EXAMPLE_TASKS.length).toBeGreaterThan(0)
+    for (const task of EXAMPLE_TASKS) {
+      expect(task.acIds.length).toBeGreaterThan(0)
+      for (const acId of task.acIds) expect(known.has(acId)).toBe(true)
+    }
+  })
+
+  it('keeps no encrypted tenant material in the repository', async () => {
+    const { EXAMPLE_INTAKE_BRIEF } = await import('../lib/exampleContent')
+    const serialised = JSON.stringify(EXAMPLE_INTAKE_BRIEF)
+    expect(serialised).not.toMatch(/:v1"$|:v1$/)
+    expect(serialised).toContain('#082C55')
   })
 })

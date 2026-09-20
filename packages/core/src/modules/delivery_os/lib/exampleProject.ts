@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { DeliveryProject } from '../data/entities'
@@ -5,69 +6,15 @@ import { DEFAULT_DELIVERY_LIMITS } from './contracts'
 
 const logger = createLogger('delivery_os').child({ component: 'example-project' })
 
-export const EXAMPLE_PROJECT_NAME = 'Aster Works — company website'
+export const EXAMPLE_PROJECT_NAME = 'Aster Works — strona firmowa (przykład)'
 export const EXAMPLE_TARGET_PROFILE_ID = 'wordpress-theme'
 
 /**
- * The brief a reviewer can walk the whole flow with. It is deliberately a real one — audiences, views, navigation,
- * visual direction, out-of-scope list and acceptance criteria — because an agent asked to structure two vague
- * sentences produces a scope nobody can review, which teaches an operator nothing about the product.
+ * The brief this example was really built from: the one the walkthrough's scope, stages and plan were produced from.
+ * It is long and specific on purpose — an agent asked to structure two vague sentences returns a scope nobody can
+ * review, which teaches an operator nothing about the product.
  */
-export const EXAMPLE_BRIEF = `1. About the company
-Aster Works helps companies design and ship AI solutions. We work in three areas: knowledge assistants, automating
-repetitive work, and judging the quality of an AI solution before it ships. We need a website that shows which
-business problems we solve, what working with us looks like, and when it is worth getting in touch. The starting
-point is the client's problem and the value we deliver, not models or frameworks.
-
-2. Goal of the site
-Collect enquiries from companies considering an AI project. The site should lead a visitor along: problem →
-solution → worked example → how we collaborate → contact. Primary call to action: "Let's talk about your project".
-Secondary: "See a worked example".
-
-3. Audiences
-COO looking to improve an existing process or cut repetitive work. Product Lead looking at AI as a product feature.
-CTO looking for a partner who will design, ship and verify the solution and state the data and infrastructure needs.
-
-4. Scope
-Four views. Home: a clear promise, both calls to action, three typical client problems with the matching services, a
-highlighted worked example, the collaboration process, a contact section. Proposed H1: "AI that finds its place in
-everyday work". Service page "Knowledge assistants": who it is for, the problem, what we deliver, what the
-collaboration looks like, the data we need, the client's involvement, the next step. Worked example "Knowledge for a
-support team": business context, problem, solution, scope, required data, rollout, how success is measured, marked as
-a demonstration scenario built on synthetic material. Contact: what to bring, how to prepare, what we will ask, the
-next step — no working form, no booking.
-
-5. Navigation
-Menu: Solutions, Worked example, How we work, Contact. Section links must work from subpages too. No mega menu.
-
-6. Collaboration process
-Four stages described from the client's side: Understand the task → Design the solution → Ship it → Hand over.
-
-7. Visual direction
-A considered B2B technology site: clear hierarchy, large type, a consistent grid, generous space, an original visual
-theme. Colours: navy #082C55 as the base, blue #0757B8 and cyan #12B8DB as accents, light section backgrounds with
-navy text, a dark hero is allowed. Apply the palette through design tokens. Logo: six connected nodes around an "A",
-vector, no glow. No stock robots, no logo walls, no background video. Responsiveness changes the hierarchy of the
-content rather than scaling the desktop layout.
-
-8. CMS and technology
-WordPress, UX and UI designed in Figma. An editor changes copy, illustrations, calls to action, sections, menu,
-header and footer without touching code. Worked-example metadata through ACF. Title and SEO description editable.
-Content must survive a theme update. Fonts hosted locally under a licence that allows it.
-
-9. Out of scope
-Blog, client portal, sign-in, payments, language versions, CRM, booking calendar, a contact form that actually sends,
-an extensive service catalogue.
-
-10. Content and credibility
-Concrete, business-first copy: value before technology. No guaranteed savings or results. No invented clients, logos,
-partnerships, certificates, testimonials or statistics. Examples marked as demonstrations.
-
-11. Acceptance
-Four views working on desktop and mobile, working navigation and calls to action, no empty links, consistent with the
-approved UI, readable hierarchy, keyboard operation with a visible focus ring, no horizontal scrolling, content and
-ACF fields and SEO metadata editable without code, content preserved across a theme update, the preview kept out of
-search engines before publication.`
+export const EXAMPLE_BRIEF = "1. O firmie\nAster Works to firma usługowa pomagająca przedsiębiorstwom projektować i wdrażać rozwiązania wykorzystujące AI. Wspieramy klientów przede wszystkim w trzech obszarach: tworzeniu asystentów wiedzy, automatyzacji powtarzalnej pracy, ocenie jakości rozwiązań AI przed ich wdrożeniem. Potrzebujemy nowej strony internetowej, która w prosty sposób pokaże, jakie problemy biznesowe rozwiązujemy, jak wygląda współpraca z nami oraz w jakich sytuacjach warto się z nami skontaktować. Nie chcemy budować komunikacji wokół modeli AI, frameworków czy konkretnych technologii. Punktem wyjścia powinien być problem klienta i wartość, którą możemy dostarczyć.\n\n2. Cel strony\nGłównym celem strony jest pozyskiwanie zapytań od potencjalnych klientów zainteresowanych wdrożeniem rozwiązania AI. Strona powinna prowadzić użytkownika ścieżką: problem → rozwiązanie → przykład zastosowania → sposób współpracy → kontakt. Główne CTA: „Porozmawiajmy o projekcie”. Drugie CTA: „Zobacz przykład zastosowania”.\n\n3. Grupy odbiorców\nDyrektor operacyjny / COO — szukający sposobu na usprawnienie istniejącego procesu, ograniczenie powtarzalnej pracy lub poprawę dostępu zespołu do informacji. Product Lead / Head of Product — szukający możliwości wykorzystania AI jako nowej funkcji produktu lub elementu istniejącej usługi. CTO / osoba odpowiedzialna za technologię — szukająca partnera, który zaprojektuje, wdroży i zweryfikuje rozwiązanie AI oraz jasno określi wymagania dotyczące danych i infrastruktury.\n\n4. Zakres strony\nCztery główne widoki. 4.1 Strona główna: jasna obietnica wartości, główne i dodatkowe CTA, trzy typowe problemy klientów, odpowiadające im rozwiązania, wyróżniony przykład zastosowania, opis procesu współpracy, sekcja kontaktowa. Proponowany H1: AI, które znajduje miejsce w codziennej pracy. Trzy problemy i usługi: Asystenci wiedzy — zespół szuka odpowiedzi w rozproszonych dokumentach; Automatyzacja pracy — praca wymaga powtarzania tych samych kroków w kilku narzędziach; Ocena jakości AI — prototyp działa, ale brakuje kryteriów oceny i odbioru. 4.2 Usługa „Asystenci wiedzy”: dedykowana podstrona (dla kogo, jaki problem, co dostarczamy, jak wygląda współpraca, jakich danych potrzebujemy, zaangażowanie klienta, przykładowe zastosowanie, kolejny krok). 4.3 Przykład zastosowania „Wiedza dla zespołu obsługi”: kontekst biznesowy, problem, rozwiązanie, zakres, wymagane dane, wdrożenie, pomiar skuteczności; oznaczony jako scenariusz demonstracyjny, materiały syntetyczne. 4.4 Kontakt: z czym można się zgłosić, jak przygotować się do rozmowy, czego będziemy chcieli się dowiedzieć, kolejny krok. Bez formularza wysyłającego dane i bez rezerwacji spotkań. Kontakt demonstracyjny: kontakt@aster-works.example\n\n5. Nawigacja\nMenu: Rozwiązania, Przykład zastosowania, Jak pracujemy, Kontakt. Linki do sekcji muszą działać także z podstron. Bez mega menu.\n\n6. Proces współpracy\nCztery etapy: Rozpoznanie zadania → Projekt rozwiązania → Wdrożenie → Odbiór i przekazanie, opisane z perspektywy klienta.\n\n7. Ścieżki użytkowników\nCOO: problem → rozwiązanie → współpraca → kontakt. CTO: usługa → zakres i wymagania danych → przykład → kontakt. Powracający: menu → przykład → CTA.\n\n8. Kierunek wizualny\nDopracowany serwis technologicznej firmy B2B: wyraźna hierarchia, duża typografia, konsekwentna siatka, dużo przestrzeni, autorski motyw graficzny. Kolory: granat bazowy #082C55, niebieski #0757B8 i cyjan #12B8DB jako akcenty, jasne tło sekcji z granatowym tekstem, możliwy ciemny hero. Paletę wdrożyć przez tokeny design systemu. Logotyp: sześć połączonych węzłów wokół znaku A, wersja wektorowa bez poświaty. Bez stockowych robotów, ścian logotypów i wideo w tle. Responsywność zmienia hierarchię treści, nie skaluje desktopu.\n\n9. Materiały graficzne\nAutorska ilustracja hero, diagram przykładu zastosowania, proste elementy UI. SVG lub zoptymalizowane rastry. Fonty z licencją na hosting lokalny.\n\n10. CMS i technologia\nWordPress, projekt UX/UI w Figmie. Redaktor zmienia bez kodu: teksty, ilustracje, CTA, sekcje, menu, nagłówek, stopkę. Metadane przykładu zastosowania przez ACF (Etap, Typ użytkownika, Zakres rozwiązania). Tytuł i opis SEO edytowalne narzędziem SEO. Treści nie mogą zostać utracone przy aktualizacji motywu.\n\n11. SEO i środowisko demonstracyjne\nTylko język polski. Preview wyłączone z indeksowania. Publikacja produkcyjna to osobny etap z akceptacją.\n\n12. Poza zakresem\nBlog, panel klienta, logowanie, płatności, wersje językowe, CRM, kalendarz rezerwacji, działający formularz kontaktowy, rozbudowany katalog usług.\n\n13. Treści i wiarygodność\nTreści konkretne i biznesowe, najpierw wartość, potem technologia. Bez gwarantowanych oszczędności i wyników. Bez fikcyjnych klientów, logotypów, partnerstw, certyfikatów, opinii i statystyk. Przykłady oznaczone jako demonstracyjne.\n\n14. Oczekiwany proces realizacji\nOsobna akceptacja: zakres projektu, UX i struktura informacji, kierunek wizualny, UI i design system, implementacja, Preview, publikacja. Zależy nam na akceptacji UX i kierunku wizualnego przed implementacją.\n\n15. Kryteria odbioru\nCztery widoki, poprawne działanie na desktopie i mobile, działająca nawigacja i CTA, brak pustych linków, zgodność z zaakceptowanym UI, czytelna hierarchia, obsługa klawiaturą z widocznym focusem, brak poziomego scrollowania, edycja treści bez kodu, edycja pól ACF, edycja metadanych SEO, zachowanie treści przy aktualizacji kodu, nieindeksowana wersja Preview przed publikacją."
 
 /**
  * Creates the example delivery project, once. The project stops at the brief on purpose: the wizard, the stage drafts
@@ -77,6 +24,7 @@ search engines before publication.`
 export async function seedExampleDeliveryProject(
   em: EntityManager,
   scope: { tenantId: string; organizationId: string },
+  options: { walkthrough?: { actorUserId: string } } = {},
 ): Promise<DeliveryProject | null> {
   const existing = await em.findOne(DeliveryProject, {
     name: EXAMPLE_PROJECT_NAME,
@@ -86,6 +34,8 @@ export async function seedExampleDeliveryProject(
   if (existing) return null
 
   const project = em.create(DeliveryProject, {
+    // The walkthrough attaches renders to this project, so the id has to exist before the first flush.
+    id: randomUUID(),
     tenantId: scope.tenantId,
     organizationId: scope.organizationId,
     name: EXAMPLE_PROJECT_NAME,
@@ -97,6 +47,10 @@ export async function seedExampleDeliveryProject(
     draftSpec: {},
   })
   em.persist(project)
-  logger.info('seeded the example delivery project', { projectId: project.id, tenantId: scope.tenantId })
+  if (options.walkthrough) {
+    const { seedExampleWalkthrough } = await import('./exampleWalkthrough')
+    await seedExampleWalkthrough(em, project, options.walkthrough.actorUserId, scope)
+  }
+  logger.info('seeded the example delivery project', { projectId: project.id, tenantId: scope.tenantId, walkthrough: Boolean(options.walkthrough) })
   return project
 }
