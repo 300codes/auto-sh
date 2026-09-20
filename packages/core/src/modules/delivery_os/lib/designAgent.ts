@@ -25,6 +25,13 @@ export type DesignAgentRequest = {
   fileKey: string | null
   brief: string
   instructions: string
+  /** Where the agent writes one PNG render per frame, so the stage artifact can carry verifiable screens. */
+  renderDir: string
+}
+
+/** The file name a render of `nodeId` is written to; `:` is not safe in a path. */
+export function renderFileName(nodeId: string): string {
+  return `${nodeId.replace(':', '-')}.png`
 }
 
 /**

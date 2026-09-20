@@ -20,6 +20,7 @@ import {
   type StageArtifactDependency,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { completeDeliveryJson } from '@open-mercato/core/modules/delivery_os/lib/jsonCompletion'
+import { stageRenderDir, storeStageRenders } from '@open-mercato/core/modules/delivery_os/lib/stageRenders'
 import { figmaDesignResultSchema, tryResolveDesignAgent } from '@open-mercato/core/modules/delivery_os/lib/designAgent'
 import {
   SCOPE_DRAFT_JSON_CONTRACT,
@@ -148,15 +149,33 @@ export async function POST(request: Request, context: DeliveryRouteContext): Pro
       fileKey: upstream.fileKey,
       brief: buildDesignDraftPrompt({ stageId, intake, scope: upstream.scope, projectName: project.name, targetProfileId: project.targetProfileId }),
       instructions: buildDesignAgentInstructions(stageId),
+      renderDir: stageRenderDir(project.id, stageId),
     })
     const design = figmaDesignResultSchema.safeParse(answer)
-    if (!design.success) return unusableDraft(project.id, stageId, 'figma-mcp')
+    if (!design.success) {
+      logger.info('the design agent reported something the contract refuses', {
+        projectId: project.id,
+        stageId,
+        answer: JSON.stringify(answer)?.slice(0, 1000) ?? null,
+        issues: design.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).slice(0, 10),
+      })
+      return unusableDraft(project.id, stageId, 'figma-mcp')
+    }
+    const screens = await storeStageRenders({
+      em,
+      dataEngine: ctx.container.resolve('dataEngine') as Parameters<typeof storeStageRenders>[0]['dataEngine'],
+      design: design.data,
+      projectId: project.id,
+      stageId,
+      scope,
+    })
     const artifact = buildDesignArtifact({
       stageId,
       design: design.data,
       projectId: project.id,
       dependsOn: upstream.dependsOn,
       producedBy: { tool: 'figma-mcp', sessionRef: design.data.fileKey },
+      screens,
     })
     return NextResponse.json({ artifact, tool: 'figma-mcp' })
   } catch (error) {

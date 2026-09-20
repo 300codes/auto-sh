@@ -109,19 +109,24 @@ export function tryResolveBriefStructurer(container: { resolve: (name: string) =
   }
 }
 
-/** Pulls the first JSON object out of an agent answer that may wrap it in prose or a fenced block. */
+/**
+ * Pulls the JSON object out of an agent answer that may wrap it in prose or a fenced block. A CLI that prints its
+ * answer twice (Codex repeats it after the run log) would defeat a first-brace-to-last-brace slice, so every opening
+ * brace is tried from the last one backwards and the first slice that parses wins.
+ */
 export function readJsonObject(output: string): unknown | null {
   const fenced = output.match(/```(?:json)?\s*([\s\S]*?)```/)
-  const candidates = [fenced?.[1], output]
-  for (const candidate of candidates) {
+  for (const candidate of [fenced?.[1], output]) {
     if (!candidate) continue
-    const start = candidate.indexOf('{')
     const end = candidate.lastIndexOf('}')
-    if (start < 0 || end <= start) continue
-    try {
-      return JSON.parse(candidate.slice(start, end + 1))
-    } catch {
-      continue
+    if (end < 0) continue
+    for (let start = candidate.lastIndexOf('{', end); start >= 0; start = candidate.lastIndexOf('{', start - 1)) {
+      try {
+        const parsed: unknown = JSON.parse(candidate.slice(start, end + 1))
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed
+      } catch {
+        continue
+      }
     }
   }
   return null

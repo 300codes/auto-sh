@@ -1,4 +1,4 @@
-import { applyExtractedBrief, buildBriefStructuringPrompt, extractedBriefSchema } from '../briefStructuring'
+import { applyExtractedBrief, buildBriefStructuringPrompt, extractedBriefSchema, readJsonObject } from '../briefStructuring'
 import { defaultIntake } from '../intakeRules'
 
 const PROJECT_ID = '11111111-1111-4111-8111-111111111111'
@@ -56,5 +56,27 @@ describe('buildBriefStructuringPrompt', () => {
     for (const field of ['businessGoal', 'audience', 'problem', 'content', 'features', 'integrations', 'constraints', 'unknowns']) {
       expect(prompt).toContain(field)
     }
+  })
+})
+
+describe('reading an agent answer', () => {
+  const answer = { fileKey: 'ES4noLJGt7u47StnPl5y1a', nodes: [{ nodeId: '1:2' }] }
+
+  it('reads a plain answer', () => {
+    expect(readJsonObject(JSON.stringify(answer))).toEqual(answer)
+  })
+
+  it('reads the answer a CLI printed twice around its run log', () => {
+    const output = `run log\n${JSON.stringify(answer)}\ntokens used\n140 858\n${JSON.stringify(answer)}\n`
+    expect(readJsonObject(output)).toEqual(answer)
+  })
+
+  it('reads a fenced answer wrapped in prose', () => {
+    expect(readJsonObject(`Here you go:\n\`\`\`json\n${JSON.stringify(answer)}\n\`\`\`\nDone.`)).toEqual(answer)
+  })
+
+  it('returns null when the answer holds no JSON object', () => {
+    expect(readJsonObject('I cannot help with that.')).toBeNull()
+    expect(readJsonObject('[1, 2, 3]')).toBeNull()
   })
 })

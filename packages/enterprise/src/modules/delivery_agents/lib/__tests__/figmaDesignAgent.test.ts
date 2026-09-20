@@ -22,11 +22,11 @@ const design = {
 }
 const ok = (output: string): CommandResult => ({ exitCode: 0, notFound: false, timedOut: false, output })
 
-function runner(result: CommandResult) {
+function runner(...results: CommandResult[]) {
   const calls: Array<{ bin: string; args: readonly string[] }> = []
   const run = jest.fn(async (bin: string, args: readonly string[]) => {
     calls.push({ bin, args })
-    return result
+    return results[Math.min(calls.length - 1, results.length - 1)]
   })
   return { run, calls }
 }
@@ -58,8 +58,34 @@ describe('Figma design agent', () => {
     ['the run fails', { exitCode: 1, notFound: false, timedOut: false, output: 'not logged in' }],
     ['the run times out', { exitCode: null, notFound: false, timedOut: true, output: '' }],
     ['the answer holds no JSON', ok('I need a Figma plan first.')],
+    ['every attempt reaches no Figma node', ok(JSON.stringify({ ...design, nodes: [] }))],
   ])('returns null when %s, so the caller can say so', async (_label, result) => {
     const { run } = runner(result as CommandResult)
     await expect(createFigmaDesignAgent({ run }).design(request)).resolves.toBeNull()
+  })
+
+  it('retries when the hosted MCP server reports itself unavailable and the run built nothing', async () => {
+    const unavailable = ok(JSON.stringify({ ...design, summary: 'Serwer Figma MCP nie jest dostępny.', nodes: [] }))
+    const { run, calls } = runner(unavailable, unavailable, ok(JSON.stringify(design)))
+    await expect(createFigmaDesignAgent({ run, plan: '300.codes' }).design(request)).resolves.toEqual(design)
+    expect(calls).toHaveLength(3)
+  })
+
+  it('stops retrying as soon as a run reports real nodes', async () => {
+    const { run, calls } = runner(ok(JSON.stringify(design)))
+    await createFigmaDesignAgent({ run }).design(request)
+    expect(calls).toHaveLength(1)
+  })
+
+  it('gives up after the configured number of attempts instead of looping forever', async () => {
+    const { run, calls } = runner(ok('no json here'))
+    await expect(createFigmaDesignAgent({ run, attempts: 2 }).design(request)).resolves.toBeNull()
+    expect(calls).toHaveLength(2)
+  })
+
+  it('never retries a missing CLI, because a second run cannot install it', async () => {
+    const { run, calls } = runner({ exitCode: null, notFound: true, timedOut: false, output: '' })
+    await expect(createFigmaDesignAgent({ run }).design(request)).resolves.toBeNull()
+    expect(calls).toHaveLength(1)
   })
 })

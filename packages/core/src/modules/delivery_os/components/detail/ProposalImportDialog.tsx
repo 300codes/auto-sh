@@ -108,6 +108,7 @@ export function ProposalImportDialog({
   const [serverError, setServerError] = React.useState<string | null>(null)
   const [serverIssues, setServerIssues] = React.useState<ProposalIssue[]>([])
   const [submitting, setSubmitting] = React.useState(false)
+  const [drafting, setDrafting] = React.useState(false)
   const { runMutation, retryLastMutation } = useGuardedMutation<{
     formId: string
     resourceKind: string
@@ -121,6 +122,33 @@ export function ProposalImportDialog({
     setServerError(null)
     setServerIssues([])
   }, [open, variant])
+
+  /** Drafts the plan from the active baseline with the connected agent; the operator still reviews and imports it. */
+  const draftPlan = React.useCallback(async () => {
+    setDrafting(true)
+    setProblem(null)
+    setServerError(null)
+    setServerIssues([])
+    try {
+      const response = await apiCall<unknown>(`/api/delivery_os/projects/${encodeURIComponent(projectId)}/plan-draft`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      })
+      const proposal = (response.result as { proposal?: unknown } | null)?.proposal
+      if (!response.ok || !proposal) {
+        setServerError(t('delivery_os.project.import.plan.draftFailed'))
+        return
+      }
+      setRaw(JSON.stringify(proposal, null, 2))
+      const uncovered = (response.result as { uncoveredAcIds?: string[] } | null)?.uncoveredAcIds ?? []
+      if (uncovered.length > 0) flash(t('delivery_os.project.import.plan.uncovered', { ids: uncovered.join(', ') }), 'warning')
+    } catch {
+      setServerError(t('delivery_os.project.import.plan.draftFailed'))
+    } finally {
+      setDrafting(false)
+    }
+  }, [projectId, t])
 
   const parsed = React.useMemo(() => {
     if (raw.trim().length === 0) return null
@@ -246,6 +274,11 @@ export function ProposalImportDialog({
           <DialogDescription>{t(`delivery_os.project.import.${variant}.description`)}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {variant === 'plan' ? (
+            <Button type="button" variant="outline" disabled={drafting || submitting} onClick={() => { void draftPlan() }}>
+              {t(drafting ? 'delivery_os.project.import.plan.drafting' : 'delivery_os.project.import.plan.draft')}
+            </Button>
+          ) : null}
           <Textarea
             data-testid="proposal-import-textarea"
             aria-label={t('delivery_os.project.import.manifestLabel')}
