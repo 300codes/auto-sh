@@ -47,6 +47,16 @@ export const setup: ModuleSetupConfig = {
       'delivery_agents.tools.view',
       'delivery_agents.tools.manage',
     ],
+    /**
+     * Running a task needs `delivery_agents.execute` together with `delivery_os.attempts.manage`, so a delivery
+     * operator who holds the second one but not the first stops at the last step with a 403. Connecting the tools
+     * themselves stays with an admin: it signs the host into someone's account.
+     */
+    employee: [
+      'delivery_agents.execute',
+      'delivery_agents.monitor',
+      'delivery_agents.tools.view',
+    ],
   },
 
   seedDefaults: async (ctx) => {
