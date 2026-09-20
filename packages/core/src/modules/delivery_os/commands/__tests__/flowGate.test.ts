@@ -1,4 +1,6 @@
 import { hashCanonical } from '../../lib/hash'
+import { rebindFlowBaseline } from '../flowBaseline'
+import { draftSpecV1Schema } from '../../data/validators'
 import { draftAttachmentRows, makeDraft } from './baselineTestKit'
 import type { BaselineCommandResult } from '../baselines'
 import { flowRefsHash } from '../../lib/flowBaseline'
@@ -487,6 +489,37 @@ describe('flow baseline execution provenance', () => {
     expect((await catchHttpError(() => runReady())).body).toMatchObject({ code: 'baseline_not_approved', details: [{ code: 'flow_baseline_binding_missing' }] })
     expect((await catchHttpError(() => runAutomaticReserve())).body).toMatchObject({ code: 'baseline_not_approved' })
     expect(store.tasks[1].executionAttempts).toEqual([])
+  })
+
+  it('binds the merged baseline a plan import creates, so its tasks can still reach the gate', async () => {
+    const refs = seedStages('none')
+    seedBinding(refs)
+    const stageRefs = FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, ...refs[stageId] }))
+    const project = store.projects[0]
+    const draft = draftSpecV1Schema.parse(project.draftSpec)
+    project.draftSpec = { ...project.draftSpec, flowBaseline: { templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE), stageRefs, draftHash: hashCanonical(draft) } }
+    const mergedBaseline = { id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' } as DeliveryBaseline
+    const { em } = makeHarness(store)
+
+    await rebindFlowBaseline(em as unknown as EntityManager, project, mergedBaseline, { tenantId: TENANT_ID, organizationId: ORG_ID }, null)
+
+    const binding = store.flowBaselineBindings.find((row) => row.baselineId === mergedBaseline.id)
+    expect(binding).toMatchObject({ projectId: PROJECT_ID, templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE), refsHash: flowRefsHash(stageRefs) })
+  })
+
+  it('refreshes the provenance when the import rewrote the draft, instead of refusing it as stale', async () => {
+    const refs = seedStages('none')
+    const stageRefs = FLOW_APPROVAL_STAGE_ORDER.map((stageId) => ({ stageId, ...refs[stageId] }))
+    const project = store.projects[0]
+    project.draftSpec = { ...project.draftSpec, planSummary: 'Plan dopisany przez import', flowBaseline: { templateHash: hashFlowTemplate(DEFAULT_FLOW_TEMPLATE), stageRefs, draftHash: 'd'.repeat(64) } }
+    const mergedBaseline = { id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' } as DeliveryBaseline
+    const { em } = makeHarness(store)
+
+    await rebindFlowBaseline(em as unknown as EntityManager, project, mergedBaseline, { tenantId: TENANT_ID, organizationId: ORG_ID }, null)
+
+    const provenance = (project.draftSpec as { flowBaseline: { draftHash: string } }).flowBaseline
+    expect(provenance.draftHash).toBe(hashCanonical(draftSpecV1Schema.parse(project.draftSpec)))
+    expect(store.flowBaselineBindings.some((row) => row.baselineId === mergedBaseline.id)).toBe(true)
   })
 
   it('rejects a binding from another organization', async () => {

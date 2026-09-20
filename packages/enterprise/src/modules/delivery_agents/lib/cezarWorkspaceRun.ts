@@ -16,7 +16,7 @@ export type WorkspaceFile = { path: string; bytes: Uint8Array }
 export type CezarWorkspaceResult = {
   runId: string
   status: 'done' | 'review'
-  changes: Array<{ path: string; content: string }>
+  changes: Array<{ path: string; content: string; encoding: 'utf8' | 'base64' }>
   deletedPaths: string[]
 }
 
@@ -88,6 +88,15 @@ async function worktreeForBranch(repository: string, branch: string): Promise<st
   throw new Error('[internal] cezar_worktree_missing')
 }
 
+/**
+ * Reads a changed file as bytes and only calls it text when it survives a UTF-8 round trip, so a font or any other
+ * binary the task legitimately adds reaches the operator intact instead of being mangled into replacement characters.
+ */
+function encodeChange(bytes: Buffer): { content: string; encoding: 'utf8' | 'base64' } {
+  const text = bytes.toString('utf8')
+  return Buffer.from(text, 'utf8').equals(bytes) ? { content: text, encoding: 'utf8' } : { content: bytes.toString('base64'), encoding: 'base64' }
+}
+
 export async function collectWorkspaceChanges(worktree: string, baseCommit: string): Promise<Pick<CezarWorkspaceResult, 'changes' | 'deletedPaths'>> {
   await git(worktree, 'add', '-A')
   const status = await git(worktree, 'diff', '--cached', '--name-status', '--no-renames', baseCommit)
@@ -96,8 +105,9 @@ export async function collectWorkspaceChanges(worktree: string, baseCommit: stri
   for (const line of status.split('\n').filter(Boolean)) {
     const [kind, filePath] = line.split('\t')
     if (!filePath || filePath.startsWith('.ai/') || filePath === '.gitignore') continue
-    if (kind === 'D') deletedPaths.push(filePath)
-    else changes.push({ path: filePath, content: await fs.readFile(path.join(worktree, filePath), 'utf8') })
+    if (kind === 'D') { deletedPaths.push(filePath); continue }
+    const bytes = await fs.readFile(path.join(worktree, filePath))
+    changes.push({ path: filePath, ...encodeChange(bytes) })
   }
   return { changes, deletedPaths }
 }

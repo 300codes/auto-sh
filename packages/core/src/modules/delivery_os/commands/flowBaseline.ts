@@ -26,6 +26,22 @@ export async function bindFlowBaseline(tx: EntityManager, project: DeliveryProje
   tx.persist(tx.create(DeliveryFlowBaselineBinding, { id: randomUUID(), ...identity, stageRefs, createdBy: actorId }))
 }
 
+/**
+ * Re-binds a merged baseline after a command rewrote the draft. A plan import keeps the same approved stages but adds
+ * its plan to the draft, so the stored provenance no longer matches; without refreshing it the merged baseline would
+ * carry no binding and every task on it would fail the execution gate with `flow_baseline_binding_missing`.
+ */
+export async function rebindFlowBaseline(tx: EntityManager, project: DeliveryProject, baseline: DeliveryBaseline, scope: DeliveryScope, actorId: string | null): Promise<void> {
+  if (!isFlowPinned(project)) return
+  const stageRefs = await currentFlowRefs(tx, project, scope)
+  const draft = draftSpecV1Schema.parse(project.draftSpec)
+  const provenance = { templateHash: project.flowTemplateHash!, stageRefs, draftHash: hashCanonical(draft) }
+  project.draftSpec = { ...project.draftSpec, flowBaseline: provenance }
+  const identity = { tenantId: scope.tenantId, organizationId: scope.organizationId, projectId: project.id, baselineId: baseline.id, templateHash: provenance.templateHash, refsHash: flowRefsHash(stageRefs) }
+  if (await findOneWithDecryption(tx, DeliveryFlowBaselineBinding, identity, undefined, scope)) return
+  tx.persist(tx.create(DeliveryFlowBaselineBinding, { id: randomUUID(), ...identity, stageRefs, createdBy: actorId }))
+}
+
 export type FlowBaselineResult = { projectId: string; projectUpdatedAt: string; templateHash: string; stageRefs: Awaited<ReturnType<typeof currentFlowRefs>>; draftHash: string }
 
 const materialize: CommandHandler<unknown, FlowBaselineResult> = {

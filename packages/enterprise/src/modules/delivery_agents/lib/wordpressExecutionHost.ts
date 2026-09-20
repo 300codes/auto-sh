@@ -15,7 +15,11 @@ const WORDPRESS_PROFILE_VERSION = 1
 const SMOKE_CHECK_ID = 'smoke-tests'
 const LINT_CHECK_ID = 'lint'
 const COMMAND_TIMEOUT_MS = 180_000
-const EDITABLE_THEME_PATH = /^(?:(?:templates|parts)\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.html|assets\/(?:css\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.css|js\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.js))$/
+const THEME_PATH_SEGMENTS = '(?:[a-z][a-z0-9-]*\\/){0,3}[a-z][a-z0-9-]*'
+/** Mirrors what the owned-theme operator accepts; anything else is refused before the site is touched. */
+const EDITABLE_THEME_PATH = new RegExp(
+  `^(?:style\\.css|theme\\.json|functions\\.php|(?:templates|parts|patterns)\\/${THEME_PATH_SEGMENTS}\\.html|inc\\/${THEME_PATH_SEGMENTS}\\.php|assets\\/(?:css\\/${THEME_PATH_SEGMENTS}\\.css|js\\/${THEME_PATH_SEGMENTS}\\.js|fonts\\/${THEME_PATH_SEGMENTS}\\.(?:woff2|woff)))$`,
+)
 const UPDATE_TIMEOUT_MS = 120_000
 
 const absolute = z.string().refine(path.isAbsolute)
@@ -274,7 +278,7 @@ export function createWordpressExecutionHost(config: WordpressHostConfig, deps: 
 
       await operator.updateOwnedTheme({
         scope, handle, updateId: randomUUID(),
-        changes: cezar.changes.map((change) => ({ path: change.path, expectedHash: base.snapshot.themeFiles[change.path] ?? null, content: change.content })),
+        changes: cezar.changes.map((change) => ({ path: change.path, expectedHash: base.snapshot.themeFiles[change.path] ?? null, content: change.content, encoding: change.encoding })),
         config: { sitesRoot: config.sitesRoot, stateRoot: config.stateRoot, toolchainRoot: config.toolchainRoot, timeoutMs: UPDATE_TIMEOUT_MS },
       })
       const resultReceipt = await operator.captureOwnedSnapshot({ scope, handle, config: operatorConfig })

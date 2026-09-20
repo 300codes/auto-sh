@@ -11,8 +11,30 @@ import { buildThemeWithinLock } from './theme-build.ts'
 import type { CommandRunner } from './runner.ts'
 
 const hashSchema = z.string().regex(/^[a-f0-9]{64}$/)
-const managedPath = z.string().max(180).refine((value) => !/[\x00-\x1f\x7f]/.test(value)).regex(/^(?:(?:templates|parts)\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.html|assets\/(?:css\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.css|js\/(?:[a-z][a-z0-9-]*\/){0,3}[a-z][a-z0-9-]*\.js))$/)
-const changeSchema = z.object({ path: managedPath, expectedHash: hashSchema.nullable(), content: z.string().max(128 * 1024) }).strict()
+const segments = '(?:[a-z][a-z0-9-]*\\/){0,3}[a-z][a-z0-9-]*'
+/**
+ * What an agent may write in an owned theme. Markup, styles and scripts were always here; `theme.json`,
+ * `functions.php`, `inc/**.php` and the font files under `assets/fonts` were added because a delivery task that sets
+ * design tokens or hosts fonts locally cannot be carried out without them. Everything else stays read-only, and the
+ * shape of each entry is still checked here rather than trusted from the caller.
+ */
+const managedPath = z.string().max(180).refine((value) => !/[\x00-\x1f\x7f]/.test(value)).regex(
+  new RegExp(`^(?:style\\.css|theme\\.json|functions\\.php|(?:templates|parts|patterns)\\/${segments}\\.html|inc\\/${segments}\\.php|assets\\/(?:css\\/${segments}\\.css|js\\/${segments}\\.js|fonts\\/${segments}\\.(?:woff2|woff)))$`),
+)
+const TEXT_BYTES = 128 * 1024
+const BINARY_BYTES = 512 * 1024
+const changeSchema = z.object({
+  path: managedPath,
+  expectedHash: hashSchema.nullable(),
+  content: z.string().max(BINARY_BYTES * 2),
+  /** `base64` carries a font; text files stay utf8 so a malformed byte sequence is still refused. */
+  encoding: z.enum(['utf8', 'base64']).default('utf8'),
+}).strict()
+
+const FONT_PATH = /\.(?:woff2|woff)$/
+function changeBytes(change: z.infer<typeof changeSchema>): Buffer {
+  return change.encoding === 'base64' ? Buffer.from(change.content, 'base64') : Buffer.from(change.content, 'utf8')
+}
 const inputSchema = z.object({
   scope: scopeSchema, handle: siteHandleSchema, updateId: z.uuid(), changes: z.array(changeSchema).min(1).max(32).refine((changes) => new Set(changes.map((change) => change.path)).size === changes.length),
   designTokens: designTokenExportSchema.optional(),
@@ -49,7 +71,7 @@ async function read(filename: string, nullable = false, maximum = MAX_BYTES): Pr
   } finally { await handle.close() }
 }
 
-async function write(root: string, filename: string, content: string, exclusive = false) {
+async function write(root: string, filename: string, content: string | Buffer, exclusive = false) {
   await assertContainedPath(root, filename)
   await assertSafeDirectory(path.dirname(filename))
   const temporary = path.join(path.dirname(filename), `.update-${randomUUID()}.tmp`)
@@ -64,10 +86,14 @@ async function write(root: string, filename: string, content: string, exclusive 
 export async function updateOwnedTheme(value: unknown, dependencies: { runner?: CommandRunner } = {}) {
   try {
     const input = parseInput(inputSchema, value)
-    if (input.changes.reduce((size, change) => size + Buffer.byteLength(change.content), 0) > MAX_BYTES) throw toolError('theme_update_limit')
+    if (input.changes.reduce((size, change) => size + changeBytes(change).length, 0) > MAX_BYTES) throw toolError('theme_update_limit')
     for (const change of input.changes) {
-      if (Buffer.byteLength(change.content) > 128 * 1024) throw toolError('theme_update_limit')
-      if (Buffer.from(change.content).toString() !== change.content) throw toolError('theme_update_encoding')
+      const bytes = changeBytes(change)
+      const isFont = FONT_PATH.test(change.path)
+      if (change.encoding === 'base64' && !isFont) throw toolError('theme_update_encoding')
+      if (bytes.length > (isFont ? BINARY_BYTES : TEXT_BYTES)) throw toolError('theme_update_limit')
+      if (change.encoding === 'utf8' && bytes.toString() !== change.content) throw toolError('theme_update_encoding')
+      if (change.encoding === 'base64' && bytes.toString('base64') !== change.content.replace(/\s+/g, '')) throw toolError('theme_update_encoding')
     }
     const tools = createWordPressStudioTools(input.config, dependencies)
     await tools.status(input.scope, input.handle)
@@ -84,6 +110,8 @@ export async function updateOwnedTheme(value: unknown, dependencies: { runner?: 
         if (!mapping || design.siteId !== input.handle.siteId || design.themeSlug !== owner.request.themeSlug || design.inputHash !== mapping.inputHash || design.artifactsHash !== mapping.artifactsHash) throw toolError('theme_update_design_conflict')
         const themeJson = await read(path.join(themePath, 'theme.json'))
         if (!themeJson || digest(themeJson) !== design.afterHash) throw toolError('theme_update_design_conflict')
+        // Tokens live in an exported journal; letting this update rewrite theme.json would silently detach the two.
+        if (input.changes.some((change) => change.path === 'theme.json')) throw toolError('theme_update_design_conflict')
       } else if (input.designTokens) throw toolError('theme_update_design_conflict')
       const journalPath = path.join(statePath, `theme-update-${input.updateId}.json`)
       await assertContainedPath(statePath, journalPath)
@@ -106,22 +134,24 @@ export async function updateOwnedTheme(value: unknown, dependencies: { runner?: 
       for (const change of input.changes) {
         const filename = path.join(themePath, change.path)
         await assertContainedPath(themePath, filename)
+        // A task may add the first file of a directory the theme does not have yet (inc/, assets/fonts/…).
+        await fs.mkdir(path.dirname(filename), { recursive: true, mode: 0o700 })
         await assertSafeDirectory(path.dirname(filename))
-        const current = await read(filename, true, 128 * 1024)
+        const current = await read(filename, true, BINARY_BYTES)
         const beforeHash = current ? digest(current) : null
         if (beforeHash !== change.expectedHash) throw toolError('theme_update_conflict')
         beforeBytes += current?.length ?? 0
         if (beforeBytes > MAX_BYTES) throw toolError('theme_update_limit')
-        files.push({ path: change.path, before: current?.toString('base64') ?? null, beforeHash, afterHash: digest(change.content) })
+        files.push({ path: change.path, before: current?.toString('base64') ?? null, beforeHash, afterHash: digest(changeBytes(change)) })
       }
       if (files.every((file) => file.beforeHash === file.afterHash)) throw toolError('theme_update_no_change')
       const journal: z.infer<typeof journalSchema> = { schemaVersion: 1, siteId: input.handle.siteId, requestHash, status: 'prepared', files }
       await write(statePath, journalPath, JSON.stringify(journal) + '\n', true)
       for (const change of input.changes) {
         const filename = path.join(themePath, change.path)
-        const current = await read(filename, true, 128 * 1024)
+        const current = await read(filename, true, BINARY_BYTES)
         if ((current ? digest(current) : null) !== change.expectedHash) throw toolError('theme_update_conflict')
-        await write(themePath, filename, change.content, change.expectedHash === null)
+        await write(themePath, filename, changeBytes(change), change.expectedHash === null)
       }
       const build = await buildThemeWithinLock({ scope: input.scope, handle: input.handle, config: { ...input.config, ...(input.designTokens ? { designTokens: input.designTokens } : {}) } }, dependencies)
       for (const file of files) {

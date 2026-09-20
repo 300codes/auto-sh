@@ -174,10 +174,22 @@ if (parseBooleanWithDefault(process.env.OM_ENABLE_STORAGE_S3, false)) {
   enabledModules.push({ id: 'storage_s3', from: '@open-mercato/storage-s3' })
 }
 
+/**
+ * Each toggle is read twice: the server-only name and its `NEXT_PUBLIC_` twin. This file is evaluated in the browser
+ * as well, where Next.js inlines only `NEXT_PUBLIC_*` and every other `process.env` read is `undefined`; a module
+ * gated on the server-only name alone is therefore missing from the client's `enabledModules`, so the widgets and
+ * notifications it declares are rendered on the server and silently dropped after hydration. The two
+ * `parseBooleanWithDefault` calls joined by `||` are also what the build-time module resolver understands, so the
+ * generated registries keep listing these modules.
+ */
 const enterpriseModulesEnabled = parseBooleanWithDefault(process.env.OM_ENABLE_ENTERPRISE_MODULES, false)
+  || parseBooleanWithDefault(process.env.NEXT_PUBLIC_OM_ENABLE_ENTERPRISE_MODULES, false)
 const enterpriseSsoEnabled = parseBooleanWithDefault(process.env.OM_ENABLE_ENTERPRISE_MODULES_SSO, false)
+  || parseBooleanWithDefault(process.env.NEXT_PUBLIC_OM_ENABLE_ENTERPRISE_MODULES_SSO, false)
 const enterpriseSecurityEnabled = parseBooleanWithDefault(process.env.OM_ENABLE_ENTERPRISE_MODULES_SECURITY, false)
+  || parseBooleanWithDefault(process.env.NEXT_PUBLIC_OM_ENABLE_ENTERPRISE_MODULES_SECURITY, false)
 const enterpriseAgentsEnabled = parseBooleanWithDefault(process.env.OM_ENABLE_ENTERPRISE_MODULES_AGENTS, false)
+  || parseBooleanWithDefault(process.env.NEXT_PUBLIC_OM_ENABLE_ENTERPRISE_MODULES_AGENTS, false)
 
 if (enterpriseModulesEnabled) {
   enabledModules.push(

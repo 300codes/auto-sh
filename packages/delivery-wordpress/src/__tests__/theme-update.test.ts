@@ -57,7 +57,7 @@ test('updates actual theme bytes and compiles locally without altering DB styles
   } finally { await context.dispose() }
 })
 
-for (const forbidden of ['../outside.html', 'functions.php', 'theme.json', 'inc/setup.php', 'assets/dist/tailwind.css', 'templates/payload.php', 'templates/page.html\n', 'wp-content/database/.ht.sqlite']) {
+for (const forbidden of ['../outside.html', 'assets/dist/tailwind.css', 'templates/payload.php', 'templates/page.html\n', 'wp-content/database/.ht.sqlite', 'assets/fonts/logo.svg', 'composer.json']) {
   test(`rejects unowned write ${forbidden}`, async () => {
     const context = await fixture()
     try {
@@ -159,4 +159,45 @@ test('post-build CSS mutation fails final verification and retains prepared jour
     assert.equal(journal.status, 'prepared')
     assert.ok((await fs.stat(path.join(context.statePath, 'operation.lock'))).isDirectory())
   } finally { mock.restoreAll(); await context.dispose() }
+})
+
+test('writes the theme files a delivery task needs: tokens, php and locally hosted fonts', async () => {
+  const context = await fixture()
+  try {
+    const font = Buffer.from('wOFF2 font bytes for Fira Sans')
+    const result = await updateOwnedTheme({
+      ...context.input,
+      changes: [
+        { path: 'theme.json', expectedHash: digest('{"version":3,"styles":{"color":{"text":"purple"}}}'), content: '{"version":3,"settings":{"color":{"palette":[{"slug":"navy","color":"#082C55"}]}}}' },
+        { path: 'functions.php', expectedHash: digest('<?php\n'), content: '<?php\nadd_theme_support("wp-block-styles");\n' },
+        { path: 'inc/setup.php', expectedHash: null, content: '<?php\n// setup\n' },
+        { path: 'assets/fonts/fira-sans/fira-sans-regular.woff2', expectedHash: null, content: font.toString('base64'), encoding: 'base64' },
+      ],
+    }, { runner: context.runner })
+
+    assert.equal(result.action, 'updated')
+    assert.match(await fs.readFile(path.join(context.themePath, 'theme.json'), 'utf8'), /#082C55/)
+    assert.match(await fs.readFile(path.join(context.themePath, 'inc/setup.php'), 'utf8'), /setup/)
+    assert.deepEqual(await fs.readFile(path.join(context.themePath, 'assets/fonts/fira-sans/fira-sans-regular.woff2')), font)
+  } finally { await context.dispose() }
+})
+
+test('refuses binary content for a file that is not a font', async () => {
+  const context = await fixture()
+  try {
+    await assert.rejects(updateOwnedTheme({
+      ...context.input,
+      changes: [{ path: 'assets/css/base.css', expectedHash: null, content: Buffer.from('body{}').toString('base64'), encoding: 'base64' }],
+    }, { runner: context.runner }), /theme_update_encoding/)
+  } finally { await context.dispose() }
+})
+
+test('refuses a font larger than the binary budget', async () => {
+  const context = await fixture()
+  try {
+    await assert.rejects(updateOwnedTheme({
+      ...context.input,
+      changes: [{ path: 'assets/fonts/huge.woff2', expectedHash: null, content: Buffer.alloc(512 * 1024 + 1).toString('base64'), encoding: 'base64' }],
+    }, { runner: context.runner }), /theme_update_limit/)
+  } finally { await context.dispose() }
 })

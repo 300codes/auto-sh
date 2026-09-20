@@ -11,6 +11,7 @@ import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { E } from '#generated/entities.ids.generated'
 import { DeliveryBaseline, DeliveryProject, DeliveryTask } from '../data/entities'
+import { rebindFlowBaseline } from './flowBaseline'
 import { taskCreateSchema } from '../data/validators'
 import {
   BASELINE_DECISION_KINDS,
@@ -290,6 +291,7 @@ const importPlanCommand: CommandHandler<unknown, PlanImportCommandResult> = {
           },
           declaredTests: plan.baselineContent.declaredTests,
         }
+        await rebindFlowBaseline(tx, project, baseline, scope, createdBy.success ? createdBy.data : null)
         project.updatedAt = new Date()
         await tx.flush()
         return { baseline, tasks, duplicate: false, project }
