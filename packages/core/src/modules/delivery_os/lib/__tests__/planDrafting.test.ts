@@ -1,4 +1,4 @@
-import { buildPlanDraftPrompt, buildPlanProposal, normalizeAllowedPath, normalizePlanDraft, planDraftSchema, uncoveredCriteria } from '../planDrafting'
+import { buildPlanDraftPrompt, buildPlanProposal, normalizeAllowedPath, normalizePlanDraft, planDraftSchema, TESTS_ROOT, uncoveredCriteria } from '../planDrafting'
 import { planProposalV1Schema } from '../contracts'
 
 const projectId = '44444444-4444-4444-8444-444444444444'
@@ -68,7 +68,7 @@ describe('plan drafting', () => {
       architectureSummary: 'x',
       tasks: [{ proposalTaskKey: 'TASK-1', title: 't', description: 'd', acIds: ['AC-1'], dependsOn: [], allowedPaths: ['assets/', 'assets/**', 'style.css'] }],
     }) as { tasks: { allowedPaths: string[] }[] }
-    expect(normalized.tasks[0].allowedPaths).toEqual(['assets/**', 'style.css'])
+    expect(normalized.tasks[0].allowedPaths).toEqual(['assets/**', 'style.css', TESTS_ROOT])
   })
 
   it('still refuses a path that escapes the repository, because notation is not the problem there', () => {
@@ -83,4 +83,20 @@ describe('plan drafting', () => {
     expect(normalizePlanDraft(null)).toBeNull()
     expect(normalizePlanDraft({ tasks: 'nope' })).toEqual({ tasks: 'nope' })
   })
+})
+
+test('gives every task the tests tree, so it can ship the proof of its own criteria', () => {
+  const normalized = normalizePlanDraft({
+    architectureSummary: 'x',
+    tasks: [{ proposalTaskKey: 'TASK-1', title: 't', description: 'd', acIds: ['AC-1'], dependsOn: [], allowedPaths: ['style.css'] }],
+  }) as { tasks: { allowedPaths: string[] }[] }
+  expect(normalized.tasks[0].allowedPaths).toContain('tests/**')
+})
+
+test('does not duplicate the tests tree when the plan already named it', () => {
+  const normalized = normalizePlanDraft({
+    architectureSummary: 'x',
+    tasks: [{ proposalTaskKey: 'TASK-1', title: 't', description: 'd', acIds: ['AC-1'], dependsOn: [], allowedPaths: ['tests/', 'style.css'] }],
+  }) as { tasks: { allowedPaths: string[] }[] }
+  expect(normalized.tasks[0].allowedPaths.filter((entry) => entry === 'tests/**')).toHaveLength(1)
 })

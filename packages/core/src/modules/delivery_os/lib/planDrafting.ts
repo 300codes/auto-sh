@@ -30,6 +30,7 @@ export const PLAN_DRAFT_JSON_CONTRACT = [
   'acIds name acceptance criteria of the baseline; every criterion must be covered by at least one task.',
   'dependsOn names other proposalTaskKey values and must not cycle.',
   'allowedPaths are repository-relative entries the task may write: a file as "style.css", a whole directory as "assets/**".',
+  'Every task also owns "tests/**", because a task proves its acceptance criteria with the tests it ships.',
   'Never use a leading slash, "..", a bare trailing slash or any other wildcard such as "assets/*.css".',
 ].join(' ')
 
@@ -91,6 +92,8 @@ export function buildPlanProposal(input: {
  * anything without that suffix is read as a file. A trailing slash or a narrower glob therefore becomes `dir/**`.
  * Absolute paths and parent segments are left alone, because there the notation is not the problem.
  */
+export const TESTS_ROOT = 'tests/**'
+
 export function normalizeAllowedPath(path: string): string {
   const trimmed = path.trim()
   const asDirectory = trimmed.match(/^(.*?)\/+(?:\*{1,2}(?:\.[A-Za-z0-9]+)?)?$/)
@@ -108,7 +111,8 @@ export function normalizePlanDraft(raw: unknown): unknown {
       const paths = (task as { allowedPaths?: unknown }).allowedPaths
       if (!Array.isArray(paths)) return task
       const normalized = paths.filter((path): path is string => typeof path === 'string').map(normalizeAllowedPath).filter((path) => path.length > 0)
-      return { ...task, allowedPaths: [...new Set(normalized)] }
+      // A task proves its criteria with the tests it ships, so the tests tree is never withheld from it.
+      return { ...task, allowedPaths: [...new Set([...normalized, TESTS_ROOT])] }
     }),
   }
 }

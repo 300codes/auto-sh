@@ -12,6 +12,8 @@ import type { CommandRunner } from './runner.ts'
 
 const hashSchema = z.string().regex(/^[a-f0-9]{64}$/)
 const segments = '(?:[a-z][a-z0-9-]*\\/){0,3}[a-z][a-z0-9-]*'
+/** Font files and their licences ship with the vendor's own casing: `Inter-Regular.woff2`, `LICENSE`, `README.md`. */
+const assetSegments = '(?:[A-Za-z0-9][A-Za-z0-9._-]*\\/){0,3}[A-Za-z0-9][A-Za-z0-9._-]*'
 /**
  * What an agent may write in an owned theme. Markup, styles and scripts were always here; `theme.json`,
  * `functions.php`, `inc/**.php` and the font files under `assets/fonts` were added because a delivery task that sets
@@ -19,7 +21,7 @@ const segments = '(?:[a-z][a-z0-9-]*\\/){0,3}[a-z][a-z0-9-]*'
  * shape of each entry is still checked here rather than trusted from the caller.
  */
 const managedPath = z.string().max(180).refine((value) => !/[\x00-\x1f\x7f]/.test(value)).regex(
-  new RegExp(`^(?:style\\.css|theme\\.json|functions\\.php|(?:templates|parts|patterns)\\/${segments}\\.html|inc\\/${segments}\\.php|assets\\/(?:css\\/${segments}\\.css|js\\/${segments}\\.js|fonts\\/${segments}\\.(?:woff2|woff)))$`),
+  new RegExp(`^(?:style\\.css|theme\\.json|functions\\.php|(?:templates|parts|patterns)\\/${segments}\\.html|inc\\/${segments}\\.php|tests\\/${assetSegments}\\.(?:php|js|ts|json|md)|assets\\/(?:css\\/${segments}\\.css|js\\/${segments}\\.js|images\\/${segments}\\.svg|fonts\\/${assetSegments}\\.(?:woff2|woff|txt|md)))$`),
 )
 const TEXT_BYTES = 128 * 1024
 const BINARY_BYTES = 512 * 1024
@@ -32,6 +34,12 @@ const changeSchema = z.object({
 }).strict()
 
 const FONT_PATH = /\.(?:woff2|woff)$/
+const SVG_PATH = /\.svg$/
+/**
+ * An SVG is executable in a browser, so the theme only accepts the drawing part of it: no scripts, no event handlers,
+ * no embedded documents and no external references that would fetch something at render time.
+ */
+const UNSAFE_SVG = /<\s*(?:script|foreignObject|iframe|use\b[^>]*\bhref\s*=\s*["']?https?:)|\son[a-z]+\s*=|javascript:|<!ENTITY/i
 function changeBytes(change: z.infer<typeof changeSchema>): Buffer {
   return change.encoding === 'base64' ? Buffer.from(change.content, 'base64') : Buffer.from(change.content, 'utf8')
 }
@@ -93,6 +101,7 @@ export async function updateOwnedTheme(value: unknown, dependencies: { runner?: 
       if (change.encoding === 'base64' && !isFont) throw toolError('theme_update_encoding')
       if (bytes.length > (isFont ? BINARY_BYTES : TEXT_BYTES)) throw toolError('theme_update_limit')
       if (change.encoding === 'utf8' && bytes.toString() !== change.content) throw toolError('theme_update_encoding')
+      if (SVG_PATH.test(change.path) && UNSAFE_SVG.test(change.content)) throw toolError('theme_update_unsafe_svg')
       if (change.encoding === 'base64' && bytes.toString('base64') !== change.content.replace(/\s+/g, '')) throw toolError('theme_update_encoding')
     }
     const tools = createWordPressStudioTools(input.config, dependencies)
@@ -166,7 +175,7 @@ export async function updateOwnedTheme(value: unknown, dependencies: { runner?: 
     })
   } catch (error) {
     const code = error instanceof Error && 'code' in error && typeof error.code === 'string' ? error.code : ''
-    const known = new Set(['invalid_input', 'ownership_mismatch', 'reconciliation_required', 'site_registration_mismatch', 'site_state_unknown', 'site_busy_or_reconciliation_required', 'UNSAFE_PATH', 'theme_update_limit', 'theme_update_design_conflict', 'theme_update_encoding', 'theme_update_input_changed', 'theme_update_conflict', 'theme_update_idempotency_conflict', 'theme_update_reconciliation_required', 'theme_update_no_change', 'theme_update_write_unconfirmed', 'theme_compile_failed'])
+    const known = new Set(['invalid_input', 'ownership_mismatch', 'reconciliation_required', 'site_registration_mismatch', 'site_state_unknown', 'site_busy_or_reconciliation_required', 'UNSAFE_PATH', 'theme_update_limit', 'theme_update_design_conflict', 'theme_update_encoding', 'theme_update_unsafe_svg', 'theme_update_input_changed', 'theme_update_conflict', 'theme_update_idempotency_conflict', 'theme_update_reconciliation_required', 'theme_update_no_change', 'theme_update_write_unconfirmed', 'theme_compile_failed'])
     throw toolError(known.has(code) ? code : 'theme_update_failed')
   }
 }

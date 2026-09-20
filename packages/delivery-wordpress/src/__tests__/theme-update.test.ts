@@ -201,3 +201,76 @@ test('refuses a font larger than the binary budget', async () => {
     }, { runner: context.runner }), /theme_update_limit/)
   } finally { await context.dispose() }
 })
+
+test('accepts a vector logo and a font licence, and refuses an svg that can execute', async () => {
+  const context = await fixture()
+  try {
+    const result = await updateOwnedTheme({
+      ...context.input,
+      changes: [
+        { path: 'assets/images/logo-mark.svg', expectedHash: null, content: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 2h20v20H2z"/></svg>' },
+        { path: 'assets/fonts/licence.txt', expectedHash: null, content: 'SIL Open Font License 1.1\n' },
+      ],
+    }, { runner: context.runner })
+    assert.equal(result.action, 'updated')
+    assert.match(await fs.readFile(path.join(context.themePath, 'assets/images/logo-mark.svg'), 'utf8'), /viewBox/)
+
+    for (const hostile of [
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>fetch("/wp-admin")</script></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><circle onload="alert(1)" r="2"/></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><a href="javascript:alert(1)">x</a></svg>',
+    ]) {
+      const hostileContext = await fixture()
+      try {
+        await assert.rejects(updateOwnedTheme({
+          ...hostileContext.input,
+          changes: [{ path: 'assets/images/evil.svg', expectedHash: null, content: hostile }],
+        }, { runner: hostileContext.runner }), /theme_update_unsafe_svg/)
+      } finally { await hostileContext.dispose() }
+    }
+  } finally { await context.dispose() }
+})
+
+test('accepts font files and licences under the vendor casing they ship with', async () => {
+  const context = await fixture()
+  try {
+    const font = Buffer.from('wOFF2 Inter Regular')
+    const result = await updateOwnedTheme({
+      ...context.input,
+      changes: [
+        { path: 'assets/fonts/inter/Inter-Regular.woff2', expectedHash: null, content: font.toString('base64'), encoding: 'base64' },
+        { path: 'assets/fonts/LICENSE-Inter.txt', expectedHash: null, content: 'SIL Open Font License 1.1\n' },
+        { path: 'assets/fonts/README.md', expectedHash: null, content: '# Fonts\nLocally hosted.\n' },
+      ],
+    }, { runner: context.runner })
+
+    assert.equal(result.action, 'updated')
+    assert.deepEqual(await fs.readFile(path.join(context.themePath, 'assets/fonts/inter/Inter-Regular.woff2')), font)
+    assert.match(await fs.readFile(path.join(context.themePath, 'assets/fonts/LICENSE-Inter.txt'), 'utf8'), /Open Font License/)
+  } finally { await context.dispose() }
+})
+
+test('still refuses a path that climbs out of the fonts directory', async () => {
+  const context = await fixture()
+  try {
+    await assert.rejects(updateOwnedTheme({
+      ...context.input,
+      changes: [{ path: 'assets/fonts/../../../wp-config.php', expectedHash: null, content: '<?php\n' }],
+    }, { runner: context.runner }), /invalid_input/)
+  } finally { await context.dispose() }
+})
+
+test('accepts the tests a task ships to prove its criteria', async () => {
+  const context = await fixture()
+  try {
+    const result = await updateOwnedTheme({
+      ...context.input,
+      changes: [
+        { path: 'tests/design-tokens-test.php', expectedHash: null, content: '<?php\n// asserts palette tokens\n' },
+        { path: 'tests/smoke.spec.ts', expectedHash: null, content: 'test("home renders", async () => {})\n' },
+      ],
+    }, { runner: context.runner })
+    assert.equal(result.action, 'updated')
+    assert.match(await fs.readFile(path.join(context.themePath, 'tests/design-tokens-test.php'), 'utf8'), /palette/)
+  } finally { await context.dispose() }
+})

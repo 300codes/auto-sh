@@ -16,9 +16,11 @@ const SMOKE_CHECK_ID = 'smoke-tests'
 const LINT_CHECK_ID = 'lint'
 const COMMAND_TIMEOUT_MS = 180_000
 const THEME_PATH_SEGMENTS = '(?:[a-z][a-z0-9-]*\\/){0,3}[a-z][a-z0-9-]*'
+/** Fonts and their licences keep the vendor's casing, so the assets tree accepts it where the theme tree does not. */
+const ASSET_PATH_SEGMENTS = '(?:[A-Za-z0-9][A-Za-z0-9._-]*\\/){0,3}[A-Za-z0-9][A-Za-z0-9._-]*'
 /** Mirrors what the owned-theme operator accepts; anything else is refused before the site is touched. */
 const EDITABLE_THEME_PATH = new RegExp(
-  `^(?:style\\.css|theme\\.json|functions\\.php|(?:templates|parts|patterns)\\/${THEME_PATH_SEGMENTS}\\.html|inc\\/${THEME_PATH_SEGMENTS}\\.php|assets\\/(?:css\\/${THEME_PATH_SEGMENTS}\\.css|js\\/${THEME_PATH_SEGMENTS}\\.js|fonts\\/${THEME_PATH_SEGMENTS}\\.(?:woff2|woff)))$`,
+  `^(?:style\\.css|theme\\.json|functions\\.php|(?:templates|parts|patterns)\\/${THEME_PATH_SEGMENTS}\\.html|inc\\/${THEME_PATH_SEGMENTS}\\.php|tests\\/${ASSET_PATH_SEGMENTS}\\.(?:php|js|ts|json|md)|assets\\/(?:css\\/${THEME_PATH_SEGMENTS}\\.css|js\\/${THEME_PATH_SEGMENTS}\\.js|images\\/${THEME_PATH_SEGMENTS}\\.svg|fonts\\/${ASSET_PATH_SEGMENTS}\\.(?:woff2|woff|txt|md)))$`,
 )
 const UPDATE_TIMEOUT_MS = 120_000
 
@@ -151,8 +153,10 @@ export function buildCezarPrompt(taskPackage: TaskPackageV1): string {
     `Requirements:\n${requirements || '- (none listed)'}`,
     `Acceptance criteria:\n${criteria}`,
     `These existing tests must pass after your change (do not edit them):\n${requiredTests || '- (none)'}`,
-    `Only create or edit files under templates/, parts/ (.html) and assets/css or assets/js. Allowed paths: ${taskPackage.allowedPaths.join(', ') || '(profile default)'}.`,
-    'Do not edit PHP, theme.json, composer.json, tests/ or any configuration. Do not delete files.',
+    `Write only inside the paths this task owns: ${taskPackage.allowedPaths.join(', ') || '(profile default)'}. A file outside them voids the whole attempt, so leave the work that belongs to other tasks alone.`,
+    'Inside those paths you may edit style.css, theme.json, functions.php, inc/**.php, templates|parts|patterns/**.html, assets/css/**.css, assets/js/**.js, assets/images/**.svg and assets/fonts/** (woff2, woff, txt, md). An svg must not carry scripts, event handlers or external references.',
+    'A task that owns tests/ must leave the profile checks something to run: add the tests that prove its acceptance criteria there.',
+    'Everything else is read-only: composer.json and the build output under assets/dist. Do not delete files.',
     'Work autonomously: make reasonable assumptions, do not ask questions, and finish when every acceptance criterion is implemented.',
   ].filter(Boolean).join('\n\n')
 }
