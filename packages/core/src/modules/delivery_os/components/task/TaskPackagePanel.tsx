@@ -4,9 +4,13 @@ import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { LoadingMessage } from '@open-mercato/ui/backend/detail'
+import { CollapsibleSection } from '@open-mercato/ui/backend/SectionHeader'
+import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
 import { taskPackageV1Schema, type TaskPackageV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { describeRevisionForDisplay } from './baseRevision'
+import { PathList } from './PathList'
+import { TechnicalFacts } from './TechnicalValue'
 
 export type TaskPackagePanelProps = {
   taskId: string
@@ -54,24 +58,35 @@ function downloadPackage(taskPackage: TaskPackageV1): boolean {
 
 function PackageFacts({ taskPackage }: { taskPackage: TaskPackageV1 }) {
   const t = useT()
-  const rows: Array<[string, string]> = [
-    ['delivery_os.task.package.fields.attemptId', taskPackage.attemptId],
-    ['delivery_os.task.package.fields.baselineId', taskPackage.baselineId],
-    ['delivery_os.task.package.fields.baselineHash', taskPackage.baselineHash.slice(0, 12)],
-    ['delivery_os.task.package.fields.baseRevision', describeRevisionForDisplay(taskPackage.baseRevision)],
-    ['delivery_os.task.package.fields.targetProfile', `${taskPackage.targetProfileId}@${taskPackage.targetProfileVersion}`],
-    ['delivery_os.task.package.fields.acIds', taskPackage.acceptanceCriteria.map((criterion) => criterion.id).join(', ')],
-    ['delivery_os.task.package.fields.allowedPaths', taskPackage.allowedPaths.join(', ')],
-  ]
   return (
-    <dl className="grid gap-2 sm:grid-cols-2" data-testid="task-package-facts">
-      {rows.map(([labelKey, value]) => (
-        <div key={labelKey} className="space-y-0.5">
-          <dt className="text-xs font-medium text-muted-foreground">{t(labelKey)}</dt>
-          <dd className="break-all font-mono text-xs">{value || '—'}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="space-y-3" data-testid="task-package-facts">
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">{t('delivery_os.task.package.fields.acIds')}</p>
+        <span className="flex flex-wrap gap-1">
+          {taskPackage.acceptanceCriteria.map((criterion) => (
+            <StatusBadge key={criterion.id} variant="neutral">{criterion.id}</StatusBadge>
+          ))}
+        </span>
+      </div>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">{t('delivery_os.task.package.fields.allowedPaths')}</p>
+        <PathList paths={taskPackage.allowedPaths} testId="task-package-allowed-paths" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">{t('delivery_os.task.package.fields.targetProfile')}</p>
+        <p className="text-sm">{`${taskPackage.targetProfileId}@${taskPackage.targetProfileVersion}`}</p>
+      </div>
+      <CollapsibleSection title={t('delivery_os.task.package.technicalTitle')} defaultCollapsed>
+        <TechnicalFacts
+          facts={[
+            { label: t('delivery_os.task.package.fields.attemptId'), value: taskPackage.attemptId },
+            { label: t('delivery_os.task.package.fields.baselineId'), value: taskPackage.baselineId },
+            { label: t('delivery_os.task.package.fields.baselineHash'), value: taskPackage.baselineHash },
+            { label: t('delivery_os.task.package.fields.baseRevision'), value: describeRevisionForDisplay(taskPackage.baseRevision) },
+          ]}
+        />
+      </CollapsibleSection>
+    </div>
   )
 }
 

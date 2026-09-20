@@ -13,11 +13,25 @@ import type { AcceptedResultSummary } from '../../lib/resultReadContracts'
 
 type Values = Record<string, unknown> & { verdict: string; summary: string; manualCheckId: string }
 
-export function TaskReviewAction({ result, taskUpdatedAt, onMutated }: {
-  result: AcceptedResultSummary; taskUpdatedAt: string | null; onMutated: (updatedAt: string) => void
+/**
+ * `open`/`onOpenChange` are optional: the button next to the result opens the
+ * review on its own, and the next-step callout opens the same dialog from the
+ * top of the screen without a second review path existing.
+ */
+export function TaskReviewAction({ result, taskUpdatedAt, onMutated, open: controlledOpen, onOpenChange }: {
+  result: AcceptedResultSummary
+  taskUpdatedAt: string | null
+  onMutated: (updatedAt: string) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const t = useT()
-  const [open, setOpen] = React.useState(false)
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = React.useCallback((next: boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(next)
+    onOpenChange?.(next)
+  }, [controlledOpen, onOpenChange])
   const form = React.useRef<HTMLDivElement>(null)
   const fields = React.useMemo<CrudField[]>(() => [
     { id: 'verdict', type: 'select', required: true, label: t('delivery_os.task.review.verdict'), options: [

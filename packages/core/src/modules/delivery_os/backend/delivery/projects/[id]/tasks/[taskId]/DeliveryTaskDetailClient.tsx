@@ -5,7 +5,7 @@ import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { useOrganizationScopeVersion } from '@open-mercato/shared/lib/frontend/useOrganizationScope'
 import { Page, PageBody } from '@open-mercato/ui/backend/Page'
 import { FormHeader } from '@open-mercato/ui/backend/forms'
-import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
+import { LoadingMessage, ErrorMessage, RecordNotFoundState } from '@open-mercato/ui/backend/detail'
 import { useBackendChrome } from '@open-mercato/ui/backend/BackendChromeProvider'
 import { hasFeature } from '@open-mercato/shared/security/features'
 import { apiCall } from '@open-mercato/ui/backend/utils/apiCall'
@@ -38,6 +38,7 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
   const canManageAttempts = hasFeature(chrome?.grantedFeatures, MANAGE_ATTEMPTS_FEATURE)
   const canReconcile = hasFeature(chrome?.grantedFeatures, RECONCILE_ATTEMPTS_FEATURE)
   const canImportResults = hasFeature(chrome?.grantedFeatures, IMPORT_RESULTS_FEATURE)
+  const projectHref = `/backend/delivery/projects/${encodeURIComponent(params.id)}`
 
   const refreshTask = React.useCallback(async (): Promise<void> => {
     const sequence = ++requestSequence.current
@@ -80,16 +81,37 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
     [state],
   )
 
+  const retry = (
+    <Button type="button" variant="outline" onClick={() => void refreshTask()}>{t('delivery_os.task.retry')}</Button>
+  )
+
   if (state.status === 'loading') {
     return <Page><PageBody><LoadingMessage label={t('delivery_os.task.loading')} /></PageBody></Page>
   }
-  if (state.status === 'notFound' || state.status === 'error') {
+  // A task that is not there is not a failure to load one: it sends the operator
+  // back to the project rather than offering a retry that cannot succeed.
+  if (state.status === 'notFound') {
     return (
       <Page><PageBody>
-        <ErrorMessage
-          label={t(state.status === 'notFound' ? 'delivery_os.task.notFound' : 'delivery_os.task.loadError')}
-          action={<Button type="button" variant="outline" onClick={() => void refreshTask()}>{t('delivery_os.task.retry')}</Button>}
+        <RecordNotFoundState
+          label={t('delivery_os.task.notFound')}
+          description={t('delivery_os.task.notFoundDescription')}
+          action={(
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" asChild>
+                <a href={projectHref}>{t('delivery_os.task.backToProject')}</a>
+              </Button>
+              {retry}
+            </div>
+          )}
         />
+      </PageBody></Page>
+    )
+  }
+  if (state.status === 'error') {
+    return (
+      <Page><PageBody>
+        <ErrorMessage label={t('delivery_os.task.loadError')} action={retry} />
       </PageBody></Page>
     )
   }
@@ -113,7 +135,7 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" variant="outline" size="sm" asChild>
-              <a href={`/backend/delivery/projects/${encodeURIComponent(params.id)}?taskId=${encodeURIComponent(task.id)}`}>
+              <a href={`${projectHref}?taskId=${encodeURIComponent(task.id)}`}>
                 {t('delivery_os.task.backToProject')}
               </a>
             </Button>
@@ -130,7 +152,6 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
               </span>
             ) : null}
           </div>
-          <TaskFacts task={task} />
           <TaskExecutionPanel
             task={task}
             register={register}
@@ -140,6 +161,7 @@ export function DeliveryTaskDetailClient({ params }: { params: { id: string; tas
             canImportResults={canImportResults}
             onMutated={onMutated}
           />
+          <TaskFacts task={task} />
         </div>
       </PageBody>
     </Page>

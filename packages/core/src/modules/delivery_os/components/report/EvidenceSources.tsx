@@ -19,11 +19,11 @@ function SourceGroup(props: SourceProps & { group: 'revision' | 'baseline' }) {
   const state = useEvidenceList(props.projectId, props.baselineId, props.revision, props.group, offset)
   const columns: ColumnDef<EvidenceListResponse['items'][number]>[] = [
     { accessorKey: 'kind', header: t('delivery_os.report.evidence.kind'), cell: ({ row }) => t(`delivery_os.report.evidence.kind.${row.original.kind}`) },
-    { accessorKey: 'createdAt', header: t('delivery_os.report.evidence.createdAt') },
-    { accessorKey: 'id', header: t('delivery_os.report.evidence.record'), cell: ({ row }) => <Button variant="ghost" size="sm" onClick={() => props.onEvidenceSelect(row.original.id)}>{row.original.id}</Button> },
+    { accessorKey: 'createdAt', header: t('delivery_os.report.evidence.createdAt'), cell: ({ row }) => <time dateTime={row.original.createdAt} className="text-sm text-muted-foreground">{row.original.createdAt}</time> },
+    { accessorKey: 'id', header: t('delivery_os.report.evidence.record'), meta: { truncate: false }, cell: ({ row }) => <Button type="button" variant="ghost" size="sm" onClick={() => props.onEvidenceSelect(row.original.id)}>{row.original.id}</Button> },
   ]
   return <div className="space-y-3">
-    <h3 className="text-sm font-medium">{t(`delivery_os.report.evidence.group.${props.group}`)}</h3>
+    <h3 className="text-sm font-semibold">{t(`delivery_os.report.evidence.group.${props.group}`)}</h3>
     {props.group === 'baseline' ? <Alert status="information">{t('delivery_os.report.evidence.baselineNotice')}</Alert> : null}
     {state.status === 'loading' ? <LoadingMessage label={t('delivery_os.report.evidence.loading')} /> : state.status !== 'ready' ? <><ErrorMessage label={t(`delivery_os.report.evidence.${state.status}`)} /><Button variant="outline" onClick={state.reload}>{t('delivery_os.report.evidence.retry')}</Button></> : <>
       <DataTable data={state.data?.items ?? []} columns={columns} embedded sortable={false} showQueryTime={false} emptyState={t('delivery_os.report.evidence.sourcesEmpty')} />

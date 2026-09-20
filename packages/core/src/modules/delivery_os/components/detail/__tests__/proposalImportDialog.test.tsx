@@ -48,11 +48,21 @@ function onImportedSpy() {
   return jest.fn()
 }
 
+/**
+ * The raw manifest lives behind the dialog's technical disclosure now — the
+ * default path is the file drop and the rendered preview — so a test that pastes
+ * a payload has to open that disclosure first, exactly as an operator would.
+ */
+async function revealRawManifest(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
+  await user.click(screen.getByRole('button', { name: 'ui.sectionHeader.expand' }))
+  return screen.getByTestId('proposal-import-textarea')
+}
+
 async function pasteAndSubmit(raw: string): Promise<void> {
   const user = userEvent.setup()
-  const textarea = screen.getByTestId('proposal-import-textarea')
   // `paste` instead of `type`: a JSON body typed character by character is
   // thousands of events and tells us nothing the paste does not.
+  const textarea = await revealRawManifest(user)
   textarea.focus()
   await user.paste(raw)
   await user.click(screen.getByTestId('proposal-import-submit'))

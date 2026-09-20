@@ -2,9 +2,11 @@
 
 import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
+import { CollapsibleSection, SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
+import { TabEmptyState } from '@open-mercato/ui/backend/detail'
 import { Badge } from '@open-mercato/ui/primitives/badge'
 import { BaselineSectionFrame } from './BaselineSectionFrame'
-import { shortHash } from './baselineContent'
+import { HashValue } from './HashValue'
 import { DecisionHistory, type BaselineDecision } from './decisions'
 import type { SectionSource } from './useProjectSections'
 import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
@@ -40,7 +42,7 @@ export function ScreenPreview({ attachmentId, name }: { attachmentId: string; na
       src={`/api/attachments/image/${encodeURIComponent(attachmentId)}?width=480&height=320`}
       alt={name}
       loading="lazy"
-      className="max-h-48 rounded border border-border"
+      className="max-h-48 rounded-md border border-border"
       onError={() => setFailed(true)}
     />
   )
@@ -64,11 +66,14 @@ export function DesignSection({ state, selectedBaselineId = null, onRetry, actio
         return (
           <div className="space-y-4">
             {active.content.screens.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('delivery_os.project.sections.design.noScreens')}</p>
+              <TabEmptyState
+                title={t('delivery_os.project.sections.design.noScreens')}
+                description={t('delivery_os.project.sections.design.noScreensDescription')}
+              />
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {active.content.screens.map((screen) => (
-                  <li key={screen.attachmentId} className="rounded border border-border p-3">
+                  <li key={screen.attachmentId} className="space-y-2 rounded-lg border border-border p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{screen.name}</span>
                       {screen.figmaVersion ? (
@@ -77,10 +82,8 @@ export function DesignSection({ state, selectedBaselineId = null, onRetry, actio
                         </Badge>
                       ) : null}
                     </div>
-                    <div className="mt-2">
-                      <ScreenPreview attachmentId={screen.attachmentId} name={screen.name} />
-                    </div>
-                    <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground sm:grid-cols-4">
+                    <ScreenPreview attachmentId={screen.attachmentId} name={screen.name} />
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground sm:grid-cols-4">
                       <div>
                         <dt className="font-medium">{t('delivery_os.project.sections.design.nodeId')}</dt>
                         <dd className="font-mono">{screen.nodeId ?? '—'}</dd>
@@ -91,7 +94,7 @@ export function DesignSection({ state, selectedBaselineId = null, onRetry, actio
                       </div>
                       <div>
                         <dt className="font-medium">{t('delivery_os.project.sections.design.sha256')}</dt>
-                        <dd className="font-mono">{shortHash(screen.sha256)}</dd>
+                        <dd><HashValue value={screen.sha256} /></dd>
                       </div>
                       <div>
                         <dt className="font-medium">{t('delivery_os.project.sections.design.capturedAt')}</dt>
@@ -103,12 +106,15 @@ export function DesignSection({ state, selectedBaselineId = null, onRetry, actio
                 ))}
               </ul>
             )}
-            <div>
-              <p className="text-xs font-medium">{t('delivery_os.project.sections.design.tokens')}</p>
+            <CollapsibleSection
+              title={t('delivery_os.project.sections.design.tokens')}
+              count={tokens.length}
+              defaultCollapsed
+            >
               {tokens.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t('delivery_os.project.sections.design.noTokens')}</p>
               ) : (
-                <ul className="mt-1 space-y-1">
+                <ul className="space-y-1">
                   {tokens.map(([name, value]) => (
                     <li key={name} className="flex gap-2 text-xs">
                       <span className="font-mono text-muted-foreground">{name}</span>
@@ -117,9 +123,12 @@ export function DesignSection({ state, selectedBaselineId = null, onRetry, actio
                   ))}
                 </ul>
               )}
-            </div>
+            </CollapsibleSection>
             {decisionFor ? decisionFor(active.baseline) : null}
-            <DecisionHistory decisions={decisions} emptyKey="delivery_os.project.sections.decisions.none" />
+            <div className="space-y-2">
+              <SectionHeader title={t('delivery_os.project.sections.decisions.title')} count={decisions.length} />
+              <DecisionHistory decisions={decisions} emptyKey="delivery_os.project.sections.decisions.none" />
+            </div>
           </div>
         )
       }}

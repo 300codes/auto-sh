@@ -25,7 +25,8 @@ import {
   reconcileSelectedBaselineId,
   resolveActiveBaseline,
 } from '@open-mercato/core/modules/delivery_os/components/detail/baselineContent'
-import { ProjectOverview } from '@open-mercato/core/modules/delivery_os/components/detail/ProjectOverview'
+import { ProjectTabsShell } from '@open-mercato/core/modules/delivery_os/components/detail/ProjectTabsShell'
+import type { ProjectDetailTab } from '@open-mercato/core/modules/delivery_os/components/detail/FlowController'
 import { BaselinePanel } from '@open-mercato/core/modules/delivery_os/components/detail/BaselinePanel'
 import { TasksSection } from '@open-mercato/core/modules/delivery_os/components/detail/TasksSection'
 import { EvidenceSection } from '@open-mercato/core/modules/delivery_os/components/detail/EvidenceSection'
@@ -35,6 +36,7 @@ import { DesignManifestImport } from '@open-mercato/core/modules/delivery_os/com
 
 const TASK_QUERY_PARAM = 'taskId'
 const BASELINE_QUERY_PARAM = 'baselineId'
+const STAGE_QUERY_PARAM = 'stage'
 const IMPORT_REQUIREMENTS_FEATURE = 'delivery_os.results.import'
 const MANAGE_PROJECT_FEATURE = 'delivery_os.projects.manage'
 const APPROVE_BASELINE_FEATURE = 'delivery_os.baselines.approve'
@@ -61,6 +63,14 @@ export function DeliveryProjectDetailClient({ params, actorUserId = null }: { pa
   const [state, setState] = React.useState<DetailState>({ status: 'loading' })
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(() => readQueryParam(TASK_QUERY_PARAM))
   const [selectedBaselineId, setSelectedBaselineId] = React.useState<string | null>(() => readQueryParam(BASELINE_QUERY_PARAM))
+  // A deep link names one thing; the tab that shows that thing is the one that
+  // must be open when the page paints, not after the operator hunts for it.
+  const [linkedStageId] = React.useState<string | null>(() => readQueryParam(STAGE_QUERY_PARAM))
+  const [initialTab] = React.useState<ProjectDetailTab>(() => {
+    if (readQueryParam(TASK_QUERY_PARAM)) return 'tasks'
+    if (readQueryParam(BASELINE_QUERY_PARAM)) return 'baseline'
+    return 'process'
+  })
   const [importOpen, setImportOpen] = React.useState(false)
   const [screenOpen, setScreenOpen] = React.useState(false)
   const [planOpen, setPlanOpen] = React.useState(false)
@@ -209,60 +219,81 @@ export function DeliveryProjectDetailClient({ params, actorUserId = null }: { pa
         statusBadge={<Badge variant="secondary">{t(`delivery_os.project.status.${state.project.status}`)}</Badge>}
       />
       <PageBody>
-        <ProjectOverview projectId={params.id} projectUpdatedAt={projectVersion ?? state.project.updatedAt!} actorUserId={actorUserId} canManage={canManage} canImport={canImport} canApprove={canApproveStages} canManageFlow={canManageFlow} onChanged={widgetRefresh} />
-        {state.project.brief ? <p className="whitespace-pre-wrap text-sm text-muted-foreground">{state.project.brief}</p> : null}
-        <div aria-busy={refreshing}>
-          <InjectionSpot
-            spotId={extensionPoints.hosts.projectExecution.spotId}
-            context={widgetContext ?? state.context}
-          />
-        </div>
-        <div className="space-y-6">
-          <DesignManifestImport projectId={params.id} projectUpdatedAt={projectVersion ?? state.project.updatedAt!} canManage={canManage} onChanged={widgetRefresh} />
-          <BaselinePanel
-            projectId={params.id}
-            baselines={sections.baselines}
-            selectedBaselineId={selectedBaselineId}
-            onSelectBaseline={selectBaseline}
-            onRetryBaselines={() => void sections.reloadBaselines()}
-            projectVersion={projectVersion}
-            draftSpec={state.project.draftSpec}
-            canImport={canImport}
-            canManage={canManage}
-            canApprove={canApprove}
-            onImportRequirements={() => setImportOpen(true)}
-            onAddScreen={() => setScreenOpen(true)}
-            onMutated={onMutated}
-          />
-          <div id="delivery-project-tasks"><TasksSection
-            state={sections.tasks}
-            attention={state.project.attention}
-            hasActiveBaseline={activeBaselineKind === null ? null : activeBaselineKind !== 'none'}
-            selectedTaskId={selectedTaskId}
-            onSelectTask={selectTask}
-            onRetry={() => void sections.reloadTasks()}
-            action={canImport ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                data-testid="delivery-import-plan"
-                onClick={() => setPlanOpen(true)}
-              >
-                {t('delivery_os.project.import.plan.action')}
-              </Button>
-            ) : null}
-          />
-          </div>
-          <div id="delivery-project-evidence"><EvidenceSection
-            projectId={params.id}
-            progress={state.project.progress}
-            taskCounts={state.project.taskCounts}
-            attention={state.project.attention}
-            baselines={sections.baselines}
-            onRetry={() => void sections.reloadBaselines()}
-          /></div>
-        </div>
+        <ProjectTabsShell
+          projectId={params.id}
+          projectUpdatedAt={projectVersion ?? state.project.updatedAt!}
+          actorUserId={actorUserId}
+          canManage={canManage}
+          canImport={canImport}
+          canApproveStages={canApproveStages}
+          canManageFlow={canManageFlow}
+          clientRequest={state.project.brief ?? null}
+          linkedStageId={linkedStageId}
+          initialTab={initialTab}
+          taskCount={sections.tasks.status === 'ready' ? sections.tasks.data.length : null}
+          onChanged={widgetRefresh}
+          executionHost={(
+            <div aria-busy={refreshing}>
+              <InjectionSpot
+                spotId={extensionPoints.hosts.projectExecution.spotId}
+                context={widgetContext ?? state.context}
+              />
+            </div>
+          )}
+          baseline={(
+            <div className="space-y-6">
+              <DesignManifestImport projectId={params.id} projectUpdatedAt={projectVersion ?? state.project.updatedAt!} canManage={canManage} onChanged={widgetRefresh} />
+              <BaselinePanel
+                projectId={params.id}
+                baselines={sections.baselines}
+                selectedBaselineId={selectedBaselineId}
+                onSelectBaseline={selectBaseline}
+                onRetryBaselines={() => void sections.reloadBaselines()}
+                projectVersion={projectVersion}
+                draftSpec={state.project.draftSpec}
+                canImport={canImport}
+                canManage={canManage}
+                canApprove={canApprove}
+                onImportRequirements={() => setImportOpen(true)}
+                onAddScreen={() => setScreenOpen(true)}
+                onMutated={onMutated}
+              />
+            </div>
+          )}
+          tasks={(
+            <div className="space-y-6" id="delivery-project-tasks">
+              <TasksSection
+                state={sections.tasks}
+                attention={state.project.attention}
+                hasActiveBaseline={activeBaselineKind === null ? null : activeBaselineKind !== 'none'}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={selectTask}
+                onRetry={() => void sections.reloadTasks()}
+                action={canImport ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="delivery-import-plan"
+                    onClick={() => setPlanOpen(true)}
+                  >
+                    {t('delivery_os.project.import.plan.action')}
+                  </Button>
+                ) : null}
+              />
+            </div>
+          )}
+          evidence={(
+            <div id="delivery-project-evidence"><EvidenceSection
+              projectId={params.id}
+              progress={state.project.progress}
+              taskCounts={state.project.taskCounts}
+              attention={state.project.attention}
+              baselines={sections.baselines}
+              onRetry={() => void sections.reloadBaselines()}
+            /></div>
+          )}
+        />
       </PageBody>
       <ProposalImportDialog
         open={importOpen}

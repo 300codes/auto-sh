@@ -38,13 +38,14 @@ export function ReleaseDecisionActions({ historical, archived, snapshot, stale =
       setDialog({ snapshot: fresh, kind, verdict })
     } finally { opening.current = false; if (active.current) setLoading(false) }
   }
-  return <section className="space-y-3" data-testid="delivery-report-decisions">
+  return <section id="report-decisions" className="space-y-3" data-testid="delivery-report-decisions">
     <SectionHeader title={t('delivery_os.report.decisions.title')} />
     <Alert status="information">{t('delivery_os.report.decisions.consentOnly')}</Alert>
     {problem ? <Alert status="warning">{t(`delivery_os.report.decisions.error.${problem}`)}</Alert> : null}
     {(['deploy', 'release'] as const).filter((kind) => hasFeature(payload?.grantedFeatures, `delivery_os.${kind}.approve`)).map((kind) => {
       const blocker = snapshot ? decisionBlocker(snapshot, kind, 'approved') : 'refreshRequired'
-      return <div key={kind} className="space-y-2">
+      return <div key={kind} className="space-y-2 rounded-lg border border-border p-4">
+        <p className="text-sm">{t(`delivery_os.report.decisions.effect.${kind}`)}</p>
         {blocker ? <p className="text-sm text-muted-foreground">{t(`delivery_os.report.decisions.error.${blocker}`)}</p> : null}
         <div className="flex flex-wrap gap-2">
           <Button type="button" disabled={loading || stale || Boolean(blocker)} onClick={() => void open(kind, 'approved')}>{t(`delivery_os.report.decisions.${kind}`)}</Button>

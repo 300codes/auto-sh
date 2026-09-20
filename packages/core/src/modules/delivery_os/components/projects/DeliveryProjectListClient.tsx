@@ -24,6 +24,7 @@ import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimi
 import { projectListItemSchema, type ProjectListItem } from '@open-mercato/core/modules/delivery_os/api/schemas'
 
 import { flowStatusV1Schema, type FlowStatusV1 } from '../../lib/contracts'
+import { ProjectNextActionCell } from './ProjectNextActionCell'
 
 const portfolioSchema = z.object({ items: z.array(flowStatusV1Schema).max(50) })
 const PAGE_SIZE = 50
@@ -213,19 +214,12 @@ export function DeliveryProjectListClient() {
     },
     {
       id: 'flow',
-      header: t('delivery_os.flow.overview'),
+      header: t('delivery_os.projects.list.columns.nextAction'),
       enableSorting: false,
-      cell: ({ row }) => {
-        const flow = portfolio[row.original.id]
-        if (!flow) return <span className="text-sm text-muted-foreground">{t(portfolioError ? 'delivery_os.flow.loadError' : 'delivery_os.flow.loading')}</span>
-        const current = flow.stages.find((stage) => stage.stageId === flow.currentStageId)
-        return <div className="space-y-1 text-sm" data-testid={`portfolio-flow-${row.original.id}`}>
-          <p>{flow.currentStageId ? t(`delivery_os.flow.stage.${flow.currentStageId}`) : t('delivery_os.flow.noStage')}{current?.currency ? ` · ${t(`delivery_os.flow.currency.${current.currency}`)}` : ''}</p>
-          <p>{t('delivery_os.flow.pending', { count: flow.pendingApprovals.length })}</p>
-          {flow.blockers.map((blocker, index) => <p key={index} className="text-muted-foreground">{t(`delivery_os.flow.blocker.${blocker.kind}`)}</p>)}
-          <Link href={`/backend/delivery/projects/${row.original.id}`} className="font-medium hover:underline">{t(`delivery_os.flow.nextAction.${flow.nextAction.kind}`)}</Link>
-        </div>
-      },
+      meta: { truncate: false },
+      cell: ({ row }) => (
+        <ProjectNextActionCell projectId={row.original.id} flow={portfolio[row.original.id]} loadFailed={portfolioError} />
+      ),
     },
     {
       accessorKey: 'inputMode',

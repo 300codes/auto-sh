@@ -29,14 +29,24 @@ beforeEach(() => {
   })
 })
 function subject(manage = true) { return <DesignManifestImport projectId={session.projectId} projectUpdatedAt="2026-09-19T09:00:00.000Z" canManage={manage} onChanged={changed} /> }
+/**
+ * The session machinery is collapsed by default — the project screen is about
+ * the baseline, not about an import in flight — so every test opens the panel
+ * the way an operator does before asserting on its contents.
+ */
+async function expandPanel(): Promise<void> {
+  await act(async () => fireEvent.click(screen.getByRole('button', { name: 'ui.sectionHeader.expand' })))
+}
 test('partial progress restores on reload; completion stays disabled until verified renders and explicit version selection', async () => {
   const view = render(subject())
+  await expandPanel()
   await screen.findByTestId('design-import-progress')
   expect(screen.getByRole('button', { name: 'delivery_os.designImport.complete' })).toBeDisabled()
   expect(screen.getByText('delivery_os.designImport.missingRender')).toBeVisible()
   view.unmount()
   session = { ...session, progress: { ...session.progress, screens: [{ ...session.progress.screens[0], screen: session.manifest.screens[0] }] } }
   render(subject())
+  await expandPanel()
   await screen.findByAltText(session.manifest.screens[0].name)
   expect(write).not.toHaveBeenCalled()
   expect(screen.getByRole('button', { name: 'delivery_os.designImport.complete' })).toBeDisabled()
@@ -50,6 +60,7 @@ test('partial progress restores on reload; completion stays disabled until verif
 test('view-only history restores verified renders and exposes no import or mutation controls', async () => {
   session = { ...session, status: 'complete', progress: { screens: [{ ...session.progress.screens[0], screen: session.manifest.screens[0] }], selectedKeys: [session.progress.screens[0].key] } }
   render(subject(false))
+  await expandPanel()
   await screen.findByAltText(session.manifest.screens[0].name)
   expect(screen.queryByTestId('session-create-form')).toBeNull()
   expect(screen.queryByLabelText('delivery_os.designImport.render')).toBeNull()
@@ -60,6 +71,7 @@ test('view-only history restores verified renders and exposes no import or mutat
 test('a failed replacement displays the preserved render but cannot complete until verification succeeds', async () => {
   session = { ...session, progress: { screens: [{ ...session.progress.screens[0], screen: session.manifest.screens[0], errorCode: 'attachment_hash_mismatch' }], selectedKeys: [session.progress.screens[0].key] } }
   render(subject())
+  await expandPanel()
   await screen.findByAltText(session.manifest.screens[0].name)
   expect(screen.getByRole('alert')).toHaveTextContent('delivery_os.designImport.verificationError')
   expect(screen.getByRole('button', { name: 'delivery_os.designImport.complete' })).toBeDisabled()

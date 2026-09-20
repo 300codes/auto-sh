@@ -5,7 +5,8 @@ import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
-import { overallDecisionState, shortHash } from './baselineContent'
+import { overallDecisionState } from './baselineContent'
+import { HashValue } from './HashValue'
 
 export type BaselineVersionBarProps = {
   baselines: readonly BaselineDto[]
@@ -45,7 +46,7 @@ export function BaselineVersionBar({ baselines, selectedId, onSelect }: Baseline
             onClick={() => onSelect(baseline.id)}
           >
             <span className="font-medium">{t('delivery_os.project.versions.version', { version: baseline.version })}</span>
-            <span className="font-mono text-xs opacity-70">{shortHash(baseline.contentHash)}</span>
+            <HashValue value={baseline.contentHash} className="opacity-70" />
             {baseline.isActive ? (
               <StatusBadge variant="info">{t('delivery_os.project.versions.active')}</StatusBadge>
             ) : null}

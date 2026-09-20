@@ -28,13 +28,16 @@ describe('TaskPackagePanel', () => {
     expect(apiCallMock).not.toHaveBeenCalled()
   })
 
-  it('shows what the exported package pins: baseline, revision, profile, criteria and allowed paths', async () => {
+  it('shows what the exported package pins: profile, criteria and allowed paths, with the ids one disclosure away', async () => {
     apiCallMock.mockResolvedValue({ ok: true, status: 200, result: taskPackage })
     renderPanel(taskPackage.attemptId)
     await screen.findByTestId('task-package-facts')
-    expect(screen.getByText(taskPackage.baselineId)).toBeTruthy()
     expect(screen.getByText(`${taskPackage.targetProfileId}@${taskPackage.targetProfileVersion}`)).toBeTruthy()
-    expect(screen.getByText(taskPackage.allowedPaths.join(', '))).toBeTruthy()
+    for (const path of taskPackage.allowedPaths) expect(screen.getByText(path)).toBeTruthy()
+    for (const criterion of taskPackage.acceptanceCriteria) expect(screen.getByText(criterion.id)).toBeTruthy()
+    expect(screen.queryByText(taskPackage.baselineId)).toBeNull()
+    fireEvent.click(screen.getByText('delivery_os.task.package.technicalTitle'))
+    expect(screen.getByText(taskPackage.baselineId)).toBeTruthy()
   })
 
   it('keeps the download available when the environment exposes no clipboard', async () => {

@@ -4,7 +4,9 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { Page, PageBody } from '@open-mercato/ui/backend/Page'
+import { ContextHelp } from '@open-mercato/ui/backend/ContextHelp'
 import type { CrudField, CrudFormGroup } from '@open-mercato/ui/backend/CrudForm'
+import { InputModeChoice } from '@open-mercato/core/modules/delivery_os/components/projects/InputModeChoice'
 import { createCrud } from '@open-mercato/ui/backend/utils/crud'
 import { createCrudFormError } from '@open-mercato/ui/backend/utils/serverErrors'
 import {
@@ -39,13 +41,13 @@ export default function DeliveryProjectCreateClient() {
     {
       id: 'inputMode',
       label: t('delivery_os.projects.form.fields.inputMode'),
-      type: 'select',
+      type: 'custom',
       required: true,
+      layout: 'full',
       description: t('delivery_os.projects.form.help.inputMode'),
-      options: [
-        { value: 'from_brief', label: t('delivery_os.projects.inputMode.from_brief') },
-        { value: 'from_design', label: t('delivery_os.projects.inputMode.from_design') },
-      ],
+      component: ({ id, value, disabled, setValue }) => (
+        <InputModeChoice id={id} value={value} disabled={disabled} setValue={setValue} />
+      ),
     },
     {
       id: 'targetProfile',
@@ -73,6 +75,8 @@ export default function DeliveryProjectCreateClient() {
       maxLength: 20000,
       showCount: true,
       layout: 'full',
+      placeholder: t('delivery_os.projects.form.placeholders.brief'),
+      description: t('delivery_os.projects.form.help.brief'),
     },
     {
       id: 'maxParallelTasks',
@@ -99,7 +103,14 @@ export default function DeliveryProjectCreateClient() {
       id: 'details',
       title: t('delivery_os.projects.form.groups.details'),
       column: 1,
-      fields: ['name', 'inputMode', 'targetProfile', 'repositoryRef', 'brief'],
+      fields: ['name', 'brief'],
+    },
+    {
+      id: 'specification',
+      title: t('delivery_os.projects.form.groups.specification'),
+      description: t('delivery_os.projects.form.groups.specificationDescription'),
+      column: 1,
+      fields: ['inputMode', 'targetProfile', 'repositoryRef'],
     },
     {
       id: 'limits',
@@ -151,6 +162,15 @@ export default function DeliveryProjectCreateClient() {
   return (
     <Page>
       <PageBody>
+        <div className="mb-4">
+          <ContextHelp title={t('delivery_os.projects.form.help.title')} defaultOpen>
+            <ol className="list-decimal space-y-1 pl-4">
+              <li>{t('delivery_os.projects.form.help.step.request')}</li>
+              <li>{t('delivery_os.projects.form.help.step.discovery')}</li>
+              <li>{t('delivery_os.projects.form.help.step.stages')}</li>
+            </ol>
+          </ContextHelp>
+        </div>
         <DeliveryProjectForm
           title={t('delivery_os.projects.form.createTitle')}
           submitLabel={t('delivery_os.projects.form.submitCreate')}

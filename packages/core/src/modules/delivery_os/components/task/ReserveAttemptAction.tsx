@@ -27,6 +27,12 @@ export type ReserveAttemptActionProps = {
   activeAttemptNumber: number | null
   taskUpdatedAt: string | null
   onReserved: (reservation: ReserveAttemptResponse) => void
+  /**
+   * Incremented by the next-step callout. A reservation needs a revision the
+   * operator has to type, so the callout can only bring them here — it must
+   * never submit on their behalf.
+   */
+  focusToken?: number
 }
 
 const CONTEXT_ID = 'delivery-task-reserve-attempt'
@@ -68,8 +74,10 @@ export function ReserveAttemptAction({
   activeAttemptNumber,
   taskUpdatedAt,
   onReserved,
+  focusToken = 0,
 }: ReserveAttemptActionProps) {
   const t = useT()
+  const container = React.useRef<HTMLDivElement>(null)
   const [draft, setDraft] = React.useState<RevisionDraft>(emptyRevisionDraft)
   const [problem, setProblem] = React.useState<string | null>(null)
   const [reserving, setReserving] = React.useState(false)
@@ -148,8 +156,16 @@ export function ReserveAttemptAction({
     }
   }, [activeAttemptNumber, attemptNumber, draft, onReserved, profile, retryLastMutation, runMutation, t, taskId, taskUpdatedAt])
 
+  React.useEffect(() => {
+    if (focusToken === 0) return
+    const node = container.current
+    if (!node) return
+    node.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+    node.querySelector<HTMLInputElement>('input')?.focus()
+  }, [focusToken])
+
   return (
-    <div className="space-y-3 rounded border border-border p-4" data-testid="delivery-reserve-attempt">
+    <div ref={container} className="space-y-3 rounded border border-border p-4" data-testid="delivery-reserve-attempt">
       <div className="space-y-1">
         <h3 className="text-sm font-medium">{t('delivery_os.task.reserve.title')}</h3>
         <p className="text-xs text-muted-foreground">

@@ -169,6 +169,34 @@ describe('ResultImportDialog — refusals before the request', () => {
     paste(manifest)
     expect(screen.getByTestId('delivery-result-summary')).toBeTruthy()
     expect(screen.getByTestId('result-check-count-passed').textContent).toBe('delivery_os.task.result.checks.passed')
+    expect(screen.getByTestId('result-import-preview').textContent).toContain('delivery_os.task.result.previewTitle')
+    expect(screen.getByTestId('result-checks').children).toHaveLength(manifest.checks.length)
+  })
+
+  it('offers a file or the clipboard as the way in and keeps the raw payload behind a disclosure', () => {
+    renderDialog()
+    expect(screen.getByTestId('manifest-input-file')).toBeTruthy()
+    expect(screen.getByTestId('manifest-input-paste')).toBeTruthy()
+    const advanced = screen.getByTestId('manifest-input-advanced')
+    expect(advanced.hasAttribute('hidden')).toBe(true)
+    expect(screen.getByTestId('manifest-input-advanced-toggle').getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(screen.getByTestId('manifest-input-advanced-toggle'))
+    expect(screen.getByTestId('manifest-input-advanced').hasAttribute('hidden')).toBe(false)
+  })
+
+  it('imports a manifest that arrived as a file with exactly the payload the paste path sends', async () => {
+    apiCallMock.mockResolvedValue(acceptResponse(false))
+    renderDialog()
+    const file = new File([JSON.stringify(manifest)], 'result-manifest.json', { type: 'application/json' })
+    Object.defineProperty(file, 'text', { value: async () => JSON.stringify(manifest) })
+    fireEvent.change(screen.getByTestId('manifest-input-file-field'), { target: { files: [file] } })
+    await screen.findByTestId('result-import-preview')
+    expect(screen.getByTestId('manifest-input-loaded').textContent).toBe('delivery_os.task.manifestInput.loadedFile')
+    submit()
+    await waitFor(() => expect(apiCallMock).toHaveBeenCalled())
+    const [path, init] = apiCallMock.mock.calls[0] as [string, { body: string }]
+    expect(path).toBe(`/api/delivery_os/tasks/${manifest.taskId}/results`)
+    expect(JSON.parse(init.body)).toEqual({ attemptId: manifest.attemptId, manifest })
   })
 
   it('submits on Cmd/Ctrl+Enter, as every dialog in this product does', async () => {

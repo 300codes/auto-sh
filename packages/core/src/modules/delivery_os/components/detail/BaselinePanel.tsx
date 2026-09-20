@@ -2,7 +2,9 @@
 
 import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
+import { Badge } from '@open-mercato/ui/primitives/badge'
 import { Button } from '@open-mercato/ui/primitives/button'
+import { CollapsibleSection } from '@open-mercato/ui/backend/SectionHeader'
 import type { BaselineDto } from '@open-mercato/core/modules/delivery_os/api/schemas'
 import { BaselineVersionBar } from './BaselineVersionBar'
 import { DecisionActions } from './DecisionActions'
@@ -56,7 +58,7 @@ export function BaselinePanel({
   const draft = React.useMemo(() => readDraftSpec(draftSpec), [draftSpec])
 
   return (
-    <>
+    <div className="space-y-6">
       <BaselineVersionBar
         baselines={baselines.status === 'ready' ? baselines.data : []}
         selectedId={selectedBaselineId}
@@ -86,14 +88,47 @@ export function BaselinePanel({
           />
         ) : undefined}
       />
-      {draft.ok && draft.draft.screens.length > 0 ? <section className="space-y-3 rounded border border-border p-4" data-testid="delivery-draft-design">
-        <h2 className="text-lg font-semibold">{t('delivery_os.designImport.draftTitle')}</h2>
-        {draft.draft.screens.map((screen) => <div key={screen.attachmentId} className="space-y-2">
-          <p className="font-medium">{screen.name} · {screen.viewport.width}×{screen.viewport.height} · {screen.figmaVersion ?? '—'}</p>
-          <ScreenPreview attachmentId={screen.attachmentId} name={screen.name} />
-          {canManage ? <ScreenComments projectId={projectId} projectUpdatedAt={projectVersion} draft={draft.draft} screenAttachmentId={screen.attachmentId} onSaved={onMutated} /> : <ul>{draft.draft.comments.filter((comment) => comment.screenAttachmentId === screen.attachmentId).map((comment) => <li key={comment.id}>{comment.body}</li>)}</ul>}
-        </div>)}
-      </section> : null}
+      {draft.ok && draft.draft.screens.length > 0 ? (
+        <section className="space-y-3 rounded-lg border border-border p-4" data-testid="delivery-draft-design">
+          <CollapsibleSection
+            title={t('delivery_os.designImport.draftTitle')}
+            count={draft.draft.screens.length}
+          >
+            <p className="text-xs text-muted-foreground">{t('delivery_os.designImport.draftDescription')}</p>
+            <ul className="mt-3 space-y-4">
+              {draft.draft.screens.map((screen) => (
+                <li key={screen.attachmentId} className="space-y-2 rounded-md border border-border p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">{screen.name}</span>
+                    <Badge variant="muted" size="sm">{`${screen.viewport.width}×${screen.viewport.height}`}</Badge>
+                    {screen.figmaVersion ? (
+                      <Badge variant="muted" size="sm">
+                        {t('delivery_os.project.sections.design.figmaVersion', { version: screen.figmaVersion })}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <ScreenPreview attachmentId={screen.attachmentId} name={screen.name} />
+                  {canManage ? (
+                    <ScreenComments
+                      projectId={projectId}
+                      projectUpdatedAt={projectVersion}
+                      draft={draft.draft}
+                      screenAttachmentId={screen.attachmentId}
+                      onSaved={onMutated}
+                    />
+                  ) : (
+                    <ul className="space-y-1 text-xs text-muted-foreground">
+                      {draft.draft.comments
+                        .filter((comment) => comment.screenAttachmentId === screen.attachmentId)
+                        .map((comment) => <li key={comment.id}>{comment.body}</li>)}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CollapsibleSection>
+        </section>
+      ) : null}
       <DesignSection
         state={baselines}
         selectedBaselineId={selectedBaselineId}
@@ -125,6 +160,6 @@ export function BaselinePanel({
           />
         ) : undefined}
       />
-    </>
+    </div>
   )
 }

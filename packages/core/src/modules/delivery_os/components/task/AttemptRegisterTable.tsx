@@ -8,6 +8,7 @@ import { StatusBadge, type StatusMap } from '@open-mercato/ui/primitives/status-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@open-mercato/ui/primitives/table'
 import type { AttemptState } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import type { AttemptRegisterEntry, AttemptRegisterState } from './attemptRegister'
+import { TechnicalValue } from './TechnicalValue'
 
 export type AttemptRegisterTableProps = {
   register: AttemptRegisterState
@@ -45,8 +46,12 @@ function formatRunReference(entry: AttemptRegisterEntry): string {
 function AttemptRow({ entry, action }: { entry: AttemptRegisterEntry; action: React.ReactNode }) {
   const t = useT()
   return (
-    <TableRow data-testid={`attempt-row-${entry.attempt.attemptId}`}>
-      <TableCell className="font-mono text-xs">{entry.number}</TableCell>
+    <TableRow
+      data-testid={`attempt-row-${entry.attempt.attemptId}`}
+      data-attempt-live={entry.active ? 'true' : 'false'}
+      className={entry.active ? 'bg-status-info-bg' : undefined}
+    >
+      <TableCell className="text-xs tabular-nums">{entry.number}</TableCell>
       <TableCell className="text-xs">{t(`delivery_os.task.attempts.mode.${entry.attempt.mode}`)}</TableCell>
       <TableCell>
         <span className="flex flex-wrap items-center gap-1">
@@ -77,7 +82,7 @@ function AttemptRow({ entry, action }: { entry: AttemptRegisterEntry; action: Re
           ? t('delivery_os.task.attempts.stillRunning')
           : formatMoment(entry.closedAt)}
       </TableCell>
-      <TableCell className="font-mono text-xs">{formatRunReference(entry)}</TableCell>
+      <TableCell className="text-xs"><TechnicalValue value={formatRunReference(entry)} maxWidth="max-w-[12rem]" /></TableCell>
       <TableCell className="text-xs" data-testid={`attempt-outcome-${entry.attempt.attemptId}`}>
         {entry.attempt.outcome === null
           ? t('delivery_os.task.attempts.outcome.none')
@@ -116,6 +121,16 @@ export function AttemptRegisterTable({ register, actionsFor }: AttemptRegisterTa
             description={t('delivery_os.task.attempts.register.emptyDescription')}
           />
         </div>
+      ) : null}
+      {register.kind === 'entries' ? (
+        <p className="text-xs text-muted-foreground" data-testid="attempt-register-live">
+          {register.activeEntry !== null
+            ? t('delivery_os.task.attempts.liveAttempt', {
+              number: register.activeEntry.number,
+              state: t(`delivery_os.task.attempts.state.${register.activeEntry.attempt.state}`),
+            })
+            : t('delivery_os.task.attempts.noLiveAttempt')}
+        </p>
       ) : null}
       {register.kind === 'entries' ? (
         <div className="overflow-x-auto">

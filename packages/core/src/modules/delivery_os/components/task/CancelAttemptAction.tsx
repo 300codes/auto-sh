@@ -109,8 +109,9 @@ export function CancelAttemptAction({ taskId, attemptId, attemptNumber, taskUpda
   return (
     <div className="space-y-3 rounded border border-border p-4" data-testid="delivery-cancel-attempt">
       <div className="space-y-1">
-        <h3 className="text-sm font-medium">{t('delivery_os.task.cancel.title')}</h3>
+        <h3 className="text-sm font-medium">{t('delivery_os.task.cancel.titleNumbered', { number: attemptNumber })}</h3>
         <p className="text-xs text-muted-foreground">{t('delivery_os.task.cancel.description')}</p>
+        <p className="text-xs text-status-warning-text">{t('delivery_os.task.cancel.consequence')}</p>
       </div>
       <div className="space-y-1">
         <Label htmlFor="cancel-attempt-reason">{t('delivery_os.task.cancel.reasonLabel')}</Label>

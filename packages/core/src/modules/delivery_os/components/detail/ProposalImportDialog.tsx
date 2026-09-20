@@ -12,6 +12,9 @@ import {
 } from '@open-mercato/ui/primitives/dialog'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { Textarea } from '@open-mercato/ui/primitives/textarea'
+import { Label } from '@open-mercato/ui/primitives/label'
+import { CollapsibleSection } from '@open-mercato/ui/backend/SectionHeader'
+import { TabEmptyState } from '@open-mercato/ui/backend/detail'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
 import { surfaceRecordConflict } from '@open-mercato/ui/backend/conflicts'
 import { useGuardedMutation } from '@open-mercato/ui/backend/injection/useGuardedMutation'
@@ -21,7 +24,11 @@ import {
   baselineCreateResponseSchema,
   planImportResponseSchema,
 } from '@open-mercato/core/modules/delivery_os/api/schemas'
-import { deliveryErrorBodySchema } from '@open-mercato/core/modules/delivery_os/lib/contracts'
+import {
+  deliveryErrorBodySchema,
+  type PlanProposalV1,
+  type RequirementsProposalV1,
+} from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import {
   PlanProposalPreview,
   ProposalIssueList,
@@ -32,9 +39,8 @@ import {
   manifestTargetsProject,
   parsePlanProposal,
   parseRequirementsProposal,
-  summarizePlanProposal,
-  summarizeRequirementsProposal,
   type ProposalIssue,
+  type ProposalParseFailure,
 } from './proposalImport'
 
 /** Which proposal the dialog is importing; the two differ in schema, endpoint and outcome message. */
@@ -58,6 +64,19 @@ type ClientProblem =
   | { kind: 'foreignProject' }
 
 const MUTATION_CONTEXT_ID = 'delivery-project-proposal-import'
+
+/**
+ * One translation from a parse outcome to a named cause, shared by the live
+ * preview and the submit path, so a manifest is never described twice with two
+ * different words.
+ */
+function describeParseFailure(failure: ProposalParseFailure): ClientProblem {
+  if (failure.reason === 'empty') return { kind: 'empty' }
+  if (failure.reason === 'too_large') return { kind: 'tooLarge', length: failure.length }
+  if (failure.reason === 'not_json') return { kind: 'notJson' }
+  if (failure.reason === 'not_object') return { kind: 'notObject' }
+  return { kind: 'schema', issues: failure.issues }
+}
 
 /**
  * Plan-import refusals arrive as a list: `details[]` names every field that
@@ -155,25 +174,37 @@ export function ProposalImportDialog({
     return variant === 'plan' ? parsePlanProposal(raw) : parseRequirementsProposal(raw)
   }, [raw, variant])
 
-  const requirementsSummary = parsed?.ok && variant === 'requirements'
-    ? summarizeRequirementsProposal(parsed.manifest as Parameters<typeof summarizeRequirementsProposal>[0])
-    : null
-  const planSummary = parsed?.ok && variant === 'plan'
-    ? summarizePlanProposal(parsed.manifest as Parameters<typeof summarizePlanProposal>[0])
-    : null
+  const requirementsManifest = parsed?.ok && variant === 'requirements' ? parsed.manifest as RequirementsProposalV1 : null
+  const planManifest = parsed?.ok && variant === 'plan' ? parsed.manifest as PlanProposalV1 : null
+
+  // A payload the operator cannot read is a payload they cannot approve, so the
+  // parse outcome is shown while they still hold the source — the same failure
+  // the submit path would report, named once.
+  const parseProblem = React.useMemo<ClientProblem | null>(
+    () => (parsed && !parsed.ok ? describeParseFailure(parsed) : null),
+    [parsed],
+  )
+  const displayedProblem = problem ?? parseProblem
+
+  /** Reading a dropped or chosen export is the default path; the textarea is the debug escape hatch. */
+  const loadFile = React.useCallback(async (file: File | null | undefined) => {
+    if (!file) return
+    setProblem(null)
+    setServerError(null)
+    setServerIssues([])
+    try {
+      setRaw(await file.text())
+    } catch {
+      setServerError(t('delivery_os.project.import.source.unreadableFile'))
+    }
+  }, [t])
 
   const submit = React.useCallback(async () => {
     setServerError(null)
     setServerIssues([])
     const result = variant === 'plan' ? parsePlanProposal(raw) : parseRequirementsProposal(raw)
     if (!result.ok) {
-      setProblem(
-        result.reason === 'empty' ? { kind: 'empty' }
-          : result.reason === 'too_large' ? { kind: 'tooLarge', length: result.length }
-          : result.reason === 'not_json' ? { kind: 'notJson' }
-          : result.reason === 'not_object' ? { kind: 'notObject' }
-          : { kind: 'schema', issues: result.issues },
-      )
+      setProblem(describeParseFailure(result))
       return
     }
     if (!manifestTargetsProject(result.manifest.projectId, projectId)) {
@@ -273,36 +304,49 @@ export function ProposalImportDialog({
           <DialogTitle>{t(`delivery_os.project.import.${variant}.title`)}</DialogTitle>
           <DialogDescription>{t(`delivery_os.project.import.${variant}.description`)}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          {variant === 'plan' ? (
-            <Button type="button" variant="outline" disabled={drafting || submitting} onClick={() => { void draftPlan() }}>
-              {t(drafting ? 'delivery_os.project.import.plan.drafting' : 'delivery_os.project.import.plan.draft')}
-            </Button>
+        <div className="space-y-4">
+          <div
+            className="space-y-2 rounded-lg border border-dashed border-border p-4"
+            data-testid="proposal-import-source"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => { event.preventDefault(); void loadFile(event.dataTransfer.files?.[0]) }}
+          >
+            <Label htmlFor="proposal-import-file">{t('delivery_os.project.import.source.label')}</Label>
+            <input
+              id="proposal-import-file"
+              data-testid="proposal-import-file"
+              type="file"
+              accept="application/json,.json"
+              className="block w-full text-sm"
+              onChange={(event) => { void loadFile(event.target.files?.[0]); event.target.value = '' }}
+            />
+            <p className="text-xs text-muted-foreground">{t('delivery_os.project.import.source.hint')}</p>
+            {variant === 'plan' ? (
+              <Button type="button" variant="outline" size="sm" disabled={drafting || submitting} onClick={() => { void draftPlan() }}>
+                {t(drafting ? 'delivery_os.project.import.plan.drafting' : 'delivery_os.project.import.plan.draft')}
+              </Button>
+            ) : null}
+          </div>
+          {parsed === null ? (
+            <div data-testid="proposal-import-idle">
+              <TabEmptyState
+                title={t('delivery_os.project.import.idle.title')}
+                description={t('delivery_os.project.import.idle.description')}
+              />
+            </div>
           ) : null}
-          <Textarea
-            data-testid="proposal-import-textarea"
-            aria-label={t('delivery_os.project.import.manifestLabel')}
-            value={raw}
-            rows={12}
-            className="font-mono text-xs"
-            onChange={(event) => { setRaw(event.target.value); setProblem(null); setServerError(null); setServerIssues([]) }}
-            onKeyDown={handleKeyDown}
-          />
-          <p className="text-xs text-muted-foreground" data-testid="proposal-import-counter">
-            {t('delivery_os.project.import.charCount', { count: raw.trim().length, limit: MAX_MANIFEST_BODY_CHARS })}
-          </p>
-          {requirementsSummary ? <RequirementsProposalPreview summary={requirementsSummary} /> : null}
-          {planSummary ? <PlanProposalPreview summary={planSummary} /> : null}
-          {problem?.kind === 'schema' ? (
-            <ProposalIssueList issues={problem.issues} label={t('delivery_os.project.import.error.schema')} />
+          {requirementsManifest ? <RequirementsProposalPreview manifest={requirementsManifest} /> : null}
+          {planManifest ? <PlanProposalPreview manifest={planManifest} /> : null}
+          {displayedProblem?.kind === 'schema' ? (
+            <ProposalIssueList issues={displayedProblem.issues} label={t('delivery_os.project.import.error.schema')} />
           ) : null}
-          {problem && problem.kind !== 'schema' ? (
+          {displayedProblem && displayedProblem.kind !== 'schema' ? (
             <p data-testid="proposal-import-problem" className="text-sm text-status-error-text">
-              {problem.kind === 'empty' ? t('delivery_os.project.import.error.empty')
-                : problem.kind === 'notJson' ? t('delivery_os.project.import.error.notJson')
-                : problem.kind === 'notObject' ? t('delivery_os.project.import.error.notObject')
-                : problem.kind === 'foreignProject' ? t('delivery_os.project.import.error.foreignProject')
-                : t('delivery_os.project.import.error.tooLarge', { length: problem.length, limit: MAX_MANIFEST_BODY_CHARS })}
+              {displayedProblem.kind === 'empty' ? t('delivery_os.project.import.error.empty')
+                : displayedProblem.kind === 'notJson' ? t('delivery_os.project.import.error.notJson')
+                : displayedProblem.kind === 'notObject' ? t('delivery_os.project.import.error.notObject')
+                : displayedProblem.kind === 'foreignProject' ? t('delivery_os.project.import.error.foreignProject')
+                : t('delivery_os.project.import.error.tooLarge', { length: displayedProblem.length, limit: MAX_MANIFEST_BODY_CHARS })}
             </p>
           ) : null}
           {serverError ? (
@@ -311,6 +355,23 @@ export function ProposalImportDialog({
           {serverIssues.length > 0 ? (
             <ProposalIssueList issues={serverIssues} label={t('delivery_os.project.import.error.serverDetails')} />
           ) : null}
+          <CollapsibleSection title={t('delivery_os.project.import.advanced')} defaultCollapsed>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">{t('delivery_os.project.import.advancedHint')}</p>
+              <Textarea
+                data-testid="proposal-import-textarea"
+                aria-label={t('delivery_os.project.import.manifestLabel')}
+                value={raw}
+                rows={12}
+                className="font-mono text-xs"
+                onChange={(event) => { setRaw(event.target.value); setProblem(null); setServerError(null); setServerIssues([]) }}
+                onKeyDown={handleKeyDown}
+              />
+              <p className="text-xs text-muted-foreground" data-testid="proposal-import-counter">
+                {t('delivery_os.project.import.charCount', { count: raw.trim().length, limit: MAX_MANIFEST_BODY_CHARS })}
+              </p>
+            </div>
+          </CollapsibleSection>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

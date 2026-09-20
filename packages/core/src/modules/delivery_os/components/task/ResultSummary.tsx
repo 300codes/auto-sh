@@ -2,10 +2,14 @@
 
 import * as React from 'react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
-import { StatusBadge, type StatusMap } from '@open-mercato/ui/primitives/status-badge'
+import { CollapsibleSection, SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
+import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import type { CheckStatus, DeliveryUsage, ResultManifestV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import type { AcceptedResultSummary } from '@open-mercato/core/modules/delivery_os/lib/resultReadContracts'
-import { countChecksByStatus, summarizeResultManifest, usageIsUnknown } from './resultImport'
+import { countChecksByStatus, describeRevision, summarizeResultManifest, usageIsUnknown } from './resultImport'
+import { PathList } from './PathList'
+import { ResultCheckList, checkStatusMap } from './ResultCheckList'
+import { TechnicalFacts, TechnicalValue } from './TechnicalValue'
 
 /**
  * Mirrors `DeliveryEvidenceSource` in `data/entities.ts`. Declared here rather
@@ -19,12 +23,7 @@ export type ResultSummaryProps = { accepted?: boolean } & (
   | { result: AcceptedResultSummary; manifest?: never; source?: never }
 )
 
-/** `not_run` is deliberately NOT a success colour: it reports an absent measurement. */
-export const checkStatusMap: StatusMap<CheckStatus> = {
-  passed: 'success',
-  failed: 'error',
-  not_run: 'neutral',
-}
+export { checkStatusMap }
 
 const CHECK_STATUSES: readonly CheckStatus[] = ['passed', 'failed', 'not_run']
 
@@ -74,19 +73,46 @@ function FindingList({ manifest }: { manifest: Pick<ResultManifestV1, 'findings'
           <StatusBadge variant={finding.severity === 'error' ? 'error' : finding.severity === 'warning' ? 'warning' : 'info'}>
             {t(`delivery_os.task.result.findings.severity.${finding.severity}`)}
           </StatusBadge>
-          {finding.path ? <span className="font-mono text-muted-foreground">{finding.path}</span> : null}
-          {finding.acId ? <span className="font-mono">{finding.acId}</span> : null}
           <span>{finding.message}</span>
+          {finding.path ? <span className="font-mono text-muted-foreground">{finding.path}</span> : null}
+          {finding.acId ? <StatusBadge variant="neutral">{finding.acId}</StatusBadge> : null}
         </li>
       ))}
     </ul>
   )
 }
 
+function ArtifactSection({ artifacts }: { artifacts: ResultManifestV1['artifacts'] }) {
+  const t = useT()
+  if (artifacts.length === 0) return null
+  return (
+    <CollapsibleSection
+      title={t('delivery_os.task.result.artifactsTitle')}
+      count={artifacts.length}
+      defaultCollapsed={artifacts.length > 8}
+    >
+      <ul className="space-y-1 text-xs" data-testid="result-artifacts">
+        {artifacts.map((artifact) => (
+          <li key={artifact.path} className="flex flex-wrap items-baseline gap-2">
+            <span className="break-all font-mono">{artifact.path}</span>
+            <span className="text-muted-foreground">
+              {typeof artifact.sizeBytes === 'number'
+                ? t('delivery_os.task.result.artifactBytes', { bytes: artifact.sizeBytes })
+                : t('delivery_os.task.result.artifactSizeUnknown')}
+            </span>
+            <TechnicalValue value={artifact.sha256} maxWidth="max-w-[8rem]" />
+          </li>
+        ))}
+      </ul>
+    </CollapsibleSection>
+  )
+}
+
 /**
- * What the result actually states — never more. The three check states are
- * shown as three counts, `not_run` among them, so a run that measured nothing
- * cannot read as a run that passed.
+ * What the result states, in the order an operator decides in: did the checks
+ * pass, what did they cover, what changed, what came out, what the run said
+ * about itself. Identifiers and hashes are folded away — they name a run for a
+ * machine and answer none of those questions.
  */
 export function ResultSummary(props: ResultSummaryProps) {
   const t = useT()
@@ -103,14 +129,22 @@ export function ResultSummary(props: ResultSummaryProps) {
   const counts = countChecksByStatus(manifest)
 
   return (
-    <div className="space-y-3 rounded border border-border p-3" data-testid="delivery-result-summary">
+    <div className="space-y-4 rounded border border-border p-4" data-testid="delivery-result-summary">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge variant="neutral">{t(`delivery_os.task.result.source.${source}`)}</StatusBadge>
-        <span className="font-mono text-xs text-muted-foreground">{summary.externalRunId}</span>
+        <StatusBadge variant={counts.failed > 0 ? 'error' : counts.not_run > 0 ? 'warning' : 'success'} dot>
+          {t(counts.failed > 0
+            ? 'delivery_os.task.result.verdict.failed'
+            : counts.not_run > 0
+              ? 'delivery_os.task.result.verdict.incomplete'
+              : 'delivery_os.task.result.verdict.passed')}
+        </StatusBadge>
+        <span className="text-xs text-muted-foreground">{t('delivery_os.task.result.runLabel')}</span>
+        <TechnicalValue value={summary.externalRunId} maxWidth="max-w-[16rem]" />
       </div>
 
-      <div className="space-y-1">
-        <h4 className="text-xs font-medium text-muted-foreground">{t('delivery_os.task.result.checks.title')}</h4>
+      <div className="space-y-2">
+        <SectionHeader title={t('delivery_os.task.result.checks.title')} count={manifest.checks.length} />
         <div className="flex flex-wrap gap-2" data-testid="result-check-counts">
           {CHECK_STATUSES.map((status) => (
             <span key={status} data-testid={`result-check-count-${status}`}>
@@ -125,6 +159,7 @@ export function ResultSummary(props: ResultSummaryProps) {
             {t('delivery_os.task.result.checks.notRunCaveat')}
           </p>
         ) : null}
+        <ResultCheckList checks={manifest.checks} />
       </div>
 
       <dl className="grid gap-2 text-xs sm:grid-cols-3">
@@ -146,23 +181,24 @@ export function ResultSummary(props: ResultSummaryProps) {
         </div>
       </dl>
 
-      {manifest.changedPaths.length > 0 ? (
-        <ul className="space-y-0.5 font-mono text-xs text-muted-foreground" data-testid="result-changed-paths">
-          {manifest.changedPaths.map((path) => <li key={path}>{path}</li>)}
-        </ul>
-      ) : null}
+      <div className="space-y-2">
+        <SectionHeader title={t('delivery_os.task.result.changedPathsTitle')} count={manifest.changedPaths.length} />
+        <PathList
+          paths={manifest.changedPaths}
+          testId="result-changed-paths"
+          emptyLabel={t('delivery_os.task.result.changedPathsNone')}
+        />
+      </div>
 
-      {props.result ? (
-        <dl className="grid gap-2 text-xs sm:grid-cols-3" data-testid="result-provenance">
-          <div><dt>{t('delivery_os.task.result.read.attempt')}</dt><dd className="break-all font-mono">{props.result.attemptId}</dd></div>
-          <div><dt>{t('delivery_os.task.result.read.evidence')}</dt><dd className="break-all font-mono">{props.result.evidenceId}</dd></div>
-          <div><dt>{t('delivery_os.task.result.read.recorded')}</dt><dd><time dateTime={props.result.createdAt}>{props.result.createdAt}</time></dd></div>
-        </dl>
-      ) : null}
-      <FindingList manifest={manifest} />
+      {props.manifest ? <ArtifactSection artifacts={props.manifest.artifacts} /> : null}
+
+      <div className="space-y-2">
+        <SectionHeader title={t('delivery_os.task.result.findings.title')} count={manifest.findings.length} />
+        <FindingList manifest={manifest} />
+      </div>
 
       <div className="space-y-1">
-        <h4 className="text-xs font-medium text-muted-foreground">{t('delivery_os.task.result.usage.title')}</h4>
+        <SectionHeader title={t('delivery_os.task.result.usage.title')} />
         <UsageBlock usage={manifest.usage} />
         {accepted ? (
           <p className="text-xs text-muted-foreground" data-testid="result-usage-persisted">
@@ -170,6 +206,39 @@ export function ResultSummary(props: ResultSummaryProps) {
           </p>
         ) : null}
       </div>
+
+      {props.result ? (
+        <dl className="grid gap-2 text-xs sm:grid-cols-3" data-testid="result-provenance">
+          <div className="min-w-0">
+            <dt className="font-medium text-muted-foreground">{t('delivery_os.task.result.read.attempt')}</dt>
+            <dd className="min-w-0"><TechnicalValue value={props.result.attemptId} /></dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="font-medium text-muted-foreground">{t('delivery_os.task.result.read.evidence')}</dt>
+            <dd className="min-w-0"><TechnicalValue value={props.result.evidenceId} /></dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="font-medium text-muted-foreground">{t('delivery_os.task.result.read.recorded')}</dt>
+            <dd><time dateTime={props.result.createdAt}>{props.result.createdAt}</time></dd>
+          </div>
+        </dl>
+      ) : null}
+
+      <CollapsibleSection title={t('delivery_os.task.result.technicalTitle')} defaultCollapsed>
+        <TechnicalFacts
+          testId="result-technical"
+          facts={props.manifest ? [
+            { label: t('delivery_os.task.result.technical.baseline'), value: props.manifest.baselineId },
+            { label: t('delivery_os.task.result.technical.baselineHash'), value: props.manifest.baselineHash },
+            { label: t('delivery_os.task.result.technical.baseRevision'), value: describeRevision(props.manifest.baseRevision) },
+            { label: t('delivery_os.task.result.technical.resultRevision'), value: describeRevision(props.manifest.resultRevision) },
+          ] : [
+            { label: t('delivery_os.task.result.technical.baseline'), value: props.result.baselineId },
+            { label: t('delivery_os.task.result.technical.baselineHash'), value: props.result.baselineHash },
+            { label: t('delivery_os.task.result.technical.resultRevision'), value: describeRevision(props.result.sourceRevision) },
+          ]}
+        />
+      </CollapsibleSection>
     </div>
   )
 }

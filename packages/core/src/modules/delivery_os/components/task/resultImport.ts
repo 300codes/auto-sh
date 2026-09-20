@@ -4,6 +4,7 @@ import {
   type CheckStatus,
   type DeliveryUsage,
   type ResultManifestV1,
+  type SourceRevision,
 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 
 export type ResultIssue = { path: string; code: string; message: string }
@@ -133,4 +134,40 @@ export function manifestTargetsAttempt(
 /** `'unknown'` is a declaration that the run did not measure usage, not a zero. */
 export function usageIsUnknown(usage: DeliveryUsage): boolean {
   return usage.values === 'unknown'
+}
+
+/** Identifies a revision in full; the display layer decides how much of it fits. */
+export function describeRevision(revision: SourceRevision): string {
+  return revision.kind === 'git'
+    ? revision.commitSha
+    : `${revision.externalWorkspaceId} · ${revision.contentHash}`
+}
+
+/**
+ * A refusal code is a machine word. Every code the manifest contract and the
+ * server can produce gets the sentence that tells the operator what to change;
+ * an unmapped code still shows the message the refusal carried, because a
+ * missing translation must not silence the only explanation there is.
+ */
+export const RESULT_ISSUE_MESSAGE_KEYS: Record<string, string> = {
+  path_not_allowed: 'delivery_os.task.result.error.pathNotAllowed',
+  outside_allowed_paths: 'delivery_os.task.result.error.pathNotAllowed',
+  unknown_test_id: 'delivery_os.task.result.error.unknownTestId',
+  unknown_ac: 'delivery_os.task.result.error.unknownAc',
+  baseline_mismatch: 'delivery_os.task.result.error.baselineMismatch',
+  base_revision_mismatch: 'delivery_os.task.result.error.baseRevisionMismatch',
+  revision_kind_mismatch: 'delivery_os.task.result.error.revisionKindMismatch',
+  revision_mismatch: 'delivery_os.task.result.issue.revisionMismatch',
+  correlation_mismatch: 'delivery_os.task.result.error.correlationMismatch',
+  unsupported_schema_version: 'delivery_os.task.result.error.unsupportedSchemaVersion',
+  duplicate_id: 'delivery_os.task.result.issue.duplicateId',
+  invalid_type: 'delivery_os.task.result.issue.invalidType',
+  invalid_value: 'delivery_os.task.result.issue.invalidValue',
+  invalid_enum_value: 'delivery_os.task.result.issue.invalidValue',
+  invalid_format: 'delivery_os.task.result.issue.invalidFormat',
+  invalid_string: 'delivery_os.task.result.issue.invalidFormat',
+  invalid_union: 'delivery_os.task.result.issue.invalidValue',
+  too_big: 'delivery_os.task.result.issue.tooBig',
+  too_small: 'delivery_os.task.result.issue.tooSmall',
+  unrecognized_keys: 'delivery_os.task.result.issue.unrecognizedKeys',
 }

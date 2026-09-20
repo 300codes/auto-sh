@@ -5,6 +5,8 @@ import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { Textarea } from '@open-mercato/ui/primitives/textarea'
 import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
+import { CollapsibleSection, SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
+import { TabEmptyState } from '@open-mercato/ui/backend/detail'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
 import type { DraftSpecV1 } from '@open-mercato/core/modules/delivery_os/data/validators'
 import { appendComment, nextCommentId, resolveComment } from './draftSpec'
@@ -86,59 +88,78 @@ export function ScreenComments({ projectId, projectUpdatedAt, draft, screenAttac
     reportFailure(outcome.reason)
   }, [applyDraftMutation, onSaved, reportFailure, resolution, t])
 
+  const openComments = comments.filter((comment) => comment.status === 'open')
+  const resolvedComments = comments.filter((comment) => comment.status !== 'open')
+
+  const renderComment = (comment: (typeof comments)[number]) => (
+    <li key={comment.id} className="rounded-md border border-border p-3 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-muted-foreground">{comment.id}</span>
+        <StatusBadge variant={comment.status === 'resolved' ? 'success' : 'warning'} dot>
+          {t(`delivery_os.project.comments.status.${comment.status}`)}
+        </StatusBadge>
+      </div>
+      <p className="mt-1 whitespace-pre-wrap">{comment.body}</p>
+      {comment.resolution ? (
+        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{comment.resolution}</p>
+      ) : null}
+      {comment.status === 'open' && resolutionFor !== comment.id ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-2"
+          data-testid={`screen-comment-resolve-${comment.id}`}
+          onClick={() => { setResolutionFor(comment.id); setResolution('') }}
+        >
+          {t('delivery_os.project.comments.resolve')}
+        </Button>
+      ) : null}
+      {resolutionFor === comment.id ? (
+        <div className="mt-2 space-y-2">
+          <Textarea
+            aria-label={t('delivery_os.project.comments.resolutionLabel')}
+            value={resolution}
+            rows={2}
+            onChange={(event) => setResolution(event.target.value)}
+          />
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={() => void submitResolution(comment.id)}>
+              {t('delivery_os.project.comments.saveResolution')}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setResolutionFor(null)}>
+              {t('delivery_os.project.comments.cancel')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </li>
+  )
+
   return (
-    <div className="mt-3 space-y-2" data-testid={`screen-comments-${screenAttachmentId}`}>
-      <p className="text-xs font-medium">{t('delivery_os.project.comments.title')}</p>
-      {comments.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t('delivery_os.project.comments.none')}</p>
+    <div className="mt-4 space-y-3" data-testid={`screen-comments-${screenAttachmentId}`}>
+      <SectionHeader title={t('delivery_os.project.comments.title')} count={openComments.length} />
+      {openComments.length === 0 ? (
+        <div data-testid={`screen-comments-empty-${screenAttachmentId}`}>
+          <TabEmptyState
+            title={t('delivery_os.project.comments.none')}
+            description={t('delivery_os.project.comments.noneDescription')}
+          />
+        </div>
       ) : (
-        <ul className="space-y-1">
-          {comments.map((comment) => (
-            <li key={comment.id} className="rounded border border-border p-2 text-xs">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-muted-foreground">{comment.id}</span>
-                <StatusBadge variant={comment.status === 'resolved' ? 'success' : 'warning'} dot>
-                  {t(`delivery_os.project.comments.status.${comment.status}`)}
-                </StatusBadge>
-              </div>
-              <p className="mt-1 whitespace-pre-wrap">{comment.body}</p>
-              {comment.resolution ? (
-                <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{comment.resolution}</p>
-              ) : null}
-              {comment.status === 'open' && resolutionFor !== comment.id ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-1"
-                  data-testid={`screen-comment-resolve-${comment.id}`}
-                  onClick={() => { setResolutionFor(comment.id); setResolution('') }}
-                >
-                  {t('delivery_os.project.comments.resolve')}
-                </Button>
-              ) : null}
-              {resolutionFor === comment.id ? (
-                <div className="mt-2 space-y-1">
-                  <Textarea
-                    aria-label={t('delivery_os.project.comments.resolutionLabel')}
-                    value={resolution}
-                    rows={2}
-                    onChange={(event) => setResolution(event.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <Button type="button" size="sm" onClick={() => void submitResolution(comment.id)}>
-                      {t('delivery_os.project.comments.saveResolution')}
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => setResolutionFor(null)}>
-                      {t('delivery_os.project.comments.cancel')}
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <ul className="space-y-2">{openComments.map(renderComment)}</ul>
       )}
+      {resolvedComments.length > 0 ? (
+        <CollapsibleSection
+          title={t('delivery_os.project.comments.resolvedTitle')}
+          count={resolvedComments.length}
+          defaultCollapsed
+        >
+          <ul className="space-y-2" data-testid={`screen-comments-resolved-${screenAttachmentId}`}>
+            {resolvedComments.map(renderComment)}
+          </ul>
+        </CollapsibleSection>
+      ) : null}
       <Textarea
         aria-label={t('delivery_os.project.comments.bodyLabel')}
         data-testid={`screen-comment-body-${screenAttachmentId}`}

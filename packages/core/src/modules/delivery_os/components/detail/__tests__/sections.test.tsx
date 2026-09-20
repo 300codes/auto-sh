@@ -159,7 +159,12 @@ describe('baseline-backed sections', () => {
       />,
     )
     expect(screen.getByText('delivery_os.project.sections.decisions.verdict.approved')).toBeTruthy()
-    expect(container.querySelectorAll('button')).toHaveLength(0)
+    // The section now carries disclosure toggles (the technical token list), so
+    // counting every button would fail for a reason that has nothing to do with
+    // read-only-ness. What must stay absent is a way to DECIDE from here.
+    expect(container.querySelector('[data-testid^="decision-approve-"]')).toBeNull()
+    expect(container.querySelector('[data-testid^="decision-reject-"]')).toBeNull()
+    expect(container.querySelectorAll('button[type="submit"]')).toHaveLength(0)
   })
 })
 

@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from '@open-mercato/ui/primitives/dialog'
 import { Button } from '@open-mercato/ui/primitives/button'
-import { Textarea } from '@open-mercato/ui/primitives/textarea'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
 import { surfaceRecordConflict } from '@open-mercato/ui/backend/conflicts'
 import { useGuardedMutation } from '@open-mercato/ui/backend/injection/useGuardedMutation'
@@ -21,10 +20,12 @@ import { resultAcceptResponseSchema } from '@open-mercato/core/modules/delivery_
 import { deliveryErrorBodySchema, type ResultManifestV1 } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { ResultSummary } from './ResultSummary'
 import { ResultIssueList } from './ResultIssueList'
+import { ManifestInput } from './ManifestInput'
 import {
   MAX_RESULT_MANIFEST_CHARS,
   manifestTargetsAttempt,
   parseResultManifest,
+  summarizeResultManifest,
   type ResultIssue,
 } from './resultImport'
 
@@ -200,13 +201,6 @@ export function ResultImportDialog({
     }
   }, [attemptId, onImported, onOpenChange, raw, retryLastMutation, runMutation, t, taskId, taskUpdatedAt])
 
-  const handleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-      event.preventDefault()
-      void submit()
-    }
-  }, [submit])
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="result-import-dialog">
@@ -214,20 +208,28 @@ export function ResultImportDialog({
           <DialogTitle>{t('delivery_os.task.result.title')}</DialogTitle>
           <DialogDescription>{t('delivery_os.task.result.description')}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <Textarea
-            data-testid="result-import-textarea"
-            aria-label={t('delivery_os.task.result.manifestLabel')}
+        <div className="max-h-[70vh] space-y-3 overflow-y-auto">
+          <ManifestInput
             value={raw}
-            rows={12}
-            className="font-mono text-xs"
-            onChange={(event) => { setRaw(event.target.value); setProblem(null); setServerError(null); setServerIssues([]) }}
-            onKeyDown={handleKeyDown}
+            onChange={(next) => { setRaw(next); setProblem(null); setServerError(null); setServerIssues([]) }}
+            label={t('delivery_os.task.result.manifestLabel')}
+            description={t('delivery_os.task.result.dropHelp')}
+            textareaTestId="result-import-textarea"
+            onSubmitShortcut={() => void submit()}
           />
-          <p className="text-xs text-muted-foreground" data-testid="result-import-counter">
-            {t('delivery_os.task.result.charCount', { count: raw.trim().length, limit: MAX_RESULT_MANIFEST_CHARS })}
-          </p>
-          {parsed?.ok ? <ResultSummary manifest={parsed.manifest} source="manual" /> : null}
+          {parsed?.ok ? (
+            <div className="space-y-2" data-testid="result-import-preview">
+              <p className="text-sm font-medium">
+                {t('delivery_os.task.result.previewTitle', {
+                  checks: summarizeResultManifest(parsed.manifest).checkCount,
+                  paths: parsed.manifest.changedPaths.length,
+                  artifacts: parsed.manifest.artifacts.length,
+                })}
+              </p>
+              <p className="text-xs text-muted-foreground">{t('delivery_os.task.result.previewHelp')}</p>
+              <ResultSummary manifest={parsed.manifest} source="manual" />
+            </div>
+          ) : null}
           {problem?.kind === 'schema' ? (
             <ResultIssueList issues={problem.issues} label={t('delivery_os.task.result.error.schema')} />
           ) : null}

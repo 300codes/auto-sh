@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
-import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
+import { LoadingMessage, ErrorMessage, TabEmptyState } from '@open-mercato/ui/backend/detail'
 import { Badge } from '@open-mercato/ui/primitives/badge'
 import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import { Button } from '@open-mercato/ui/primitives/button'
@@ -46,43 +46,61 @@ export function EvidenceSection({ projectId, progress, taskCounts, attention, ba
   const counts = Object.entries(taskCounts)
 
   return (
-    <section data-testid="delivery-evidence-section" className="space-y-3">
-      <SectionHeader title={t('delivery_os.project.sections.evidence.title')} />
+    <section data-testid="delivery-evidence-section" className="space-y-6">
+      <SectionHeader
+        title={t('delivery_os.project.sections.evidence.title')}
+        action={projectId ? (
+          <Button type="button" variant="outline" size="sm" asChild>
+            <Link href={`/backend/delivery/projects/${encodeURIComponent(projectId)}/report`} data-testid="delivery-report-link">
+              {t('delivery_os.report.open')}
+            </Link>
+          </Button>
+        ) : null}
+      />
 
-      <div>
-        <p className="text-xs font-medium">{t('delivery_os.project.sections.evidence.acProgress')}</p>
+      <div className="space-y-2">
+        <SectionHeader title={t('delivery_os.project.sections.evidence.acProgress')} />
         <ProgressValue progress={progress} />
       </div>
 
-      <div>
-        <p className="text-xs font-medium">{t('delivery_os.project.sections.evidence.taskState')}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {counts.length === 0 ? (
-            <span className="text-xs text-muted-foreground">{t('delivery_os.project.sections.evidence.noTaskCounts')}</span>
-          ) : (
-            counts.map(([status, count]) => (
+      <div className="space-y-2">
+        <SectionHeader title={t('delivery_os.project.sections.evidence.taskState')} count={counts.length} />
+        {counts.length === 0 ? (
+          <div data-testid="delivery-evidence-no-task-counts">
+            <TabEmptyState
+              title={t('delivery_os.project.sections.evidence.noTaskCounts')}
+              description={t('delivery_os.project.sections.evidence.noTaskCountsDescription')}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            {counts.map(([status, count]) => (
               <StatusBadge key={status} variant="neutral">
                 {`${t(`delivery_os.project.sections.tasks.status.${status}`, status)}: ${count}`}
               </StatusBadge>
-            ))
-          )}
-          {attention.blockedTaskIds.length > 0 ? (
-            <StatusBadge variant="error">
-              {t('delivery_os.project.sections.evidence.blocked', { count: attention.blockedTaskIds.length })}
-            </StatusBadge>
-          ) : null}
-          {attention.reconciliationRequiredTaskIds.length > 0 ? (
-            <StatusBadge variant="warning">
-              {t('delivery_os.project.sections.evidence.reconciliation', {
-                count: attention.reconciliationRequiredTaskIds.length,
-              })}
-            </StatusBadge>
-          ) : null}
-        </div>
+            ))}
+          </div>
+        )}
+        {attention.blockedTaskIds.length > 0 || attention.reconciliationRequiredTaskIds.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {attention.blockedTaskIds.length > 0 ? (
+              <StatusBadge variant="error">
+                {t('delivery_os.project.sections.evidence.blocked', { count: attention.blockedTaskIds.length })}
+              </StatusBadge>
+            ) : null}
+            {attention.reconciliationRequiredTaskIds.length > 0 ? (
+              <StatusBadge variant="warning">
+                {t('delivery_os.project.sections.evidence.reconciliation', {
+                  count: attention.reconciliationRequiredTaskIds.length,
+                })}
+              </StatusBadge>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
-      <div>
-        <p className="text-xs font-medium">{t('delivery_os.project.sections.evidence.declaredCoverage')}</p>
+      <div className="space-y-2">
+        <SectionHeader title={t('delivery_os.project.sections.evidence.declaredCoverage')} />
         <p className="text-xs text-muted-foreground">
           {t('delivery_os.project.sections.evidence.declaredCoverageCaveat')}
         </p>
@@ -94,12 +112,15 @@ export function EvidenceSection({ projectId, progress, taskCounts, attention, ba
           />
         ) : null}
         {baselines.status === 'ready' && coverage === null ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('delivery_os.project.sections.evidence.noDeclaredCoverage')}
-          </p>
+          <div data-testid="delivery-evidence-no-coverage">
+            <TabEmptyState
+              title={t('delivery_os.project.sections.evidence.noDeclaredCoverage')}
+              description={t('delivery_os.project.sections.evidence.noDeclaredCoverageDescription')}
+            />
+          </div>
         ) : null}
         {coverage ? (
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="muted" size="sm">
               {t('delivery_os.project.sections.evidence.acTestMap', { count: Object.keys(coverage.acTestMap).length })}
             </Badge>
@@ -112,10 +133,6 @@ export function EvidenceSection({ projectId, progress, taskCounts, attention, ba
           </div>
         ) : null}
       </div>
-
-      {projectId ? <Button type="button" variant="outline" asChild>
-        <Link href={`/backend/delivery/projects/${encodeURIComponent(projectId)}/report`} data-testid="delivery-report-link">{t('delivery_os.report.open')}</Link>
-      </Button> : null}
     </section>
   )
 }

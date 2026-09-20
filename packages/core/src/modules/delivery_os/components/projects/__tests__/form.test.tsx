@@ -1,12 +1,13 @@
 /** @jest-environment jsdom */
 import * as React from 'react'
-import { act, render, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { projectCreateSchema } from '@open-mercato/core/modules/delivery_os/data/validators'
 import { DEFAULT_DELIVERY_LIMITS } from '@open-mercato/core/modules/delivery_os/lib/contracts'
 import { TARGET_PROFILES } from '@open-mercato/core/modules/delivery_os/lib/targetProfiles'
 import CreateDeliveryProjectPage from '../../../backend/delivery/projects/create/page'
 import { metadata } from '../../../backend/delivery/projects/create/page.meta'
 import { DeliveryProjectForm } from '../DeliveryProjectForm'
+import { INPUT_MODE_VALUES, InputModeChoice } from '../InputModeChoice'
 
 type CrudFormProps = {
   fields: Array<{ id: string; type: string; required?: boolean; options?: Array<{ value: string; label: string }> }>
@@ -79,8 +80,8 @@ it('renders exactly the inputs the create schema accepts', () => {
     'attemptTimeoutMinutes',
   ])
   expect(fields.find((field) => field.id === 'name')?.required).toBe(true)
-  expect(fields.find((field) => field.id === 'inputMode')?.options?.map((option) => option.value))
-    .toEqual(['from_brief', 'from_design'])
+  expect(INPUT_MODE_VALUES).toEqual(['from_brief', 'from_design'])
+  expect(fields.find((field) => field.id === 'inputMode')?.type).toBe('custom')
   expect(fields.find((field) => field.id === 'targetProfile')?.options?.map((option) => option.value))
     .toEqual(TARGET_PROFILES.map((profile) => `${profile.id}@${profile.version}`))
   expect(fields.some((field) => field.id === 'draftSpec')).toBe(false)
@@ -151,4 +152,16 @@ it('keeps the shared form free of any create-versus-edit knowledge', async () =>
   expect(props.optimisticLockUpdatedAt).toBe(updatedAt)
   expect(Object.keys(props)).not.toContain('mode')
   expect(Object.keys(props)).not.toContain('apiPath')
+})
+
+it('states the consequence of each specification start and reports the picked mode', () => {
+  const setValue = jest.fn()
+  render(<InputModeChoice id="inputMode" value="from_brief" setValue={setValue} />)
+  for (const mode of INPUT_MODE_VALUES) {
+    expect(screen.getByText(`delivery_os.projects.inputMode.${mode}`)).toBeTruthy()
+    expect(screen.getByText(`delivery_os.projects.form.inputMode.consequence.${mode}`)).toBeTruthy()
+  }
+  expect(screen.getByTestId('input-mode-from_brief').getAttribute('data-state')).toBe('checked')
+  fireEvent.click(screen.getByTestId('input-mode-from_design'))
+  expect(setValue).toHaveBeenCalledWith('from_design')
 })

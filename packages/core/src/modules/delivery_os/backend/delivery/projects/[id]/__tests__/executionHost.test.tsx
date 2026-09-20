@@ -133,6 +133,14 @@ async function renderDetail(): Promise<void> {
   await screen.findByRole('heading', { name: project.name })
 }
 
+// The detail screen is tabbed: a section is on screen when its tab is selected,
+// and a deep link selects that tab for the operator. Tests that start without a
+// deep link open the tab the way an operator would.
+async function openTab(key: string): Promise<void> {
+  const trigger = await screen.findByRole('tab', { name: new RegExp(`delivery_os\\.project\\.tabs\\.${key}`) })
+  await act(async () => { trigger.click() })
+}
+
 beforeEach(() => {
   receivedContext = null
   apiCallMock.mockReset()
@@ -148,6 +156,7 @@ it('mounts the execution extension with the selected task and records it in the 
   expect(injectionSpotSpy).toHaveBeenCalledWith('delivery_os.project.execution')
   expect(screen.queryByTestId('delivery-execution-action')).toBeNull()
 
+  await openTab('tasks')
   await act(async () => { (await screen.findByTestId(`delivery-task-${taskId}`)).click() })
 
   const node = await screen.findByTestId('delivery-execution-action')
@@ -158,6 +167,7 @@ it('mounts the execution extension with the selected task and records it in the 
 
 it('keeps the context the host actually built valid against the frozen contract', async () => {
   await renderDetail()
+  await openTab('tasks')
   await act(async () => { (await screen.findByTestId(`delivery-task-${taskId}`)).click() })
   await screen.findByTestId('delivery-execution-action')
 
@@ -204,14 +214,17 @@ it('does not mount the extension when it is not active on this installation', as
   expect(screen.queryByTestId('delivery-execution-action')).toBeNull()
 })
 
-it('keeps the extension host and the other sections mounted when the task request fails', async () => {
+it('keeps the extension host and the other sections reachable when the task request fails', async () => {
   routeApiCalls({ tasksOk: false })
   await renderDetail()
+  await openTab('tasks')
   await screen.findByText('delivery_os.project.sections.tasks.loadError')
+  expect(injectionSpotSpy).toHaveBeenCalledWith('delivery_os.project.execution')
+  await openTab('baseline')
   expect(screen.getByTestId('delivery-requirements-section')).toBeTruthy()
   expect(screen.getByTestId('delivery-design-section')).toBeTruthy()
+  await openTab('evidence')
   expect(screen.getByTestId('delivery-evidence-section')).toBeTruthy()
-  expect(injectionSpotSpy).toHaveBeenCalledWith('delivery_os.project.execution')
 })
 
 

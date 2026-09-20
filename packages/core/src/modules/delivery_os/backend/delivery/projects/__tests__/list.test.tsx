@@ -249,3 +249,43 @@ it('surfaces a load failure instead of rendering an empty list as success', asyn
   expect(rendered.getByRole('link')).toHaveTextContent(`delivery_os.flow.nextAction.${flow.nextAction.kind}`)
   expect(apiCallMock.mock.calls.filter(([url]) => String(url).includes('/portfolio?'))).toHaveLength(1)
  })
+
+it('ranks the next action above the row identity and states each blocker as a readable phrase', async () => {
+  const fixture = loadFlowStatusFixture()
+  const flow = {
+    ...fixture,
+    projectId,
+    blockers: [
+      { kind: 'intake_incomplete' as const, stageId: null, ref: null },
+      { kind: 'open_comments' as const, stageId: 'scope', ref: null },
+      { kind: 'decision_pending' as const, stageId: 'ux', ref: null },
+    ],
+  }
+  apiCallMock.mockImplementation(async (url: string) => url.startsWith('/api/delivery_os/portfolio') ? { ok: true, result: { items: [flow] } } : listResponse([projectRow()]))
+  render(<DeliveryProjectListPage />)
+  await waitFor(() => expect(apiCallMock.mock.calls.some(([url]) => String(url).includes('/portfolio?ids='))).toBe(true))
+  await act(async () => undefined)
+  const column = dataTableMock.mock.calls.at(-1)![0].columns.find((item: { id?: string }) => item.id === 'flow')
+  expect(column.meta).toMatchObject({ truncate: false })
+  const rendered = render(column.cell({ row: { original: projectRow() } }))
+
+  expect(rendered.getByText('delivery_os.projects.list.flow.state.blocked')).toBeTruthy()
+  expect(rendered.getAllByRole('link')).toHaveLength(1)
+  expect(rendered.getByRole('link')).toHaveTextContent(`delivery_os.flow.nextAction.${flow.nextAction.kind}`)
+  expect(rendered.getByText('delivery_os.projects.list.flow.blocker')).toBeTruthy()
+  expect(rendered.getByText('delivery_os.projects.list.flow.blockerAtStage')).toBeTruthy()
+  expect(rendered.getByText('delivery_os.projects.list.flow.moreBlockers')).toBeTruthy()
+})
+
+it('marks a flow with no outstanding work as ready instead of showing a bare link', async () => {
+  const flow = { ...loadFlowStatusFixture(), projectId, blockers: [], pendingApprovals: [], nextAction: { kind: 'none' as const, stageId: null } }
+  apiCallMock.mockImplementation(async (url: string) => url.startsWith('/api/delivery_os/portfolio') ? { ok: true, result: { items: [flow] } } : listResponse([projectRow()]))
+  render(<DeliveryProjectListPage />)
+  await waitFor(() => expect(apiCallMock.mock.calls.some(([url]) => String(url).includes('/portfolio?ids='))).toBe(true))
+  await act(async () => undefined)
+  const column = dataTableMock.mock.calls.at(-1)![0].columns.find((item: { id?: string }) => item.id === 'flow')
+  const rendered = render(column.cell({ row: { original: projectRow() } }))
+  expect(rendered.getByText('delivery_os.projects.list.flow.state.ready')).toBeTruthy()
+  expect(rendered.queryByText('delivery_os.projects.list.flow.blocker')).toBeNull()
+  expect(rendered.queryByText('delivery_os.flow.pending')).toBeNull()
+})

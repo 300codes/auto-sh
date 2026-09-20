@@ -67,9 +67,15 @@ function renderDialog(onImported = jest.fn()) {
   return onImported
 }
 
+/** The raw manifest sits behind the technical disclosure; open it as an operator would. */
+async function revealRawManifest(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
+  await user.click(screen.getByRole('button', { name: 'ui.sectionHeader.expand' }))
+  return screen.getByTestId('proposal-import-textarea')
+}
+
 async function pasteAndSubmit(raw: string): Promise<void> {
   const user = userEvent.setup()
-  const textarea = screen.getByTestId('proposal-import-textarea')
+  const textarea = await revealRawManifest(user)
   textarea.focus()
   await user.paste(raw)
   await user.click(screen.getByTestId('proposal-import-submit'))
@@ -84,7 +90,7 @@ describe('ProposalImportDialog — plan variant', () => {
   it('previews the baseline the plan targets before anything is sent', async () => {
     renderDialog()
     const user = userEvent.setup()
-    const textarea = screen.getByTestId('proposal-import-textarea')
+    const textarea = await revealRawManifest(user)
     textarea.focus()
     await user.paste(JSON.stringify(manifest))
     const preview = await screen.findByTestId('proposal-import-preview-baseline')

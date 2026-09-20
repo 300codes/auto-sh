@@ -22,7 +22,9 @@ import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimi
 import { attemptReconcileResponseSchema } from '@open-mercato/core/modules/delivery_os/api/schemas'
 import { ReconcileResolutionChoice } from './ReconcileResolutionChoice'
 import { ResultIssueList } from './ResultIssueList'
-import type { ResultIssue } from './resultImport'
+import { ManifestInput } from './ManifestInput'
+import { ResultSummary } from './ResultSummary'
+import { parseResultManifest, type ResultIssue } from './resultImport'
 import {
   RECONCILE_ERROR_KEYS,
   RECONCILE_FIELD_ERROR_KEYS,
@@ -81,6 +83,11 @@ export function ReconcileAttemptDialog({
     setServerError(null)
     setServerIssues([])
   }, [open])
+
+  const manifestPreview = React.useMemo(
+    () => (draft.manifestRaw.trim().length === 0 ? null : parseResultManifest(draft.manifestRaw)),
+    [draft.manifestRaw],
+  )
 
   const update = React.useCallback((patch: Partial<ReconcileDraft>) => {
     setDraft((current) => ({ ...current, ...patch }))
@@ -218,15 +225,17 @@ export function ReconcileAttemptDialog({
           {draft.resolution === 'completed' ? (
             <div className="space-y-1">
               <Label htmlFor="reconcile-manifest">{t('delivery_os.task.reconcile.manifestLabel')}</Label>
-              <p className="text-xs text-muted-foreground">{t('delivery_os.task.reconcile.manifestHelp')}</p>
-              <Textarea
-                id="reconcile-manifest"
-                data-testid="reconcile-manifest"
-                rows={10}
-                className="font-mono text-xs"
+              <ManifestInput
                 value={draft.manifestRaw}
-                onChange={(event) => update({ manifestRaw: event.target.value })}
+                onChange={(next) => update({ manifestRaw: next })}
+                label={t('delivery_os.task.reconcile.manifestLabel')}
+                description={t('delivery_os.task.reconcile.manifestHelp')}
+                textareaId="reconcile-manifest"
+                textareaTestId="reconcile-manifest"
+                rows={10}
+                onSubmitShortcut={() => void submit()}
               />
+              {manifestPreview?.ok ? <ResultSummary manifest={manifestPreview.manifest} source="manual" /> : null}
             </div>
           ) : null}
           {problem ? (

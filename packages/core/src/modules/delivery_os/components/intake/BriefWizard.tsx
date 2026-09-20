@@ -7,7 +7,10 @@ import { apiCallOrThrow, withScopedApiRequestHeaders } from '@open-mercato/ui/ba
 import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
 import { createCrudFormError } from '@open-mercato/ui/backend/utils/serverErrors'
 import { LoadingMessage, ErrorMessage } from '@open-mercato/ui/backend/detail'
+import { ContextHelp } from '@open-mercato/ui/backend/ContextHelp'
+import { Alert } from '@open-mercato/ui/primitives/alert'
 import { Button } from '@open-mercato/ui/primitives/button'
+import { StepIndicator, type StepIndicatorStep } from '@open-mercato/ui/primitives/step-indicator'
 import { intakeResponseSchema, intakeStepSchema, intakeUpdateRequestSchema, type IntakeResponse } from '../../lib/contracts'
 import { useFlowQuery } from '../detail/useFlowQuery'
 import { ScopingConversation } from './ScopingConversation'
@@ -61,16 +64,49 @@ function IntakeEditor({ response, actorUserId, onSaved }: { response: IntakeResp
   return <CrudForm key={response.updatedAt} embedded entityId="delivery_os:intake" fields={fields} initialValues={initialValues} submitLabel={t('delivery_os.flow.save')} onSubmit={save} />
 }
 
+function DiscoveryReadOnly({ intake }: { intake: IntakeResponse['intake'] }) {
+  const t = useT()
+  return <dl className="space-y-3" data-testid="delivery-intake-readonly">
+    {TEXT_FIELDS.map((id) => <div key={id}>
+      <dt className="text-overline font-semibold uppercase tracking-widest text-muted-foreground">{t(`delivery_os.flow.brief.${id}`)}</dt>
+      <dd className="whitespace-pre-line text-sm">{intake.brief[id] ?? t('delivery_os.flow.intake.notAnswered')}</dd>
+    </div>)}
+    {LIST_FIELDS.map((id) => <div key={id}>
+      <dt className="text-overline font-semibold uppercase tracking-widest text-muted-foreground">{t(`delivery_os.flow.brief.${id}`)}</dt>
+      <dd className="text-sm">{intake.brief[id].length
+        ? <ul className="list-disc space-y-1 pl-5">{intake.brief[id].map((item) => <li key={item}>{item}</li>)}</ul>
+        : t('delivery_os.flow.intake.notAnswered')}</dd>
+    </div>)}
+  </dl>
+}
+
 export function BriefWizard({ projectId, projectUpdatedAt, actorUserId, canManage, canImport, onChanged }: Props) {
   const t = useT()
   const query = useFlowQuery(`/api/delivery_os/projects/${projectId}/intake`, intakeResponseSchema)
   const saved = React.useCallback(async () => { await query.reload(); onChanged() }, [query.reload, onChanged])
   if (!query.data && query.loading) return <LoadingMessage label={t('delivery_os.flow.loading')} />
   if (query.error || !query.data || query.data.intake.projectId !== projectId) return <ErrorMessage label={t('delivery_os.flow.loadError')} action={<Button type="button" onClick={() => void query.reload()}>{t('delivery_os.task.retry')}</Button>} />
+  const intake = query.data.intake
+  const currentIndex = intakeStepSchema.options.indexOf(intake.step)
+  const steps = intakeStepSchema.options.map((step, index): StepIndicatorStep => ({
+    id: step,
+    label: t(`delivery_os.flow.step.${step}`),
+    status: index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'pending',
+  }))
+  const blocking = intake.questions.filter((question) => question.blocking && !question.answer)
   return <section id="delivery-intake" className="space-y-4" data-testid="delivery-brief-wizard">
     <h2 className="text-lg font-semibold">{t('delivery_os.flow.brief.title')}</h2>
-    <p>{t(`delivery_os.flow.step.${query.data.intake.step}`)}</p>
-    {canManage ? <IntakeEditor response={query.data} actorUserId={actorUserId} onSaved={saved} /> : <p>{query.data.intake.brief.businessGoal}</p>}
+    <StepIndicator steps={steps} size="sm" data-testid="delivery-intake-steps" />
+    <ContextHelp title={t('delivery_os.flow.intake.help.title')}>
+      <p>{t('delivery_os.flow.intake.help.body')}</p>
+    </ContextHelp>
+    {blocking.length ? <Alert status="warning" style="lighter" size="sm" data-testid="delivery-intake-blocking">
+      <div className="space-y-1">
+        <p>{t('delivery_os.flow.intake.blockingOpen', { count: blocking.length })}</p>
+        <ul className="list-disc space-y-1 pl-5">{blocking.map((question) => <li key={question.id}>{question.text}</li>)}</ul>
+      </div>
+    </Alert> : null}
+    {canManage ? <IntakeEditor response={query.data} actorUserId={actorUserId} onSaved={saved} /> : <DiscoveryReadOnly intake={intake} />}
     <ScopingConversation response={query.data} projectUpdatedAt={projectUpdatedAt} canManage={canManage} canImport={canImport} onSaved={saved} />
   </section>
 }
