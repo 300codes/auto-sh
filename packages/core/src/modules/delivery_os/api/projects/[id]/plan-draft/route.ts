@@ -24,6 +24,7 @@ import {
   normalizePlanDraft,
   planDraftSchema,
   uncoveredCriteria,
+  unprovenCriteria,
 } from '@open-mercato/core/modules/delivery_os/lib/planDrafting'
 import { DELIVERY_OS_OPENAPI_TAG } from '@open-mercato/core/modules/delivery_os/api/openapi'
 import {
@@ -55,6 +56,7 @@ const planDraftResponseSchema = z.object({
   proposal: planProposalV1Schema,
   tool: z.string().min(1),
   uncoveredAcIds: z.array(z.string()),
+  unprovenAcIds: z.array(z.string()),
 })
 
 export async function POST(request: Request, context: DeliveryRouteContext): Promise<Response> {
@@ -118,6 +120,7 @@ export async function POST(request: Request, context: DeliveryRouteContext): Pro
       proposal,
       tool: completion?.tool ?? 'agent-cli',
       uncoveredAcIds: uncoveredCriteria(draft.data, acceptanceCriterionIds),
+      unprovenAcIds: unprovenCriteria(draft.data, acceptanceCriterionIds),
     })
   } catch (error) {
     getTelemetryRuntime()?.reportError(error, { module: 'delivery_os', code: 'delivery_os.plan_draft_failed' })

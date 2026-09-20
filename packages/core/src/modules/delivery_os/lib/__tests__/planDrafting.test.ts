@@ -1,4 +1,4 @@
-import { buildPlanDraftPrompt, buildPlanProposal, normalizeAllowedPath, normalizePlanDraft, planDraftSchema, TESTS_ROOT, uncoveredCriteria } from '../planDrafting'
+import { buildPlanDraftPrompt, buildPlanProposal, normalizeAllowedPath, normalizePlanDraft, planDraftSchema, TESTS_ROOT, uncoveredCriteria, unprovenCriteria } from '../planDrafting'
 import { planProposalV1Schema } from '../contracts'
 
 const projectId = '44444444-4444-4444-8444-444444444444'
@@ -99,4 +99,45 @@ test('does not duplicate the tests tree when the plan already named it', () => {
     tasks: [{ proposalTaskKey: 'TASK-1', title: 't', description: 'd', acIds: ['AC-1'], dependsOn: [], allowedPaths: ['tests/', 'style.css'] }],
   }) as { tasks: { allowedPaths: string[] }[] }
   expect(normalized.tasks[0].allowedPaths.filter((entry) => entry === 'tests/**')).toHaveLength(1)
+})
+
+const provenDraft = planDraftSchema.parse({
+  architectureSummary: 'Motyw klasyczny',
+  tasks: [{ proposalTaskKey: 'TASK-1', title: 'Hero', description: 'd', acIds: ['AC-1', 'AC-2'], dependsOn: [], allowedPaths: ['style.css', 'tests/**'] }],
+  declaredTests: [{ testId: 'hero shows the promise and both calls to action', file: 'tests/hero.spec.ts' }],
+  acTestMap: { 'AC-1': ['hero shows the promise and both calls to action'] },
+})
+
+test('carries the tests the plan declared into the proposal', () => {
+  const proposal = buildPlanProposal({
+    draft: provenDraft,
+    projectId,
+    baselineId,
+    baselineHash,
+    acceptanceCriterionIds: ['AC-1', 'AC-2'],
+    manifestId: 'plan-9',
+    producedBy: { tool: 'agent-cli', sessionRef: null },
+  })
+  expect(planProposalV1Schema.safeParse(proposal).success).toBe(true)
+  expect(proposal.acTestMap['AC-1']).toEqual(['hero shows the promise and both calls to action'])
+  expect(proposal.acTestMap['AC-2']).toEqual([])
+  expect(proposal.declaredTests).toEqual(provenDraft.declaredTests)
+})
+
+test('names the criteria no declared test proves, so review is not blind', () => {
+  expect(unprovenCriteria(provenDraft, ['AC-1', 'AC-2'])).toEqual(['AC-2'])
+})
+
+test('refuses to map a test the plan never declared', () => {
+  const phantom = planDraftSchema.parse({ ...provenDraft, acTestMap: { 'AC-1': ['a test nobody wrote'] } })
+  const proposal = buildPlanProposal({
+    draft: phantom,
+    projectId,
+    baselineId,
+    baselineHash,
+    acceptanceCriterionIds: ['AC-1'],
+    manifestId: 'plan-10',
+    producedBy: { tool: 'agent-cli', sessionRef: null },
+  })
+  expect(proposal.acTestMap['AC-1']).toEqual([])
 })

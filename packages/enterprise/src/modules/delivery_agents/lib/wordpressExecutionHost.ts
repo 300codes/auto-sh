@@ -152,10 +152,10 @@ export function buildCezarPrompt(taskPackage: TaskPackageV1): string {
     taskPackage.description ? `Details: ${taskPackage.description}` : '',
     `Requirements:\n${requirements || '- (none listed)'}`,
     `Acceptance criteria:\n${criteria}`,
-    `These existing tests must pass after your change (do not edit them):\n${requiredTests || '- (none)'}`,
+    `Write these Playwright tests in tests/*.spec.ts and make them pass; the test title must match the name exactly, because that is how a criterion gets its evidence:\n${requiredTests || '- (none requested)'}`,
     `Write only inside the paths this task owns: ${taskPackage.allowedPaths.join(', ') || '(profile default)'}. A file outside them voids the whole attempt, so leave the work that belongs to other tasks alone.`,
     'Inside those paths you may edit style.css, theme.json, functions.php, inc/**.php, templates|parts|patterns/**.html, assets/css/**.css, assets/js/**.js, assets/images/**.svg and assets/fonts/** (woff2, woff, txt, md). An svg must not carry scripts, event handlers or external references.',
-    'A task that owns tests/ must leave the profile checks something to run: add the tests that prove its acceptance criteria there.',
+    'The checks that judge this run are `npx playwright test` and `composer run lint`, so keep the PHP parseable and the tests green.',
     'Everything else is read-only: composer.json and the build output under assets/dist. Do not delete files.',
     'Work autonomously: make reasonable assumptions, do not ask questions, and finish when every acceptance criterion is implemented.',
   ].filter(Boolean).join('\n\n')

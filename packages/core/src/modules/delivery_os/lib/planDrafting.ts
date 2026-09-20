@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   DELIVERY_SCHEMA_VERSIONS,
   MAX_PLAN_PROPOSAL_TASKS,
+  declaredTestSchema,
   planProposalTaskSchema,
   planProposalV1Schema,
   type PlanProposalV1,
@@ -11,6 +12,9 @@ import {
 export const planDraftSchema = z.object({
   architectureSummary: z.string().trim().min(1).max(8000),
   tasks: z.array(planProposalTaskSchema).min(1).max(MAX_PLAN_PROPOSAL_TASKS),
+  /** The tests the plan promises, and which criterion each one proves; without them a run produces no evidence. */
+  declaredTests: z.array(declaredTestSchema).max(1000).default([]),
+  acTestMap: z.record(z.string(), z.array(z.string()).max(200)).default({}),
 })
 export type PlanDraft = z.infer<typeof planDraftSchema>
 
@@ -31,6 +35,8 @@ export const PLAN_DRAFT_JSON_CONTRACT = [
   'dependsOn names other proposalTaskKey values and must not cycle.',
   'allowedPaths are repository-relative entries the task may write: a file as "style.css", a whole directory as "assets/**".',
   'Every task also owns "tests/**", because a task proves its acceptance criteria with the tests it ships.',
+  'declaredTests names each Playwright test the plan promises: {"testId":"<the exact test title>","file":"tests/<name>.spec.ts"}.',
+  'acTestMap maps every acceptance criterion id to the testIds that prove it; a criterion with no test can never be evidenced.',
   'Never use a leading slash, "..", a bare trailing slash or any other wildcard such as "assets/*.css".',
 ].join(' ')
 
@@ -81,8 +87,9 @@ export function buildPlanProposal(input: {
     manifestId: input.manifestId,
     architectureSummary: input.draft.architectureSummary,
     tasks: input.draft.tasks,
-    acTestMap: Object.fromEntries(input.acceptanceCriterionIds.map((id) => [id, []])),
-    declaredTests: [],
+    // A criterion the plan did not map keeps an empty entry: the contract demands the key, not a promise we do not have.
+    acTestMap: Object.fromEntries(input.acceptanceCriterionIds.map((id) => [id, declaredFor(input.draft, id)])),
+    declaredTests: input.draft.declaredTests,
     producedBy: input.producedBy,
   })
 }
@@ -117,8 +124,19 @@ export function normalizePlanDraft(raw: unknown): unknown {
   }
 }
 
+/** Only the tests the plan actually declared may be mapped to a criterion, so the manifest never names a phantom test. */
+function declaredFor(draft: PlanDraft, acId: string): string[] {
+  const declared = new Set(draft.declaredTests.map((test) => test.testId))
+  return [...new Set(draft.acTestMap[acId] ?? [])].filter((testId) => declared.has(testId))
+}
+
 /** Criteria the plan leaves unplanned; the operator sees them before importing rather than after the run. */
 export function uncoveredCriteria(draft: PlanDraft, acceptanceCriterionIds: readonly string[]): string[] {
   const planned = new Set(draft.tasks.flatMap((task) => task.acIds))
   return acceptanceCriterionIds.filter((id) => !planned.has(id))
+}
+
+/** Criteria a task owns but no declared test proves: they would pass review without a single piece of evidence. */
+export function unprovenCriteria(draft: PlanDraft, acceptanceCriterionIds: readonly string[]): string[] {
+  return acceptanceCriterionIds.filter((id) => declaredFor(draft, id).length === 0)
 }

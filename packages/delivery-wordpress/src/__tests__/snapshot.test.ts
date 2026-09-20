@@ -99,3 +99,18 @@ test('snapshot rejects a symlinked SQLite sidecar before opening the database', 
     await rm(state.root, { recursive: true, force: true })
   }
 })
+
+test('the scaffold ships what the delivery checks need to run at all', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wp-scaffold-checks-'))
+  try {
+    const sitePath = join(directory, 'site')
+    await mkdir(join(sitePath, 'wp-content/themes'), { recursive: true, mode: 0o700 })
+    const { themePath, files } = await scaffoldTheme(sitePath, 'aster-works', 'Aster Works')
+
+    assert.ok(files.includes('composer.json'), 'composer run lint needs a composer.json')
+    assert.ok(files.includes('playwright.config.ts'), 'npx playwright test needs a config')
+    assert.ok(files.some((name) => name.startsWith('tests/')), 'the checks need a tests tree to run')
+    const composer = JSON.parse(await readFile(join(themePath, 'composer.json'), 'utf8'))
+    assert.match(composer.scripts.lint, /php -l/, 'lint must work without installing a vendor tree')
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})

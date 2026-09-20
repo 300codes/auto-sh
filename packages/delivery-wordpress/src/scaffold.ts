@@ -22,10 +22,20 @@ export async function scaffoldTheme(sitePath: string, themeSlug: string, title: 
       'templates/index.html': `<!-- wp:template-part {"slug":"header","theme":"${themeSlug}"} /-->\n<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->\n<main class="wp-block-group"><!-- wp:query {"query":{"perPage":10,"postType":"post","inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title {"isLink":true} /--><!-- wp:post-excerpt /--><!-- /wp:post-template --><!-- wp:query-pagination --><!-- wp:query-pagination-previous /--><!-- wp:query-pagination-next /--><!-- /wp:query-pagination --></div><!-- /wp:query --></main>\n<!-- /wp:group -->\n<!-- wp:template-part {"slug":"footer","theme":"${themeSlug}"} /-->\n`,
       'templates/front-page.html': `<!-- wp:template-part {"slug":"header","theme":"${themeSlug}"} /-->\n<!-- wp:group {"tagName":"main","className":"site-main","layout":{"type":"constrained"}} -->\n<main class="wp-block-group site-main"><!-- wp:paragraph {"className":"eyebrow"} --><p class="eyebrow">OPEN MERCATO / WORDPRESS STUDIO</p><!-- /wp:paragraph --><!-- wp:heading {"level":1} --><h1 class="wp-block-heading">A fresh start.<br>A space of our own.</h1><!-- /wp:heading --><!-- wp:paragraph --><p>A new WordPress website built with independent Open Mercato tools. Ready for the next idea.</p><!-- /wp:paragraph --><!-- wp:separator --><hr class="wp-block-separator has-alpha-channel-opacity"/><!-- /wp:separator --><!-- wp:heading --><h2 class="wp-block-heading">Made to grow</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Native blocks, a lightweight theme and a clear foundation for what comes next.</p><!-- /wp:paragraph --></main>\n<!-- /wp:group -->\n<!-- wp:template-part {"slug":"footer","theme":"${themeSlug}"} /-->\n`,
       'assets/css/base.css': 'html { scroll-behavior: smooth; }\nbody { margin: 0; }\na { color: inherit; text-underline-offset: .2em; }\na:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }\nh1, h2 { line-height: 1.1; letter-spacing: -.04em; }\nh1 { font-size: clamp(2.5rem, 7vw, 5rem); }\n@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }\n',
+      // `composer run lint` and `npx playwright test` are what the delivery profile runs to turn an agent run into
+      // evidence, so the scaffold ships both: a lint that needs no vendor tree, and a test tree with a config.
+      'composer.json': JSON.stringify({
+        name: `open-mercato/${themeSlug}`,
+        description: `${title} theme`,
+        license: 'GPL-2.0-or-later',
+        scripts: { lint: "find . -path ./node_modules -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l" },
+      }, null, 2) + '\n',
+      'playwright.config.ts': "import { defineConfig } from '@playwright/test'\n\nexport default defineConfig({\n  testDir: './tests',\n  timeout: 30_000,\n  use: { baseURL: process.env.THEME_BASE_URL ?? 'http://localhost:8889' },\n})\n",
+      'tests/theme.spec.ts': "import { expect, test } from '@playwright/test'\n\ntest('theme scaffold renders the front page', async ({ page }) => {\n  await page.goto('/')\n  await expect(page.locator('main')).toBeVisible()\n})\n",
       'assets/css/layout.css': '.site-header, .site-footer { padding: 2rem max(1.5rem, 5vw); }\n.site-header { border-bottom: 1px solid currentColor; }\n.site-main { padding: 5rem 1.5rem; min-height: 55vh; }\n.site-footer { border-top: 1px solid currentColor; }\n.eyebrow { font-size: .875rem; letter-spacing: .12em; }\n',
     }
     await mkdir(themePath, { mode: 0o700 })
-    for (const directory of ['inc', 'parts', 'templates', 'assets', 'assets/css']) {
+    for (const directory of ['inc', 'parts', 'templates', 'tests', 'assets', 'assets/css']) {
       await mkdir(join(themePath, directory), { mode: 0o700 })
     }
     for (const [relativePath, content] of Object.entries(files)) {
